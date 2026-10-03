@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#09090b">
+  <meta name="description" content="Josh Koppanalil — student, builder, and curious technologist exploring software, robotics, and cybersecurity.">
+  <title>Josh Koppanalil — Personal Website</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#09090b;--panel:#111114;--text:#f4f4f5;--muted:#a1a1aa;--line:#27272a;--accent:#b8f36b;--max:1080px}
+    *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:84px}body{margin:0;background:var(--bg);color:var(--text);font-family:"DM Sans",sans-serif;line-height:1.65}
+    a{color:inherit;text-decoration:none}.wrap{width:min(var(--max),calc(100% - 40px));margin:auto}
+    header{position:sticky;top:0;z-index:10;background:rgba(9,9,11,.82);backdrop-filter:blur(18px);border-bottom:1px solid rgba(255,255,255,.07)}
+    nav{height:68px;display:flex;align-items:center;justify-content:space-between}.brand{font-family:"Space Grotesk";font-weight:700;letter-spacing:-.04em}.brand span{color:var(--accent)}
+    .navlinks{display:flex;gap:27px;color:#c4c4ca;font-size:13px}.navlinks a:hover,.textlink:hover{color:var(--accent)}
+    .menu{display:none;background:none;border:1px solid var(--line);color:white;border-radius:9px;padding:7px 10px}
+    .hero{min-height:590px;display:flex;align-items:center;padding:100px 0 90px;position:relative;overflow:hidden}
+    .glow{position:absolute;width:420px;height:420px;border-radius:50%;background:#9be34a;filter:blur(150px);opacity:.10;right:2%;top:8%;pointer-events:none}
+    .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+    h1,h2,h3{font-family:"Space Grotesk";letter-spacing:-.055em;line-height:1.08}h1{font-size:clamp(48px,8vw,88px);max-width:850px;margin:20px 0}
+    h1 em{font-style:normal;color:#9b9ba4}.intro{max-width:600px;color:var(--muted);font-size:17px}
+    .actions{display:flex;gap:12px;margin-top:30px;flex-wrap:wrap}.btn{padding:11px 17px;border-radius:10px;font-size:13px;font-weight:700;border:1px solid var(--line);display:inline-flex;gap:9px;align-items:center;transition:.2s}
+    .btn.primary{background:var(--accent);color:#10120b;border-color:var(--accent)}.btn:hover{transform:translateY(-2px);border-color:var(--accent)}
+    .section{padding:86px 0;border-top:1px solid var(--line)}.sectionhead{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:30px}
+    h2{font-size:clamp(34px,5vw,52px);margin:8px 0 0}.sub{color:var(--muted);max-width:430px;font-size:14px}
+    .aboutgrid{display:grid;grid-template-columns:1.2fr .8fr;gap:50px}.aboutgrid p{color:var(--muted);margin-top:0}
+    .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}.chip{border:1px solid var(--line);padding:7px 11px;border-radius:99px;color:#d4d4d8;font-size:12px}
+    .statbox{background:linear-gradient(145deg,#151518,#0e0e10);border:1px solid var(--line);border-radius:16px;padding:25px}.statbox strong{font-family:"Space Grotesk";font-size:20px;display:block}.statbox p{font-size:13px;margin:6px 0 20px}
+    .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:23px;min-height:205px;transition:.2s}.card:hover{border-color:#62624e;transform:translateY(-3px)}
+    .cardtop{display:flex;justify-content:space-between;color:var(--accent);font-size:12px}.card h3{font-size:23px;margin:24px 0 9px}.card p{color:var(--muted);font-size:13px;margin:0}.tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:18px}.tags span{font-size:10px;color:#b7b7bf;background:#202024;padding:4px 8px;border-radius:5px}
+    .timeline{border-left:1px solid #3b3b40;margin-left:7px;padding-left:27px}.event{position:relative;padding:0 0 28px}.event:before{content:"";position:absolute;width:9px;height:9px;background:var(--accent);border-radius:50%;left:-32px;top:8px;box-shadow:0 0 0 5px var(--bg)}.event h3{font-size:19px;margin:0 0 5px}.event small{color:var(--accent);font-size:11px;letter-spacing:.08em;text-transform:uppercase}.event p{color:var(--muted);font-size:13px;margin:6px 0}
+    .contactbox{border:1px solid var(--line);background:radial-gradient(ellipse at top right,#20251a 0%,#111114 45%);border-radius:18px;padding:clamp(25px,6vw,55px);display:flex;justify-content:space-between;align-items:center;gap:25px}.contactbox h2{max-width:570px}
+    footer{padding:25px 0;color:#777780;font-size:12px;display:flex;justify-content:space-between;gap:15px}
+    .textlink{color:var(--accent);border-bottom:1px solid #526b32}
+    @media(max-width:700px){.navlinks{display:none;position:absolute;top:68px;left:0;right:0;padding:18px 22px;background:#101013;border-bottom:1px solid var(--line);flex-direction:column;gap:15px}.navlinks.open{display:flex}.menu{display:block}.hero{min-height:540px;padding:75px 0}.aboutgrid,.cards{grid-template-columns:1fr}.section{padding:65px 0}.sectionhead{display:block}.sub{margin-top:12px}.contactbox{display:block}.contactbox .btn{margin-top:20px}footer{flex-direction:column}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important}}
+  </style>
+</head>
+<body>
+<header><div class="wrap"><nav aria-label="Main navigation"><a class="brand" href="#home">JK<span>.</span></a><div class="navlinks" id="navlinks"><a href="#about">About</a><a href="#projects">Projects</a><a href="#experience">Experience</a><a href="#contact">Contact</a></div><button class="menu" id="menu" aria-label="Toggle navigation" aria-expanded="false">Menu</button></nav></div></header>
+<main>
+  <section class="hero" id="home"><div class="glow"></div><div class="wrap"><div class="eyebrow">Student · Builder · Learner</div><h1>Hi, I'm Josh.<br><em>I like building things that matter.</em></h1><p class="intro">I'm a student exploring computer science, cybersecurity, robotics, and the ideas that connect them. This is where I share what I'm learning and making.</p><div class="actions"><a class="btn primary" href="#projects">Explore my work <span>↘</span></a><a class="btn" href="#contact">Get in touch <span>↗</span></a></div></div></section>
+  <section class="section" id="about"><div class="wrap"><div class="sectionhead"><div><div class="eyebrow">A little about me</div><h2>Curious by default.</h2></div><p class="sub">I enjoy taking an idea from “what if?” to something I can test, improve, and share.</p></div><div class="aboutgrid"><div><p>My interests sit at the intersection of software, security, and engineering. I like learning how systems work under the hood, building projects, and collaborating with people who enjoy solving hard problems.</p><p>Outside of coding, I'm interested in robotics, biking, soccer, music, and learning about technology and business.</p><div class="chips"><span class="chip">Computer Science</span><span class="chip">Cybersecurity</span><span class="chip">Robotics</span><span class="chip">Machine Learning</span><span class="chip">Problem Solving</span></div></div><aside class="statbox"><strong>Learn → Build → Iterate</strong><p>My approach to projects: start with a question, make a small version, test it honestly, and keep improving.</p><strong>Currently exploring</strong><p>Machine learning, security fundamentals, and software development.</p></aside></div></div></section>
+  <section class="section" id="projects"><div class="wrap"><div class="sectionhead"><div><div class="eyebrow">Selected work</div><h2>Projects in progress.</h2></div><p class="sub">A few areas I'm working on. Replace these descriptions with demos and repositories as each project becomes publishable.</p></div><div class="cards">
+    <article class="card"><div class="cardtop"><span>01 / MACHINE LEARNING</span><span>↗</span></div><h3>AI Voice Detection</h3><p>Exploring whether audio features and machine learning can help distinguish generated speech from human recordings, with attention to evaluation and limitations.</p><div class="tags"><span>Python</span><span>Audio Features</span><span>ML</span></div></article>
+    <article class="card"><div class="cardtop"><span>02 / ROBOTICS</span><span>↗</span></div><h3>FRC Robotics</h3><p>Working with a robotics team on robot software, sensors, controls, and iterative testing on a real competition robot.</p><div class="tags"><span>Java</span><span>Controls</span><span>Engineering</span></div></article>
+    <article class="card"><div class="cardtop"><span>03 / CYBERSECURITY</span><span>↗</span></div><h3>Security Learning Lab</h3><p>Building foundational skills through legal practice challenges, networking concepts, and responsible security research.</p><div class="tags"><span>CTFs</span><span>Networking</span><span>Linux</span></div></article>
+    <article class="card"><div class="cardtop"><span>04 / SOFTWARE</span><span>↗</span></div><h3>Small Apps & Experiments</h3><p>Small coding projects made to practice programming, interface design, and turning a simple idea into a working tool.</p><div class="tags"><span>Python</span><span>Java</span><span>Web</span></div></article>
+  </div></div></section>
+  <section class="section" id="experience"><div class="wrap"><div class="sectionhead"><div><div class="eyebrow">Learning & experience</div><h2>Building skills over time.</h2></div><p class="sub">A living snapshot of teams, learning, and technical experiences.</p></div><div class="timeline">
+    <div class="event"><small>Robotics</small><h3>FIRST Robotics</h3><p>Collaborating on robot programming, subsystem testing, sensors, and team-based engineering challenges.</p></div>
+    <div class="event"><small>Research & learning</small><h3>Machine Learning Exploration</h3><p>Studying model approaches, feature extraction, dataset design, and how to communicate experimental results responsibly.</p></div>
+    <div class="event"><small>Community</small><h3>Online Community Moderation</h3><p>Experience helping online communities with support tickets, moderation workflows, and user assistance.</p></div>
+    <div class="event"><small>Ongoing</small><h3>Computer Science & Cybersecurity</h3><p>Developing programming fundamentals and exploring security through coursework and authorized practice environments.</p></div>
+  </div></div></section>
+  <section class="section" id="contact"><div class="wrap"><div class="contactbox"><div><div class="eyebrow">Say hello</div><h2>Have an interesting idea or project?</h2><p class="sub">I'd be glad to connect, learn, or collaborate.</p></div><a class="btn primary" href="mailto:hello@joshkoppanalil.com">Email me ↗</a></div></div></section>
+</main>
+<footer class="wrap"><span>© <span id="year"></span> Josh Koppanalil</span><span>Designed with curiosity. <a class="textlink" href="#home">Back to top ↑</a></span></footer>
+<script>
+  const menu=document.getElementById('menu'), links=document.getElementById('navlinks');
+  menu.addEventListener('click',()=>{const open=links.classList.toggle('open');menu.setAttribute('aria-expanded',String(open));});
+  links.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{links.classList.remove('open');menu.setAttribute('aria-expanded','false');}));
+  document.getElementById('year').textContent=new Date().getFullYear();
+</script>
+</body></html>
