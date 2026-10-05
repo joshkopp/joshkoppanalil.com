@@ -53,6 +53,9 @@
     .cardtop{display:flex;justify-content:space-between;color:var(--accent);font-size:12px}.card h3{font-size:23px;margin:24px 0 9px}.card p{color:var(--muted);font-size:13px;margin:0;max-width:640px}.tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:18px}.tags span{font-size:10px;color:#b7b7bf;background:#202024;padding:4px 8px;border-radius:5px}
     .timeline{border-left:1px solid #3b3b40;margin-left:7px;padding-left:27px}.event{position:relative;padding:0 0 28px}.event:before{content:"";position:absolute;width:9px;height:9px;background:var(--accent);border-radius:50%;left:-32px;top:8px;box-shadow:0 0 0 5px var(--bg)}.event h3{font-size:19px;margin:0 0 5px}.event small{color:var(--accent);font-size:11px;letter-spacing:.08em;text-transform:uppercase}.event p{color:var(--muted);font-size:13px;margin:6px 0}
     .contactbox{border:1px solid var(--line);background:radial-gradient(ellipse at top right,#20251a 0%,#111114 45%);border-radius:18px;padding:clamp(25px,6vw,55px);display:flex;justify-content:space-between;align-items:center;gap:25px}.contactbox h2{max-width:570px}
+    .contactbox{flex-direction:column;align-items:flex-start;gap:18px}
+    .contactinfo{display:flex;flex-direction:column;gap:8px;font-family:"Space Grotesk";font-size:clamp(20px,4vw,30px);letter-spacing:-.03em}
+    .contactinfo a{transition:.2s}.contactinfo a:hover{color:var(--accent)}
     footer{padding:25px 0;color:#777780;font-size:12px;display:flex;justify-content:space-between;gap:15px}
     .textlink{color:var(--accent);border-bottom:1px solid #526b32}
     .navlinks,.menu{margin-left:auto}.views{display:flex;align-items:center;gap:6px;margin-left:20px;color:#c4c4ca;font-size:13px}.views[hidden]{display:none}.views svg{width:16px;height:16px}
@@ -75,7 +78,7 @@
     <a class="card" href="https://joshkopp.github.io/mlachecker/" target="_blank" rel="noopener"><div class="cardtop"><span>02 / EDUCATION</span><span>↗</span></div><h3>MLA Format Checker</h3><p>Checks an essay against MLA format, from margins, fonts, and spacing to citations, quotations, and the Works Cited page. Paste your text or upload a .docx and every problem is highlighted in your essay, along with a checklist of what you got right. Everything runs locally in the browser.</p><div class="tags"><span>Python</span><span>Pyodide</span><span>Client-side</span></div></a>
     <a class="card" href="https://joshkopp.github.io/FlashcardGen/" target="_blank" rel="noopener"><div class="cardtop"><span>03 / EDUCATION</span><span>↗</span></div><h3>Flashcard Generator</h3><p>Turns notes, a PDF, or a Word document into flashcards. Each term is scored by how much it matters, so the important ones need more correct answers before they count as learned. Free to use, with an optional AI mode that runs on your own device.</p><div class="tags"><span>JavaScript</span><span>CloudFlare</span><span>Client</span></div></a>
   </div></div></section>
-  <section class="section" id="contact"><div class="wrap"><div class="contactbox"><div><div class="eyebrow">Say hello</div><h2>Have an interesting idea or project?</h2><p class="sub">I'd be glad to connect, learn, or collaborate.</p></div><a class="btn primary" href="mailto:josh.koppanalil@gmail.com">Email me ↗</a></div></div></section>
+  <section class="section" id="contact"><div class="wrap"><div class="contactbox"><div class="eyebrow">Contact</div><div class="contactinfo"><a href="mailto:josh.koppanalil@gmail.com">josh.koppanalil@gmail.com</a><a href="tel:+17374208829">(737) 420-8829</a></div></div></div></section>
 </main>
 <footer class="wrap"><span>© <span id="year"></span> Josh Koppanalil</span><span>  <a class="textlink" href="#home"> Back to top ↑</a></span></footer>
 <script>
