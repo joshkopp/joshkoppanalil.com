@@ -63,6 +63,11 @@
     footer{padding:25px 0;color:#777780;font-size:12px;display:flex;justify-content:space-between;gap:15px}
     .textlink{color:var(--accent);border-bottom:1px solid #526b32}
     .navlinks,.menu{margin-left:auto}.views{display:flex;align-items:center;gap:6px;margin-left:20px;color:#c4c4ca;font-size:13px}.views[hidden]{display:none}.views svg{width:16px;height:16px}
+    .statbox .now{display:flex;align-items:center;gap:10px}
+    .dot{position:relative;flex:none;width:10px;height:10px;border-radius:50%;background:var(--accent);animation:blink 1.6s ease-in-out infinite}
+    .dot:after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--accent);animation:ping 1.6s ease-out infinite}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+    @keyframes ping{0%{transform:scale(1);opacity:.6}100%{transform:scale(2.8);opacity:0}}
     @media(max-width:700px){.navlinks{display:none;position:absolute;top:68px;left:0;right:0;padding:18px 22px;background:#101013;border-bottom:1px solid var(--line);flex-direction:column;gap:15px}.navlinks.open{display:flex}.menu{display:block}.hero{min-height:540px;padding:75px 0}.avatar{width:104px;height:104px}.aboutgrid,.cards{grid-template-columns:1fr}.section{padding:65px 0}.sectionhead{display:block}.sub{margin-top:12px}.contactbox{display:block}.contactbox .btn{margin-top:20px}footer{flex-direction:column}}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important}}
   </style>
