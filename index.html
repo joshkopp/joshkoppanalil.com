@@ -52,7 +52,7 @@
   <!-- Hides the content below the headline until the typing finishes (skipped for reduced motion) -->
   <script>
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      document.documentElement.classList.add('intro');
+      document.documentElement.classList.add('js-intro');
     }
   </script>
 
@@ -224,8 +224,8 @@
     }
 
     /* Everything below the headline fades in once the typing is done */
-    html.intro .reveal { opacity: 0; }
-    html.intro.show .reveal { opacity: 1; transition: opacity 1.1s ease; }
+    html.js-intro .reveal { opacity: 0; }
+    html.js-intro.show .reveal { opacity: 1; transition: opacity 1.1s ease; }
 
     /* Typewriter headline: .ghost holds the untyped text invisibly so the layout never jumps */
     .ghost { visibility: hidden; }
