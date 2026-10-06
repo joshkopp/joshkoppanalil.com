@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#09090b">
 
   <!-- ===== SEO ===== -->
-  <title>Josh Koppanalil – Austin TX. </title>
+  <title>Josh Koppanalil – Austin TX.</title>
   <meta name="description" content="Josh Koppanalil — student, builder, and curious technologist exploring software, robotics, and cybersecurity.">
   <link rel="canonical" href="https://joshkoppanalil.com/">
 
@@ -199,6 +199,20 @@
       font-size: clamp(48px, 8vw, 88px);
     }
     h1 em { font-style: normal; color: #9b9ba4; }
+
+    /* Typewriter headline: .ghost holds the untyped text invisibly so the layout never jumps */
+    .ghost { visibility: hidden; }
+    .typed.active::after {
+      content: "";
+      display: inline-block;
+      width: .07em;
+      height: .85em;
+      margin-left: .06em;
+      vertical-align: -.04em;
+      background: var(--accent);
+      animation: caret 1s steps(1) infinite;
+    }
+    @keyframes caret { 50% { opacity: 0; } }
 
     .intro { max-width: 600px; color: var(--muted); font-size: 17px; }
 
@@ -427,14 +441,15 @@
   <section class="hero" id="home">
     <div class="glow"></div>
     <div class="wrap">
-    
+      
       <img class="avatar" src="avatar.jpg" alt="Joshua Koppanalil" width="120" height="120">
 
       <div class="eyebrow">Student · Builder · Learner</div>
 
       <h1>
-        Hi, I'm Josh.<br>
-        <em>I like building things that matter.</em>
+        <span data-type>Hi, I'm Josh.</span><br>
+        <em data-type>I like building things</em><br>
+        <em data-type>that matter.</em>
       </h1>
 
       <p class="intro">
@@ -474,11 +489,12 @@
           <div class="chips">
             <span class="chip">Computer Science</span>
             <span class="chip">Cybersecurity</span>
-            <span class="chip">Machine Learning</span>     
+            
+            <span class="chip">Machine Learning</span>
+        
           </div>
         </div>
 
-        
         <aside class="statbox">
           <strong class="now"><span class="dot" aria-hidden="true"></span>Currently working on</strong>
           <p id="now-text">Machine Learning & Quantitative Finance</p>
@@ -516,8 +532,9 @@
           <h3>MLA Format Checker</h3>
           <p>
             Checks an essay against MLA format, from margins, fonts, and spacing to citations,
-            quotations, and the Works Cited page. Upload a .docx and every problem is highlighted 
-            in your essay, along with a checklist of what you got right.
+            quotations, and the Works Cited page. Paste your text or upload a .docx and every
+            problem is highlighted in your essay, along with a checklist of what you got right.
+            Everything runs locally in the browser.
           </p>
           <div class="tags"><span>Python</span><span>Pyodide</span><span>Client-side</span></div>
         </a>
@@ -528,7 +545,7 @@
           <p>
             Turns notes, a PDF, or a Word document into flashcards. Each term is scored by how
             much it matters, so the important ones need more correct answers before they count
-            as learned. Free to use, with an  AI mode that runs on Cloudflare.
+            as learned. Free to use, with an optional AI mode that runs on your own device.
           </p>
           <div class="tags"><span>JavaScript</span><span>Cloudflare</span><span>Client-side</span></div>
         </a>
@@ -546,7 +563,7 @@
         <div class="contactinfo">
           <button class="copy" data-copy="josh.koppanalil@gmail.com">
             <span class="label">josh.koppanalil@gmail.com</span>
-            
+            <span class="hint">Click to copy</span>
           </button>
 
           <button class="copy" data-copy="(512) 553-2888">
@@ -578,6 +595,52 @@
 
   menu.addEventListener('click', () => setMenu(!links.classList.contains('open')));
   links.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setMenu(false)));
+
+  // ----- Typewriter headline -----
+  // Text stays in the HTML (good for SEO, screen readers, and no-JS visitors);
+  // JS just reveals it one character at a time.
+  (function () {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const SPEED = 55;        // ms per character (lower = faster)
+    const LINE_PAUSE = 350;  // ms between lines
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    const h1 = document.querySelector('h1');
+    h1.setAttribute('aria-label', h1.textContent.replace(/\s+/g, ' ').trim());
+
+    async function typeLine(el, keepCaret) {
+      const text = el.textContent.trim();
+      const typed = document.createElement('span');
+      const ghost = document.createElement('span');
+      typed.className = 'typed active';
+      ghost.className = 'ghost';
+      ghost.textContent = text;
+      el.setAttribute('aria-hidden', 'true');
+      el.textContent = '';
+      el.append(typed, ghost);
+
+      for (let i = 1; i <= text.length; i++) {
+        typed.textContent = text.slice(0, i);
+        ghost.textContent = text.slice(i);
+        await wait(SPEED);
+      }
+      if (keepCaret) setTimeout(() => typed.classList.remove('active'), 2500);
+      else typed.classList.remove('active');
+    }
+
+    (async () => {
+      const lines = [...h1.querySelectorAll('[data-type]')];
+      // hide everything first so there is no flash of full text
+      lines.forEach((el) => (el.style.visibility = 'hidden'));
+      await wait(300);
+      for (let i = 0; i < lines.length; i++) {
+        lines[i].style.visibility = '';
+        await typeLine(lines[i], i === lines.length - 1);
+        await wait(LINE_PAUSE);
+      }
+    })();
+  })();
 
   // ----- Footer year -----
   document.getElementById('year').textContent = new Date().getFullYear();
