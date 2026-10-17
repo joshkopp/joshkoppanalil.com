@@ -139,6 +139,24 @@ nav{height:68px;display:flex;align-items:center}
 footer{display:flex;justify-content:space-between;gap:15px;padding:25px 0;color:#777780;font-size:12px}
 .textlink{color:var(--accent);border-bottom:1px solid #526b32}
 
+/* entry gate + sound toggle */
+#gate{display:none}
+.js #gate{display:grid;place-content:center;justify-items:center;gap:16px;position:fixed;inset:0;z-index:150;padding:20px;background:var(--bg);text-align:center;transition:opacity .6s}
+#gate.out{opacity:0;pointer-events:none}
+.g1{display:flex;align-items:baseline;font:700 clamp(56px,12vw,96px)/1 "Space Grotesk",sans-serif;letter-spacing:-.06em}
+.g1 i{display:inline-block;width:.15em;height:.15em;margin-left:.07em;border-radius:50%;background:var(--accent)}
+#gate p{margin:0;color:var(--muted);font-size:15px}
+.gbtns{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:8px}
+button.btn{font-family:inherit;color:inherit;background:none;cursor:pointer}
+.snd{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:110;display:flex;align-items:center;gap:9px;padding:8px 13px;background:rgba(17,17,20,.92);border:1px solid var(--line);border-radius:99px;color:var(--muted);font:600 12px "DM Sans",sans-serif;cursor:pointer;transition:opacity .6s,border-color .2s,color .2s}
+.snd:hover{border-color:var(--accent);color:var(--text)}
+.js .snd{opacity:0;pointer-events:none}
+.js.entered .snd{opacity:1;pointer-events:auto}
+.eq{display:flex;align-items:flex-end;gap:2px;height:12px}
+.eq i{width:2px;height:100%;background:var(--muted);transform-origin:bottom;transform:scaleY(.25)}
+.snd.on .eq i{background:var(--accent);animation:eq .9s ease-in-out infinite alternate}
+.snd.on .eq i:nth-child(2){animation-delay:-.3s}.snd.on .eq i:nth-child(3){animation-delay:-.6s}
+@keyframes eq{from{transform:scaleY(.2)}to{transform:scaleY(1)}}
 @media(max-width:700px){
   .navlinks{display:none;position:absolute;top:68px;left:0;right:0;flex-direction:column;gap:15px;padding:18px 22px;background:#101013;border-bottom:1px solid var(--line)}
   .navlinks.open{display:flex}.menu{display:block}
@@ -160,6 +178,14 @@ footer{display:flex;justify-content:space-between;gap:15px;padding:25px 0;color:
 </style>
 </head>
 <body>
+<div id="gate" role="dialog" aria-label="Welcome">
+  <div class="g1">JK<i></i></div>
+  <p>Best with sound on.</p>
+  <div class="gbtns">
+    <button class="btn primary" id="g-on">Enter with sound</button>
+    <button class="btn" id="g-off">Enter silently</button>
+  </div>
+</div>
 <i id="dot" aria-hidden="true"></i>
 
 <div id="intro" aria-hidden="true">
@@ -265,6 +291,8 @@ footer{display:flex;justify-content:space-between;gap:15px;padding:25px 0;color:
   </section>
 </main>
 
+<button class="snd" id="snd" aria-pressed="false" aria-label="Toggle sound"><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><span id="sndl">Sound off</span></button>
+
 <footer class="wrap">
   <span>© <span id="year"></span> Josh Koppanalil</span>
   <a class="textlink" href="#home">Back to top ↑</a>
@@ -272,6 +300,92 @@ footer{display:flex;justify-content:space-between;gap:15px;padding:25px 0;color:
 
 <script>
 const root=document.documentElement;
+
+const SND=(()=>{
+  const AC=window.AudioContext||window.webkitAudioContext;
+  let ctx,master,musicG,sfxG,delay,on=false,timer,nextT=0,ci=0,last=0;
+  const hz=n=>440*Math.pow(2,(n-69)/12);
+  const init=()=>{
+    if(ctx||!AC)return;
+    ctx=new AC();
+    master=ctx.createGain();master.gain.value=0;master.connect(ctx.destination);
+    musicG=ctx.createGain();musicG.gain.value=.55;musicG.connect(master);
+    sfxG=ctx.createGain();sfxG.gain.value=.9;sfxG.connect(master);
+    delay=ctx.createDelay(1);delay.delayTime.value=.42;
+    const fb=ctx.createGain(),lp=ctx.createBiquadFilter(),wet=ctx.createGain();
+    fb.gain.value=.38;lp.type='lowpass';lp.frequency.value=2200;wet.gain.value=.5;
+    delay.connect(lp);lp.connect(fb);fb.connect(delay);lp.connect(wet);wet.connect(master);
+  };
+  const tone=(f,t,d,o={})=>{
+    const os=ctx.createOscillator(),g=ctx.createGain();
+    os.type=o.type||'sine';os.frequency.setValueAtTime(f,t);
+    if(o.f2)os.frequency.exponentialRampToValueAtTime(o.f2,t+d);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(o.vol||.15,t+(o.a||.008));g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    os.connect(g);g.connect(o.dest||sfxG);
+    if(o.send){const x=ctx.createGain();x.gain.value=o.send;g.connect(x);x.connect(delay)}
+    os.start(t);os.stop(t+d+.05);
+  };
+  const whoosh=(t,d,f0,f1,vol)=>{
+    const n=Math.floor(ctx.sampleRate*d),b=ctx.createBuffer(1,n,ctx.sampleRate),c=b.getChannelData(0);
+    for(let i=0;i<n;i++)c[i]=Math.random()*2-1;
+    const src=ctx.createBufferSource(),bp=ctx.createBiquadFilter(),g=ctx.createGain();
+    src.buffer=b;bp.type='bandpass';bp.Q.value=1.1;
+    bp.frequency.setValueAtTime(f0,t);bp.frequency.exponentialRampToValueAtTime(f1,t+d);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+d*.4);g.gain.linearRampToValueAtTime(0,t+d);
+    src.connect(bp);bp.connect(g);g.connect(sfxG);src.start(t);
+  };
+  // calm ambient music: slow pad chords + sparse echoing plucks, 8 seconds per bar
+  const CH=[[48,55,59,62,64],[45,52,55,59,60],[41,48,52,55,57],[43,50,55,59,62]],PENT=[72,74,76,79,81,84];
+  const pad=(f,t,len)=>{
+    const g=ctx.createGain(),lp=ctx.createBiquadFilter();
+    lp.type='lowpass';lp.frequency.value=900;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.05,t+2.2);g.gain.linearRampToValueAtTime(.05,t+len);g.gain.linearRampToValueAtTime(0,t+len+2.5);
+    [['sine',0],['triangle',4]].forEach(([ty,dc])=>{const o=ctx.createOscillator();o.type=ty;o.frequency.value=f;o.detune.value=dc;o.connect(lp);o.start(t);o.stop(t+len+2.6)});
+    lp.connect(g);g.connect(musicG);
+  };
+  const bar=()=>{
+    if(!on)return;
+    const t=Math.max(ctx.currentTime+.05,nextT);
+    CH[ci++%4].forEach(n=>pad(hz(n),t,6));
+    for(let i=0;i<8;i++)if(Math.random()<.6)tone(hz(PENT[Math.floor(Math.random()*PENT.length)]),t+i+Math.random()*.12,1.8,{type:'triangle',vol:.06,dest:musicG,send:.7,a:.02});
+    nextT=t+8;
+    timer=setTimeout(bar,Math.max(500,(nextT-ctx.currentTime-1.5)*1000));
+  };
+  const enable=v=>{
+    if(v)init();
+    if(!ctx)return;
+    on=!!v;
+    if(on)ctx.resume();
+    const t=ctx.currentTime;
+    master.gain.cancelScheduledValues(t);master.gain.setValueAtTime(master.gain.value,t);
+    master.gain.linearRampToValueAtTime(on?.8:0,t+(on?3:.5));
+    clearTimeout(timer);if(on)bar();
+  };
+  const ready=()=>on&&ctx;
+  // intro sounds, scheduled on the audio clock so they line up with the animation
+  const intro=()=>{
+    if(!ready())return;const t=ctx.currentTime;
+    tone(300,t+.05,.35,{f2:620,vol:.07});tone(420,t+.17,.35,{f2:880,vol:.07});          // J K rise
+    tone(880,t+.75,.25,{type:'triangle',vol:.12,send:.3});                               // dot pops
+    whoosh(t+1.7,1.5,500,2600,.12);tone(1320,t+1.7,.2,{vol:.07});                        // dot leaves
+    tone(80,t+2,.6,{f2:40,vol:.35});whoosh(t+2,1,200,900,.14);                           // doors
+    [76,79,83].forEach((n,i)=>tone(hz(n),t+3.2+i*.32,1.1,{type:'triangle',vol:.14,send:.35})); // words
+    tone(500,t+4.15,.18,{f2:1000,vol:.12});                                              // photo pops
+    [84,88,91].forEach((n,i)=>tone(hz(n),t+4.4+i*.07,1.7,{vol:.1,send:.5}));tone(hz(60),t+4.4,1.5,{vol:.1}); // dot lands
+  };
+  const tick=()=>{if(!ready()||ctx.currentTime-last<.09)return;last=ctx.currentTime;tone(1500,last,.05,{vol:.03})};
+  const click=()=>{if(!ready())return;tone(620,ctx.currentTime,.09,{f2:320,vol:.07})};
+  const copy=()=>{if(!ready())return;const t=ctx.currentTime;tone(hz(79),t,.5,{vol:.12,send:.3});tone(hz(84),t+.09,.7,{vol:.12,send:.3})};
+  document.addEventListener('visibilitychange',()=>{if(!ctx)return;document.hidden?ctx.suspend():on&&ctx.resume()});
+  return{on:()=>on,enable,intro,tick,click,copy};
+})();
+
+// ----- Sound toggle + UI sounds -----
+const snd=document.getElementById('snd'),sndl=document.getElementById('sndl');
+function paintSnd(){const o=SND.on();snd.classList.toggle('on',o);snd.setAttribute('aria-pressed',String(o));sndl.textContent=o?'Sound on':'Sound off'}
+snd.addEventListener('click',()=>{SND.enable(!SND.on());paintSnd()});
+if(matchMedia('(hover:hover)').matches)document.querySelectorAll('.btn,.navlinks a,.card,.copy,.brand,.snd').forEach(e=>e.addEventListener('mouseenter',()=>SND.tick()));
+document.querySelectorAll('.btn,.navlinks a,.card,.copy,.brand,.menu').forEach(e=>e.addEventListener('click',()=>SND.click()));
 
 // ----- Intro timeline: logo -> doors open -> site comes into focus -----
 if(root.classList.contains('js')){
@@ -337,6 +451,7 @@ if(root.classList.contains('js')){
   const start=()=>{
     if(root.classList.contains('play'))return;
     root.classList.add('play');
+    SND.intro();
     setTimeout(()=>root.classList.add('open'),2000);
     setTimeout(()=>root.classList.add('go'),2900);
     setTimeout(()=>document.getElementById('intro')?.remove(),3800);
@@ -347,7 +462,20 @@ if(root.classList.contains('js')){
     document.fonts?Promise.all([document.fonts.load('700 100px "Space Grotesk"'),document.fonts.load('400 16px "DM Sans"')]):0,
     av&&av.decode?av.decode().catch(()=>{}):0
   ]).catch(()=>{});
-  Promise.race([ready,new Promise(r=>setTimeout(r,2000))]).then(()=>requestAnimationFrame(()=>requestAnimationFrame(start)));
+  // entry gate: the click lets the browser play sound; set GATE=false to skip it
+  const GATE=true,gate=document.getElementById('gate');
+  const entered=new Promise(res=>{
+    if(!GATE){gate.remove();root.classList.add('entered');res();return}
+    const go=withSound=>{
+      SND.enable(withSound);paintSnd();
+      root.classList.add('entered');gate.classList.add('out');
+      setTimeout(()=>gate.remove(),700);res();
+    };
+    document.getElementById('g-on').addEventListener('click',()=>go(true));
+    document.getElementById('g-off').addEventListener('click',()=>go(false));
+    document.getElementById('g-on').focus({preventScroll:true});
+  });
+  Promise.all([Promise.race([ready,new Promise(r=>setTimeout(r,2000))]),entered]).then(()=>requestAnimationFrame(()=>requestAnimationFrame(start)));
 
   // scroll reveals
   document.querySelectorAll('.cards .card').forEach((c,i)=>c.style.transitionDelay=(i*.12)+'s,'+(i*.12)+'s');
@@ -381,7 +509,7 @@ document.querySelectorAll('.copy').forEach(btn=>btn.addEventListener('click',asy
   try{await navigator.clipboard.writeText(text)}catch(e){
     const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();
   }
-  hint.textContent='Copied!';hint.classList.add('done');
+  SND.copy();hint.textContent='Copied!';hint.classList.add('done');
   clearTimeout(ht);ht=setTimeout(()=>{hint.textContent='Click to copy';hint.classList.remove('done')},1600);
 }));
 </script>
