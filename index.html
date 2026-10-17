@@ -85,7 +85,8 @@ nav{height:68px;display:flex;align-items:center}
 .w{display:inline-block;overflow:hidden;vertical-align:top;padding:0 .04em .16em;margin:0 -.04em -.16em}
 .w>span{display:inline-block}
 .js .w>span{transform:translateY(112%);will-change:transform}
-\1\n.done .w>span{will-change:auto}
+.go .w>span{transform:none;transition:transform 1s cubic-bezier(.2,.8,.2,1) calc(var(--d) + var(--i)*.09s)}
+.done .w>span{will-change:auto}
 /* profile picture next to the name (desktop) / above the headline (phone) */
 .pfp{display:inline-block;width:1.05em;height:1.05em;margin-left:.2em;vertical-align:-.14em;border-radius:50%;border:.035em solid var(--accent);background:#17171a;overflow:hidden}
 .pfp img{display:block;width:100%;height:100%;object-fit:cover}
