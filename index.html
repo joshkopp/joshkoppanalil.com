@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0b0908">
+<meta name="theme-color" content="#09090b">
 <title>Josh Koppanalil – Austin TX.</title>
 <meta name="description" content="I'm Joshua (Josh) Koppanalil, a sophomore at Westlake High School in Austin, TX, exploring computer science, cybersecurity, machine learning, and the ideas that connect them.">
 <link rel="canonical" href="https://joshkoppanalil.com/">
@@ -24,7 +24,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>if(!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('js')</script>
 <style>
-:root{--bg:#0b0908;--panel:#141110;--text:#f6f1ec;--muted:#a8a29c;--line:#2a2420;--accent:#ffb067;--max:1080px}
+:root{--bg:#09090b;--panel:#111114;--text:#f4f4f5;--muted:#a1a1aa;--line:#27272a;--accent:#b8f36b;--max:1080px}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:84px}
 html.lock{overflow:hidden}
@@ -64,25 +64,25 @@ h1,h2,h3{font-family:"Space Grotesk",sans-serif;letter-spacing:-.055em;line-heig
 .go header{opacity:1;transition:opacity 1s 2.6s}
 
 /* ===== Header ===== */
-header{position:sticky;top:0;z-index:10;background:rgba(11,9,8,.94);border-bottom:1px solid rgba(255,255,255,.07)}
+header{position:sticky;top:0;z-index:10;background:rgba(9,9,11,.94);border-bottom:1px solid rgba(255,255,255,.07)}
 nav{height:68px;display:flex;align-items:center}
 .brand{font-family:"Space Grotesk",sans-serif;font-weight:700;letter-spacing:-.04em}
 .brand span{color:var(--accent)}
-.navlinks{display:flex;gap:27px;margin-left:auto;color:#cbc4bd;font-size:13px}
+.navlinks{display:flex;gap:27px;margin-left:auto;color:#c4c4ca;font-size:13px}
 .navlinks a:hover{color:var(--accent)}
 .menu{display:none;margin-left:auto;padding:7px 10px;background:none;border:1px solid var(--line);border-radius:9px;color:#fff}
-.views{display:flex;align-items:center;gap:6px;margin-left:20px;color:#cbc4bd;font-size:13px}
+.views{display:flex;align-items:center;gap:6px;margin-left:20px;color:#c4c4ca;font-size:13px}
 .views[hidden]{display:none}.views svg{width:16px;height:16px}
 
 /* ===== Hero ===== */
 .hero{position:relative;display:flex;align-items:center;min-height:calc(100svh - 68px);padding:90px 0;overflow:hidden}
-.glow{position:absolute;top:0;right:-4%;width:640px;height:640px;background:radial-gradient(circle,rgba(255,140,60,.14),transparent 65%);pointer-events:none}
+.glow{position:absolute;top:0;right:-4%;width:640px;height:640px;background:radial-gradient(circle,rgba(155,227,74,.14),transparent 65%);pointer-events:none}
 .hero h1{margin:22px 0 0}
 .hero h1 .l1,.hero h1 .l2{display:block}
 .l1{font-size:clamp(46px,10.5vw,104px);white-space:nowrap;--d:.2s;--s:.32s}
-.l2{max-width:15em;margin-top:.2em;font-size:clamp(28px,5.6vw,62px);letter-spacing:-.045em;color:#bdb4ab;--d:1.45s}
+.l2{max-width:15em;margin-top:.2em;font-size:clamp(28px,5.6vw,62px);letter-spacing:-.045em;color:#b9b9c1;--d:1.45s}
 #dot{display:none}
-.js #dot{display:block;position:fixed;left:0;top:0;width:20px;height:20px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px rgba(255,176,103,.5);z-index:200;pointer-events:none;opacity:0;will-change:transform}
+.js #dot{display:block;position:fixed;left:0;top:0;width:20px;height:20px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px rgba(184,243,107,.5);z-index:200;pointer-events:none;opacity:0;will-change:transform}
 .hdot{display:inline-block;width:.15em;height:.15em;margin-left:.05em;border-radius:50%;background:var(--accent);vertical-align:baseline;visibility:hidden}
 .hdot.lit,html:not(.js) .hdot{visibility:visible}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
@@ -92,7 +92,7 @@ nav{height:68px;display:flex;align-items:center}
 .go .w>span{transform:none;transition:transform 1s cubic-bezier(.2,.8,.2,1) calc(var(--d) + var(--i)*var(--s,.09s))}
 .done .w>span{will-change:auto}
 /* profile picture next to the name (desktop) / above the headline (phone) */
-.pfp{display:inline-block;width:1.05em;height:1.05em;margin-left:.2em;vertical-align:-.14em;border-radius:50%;border:.035em solid var(--accent);background:#1b1613;overflow:hidden}
+.pfp{display:inline-block;width:1.05em;height:1.05em;margin-left:.2em;vertical-align:-.14em;border-radius:50%;border:.035em solid var(--accent);background:#17171a;overflow:hidden}
 .pfp img{display:block;width:100%;height:100%;object-fit:cover}
 .pfp-m{display:none}
 .js .pfp{transform:scale(0) rotate(-180deg)}
@@ -103,7 +103,7 @@ nav{height:68px;display:flex;align-items:center}
 .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
 .btn{display:inline-flex;align-items:center;gap:9px;padding:11px 17px;border:1px solid var(--line);border-radius:10px;font-size:13px;font-weight:700;transition:transform .2s,border-color .2s}
 .btn:hover{transform:translateY(-2px);border-color:var(--accent)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:#1a0f05}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#10120b}
 
 /* ===== Sections ===== */
 .section{padding:86px 0;border-top:1px solid var(--line)}
@@ -114,7 +114,7 @@ nav{height:68px;display:flex;align-items:center}
 .sub{max-width:430px;color:var(--muted);font-size:14px}
 .aboutgrid{display:grid;grid-template-columns:1.2fr .8fr;gap:50px}
 .aboutgrid p{margin-top:0;color:var(--muted)}
-.statbox{align-self:start;padding:25px;background:linear-gradient(145deg,#181412,#0f0c0b);border:1px solid var(--line);border-radius:16px}
+.statbox{align-self:start;padding:25px;background:linear-gradient(145deg,#151518,#0e0e10);border:1px solid var(--line);border-radius:16px}
 .statbox p{margin:8px 0 0;font-size:14px}
 .now{display:flex;align-items:center;gap:10px;font-family:"Space Grotesk",sans-serif;font-size:20px}
 .dot{position:relative;flex:none;width:10px;height:10px;border-radius:50%;background:var(--accent);animation:blink 1.6s ease-in-out infinite}
@@ -123,34 +123,32 @@ nav{height:68px;display:flex;align-items:center}
 @keyframes ping{from{transform:scale(1);opacity:.6}to{transform:scale(2.8);opacity:0}}
 .cards{display:grid;grid-template-columns:1fr;gap:14px}
 .card{display:block;min-height:205px;padding:23px;background:var(--panel);border:1px solid var(--line);border-radius:15px;transition:transform .2s,border-color .2s,box-shadow .2s}
-.card:hover{transform:translateY(-3px);border-color:rgba(255,176,103,.45);box-shadow:0 12px 40px -18px rgba(255,176,103,.35)}
+.card:hover{transform:translateY(-3px);border-color:rgba(184,243,107,.45);box-shadow:0 12px 40px -18px rgba(184,243,107,.35)}
 .cardtop{display:flex;justify-content:space-between;color:var(--accent);font-size:12px}
 .card h3{margin:24px 0 9px;font-size:23px}
 .card p{max-width:640px;margin:0;color:var(--muted);font-size:13px}
 .tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px}
-.tags span{padding:4px 8px;background:#221d19;border-radius:5px;color:#bfb5ab;font-size:10px}
-.contactbox{display:flex;flex-direction:column;align-items:flex-start;gap:18px;padding:clamp(25px,6vw,55px);background:radial-gradient(ellipse at top right,#2b2015 0%,#141110 45%);border:1px solid var(--line);border-radius:18px}
+.tags span{padding:4px 8px;background:#202024;border-radius:5px;color:#b7b7bf;font-size:10px}
+.contactbox{display:flex;flex-direction:column;align-items:flex-start;gap:18px;padding:clamp(25px,6vw,55px);background:radial-gradient(ellipse at top right,#20251a 0%,#111114 45%);border:1px solid var(--line);border-radius:18px}
 .contactinfo{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
 .copy{all:unset;display:flex;flex-wrap:wrap;align-items:baseline;gap:14px;cursor:pointer;font-family:"Space Grotesk",sans-serif;font-size:clamp(20px,4vw,30px);letter-spacing:-.03em}
 .copy:hover .label,.copy:focus-visible .label{color:var(--accent)}
 .copy:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:6px}
 .hint{margin-top:4px;font-size:13px;letter-spacing:.04em;color:var(--muted)}
 .hint.done{color:var(--accent)}
-footer{display:flex;justify-content:space-between;gap:15px;padding:25px 0;color:#80766d;font-size:12px}
-.textlink{color:var(--accent);border-bottom:1px solid #7a5632}
+footer{display:flex;justify-content:space-between;gap:15px;padding:25px 0;color:#777780;font-size:12px}
+.textlink{color:var(--accent);border-bottom:1px solid #526b32}
 
 /* entry gate + sound toggle */
-.snd{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:110;display:flex;align-items:center;gap:9px;padding:8px 13px;background:rgba(20,17,16,.92);border:1px solid var(--line);border-radius:99px;color:var(--muted);font:600 12px "DM Sans",sans-serif;cursor:pointer;transition:opacity .6s,border-color .2s,color .2s}
+.snd{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:110;display:flex;align-items:center;gap:9px;padding:8px 13px;background:rgba(17,17,20,.92);border:1px solid var(--line);border-radius:99px;color:var(--muted);font:600 12px "DM Sans",sans-serif;cursor:pointer;transition:opacity .6s,border-color .2s,color .2s}
 .snd:hover{border-color:var(--accent);color:var(--text)}
-.js .snd{opacity:0;pointer-events:none}
-.js.done .snd{opacity:1;pointer-events:auto}
 .eq{display:flex;align-items:flex-end;gap:2px;height:12px}
 .eq i{width:2px;height:100%;background:var(--muted);transform-origin:bottom;transform:scaleY(.25)}
 .snd.on .eq i{background:var(--accent);animation:eq .9s ease-in-out infinite alternate}
 .snd.on .eq i:nth-child(2){animation-delay:-.3s}.snd.on .eq i:nth-child(3){animation-delay:-.6s}
 @keyframes eq{from{transform:scaleY(.2)}to{transform:scaleY(1)}}
 @media(max-width:700px){
-  .navlinks{display:none;position:absolute;top:68px;left:0;right:0;flex-direction:column;gap:15px;padding:18px 22px;background:#120f0e;border-bottom:1px solid var(--line)}
+  .navlinks{display:none;position:absolute;top:68px;left:0;right:0;flex-direction:column;gap:15px;padding:18px 22px;background:#101013;border-bottom:1px solid var(--line)}
   .navlinks.open{display:flex}.menu{display:block}
   .hero{padding:56px 0 64px}
   .l1{font-size:11.8vw}
@@ -287,64 +285,84 @@ const root=document.documentElement;
 
 const SND=(()=>{
   const AC=window.AudioContext||window.webkitAudioContext;
-  let ctx,master,musicG,delay,want=false,manual=false,timer,nextT=0,ci=0;
+  let ctx,master,verb,want=false,manual=false;
   const hz=n=>440*Math.pow(2,(n-69)/12);
-  const playing=()=>!!ctx&&want&&ctx.state==='running';
+  const running=()=>!!ctx&&want&&ctx.state==='running';
   const init=()=>{
     if(ctx||!AC)return;
     ctx=new AC();ctx.onstatechange=()=>paintSnd();
-    master=ctx.createGain();master.gain.value=0;master.connect(ctx.destination);
-    musicG=ctx.createGain();musicG.gain.value=.55;musicG.connect(master);
-    delay=ctx.createDelay(1);delay.delayTime.value=.42;
-    const fb=ctx.createGain(),lp=ctx.createBiquadFilter(),wet=ctx.createGain();
-    fb.gain.value=.38;lp.type='lowpass';lp.frequency.value=2200;wet.gain.value=.5;
-    delay.connect(lp);lp.connect(fb);fb.connect(delay);lp.connect(wet);wet.connect(master);
+    const comp=ctx.createDynamicsCompressor();comp.connect(ctx.destination);
+    master=ctx.createGain();master.gain.value=.8;master.connect(comp);
+    // soft synthetic reverb (decaying noise) so every sound feels airy
+    const n=Math.floor(ctx.sampleRate*2.6),ir=ctx.createBuffer(2,n,ctx.sampleRate);
+    for(let c=0;c<2;c++){const d=ir.getChannelData(c);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3)}
+    verb=ctx.createConvolver();verb.buffer=ir;
+    const wet=ctx.createGain();wet.gain.value=.55;verb.connect(wet);wet.connect(master);
   };
-  // calm ambient music: slow pad chords + sparse echoing notes, 8 seconds per bar
-  const CH=[[48,55,59,62,64],[45,52,55,59,60],[41,48,52,55,57],[43,50,55,59,62]],PENT=[72,74,76,79,81,84];
-  const pad=(f,t,len)=>{
-    const g=ctx.createGain(),lp=ctx.createBiquadFilter();
-    lp.type='lowpass';lp.frequency.value=900;
-    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.05,t+2.2);g.gain.linearRampToValueAtTime(.05,t+len);g.gain.linearRampToValueAtTime(0,t+len+2.5);
-    [['sine',0],['triangle',4]].forEach(([ty,dc])=>{const o=ctx.createOscillator();o.type=ty;o.frequency.value=f;o.detune.value=dc;o.connect(lp);o.start(t);o.stop(t+len+2.6)});
-    lp.connect(g);g.connect(musicG);
+  const out=(node,send)=>{node.connect(master);const s=ctx.createGain();s.gain.value=send;node.connect(s);s.connect(verb)};
+  // soft glass / kalimba pluck
+  const pluck=(f,t,vol,dec,send=.4)=>{
+    [[1,1,dec],[2.76,.22,.22],[4.1,.08,.12]].forEach(([r,a,d])=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.frequency.value=f*r;
+      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol*a,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+      o.connect(g);out(g,send);o.start(t);o.stop(t+d+.05);
+    });
   };
-  const note=(f,t)=>{
-    const o=ctx.createOscillator(),g=ctx.createGain(),x=ctx.createGain();
-    o.type='triangle';o.frequency.value=f;x.gain.value=.7;
-    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.05,t+.03);g.gain.exponentialRampToValueAtTime(.0001,t+1.8);
-    o.connect(g);g.connect(musicG);g.connect(x);x.connect(delay);o.start(t);o.stop(t+1.9);
+  const glide=(f0,f1,t,d,vol,send=.3)=>{
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+d);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+d*.25);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g);out(g,send);o.start(t);o.stop(t+d+.05);
   };
-  const bar=()=>{
-    if(!want)return;
-    if(ctx.state!=='running'){timer=setTimeout(bar,400);return}   // wait until the browser lets audio start
-    const t=Math.max(ctx.currentTime+.05,nextT);
-    CH[ci++%4].forEach(n=>pad(hz(n),t,6));
-    for(let i=0;i<8;i++)if(Math.random()<.5)note(hz(PENT[Math.floor(Math.random()*PENT.length)]),t+i+Math.random()*.12);
-    nextT=t+8;
-    timer=setTimeout(bar,Math.max(500,(nextT-ctx.currentTime-1.5)*1000));
+  // airy filtered-noise sweep
+  const air=(t,d,f0,f1,vol)=>{
+    const n=Math.floor(ctx.sampleRate*d),b=ctx.createBuffer(1,n,ctx.sampleRate),c=b.getChannelData(0);
+    for(let i=0;i<n;i++)c[i]=Math.random()*2-1;
+    const src=ctx.createBufferSource(),bp=ctx.createBiquadFilter(),g=ctx.createGain();
+    src.buffer=b;bp.type='bandpass';bp.Q.value=.8;
+    bp.frequency.setValueAtTime(f0,t);bp.frequency.exponentialRampToValueAtTime(f1,t+d);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+d*.45);g.gain.linearRampToValueAtTime(0,t+d);
+    src.connect(bp);bp.connect(g);out(g,.5);src.start(t);
   };
+  // everything is in A major pentatonic, so it always sounds harmonious
+  const cues={
+    jk:()=>{const t=ctx.currentTime;pluck(hz(69),t,.1,.9);pluck(hz(76),t+.14,.1,1)},
+    dot:()=>glide(620,1240,ctx.currentTime,.22,.09),
+    leave:()=>{const t=ctx.currentTime;air(t,1.6,450,2800,.06);[81,85,88].forEach((n,i)=>pluck(hz(n),t+.15+i*.14,.04,.9,.5))},
+    doors:()=>{const t=ctx.currentTime;glide(90,52,t,1.6,.22,.2);glide(180,104,t,1.2,.05,.2);air(t,1.1,200,900,.07)},
+    w0:()=>pluck(hz(73),ctx.currentTime,.13,1.2),
+    w1:()=>pluck(hz(76),ctx.currentTime,.13,1.2),
+    w2:()=>pluck(hz(81),ctx.currentTime,.13,1.3),
+    photo:()=>glide(500,1000,ctx.currentTime,.16,.09),
+    land:()=>{const t=ctx.currentTime;[81,85,88,95].forEach((n,i)=>pluck(hz(n),t+i*.07,.08,2.4,.55));pluck(hz(57),t,.08,2.4,.3)},
+    confirm:()=>{const t=ctx.currentTime;pluck(hz(81),t,.09,1,.4);pluck(hz(88),t+.09,.09,1.3,.4)}
+  };
+  const play=k=>{if(running())cues[k]()};
   const enable=v=>{
     want=!!v;
     if(want){init();if(!ctx){want=false;return}ctx.resume().catch(()=>{})}
-    if(!ctx)return;
-    const t=ctx.currentTime;
-    master.gain.cancelScheduledValues(t);master.gain.setValueAtTime(master.gain.value,t);
-    master.gain.linearRampToValueAtTime(want?.75:0,t+(want?4:.5));
-    clearTimeout(timer);
-    if(want)bar();else setTimeout(()=>{if(!want)ctx.suspend().catch(()=>{})},700);
+    if(ctx){const t=ctx.currentTime;master.gain.cancelScheduledValues(t);master.gain.setValueAtTime(master.gain.value,t);master.gain.linearRampToValueAtTime(want?.8:0,t+.3)}
     paintSnd();
   };
-  const toggle=()=>{manual=true;enable(!playing())};
-  // once everything has loaded the music starts by itself (as soon as the browser allows it)
-  const auto=()=>{if(!manual&&document.documentElement.classList.contains('js'))enable(true)};
+  const toggle=()=>{
+    manual=true;const on=!running();enable(on);
+    if(on&&ctx)ctx.resume().then(()=>play('confirm')).catch(()=>{});
+  };
+  // intro sounds, timed to the animation (skipped silently if the browser hasn't allowed audio yet)
+  const begin=()=>{
+    if(!document.documentElement.classList.contains('js'))return;
+    if(!manual)enable(true);
+    [[100,'jk'],[750,'dot'],[1700,'leave'],[2000,'doors'],[3200,'w0'],[3520,'w1'],[3840,'w2'],[4150,'photo']].forEach(([ms,k])=>setTimeout(()=>play(k),ms));
+  };
+  const land=()=>play('land');
   const unlock=e=>{
     if(e.target.closest&&e.target.closest('#snd'))return;
     if(want&&ctx&&ctx.state!=='running')ctx.resume().catch(()=>{});
   };
   ['pointerdown','keydown','touchend'].forEach(ev=>addEventListener(ev,unlock,{passive:true}));
   document.addEventListener('visibilitychange',()=>{if(!ctx)return;if(document.hidden)ctx.suspend().catch(()=>{});else if(want)ctx.resume().catch(()=>{})});
-  return{playing,toggle,auto};
+  return{playing:running,toggle,begin,land};
 })();
 
 // ----- Sound toggle -----
@@ -367,7 +385,7 @@ if(root.classList.contains('js')){
     const finish=()=>{
       if(over)return;over=true;cancelAnimationFrame(raf);
       hd.classList.add('lit');dot.remove();
-      root.classList.remove('lock');root.classList.add('done');SND.auto();
+      root.classList.remove('lock');root.classList.add('done');SND.land();
     };
     const land=()=>{const r=R(hd);return[r.left+r.width/2,r.top-ty(hd.parentElement)+r.height/2]};
     // one continuous path: loop round the screen, glide UNDER the words as they appear, rise into the period
@@ -416,6 +434,7 @@ if(root.classList.contains('js')){
   const start=()=>{
     if(root.classList.contains('play'))return;
     root.classList.add('play');
+    SND.begin();
     setTimeout(()=>root.classList.add('open'),2000);
     setTimeout(()=>root.classList.add('go'),2900);
     setTimeout(()=>document.getElementById('intro')?.remove(),3800);
