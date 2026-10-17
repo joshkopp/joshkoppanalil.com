@@ -282,26 +282,40 @@ if(root.classList.contains('js')){
           ws=[...document.querySelectorAll('.l1 .w')],l1=document.querySelector('.l1');
     const R=e=>e.getBoundingClientRect(),
           ty=e=>{const t=getComputedStyle(e).transform;return t&&t!=='none'?new DOMMatrix(t).f:0},
-          sine=u=>(1-Math.cos(Math.PI*u))/2,
-          ease=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2,
-          lerp=(a,b,u)=>a+(b-a)*u,
-          bez=(a,b,c,d,u)=>{const v=1-u;return v*v*v*a+3*v*v*u*b+3*v*u*u*c+u*u*u*d};
-    const T0=1700,SW=1400,G=2900,t0=performance.now();
+          lerp=(a,b,u)=>a+(b-a)*u;
+    const T0=1700,END=4400,t0=performance.now();
     let P0=null,S0=0,S1=0,fs=0,raf=0,over=false;
     const finish=()=>{
       if(over)return;over=true;cancelAnimationFrame(raf);
       hd.classList.add('lit');dot.remove();
       root.classList.remove('lock');root.classList.add('done');
     };
-    const mid=()=>R(hd).bottom-ty(hd.parentElement)-fs*.3;
     const land=()=>{const r=R(hd);return[r.left+r.width/2,r.top-ty(hd.parentElement)+r.height/2]};
-    const kf=[
-      {t:G+200,p:()=>[R(ws[0]).left-S1*.5,mid()]},
-      {t:G+650,p:()=>[R(ws[0]).right+S1*.7,mid()]},
-      {t:G+980,p:()=>[R(ws[1]).right+S1*.7,mid()]},
-      {t:G+1300,p:()=>[R(hd).left-S1*.7,mid()]},
-      {t:G+1600,p:land}
-    ];
+    // one continuous path: loop round the screen, glide UNDER the words as they appear, rise into the period
+    const pts=()=>{
+      const W=innerWidth,H=innerHeight,h=R(hd),b=h.bottom-ty(hd.parentElement),u=b+fs*.3,a=fs*.1,g=S1*.8,
+            w0=R(ws[0]),w1=R(ws[1]),w2=R(ws[2]),c=land();
+      return [
+        [T0,P0[0],P0[1]],
+        [1950,W*.85,H*.2],[2350,W*.9,H*.75],[2750,W*.35,H*.9],
+        [3100,w0.left,u],
+        [3250,(w0.left+w0.right)/2,u+a],
+        [3420,w0.right+g,u-a*.3],
+        [3570,(w1.left+w1.right)/2,u+a],
+        [3740,w1.right+g,u-a*.3],
+        [3920,(w2.left+h.left)/2,u+a],
+        [4150,h.left-g*.2,u],
+        [END,c[0],c[1]]
+      ];
+    };
+    // cubic Hermite through the points: smooth curves, no stops, eases in at the start and out at the end
+    const at=(t,P)=>{
+      let i=0;while(i<P.length-2&&t>=P[i+1][0])i++;
+      const A=P[i],B=P[i+1],dt=B[0]-A[0],u=Math.min(1,(t-A[0])/dt);
+      const m=(k,ax)=>(k===0||k===P.length-1)?0:(P[k+1][ax]-P[k-1][ax])/(P[k+1][0]-P[k-1][0]);
+      const f=ax=>(2*u**3-3*u**2+1)*A[ax]+(u**3-2*u**2+u)*m(i,ax)*dt+(-2*u**3+3*u**2)*B[ax]+(u**3-u**2)*m(i+1,ax)*dt;
+      return[f(1),f(2)];
+    };
     const frame=()=>{
       raf=requestAnimationFrame(frame);
       const t=performance.now()-t0;
@@ -312,19 +326,9 @@ if(root.classList.contains('js')){
           fs=parseFloat(getComputedStyle(l1).fontSize);S1=fs*.15;
           dot.style.opacity=1;dt.style.visibility='hidden';
         }
-        const W=innerWidth,H=innerHeight;let x,y,s;
-        if(t<G+200){
-          const u=sine(Math.min(1,(t-T0)/SW)),L=kf[0].p();
-          if(u<.5){const v=u*2;x=bez(P0[0],W*.95,W,W*.62,v);y=bez(P0[1],H*.05,H*.9,H*.88,v)}
-          else{const v=(u-.5)*2;x=bez(W*.62,W*.25,W*.02,L[0],v);y=bez(H*.88,H*.9,H*.5,L[1],v)}
-          s=lerp(S0,S1,u);
-        }else{
-          let i=0;while(i<kf.length-2&&t>=kf[i+1].t)i++;
-          const a=kf[i],b=kf[i+1],u=Math.min(1,(t-a.t)/(b.t-a.t)),e=ease(u),pa=a.p(),pb=b.p();
-          x=lerp(pa[0],pb[0],e);y=lerp(pa[1],pb[1],e)-Math.sin(Math.PI*u)*fs*(i<kf.length-2?.22:.1);s=S1;
-          if(t>=kf[kf.length-1].t){finish();return}
-        }
-        dot.style.transform=`translate3d(${x-10}px,${y-10}px,0) scale(${s/20})`;
+        if(t>=END){finish();return}
+        const p=Math.min(1,(t-T0)/1400),[x,y]=at(t,pts());
+        dot.style.transform=`translate3d(${x-10}px,${y-10}px,0) scale(${lerp(S0,S1,p*p*(3-2*p))/20})`;
       }catch(err){finish()}
     };
     raf=requestAnimationFrame(frame);
