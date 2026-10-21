@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#09090b">
+<title>Lewis Dot Lab</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#09090b;--panel:#111114;--text:#f4f4f5;--muted:#a1a1aa;--line:#27272a;--accent:#b8f36b;--bad:#f87171}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(rgba(255,255,255,.045) 1px,transparent 1px) 0 0/28px 28px,var(--bg);color:var(--text);font-family:"DM Sans",system-ui,sans-serif;line-height:1.6}
+a{color:inherit;text-decoration:none}
+h1{font-family:"Space Grotesk",sans-serif;letter-spacing:-.05em;line-height:1.05;margin:0;font-size:clamp(38px,8vw,68px)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
+.wrap{width:min(920px,calc(100% - 32px));margin:auto;padding:28px 0 60px}
+.back{font:700 15px "Space Grotesk",sans-serif;color:var(--muted)}
+.back:hover{color:var(--accent)}
+.lead{margin:12px 0 26px;color:var(--muted);max-width:520px}
+.row{display:flex;gap:10px}
+#q{flex:1;min-width:0;padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--text);font:500 18px "Space Grotesk",sans-serif}
+#q::placeholder{color:#63636b}
+#q:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(184,243,107,.15)}
+#q.shake{animation:shake .4s;border-color:var(--bad)}
+@keyframes shake{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.btn{padding:0 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);font:700 14px "DM Sans",sans-serif;cursor:pointer;transition:border-color .2s,transform .2s}
+.btn:hover{border-color:var(--accent);transform:translateY(-1px)}
+.btn.go{background:var(--accent);border-color:var(--accent);color:#10120b}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0}
+.chip{padding:5px 11px;background:#17171a;border:1px solid var(--line);border-radius:99px;color:#c4c4ca;font-size:13px;cursor:pointer;transition:border-color .2s,color .2s}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+#msg{min-height:24px;margin:12px 0 0;color:var(--bad);font-size:14px}
+.stage{position:relative;margin-top:6px;background:radial-gradient(ellipse at 50% 40%,#171b12 0%,#101013 70%);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:20px 22px 0}
+#ttl{font:700 clamp(26px,5vw,38px)/1.1 "Space Grotesk",sans-serif;letter-spacing:-.04em}
+#sub{color:var(--muted);font-size:14px}
+sub,sup{line-height:0}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex:none}
+.seg button{padding:7px 12px;background:none;border:0;color:var(--muted);font:700 12px "DM Sans",sans-serif;cursor:pointer}
+.seg button.on{background:var(--accent);color:#10120b}
+svg{display:block;width:100%;height:auto}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-top:1px solid var(--line)}
+.stat{padding:14px 18px;background:#0e0e11}
+.stat b{display:block;font:700 28px "Space Grotesk",sans-serif;letter-spacing:-.04em}
+.stat span{color:var(--muted);font-size:12px}
+#note{padding:14px 22px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+#note i{font-style:normal;color:var(--accent)}
+#ctl{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+#ctl .btn{padding:9px 16px}
+.lg{margin-top:18px;color:#6b6b73;font-size:12px}
+
+/* diagram animation */
+svg .atom{transform-box:fill-box;transform-origin:center;animation:pop .6s cubic-bezier(.3,1.6,.5,1) both}
+svg .ln{fill:none;stroke:var(--accent);stroke-width:3.5;stroke-linecap:round;stroke-dasharray:1;animation:draw .55s ease-out both;filter:drop-shadow(0 0 3px rgba(184,243,107,.5))}
+svg .br{fill:none;stroke:#71717a;stroke-width:2.5;stroke-linecap:round;stroke-dasharray:1;animation:draw .8s ease-out both}
+svg .e{fill:var(--accent);transform-box:fill-box;transform-origin:center;animation:fly .8s cubic-bezier(.2,.9,.3,1) both;filter:drop-shadow(0 0 4px rgba(184,243,107,.75))}
+svg .pair{animation:tw 2.6s ease-in-out infinite}
+svg .fade{animation:fade .6s both}
+svg .rip{fill:none;stroke:var(--accent);stroke-width:2;transform-box:fill-box;transform-origin:center;animation:rip 1.2s ease-out both}
+@keyframes pop{from{transform:scale(0)}to{transform:none}}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes fly{from{transform:translate(var(--fx),var(--fy)) scale(.2);opacity:0}to{transform:none;opacity:1}}
+@keyframes tw{50%{opacity:.55}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes rip{from{transform:scale(.2);opacity:.9}to{transform:scale(7);opacity:0}}
+@media(max-width:560px){.btn.go{padding:0 14px}.top{flex-direction:column}.stat b{font-size:22px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="/">← JK.</a>
+  <h1 style="margin-top:26px">Lewis Dot Lab</h1>
+  <p class="lead">Type a compound by formula or name and watch its Lewis structure build, one bond and electron at a time.</p>
+  <form class="row" id="f" autocomplete="off">
+    <input id="q" placeholder="H2O, carbon dioxide, NH4+, SF6…" aria-label="Compound" spellcheck="false" autofocus>
+    <button class="btn go" type="submit">Draw</button>
+    <button class="btn" type="button" id="rnd" title="Random compound" aria-label="Random compound">Surprise me</button>
+  </form>
+  <div class="chips" id="chips"></div>
+  <div id="msg" role="status"></div>
+
+  <div class="stage">
+    <div class="top">
+      <div><div id="ttl">&nbsp;</div><div id="sub"></div></div>
+      <div class="seg" role="group" aria-label="Bond style"><button id="mL" class="on">Lines</button><button id="mD">Dots</button></div>
+    </div>
+    <svg id="svg" viewBox="0 0 640 400" role="img" aria-label="Lewis structure diagram"></svg>
+    <div class="stats">
+      <div class="stat"><b id="sE">0</b><span id="sEl">electrons placed</span></div>
+      <div class="stat"><b id="sB">0</b><span>bonds</span></div>
+      <div class="stat"><b id="sL">0</b><span>lone pairs</span></div>
+    </div>
+    <div id="note"></div>
+  </div>
+  <div id="ctl"><button class="btn" id="re">Replay animation</button></div>
+  <p class="lg">Green lines are shared pairs (bonds). Loose dots are lone pairs. Small badges show formal charge.</p>
+</div>
+
+<script>
+const V={H:1,Li:1,Be:2,B:3,C:4,N:5,O:6,F:7,Ne:8,Na:1,Mg:2,Al:3,Si:4,P:5,S:6,Cl:7,Ar:8,K:1,Ge:4,As:5,Se:6,Br:7,Kr:8,I:7,Xe:8};
+const COL={H:'#f4f4f5',C:'#a1a1aa',N:'#60a5fa',O:'#f87171',F:'#86efac',Cl:'#86efac',Br:'#fb923c',I:'#c084fc',S:'#fde047',P:'#fb923c',B:'#f9a8d4',Xe:'#67e8f9'};
+const HAL=['F','Cl','Br','I'],S=.87;
+const DB=[
+['O2','Oxygen',[['O',-.5,0],['O',.5,0]],[[0,1,2]]],
+['N2','Nitrogen',[['N',-.5,0],['N',.5,0]],[[0,1,3]]],
+['CO2','Carbon dioxide',[['O',-1,0],['C',0,0],['O',1,0]],[[0,1,2],[1,2,2]]],
+['CO','Carbon monoxide',[['C',-.5,0,-1],['O',.5,0,1]],[[0,1,3]]],
+['HCN','Hydrogen cyanide',[['H',-1,0],['C',0,0],['N',1,0]],[[0,1,1],[1,2,3]]],
+['C2H2','Ethyne',[['H',-1.5,0],['C',-.5,0],['C',.5,0],['H',1.5,0]],[[0,1,1],[1,2,3],[2,3,1]]],
+['C2H4','Ethene',[['C',-.5,0],['C',.5,0],['H',-1,-S],['H',-1,S],['H',1,-S],['H',1,S]],[[0,1,2],[0,2,1],[0,3,1],[1,4,1],[1,5,1]]],
+['CH2O','Formaldehyde',[['C',0,0],['O',0,-1],['H',-S,.5],['H',S,.5]],[[0,1,2],[0,2,1],[0,3,1]]],
+['SO2','Sulfur dioxide',[['S',0,0],['O',-S,.5],['O',S,.5]],[[0,1,2],[0,2,2]]],
+['O3','Ozone',[['O',-S,.5,-1],['O',0,0,1],['O',S,.5]],[[0,1,1],[1,2,2]],'Resonance: the double bond can sit on either side.'],
+['SO3','Sulfur trioxide',[['S',0,0],['O',0,-1],['O',S,.5],['O',-S,.5]],[[0,1,2],[0,2,2],[0,3,2]]],
+['NO3-','Nitrate',[['N',0,0,1],['O',0,-1],['O',S,.5,-1],['O',-S,.5,-1]],[[0,1,2],[0,2,1],[0,3,1]],'Resonance: the double bond can sit on any of the three oxygens.'],
+['CO3 2-','Carbonate',[['C',0,0],['O',0,-1],['O',S,.5,-1],['O',-S,.5,-1]],[[0,1,2],[0,2,1],[0,3,1]],'Resonance: the double bond can sit on any of the three oxygens.'],
+['SO4 2-','Sulfate',[['S',0,0],['O',0,-1,-1],['O',1,0],['O',0,1,-1],['O',-1,0]],[[0,1,1],[0,2,2],[0,3,1],[0,4,2]]],
+['NH4+','Ammonium',[['N',0,0,1],['H',0,-1],['H',1,0],['H',0,1],['H',-1,0]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1]]],
+['H3O+','Hydronium',[['O',0,0,1],['H',-1,0],['H',1,0],['H',0,1]],[[0,1,1],[0,2,1],[0,3,1]]],
+['OH-','Hydroxide',[['O',-.5,0,-1],['H',.5,0]],[[0,1,1]]],
+['CN-','Cyanide',[['C',-.5,0,-1],['N',.5,0]],[[0,1,3]]],
+['H2O2','Hydrogen peroxide',[['O',-.5,0],['O',.5,0],['H',-1,S],['H',1,-S]],[[0,1,1],[0,2,1],[1,3,1]]],
+['CH3OH','Methanol',[['C',-.5,0],['O',.5,0],['H',-1.4,0],['H',-.5,-1],['H',-.5,1],['H',1,S]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1],[1,5,1]]]
+];
+const NAMES={H2:'Hydrogen',F2:'Fluorine',Cl2:'Chlorine',Br2:'Bromine',I2:'Iodine',H2O:'Water',NH3:'Ammonia',CH4:'Methane',HCl:'Hydrogen chloride',HF:'Hydrogen fluoride',HBr:'Hydrogen bromide',H2S:'Hydrogen sulfide',BF3:'Boron trifluoride',PCl3:'Phosphorus trichloride',PCl5:'Phosphorus pentachloride',SF6:'Sulfur hexafluoride',SF4:'Sulfur tetrafluoride',XeF4:'Xenon tetrafluoride',CCl4:'Carbon tetrachloride',CF4:'Carbon tetrafluoride',BeH2:'Beryllium hydride',ClF3:'Chlorine trifluoride',SiH4:'Silane',PH3:'Phosphine',OF2:'Oxygen difluoride',SCl2:'Sulfur dichloride',BeCl2:'Beryllium chloride',IF5:'Iodine pentafluoride',XeF2:'Xenon difluoride'};
+const ALIAS={water:'H2O',ammonia:'NH3',methane:'CH4',ethylene:'C2H4',acetylene:'C2H2',hydrochloricacid:'HCl',chlorine:'Cl2',fluorine:'F2',hydrogen:'H2',bromine:'Br2',iodine:'I2',ethene:'C2H4',ethyne:'C2H2',carbonate:'CO3 2-',sulfate:'SO4 2-',nitrate:'NO3-',ammonium:'NH4+',hydronium:'H3O+',hydroxide:'OH-',cyanide:'CN-',oxygen:'O2',nitrogen:'N2'};
+Object.entries(NAMES).forEach(([f,n])=>ALIAS[norm(n)]=f);
+const $=id=>document.getElementById(id);
+function norm(s){return s.toLowerCase().replace(/[₀-₉]/g,c=>c.charCodeAt(0)-8320).replace(/²/g,'2').replace(/³/g,'3').replace(/[⁻−]/g,'-').replace(/⁺/g,'+').replace(/[\s^_()]/g,'')}
+DB.forEach(d=>{ALIAS[norm(d[1])]=d[0]});
+const SYM={};Object.keys(V).forEach(s=>SYM[s.toLowerCase()]=s);
+function parse(s){
+  if(!s)return[];
+  for(const n of[2,1]){
+    const m=s.slice(0,n);
+    if(m.length===n&&SYM[m]){
+      const d=/^\d*/.exec(s.slice(n))[0],t=parse(s.slice(n+d.length));
+      if(t)return[[SYM[m],d?+d:1],...t];
+    }
+  }
+  return null;
+}
+function fmt(f){
+  const m=/^(\S+?)(?: (\d[+-])|([+-]))$/.exec(f),b=m?m[1]:f,c=m?(m[2]||m[3]):'';
+  return b.replace(/(\d+)/g,'<sub>$1</sub>')+(c?'<sup>'+c.replace('-','−')+'</sup>':'');
+}
+// build a simple A-Xn molecule (single bonds, octets) for anything not in the library
+function build(tok){
+  let cs,os,n;
+  if(tok.length===1&&tok[0][1]===2){cs=os=tok[0][0];n=1}
+  else if(tok.length===2){
+    const ok=x=>x[0]==='H'||HAL.includes(x[0]);let c=null;
+    for(const[x,y]of[[tok[0],tok[1]],[tok[1],tok[0]]])if(!c&&x[1]===1&&x[0]!=='H'&&ok(y))c=[x,y];
+    if(!c)return null;cs=c[0][0];os=c[1][0];n=c[1][1];
+  }else return null;
+  const ob=os==='H'?0:6,nb=V[cs]+n*V[os]-2*n-n*ob;
+  if(n>6||nb<0||nb%2)return null;
+  const L=nb/2,st=360/(n+L),a0=n===1?0:L?90-(n-1)*st/2:0,A=[[cs,0,0,V[cs]-nb-n]],B=[];
+  for(let k=0;k<n;k++){const a=(a0+k*st)*Math.PI/180;A.push([os,Math.cos(a),Math.sin(a),0]);B.push([0,k+1,1])}
+  const f=tok.length===1?cs+'2':tok.map(t=>t[0]+(t[1]>1?t[1]:'')).join('');
+  return{f,n:NAMES[f]||'',a:A,b:B};
+}
+function resolve(raw){
+  let k=norm(raw);if(!k)return null;
+  if(ALIAS[k])k=norm(ALIAS[k]);
+  const d=DB.find(d=>norm(d[0])===k);
+  if(d)return{f:d[0],n:d[1],a:d[2],b:d[3],note:d[4]};
+  if(!/^[a-z0-9]+$/.test(k))return null;
+  const t=parse(k);return t&&build(t);
+}
+function layout(c){
+  const A=c.a.map(([s,x,y,fc=0])=>({s,x,y,fc,bs:0,ang:[]}));
+  c.b.forEach(([i,j,o])=>{
+    A[i].bs+=o;A[j].bs+=o;
+    const t=Math.atan2(A[j].y-A[i].y,A[j].x-A[i].x)*180/Math.PI;
+    A[i].ang.push((t+360)%360);A[j].ang.push((t+540)%360);
+  });
+  A.forEach(a=>{
+    a.nb=V[a.s]-a.fc-a.bs;a.la=[];
+    const m=Math.floor(a.nb/2);if(m<=0||!a.ang.length)return;
+    const s=[...a.ang].sort((p,q)=>p-q);let best=-1,g0=0;
+    s.forEach((v,i)=>{const nx=i<s.length-1?s[i+1]:s[0]+360;if(nx-v>best){best=nx-v;g0=v}});
+    for(let j=0;j<m;j++)a.la.push(g0+(j+1)*best/(m+1));
+  });
+  return A;
+}
+let T=[],mode='L',cur=null;
+function render(c){
+  T.forEach(clearTimeout);T=[];
+  const A=layout(c),W=640,H=400;
+  const xs=A.map(a=>a.x),ys=A.map(a=>a.y),minx=Math.min(...xs),maxx=Math.max(...xs),miny=Math.min(...ys),maxy=Math.max(...ys);
+  const s=Math.min(120,400/Math.max(maxx-minx,.01),200/Math.max(maxy-miny,.01));
+  const cx=(minx+maxx)/2,cy=(miny+maxy)/2;
+  A.forEach(a=>{a.X=W/2+(a.x-cx)*s;a.Y=H/2+(a.y-cy)*s});
+  const N=A.length,t1=.3+.13*N;let h='',ev=[];
+  A.forEach((a,i)=>{
+    const col=COL[a.s]||'var(--accent)';
+    h+=`<g class="atom" style="animation-delay:${.1+.13*i}s"><circle cx="${a.X}" cy="${a.Y}" r="21" fill="#0d0d10" stroke="${col}" stroke-width="2"/><text x="${a.X}" y="${a.Y}" text-anchor="middle" dominant-baseline="central" font-family="Space Grotesk,sans-serif" font-size="25" font-weight="700" fill="${col}">${a.s}</text></g>`;
+  });
+  let nbond=0,t=t1;
+  c.b.forEach(([i,j,o],bi)=>{
+    const p=A[i],q=A[j],dx=q.X-p.X,dy=q.Y-p.Y,L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L,nx=-uy,ny=ux,d=t1+.2*bi;
+    if(mode==='L'){
+      for(let k=0;k<o;k++){
+        const off=(k-(o-1)/2)*9;
+        h+=`<line class="ln" pathLength="1" style="animation-delay:${d}s" x1="${p.X+ux*23+nx*off}" y1="${p.Y+uy*23+ny*off}" x2="${q.X-ux*23+nx*off}" y2="${q.Y-uy*23+ny*off}"/>`;
+      }
+    }else{
+      const mx=(p.X+q.X)/2,my=(p.Y+q.Y)/2,sp=Math.min(8,(L-46)/4);
+      for(let k=0;k<o;k++){
+        const off=(k-(o-1)/2)*13;
+        [-1,1].forEach((sg,z)=>{
+          h+=`<circle class="e" r="4" cx="${mx+ux*sg*sp+nx*off}" cy="${my+uy*sg*sp+ny*off}" style="--fx:${(Math.random()-.5)*300}px;--fy:${(Math.random()-.5)*300}px;animation-delay:${d+.08*(k*2+z)}s"/>`;
+        });
+      }
+    }
+    ev.push([d+.3,'b',o]);nbond+=o;
+  });
+  t=t1+.2*c.b.length+.35;let lp=0,k=0;
+  A.forEach(a=>a.la.forEach(ang=>{
+    const r=ang*Math.PI/180,ux=Math.cos(r),uy=Math.sin(r),px=a.X+ux*36,py=a.Y+uy*36,d=t+.12*k++;
+    h+=`<g class="pair" style="animation-delay:${d+1}s">`+[-1,1].map(sg=>{
+      const a0=Math.random()*6.28,R=170+Math.random()*120;
+      return `<circle class="e" r="4" cx="${px-uy*sg*6}" cy="${py+ux*sg*6}" style="--fx:${Math.cos(a0)*R}px;--fy:${Math.sin(a0)*R}px;animation-delay:${d}s"/>`;
+    }).join('')+'</g>';
+    ev.push([d+.4,'l',1]);lp++;
+  }));
+  const end=t+.12*k+.9;
+  // formal charges
+  A.forEach(a=>{
+    if(!a.fc)return;
+    const lbl=(Math.abs(a.fc)>1?Math.abs(a.fc):'')+(a.fc>0?'+':'−'),col=a.fc>0?'#60a5fa':'#f87171';
+    h+=`<g class="fade" style="animation-delay:${end}s"><circle cx="${a.X+20}" cy="${a.Y-21}" r="10" fill="#0d0d10" stroke="${col}" stroke-width="1.5"/><text x="${a.X+20}" y="${a.Y-21}" text-anchor="middle" dominant-baseline="central" font-family="Space Grotesk,sans-serif" font-size="12" font-weight="700" fill="${col}">${lbl}</text></g>`;
+  });
+  const tot=A.reduce((u,a)=>u+a.fc,0);
+  if(tot){
+    const x0=Math.min(...A.map(a=>a.X))-56,x1=Math.max(...A.map(a=>a.X))+56,y0=Math.min(...A.map(a=>a.Y))-56,y1=Math.max(...A.map(a=>a.Y))+56;
+    h+=`<path class="br" pathLength="1" style="animation-delay:${end}s" d="M${x0+14} ${y0}H${x0}V${y1}H${x0+14}"/><path class="br" pathLength="1" style="animation-delay:${end}s" d="M${x1-14} ${y0}H${x1}V${y1}H${x1-14}"/>`+
+      `<text class="fade" style="animation-delay:${end+.3}s" x="${x1+8}" y="${y0+8}" font-family="Space Grotesk,sans-serif" font-size="22" font-weight="700" fill="#d4d4d8">${(Math.abs(tot)>1?Math.abs(tot):'')+(tot>0?'+':'−')}</text>`;
+  }
+  h+=`<circle class="rip" cx="${W/2}" cy="${H/2}" r="30" style="animation-delay:${end}s"/>`;
+  $('svg').innerHTML=h;
+  // header + live counters
+  const valence=A.reduce((u,a)=>u+V[a.s],0)-tot;
+  $('ttl').innerHTML=fmt(c.f);$('sub').textContent=c.n||'';
+  $('sEl').textContent='of '+valence+' electrons placed';
+  ['sE','sB','sL'].forEach(i=>$(i).textContent='0');
+  let e=0,b=0,l=0;
+  ev.sort((p,q)=>p[0]-q[0]).forEach(([d,ty,o])=>T.push(setTimeout(()=>{
+    if(ty==='b'){b+=o;e+=2*o;$('sB').textContent=b}else{l++;e+=2;$('sL').textContent=l}
+    $('sE').textContent=e;
+  },d*1000)));
+  // octet summary
+  const ex=[],inc=[];
+  A.forEach(a=>{const n=2*a.bs+a.nb,w=a.s==='H'?2:8;if(n>w)ex.push(a.s);else if(n<w)inc.push(a.s)});
+  const u=x=>[...new Set(x)].join(', ');
+  let note=!ex.length&&!inc.length?'<i>Every atom is satisfied.</i> Octets complete (duplet for hydrogen).':'';
+  if(ex.length)note+=`<i>Expanded octet</i> on ${u(ex)}: it has more than 8 electrons around it. `;
+  if(inc.length)note+=`<i>Incomplete octet</i> on ${u(inc)}: it has fewer than 8 electrons around it. `;
+  if(c.note)note+=' '+c.note;
+  $('note').innerHTML=`${note}`;
+  history.replaceState(null,'','#'+encodeURIComponent(c.f.replace(' ','')));
+}
+function run(raw,quiet){
+  const c=resolve(raw);
+  if(!c){
+    const q=$('q');q.classList.remove('shake');void q.offsetWidth;q.classList.add('shake');
+    $('msg').textContent=`I can't draw "${raw.trim()}" yet. Try a formula like CH4 or a name like ammonia, or tap one of the examples.`;
+    return;
+  }
+  $('msg').textContent='';cur=c;render(c);
+}
+const EX=['H2O','CO2','NH3','CH4','O2','N2','O3','SO2','NO3-','CO3 2-','NH4+','C2H4','CH3OH','SF6','XeF4','BF3','PCl5','HCl'];
+$('chips').innerHTML=EX.map(x=>`<button class="chip" type="button" data-f="${x}">${fmt(x)}</button>`).join('');
+$('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(b){$('q').value=b.dataset.f;run(b.dataset.f)}});
+$('f').addEventListener('submit',e=>{e.preventDefault();run($('q').value)});
+$('rnd').addEventListener('click',()=>{const x=EX[Math.floor(Math.random()*EX.length)];$('q').value=x;run(x)});
+$('re').addEventListener('click',()=>cur&&render(cur));
+[['mL','L'],['mD','D']].forEach(([id,m])=>$(id).addEventListener('click',()=>{mode=m;$('mL').classList.toggle('on',m==='L');$('mD').classList.toggle('on',m==='D');cur&&render(cur)}));
+const h0=decodeURIComponent(location.hash.slice(1));
+setTimeout(()=>{if(h0){$('q').value=h0;run(h0)}else run('H2O')},250);
+</script>
+</body>
+</html>
