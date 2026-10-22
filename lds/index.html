@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#09090b;--panel:#111114;--text:#f4f4f5;--muted:#a1a1aa;--line:#27272a;--accent:#b8f36b;--bad:#f87171}
+:root{--bg:#09090b;--panel:#111114;--text:#f4f4f5;--muted:#a1a1aa;--line:#27272a;--accent:#b8f36b;--bad:#f87171;--blue:#60a5fa}
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;background:radial-gradient(rgba(255,255,255,.045) 1px,transparent 1px) 0 0/28px 28px,var(--bg);color:var(--text);font-family:"DM Sans",system-ui,sans-serif;line-height:1.6}
 a{color:inherit;text-decoration:none}
@@ -30,7 +30,7 @@ h1{font-family:"Space Grotesk",sans-serif;letter-spacing:-.05em;line-height:1.05
 .btn{padding:0 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);font:700 14px "DM Sans",sans-serif;cursor:pointer;transition:border-color .2s,transform .2s}
 .btn:hover{border-color:var(--accent);transform:translateY(-1px)}
 .btn.go{background:var(--accent);border-color:var(--accent);color:#10120b}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0;max-height:132px;overflow:auto;padding-right:4px}
 .chip{padding:5px 11px;background:#17171a;border:1px solid var(--line);border-radius:99px;color:#c4c4ca;font-size:13px;cursor:pointer;transition:border-color .2s,color .2s}
 .chip:hover{border-color:var(--accent);color:var(--accent)}
 #msg{min-height:24px;margin:12px 0 0;color:var(--bad);font-size:14px}
@@ -43,10 +43,14 @@ sub,sup{line-height:0}
 .seg button{padding:7px 12px;background:none;border:0;color:var(--muted);font:700 12px "DM Sans",sans-serif;cursor:pointer}
 .seg button.on{background:var(--accent);color:#10120b}
 svg{display:block;width:100%;height:auto}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-top:1px solid var(--line)}
-.stat{padding:14px 18px;background:#0e0e11}
+.stats,.geo{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-top:1px solid var(--line)}
+.stat,.g{padding:14px 18px;background:#0e0e11}
 .stat b{display:block;font:700 28px "Space Grotesk",sans-serif;letter-spacing:-.04em}
-.stat span{color:var(--muted);font-size:12px}
+.stat span,.g span{color:var(--muted);font-size:12px}
+.g span{display:block;text-transform:uppercase;letter-spacing:.06em;font-size:11px}
+.g b{display:block;font:700 18px/1.25 "Space Grotesk",sans-serif;letter-spacing:-.02em;margin-top:2px}
+.g b.pol{color:var(--blue)}.g b.non{color:var(--accent)}
+.g small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
 #note{padding:14px 22px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
 #note i{font-style:normal;color:var(--accent)}
 #ctl{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
@@ -67,7 +71,7 @@ svg .rip{fill:none;stroke:var(--accent);stroke-width:2;transform-box:fill-box;tr
 @keyframes tw{50%{opacity:.55}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 @keyframes rip{from{transform:scale(.2);opacity:.9}to{transform:scale(7);opacity:0}}
-@media(max-width:560px){.btn.go{padding:0 14px}.top{flex-direction:column}.stat b{font-size:22px}}
+@media(max-width:560px){.btn.go{padding:0 14px}.top{flex-direction:column}.stat b{font-size:22px}.geo{grid-template-columns:repeat(2,1fr)}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -75,9 +79,9 @@ svg .rip{fill:none;stroke:var(--accent);stroke-width:2;transform-box:fill-box;tr
 <div class="wrap">
   <a class="back" href="/">← JK.</a>
   <h1 style="margin-top:26px">Lewis Dot Lab</h1>
-  <p class="lead">Type a compound by formula or name and watch its Lewis structure build, one bond and electron at a time.</p>
+  <p class="lead">Type a compound by formula or name and watch its Lewis structure build, one bond and electron at a time. Then read off its geometry, bond angle and polarity.</p>
   <form class="row" id="f" autocomplete="off">
-    <input id="q" placeholder="H2O, carbon dioxide, NH4+, SF6…" aria-label="Compound" spellcheck="false" autofocus>
+    <input id="q" placeholder="H2O, carbon dioxide, NH4+, SF6, benzene…" aria-label="Compound" spellcheck="false" autofocus>
     <button class="btn go" type="submit">Draw</button>
     <button class="btn" type="button" id="rnd" title="Random compound" aria-label="Random compound">Surprise me</button>
   </form>
@@ -95,16 +99,19 @@ svg .rip{fill:none;stroke:var(--accent);stroke-width:2;transform-box:fill-box;tr
       <div class="stat"><b id="sB">0</b><span>bonds</span></div>
       <div class="stat"><b id="sL">0</b><span>lone pairs</span></div>
     </div>
+    <div class="geo" id="geo"></div>
     <div id="note"></div>
   </div>
   <div id="ctl"><button class="btn" id="re">Replay animation</button></div>
-  <p class="lg">Green lines are shared pairs (bonds). Loose dots are lone pairs. Small badges show formal charge.</p>
+  <p class="lg">Green lines are shared pairs (bonds). Loose dots are lone pairs. Small badges show formal charge. Geometry is predicted with VSEPR theory; for molecules with several centers it describes the most-connected atom.</p>
 </div>
 
 <script>
 const V={H:1,Li:1,Be:2,B:3,C:4,N:5,O:6,F:7,Ne:8,Na:1,Mg:2,Al:3,Si:4,P:5,S:6,Cl:7,Ar:8,K:1,Ge:4,As:5,Se:6,Br:7,Kr:8,I:7,Xe:8};
+const EN={H:2.2,Li:.98,Be:1.57,B:2.04,C:2.55,N:3.04,O:3.44,F:3.98,Na:.93,Mg:1.31,Al:1.61,Si:1.9,P:2.19,S:2.58,Cl:3.16,K:.82,Ge:2.01,As:2.18,Se:2.55,Br:2.96,Kr:3,I:2.66,Xe:2.6};
 const COL={H:'#f4f4f5',C:'#a1a1aa',N:'#60a5fa',O:'#f87171',F:'#86efac',Cl:'#86efac',Br:'#fb923c',I:'#c084fc',S:'#fde047',P:'#fb923c',B:'#f9a8d4',Xe:'#67e8f9'};
 const HAL=['F','Cl','Br','I'],S=.87;
+const R3='Resonance: the double bond can sit on any of the oxygens.';
 const DB=[
 ['O2','Oxygen',[['O',-.5,0],['O',.5,0]],[[0,1,2]]],
 ['N2','Nitrogen',[['N',-.5,0],['N',.5,0]],[[0,1,3]]],
@@ -125,10 +132,38 @@ const DB=[
 ['OH-','Hydroxide',[['O',-.5,0,-1],['H',.5,0]],[[0,1,1]]],
 ['CN-','Cyanide',[['C',-.5,0,-1],['N',.5,0]],[[0,1,3]]],
 ['H2O2','Hydrogen peroxide',[['O',-.5,0],['O',.5,0],['H',-1,S],['H',1,-S]],[[0,1,1],[0,2,1],[1,3,1]]],
-['CH3OH','Methanol',[['C',-.5,0],['O',.5,0],['H',-1.4,0],['H',-.5,-1],['H',-.5,1],['H',1,S]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1],[1,5,1]]]
+['CH3OH','Methanol',[['C',-.5,0],['O',.5,0],['H',-1.4,0],['H',-.5,-1],['H',-.5,1],['H',1,S]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1],[1,5,1]]],
+// ---- new structures ----
+['NO2-','Nitrite',[['N',0,0],['O',-S,.5,-1],['O',S,.5]],[[0,1,1],[0,2,2]],'Resonance: the double bond can sit on either oxygen.'],
+['HNO3','Nitric acid',[['N',0,0,1],['O',0,-1],['O',S,.5,-1],['O',-S,.5],['H',-1.4,1.3]],[[0,1,2],[0,2,1],[0,3,1],[3,4,1]]],
+['H2SO4','Sulfuric acid',[['S',0,0],['O',0,-1],['O',0,1],['O',-1,0],['O',1,0],['H',-1.9,0],['H',1.9,0]],[[0,1,2],[0,2,2],[0,3,1],[0,4,1],[3,5,1],[4,6,1]]],
+['H3PO4','Phosphoric acid',[['P',0,0],['O',0,-1],['O',-1,0],['O',1,0],['O',0,1],['H',-1.9,0],['H',1.9,0],['H',0,1.9]],[[0,1,2],[0,2,1],[0,3,1],[0,4,1],[2,5,1],[3,6,1],[4,7,1]]],
+['PO4 3-','Phosphate',[['P',0,0],['O',0,-1,-1],['O',1,0,-1],['O',0,1,-1],['O',-1,0]],[[0,1,1],[0,2,1],[0,3,1],[0,4,2]],R3],
+['ClO3-','Chlorate',[['Cl',0,0],['O',0,-1],['O',S,.5],['O',-S,.5,-1]],[[0,1,2],[0,2,2],[0,3,1]],R3],
+['ClO4-','Perchlorate',[['Cl',0,0],['O',0,-1],['O',1,0],['O',0,1],['O',-1,0,-1]],[[0,1,2],[0,2,2],[0,3,2],[0,4,1]],R3],
+['SCN-','Thiocyanate',[['S',-1,0,-1],['C',0,0],['N',1,0]],[[0,1,1],[1,2,3]]],
+['N2O','Nitrous oxide',[['N',-1,0],['N',0,0,1],['O',1,0,-1]],[[0,1,3],[1,2,1]]],
+['CS2','Carbon disulfide',[['S',-1,0],['C',0,0],['S',1,0]],[[0,1,2],[1,2,2]]],
+['OCS','Carbonyl sulfide',[['O',-1,0],['C',0,0],['S',1,0]],[[0,1,2],[1,2,2]]],
+['COCl2','Phosgene',[['C',0,0],['O',0,-1],['Cl',S,.5],['Cl',-S,.5]],[[0,1,2],[0,2,1],[0,3,1]]],
+['SOCl2','Thionyl chloride',[['S',0,0],['O',0,-1],['Cl',S,.5],['Cl',-S,.5]],[[0,1,2],[0,2,1],[0,3,1]]],
+['XeO3','Xenon trioxide',[['Xe',0,0],['O',0,-1],['O',S,.5],['O',-S,.5]],[[0,1,2],[0,2,2],[0,3,2]]],
+['HOCl','Hypochlorous acid',[['O',0,0],['H',-S,.5],['Cl',S,.5]],[[0,1,1],[0,2,1]]],
+['H2CO3','Carbonic acid',[['C',0,0],['O',0,-1],['O',S,.5],['O',-S,.5],['H',1.35,1.25],['H',-1.35,1.25]],[[0,1,2],[0,2,1],[0,3,1],[2,4,1],[3,5,1]]],
+['HCOOH','Formic acid',[['C',0,0],['O',0,-1],['H',-S,.5],['O',S,.5],['H',1.8,1]],[[0,1,2],[0,2,1],[0,3,1],[3,4,1]]],
+['CH3COOH','Acetic acid',[['C',-.5,0],['C',.5,0],['O',1,-S],['O',1,S],['H',1.9,1.17],['H',-1.5,0],['H',-1,-S],['H',-1,S]],[[0,1,1],[1,2,2],[1,3,1],[3,4,1],[0,5,1],[0,6,1],[0,7,1]]],
+['C2H6','Ethane',[['C',-.5,0],['C',.5,0],['H',-1.5,0],['H',-1,-S],['H',-1,S],['H',1.5,0],['H',1,-S],['H',1,S]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1],[1,5,1],[1,6,1],[1,7,1]]],
+['C2H5OH','Ethanol',[['C',-1,0],['C',0,0],['O',1,0],['H',-1.5,-S],['H',-1.5,S],['H',-2,0],['H',0,-1],['H',0,1],['H',1.5,S]],[[0,1,1],[1,2,1],[0,3,1],[0,4,1],[0,5,1],[1,6,1],[1,7,1],[2,8,1]]],
+['CH3NH2','Methylamine',[['C',-.5,0],['N',.5,0],['H',-1.4,0],['H',-.5,-1],['H',-.5,1],['H',1,-S],['H',1,S]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1],[1,5,1],[1,6,1]]],
+['CH3Cl','Chloromethane',[['C',0,0],['Cl',1,0],['H',-1,0],['H',0,-1],['H',0,1]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1]]],
+['CH2Cl2','Dichloromethane',[['C',0,0],['Cl',1,0],['Cl',0,1],['H',-1,0],['H',0,-1]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1]]],
+['CHCl3','Chloroform',[['C',0,0],['Cl',1,0],['Cl',0,1],['Cl',-1,0],['H',0,-1]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1]]],
+['N2H4','Hydrazine',[['N',-.5,0],['N',.5,0],['H',-1,-S],['H',-1,S],['H',1,-S],['H',1,S]],[[0,1,1],[0,2,1],[0,3,1],[1,4,1],[1,5,1]]],
+['C6H6','Benzene',[['C',1,0],['C',.5,S],['C',-.5,S],['C',-1,0],['C',-.5,-S],['C',.5,-S],['H',1.9,0],['H',.95,1.65],['H',-.95,1.65],['H',-1.9,0],['H',-.95,-1.65],['H',.95,-1.65]],[[0,1,2],[1,2,1],[2,3,2],[3,4,1],[4,5,2],[5,0,1],[0,6,1],[1,7,1],[2,8,1],[3,9,1],[4,10,1],[5,11,1]],'Resonance: the three double bonds can shift, giving a delocalized ring.']
 ];
-const NAMES={H2:'Hydrogen',F2:'Fluorine',Cl2:'Chlorine',Br2:'Bromine',I2:'Iodine',H2O:'Water',NH3:'Ammonia',CH4:'Methane',HCl:'Hydrogen chloride',HF:'Hydrogen fluoride',HBr:'Hydrogen bromide',H2S:'Hydrogen sulfide',BF3:'Boron trifluoride',PCl3:'Phosphorus trichloride',PCl5:'Phosphorus pentachloride',SF6:'Sulfur hexafluoride',SF4:'Sulfur tetrafluoride',XeF4:'Xenon tetrafluoride',CCl4:'Carbon tetrachloride',CF4:'Carbon tetrafluoride',BeH2:'Beryllium hydride',ClF3:'Chlorine trifluoride',SiH4:'Silane',PH3:'Phosphine',OF2:'Oxygen difluoride',SCl2:'Sulfur dichloride',BeCl2:'Beryllium chloride',IF5:'Iodine pentafluoride',XeF2:'Xenon difluoride'};
-const ALIAS={water:'H2O',ammonia:'NH3',methane:'CH4',ethylene:'C2H4',acetylene:'C2H2',hydrochloricacid:'HCl',chlorine:'Cl2',fluorine:'F2',hydrogen:'H2',bromine:'Br2',iodine:'I2',ethene:'C2H4',ethyne:'C2H2',carbonate:'CO3 2-',sulfate:'SO4 2-',nitrate:'NO3-',ammonium:'NH4+',hydronium:'H3O+',hydroxide:'OH-',cyanide:'CN-',oxygen:'O2',nitrogen:'N2'};
+const NAMES={H2:'Hydrogen',F2:'Fluorine',Cl2:'Chlorine',Br2:'Bromine',I2:'Iodine',H2O:'Water',NH3:'Ammonia',CH4:'Methane',HCl:'Hydrogen chloride',HF:'Hydrogen fluoride',HBr:'Hydrogen bromide',H2S:'Hydrogen sulfide',BF3:'Boron trifluoride',PCl3:'Phosphorus trichloride',PCl5:'Phosphorus pentachloride',SF6:'Sulfur hexafluoride',SF4:'Sulfur tetrafluoride',XeF4:'Xenon tetrafluoride',CCl4:'Carbon tetrachloride',CF4:'Carbon tetrafluoride',BeH2:'Beryllium hydride',ClF3:'Chlorine trifluoride',SiH4:'Silane',PH3:'Phosphine',OF2:'Oxygen difluoride',SCl2:'Sulfur dichloride',BeCl2:'Beryllium chloride',IF5:'Iodine pentafluoride',XeF2:'Xenon difluoride',
+BCl3:'Boron trichloride',BBr3:'Boron tribromide',AlCl3:'Aluminum chloride',NF3:'Nitrogen trifluoride',NCl3:'Nitrogen trichloride',AsH3:'Arsine',AsCl3:'Arsenic trichloride',PF3:'Phosphorus trifluoride',PF5:'Phosphorus pentafluoride',PBr3:'Phosphorus tribromide',SiCl4:'Silicon tetrachloride',SiF4:'Silicon tetrafluoride',GeH4:'Germane',CBr4:'Carbon tetrabromide',SeF4:'Selenium tetrafluoride',SeCl2:'Selenium dichloride',BrF3:'Bromine trifluoride',BrF5:'Bromine pentafluoride',ClF5:'Chlorine pentafluoride',XeF6:'Xenon hexafluoride',Cl2O:'Dichlorine monoxide',H2Se:'Hydrogen selenide'};
+const ALIAS={water:'H2O',ammonia:'NH3',methane:'CH4',ethylene:'C2H4',acetylene:'C2H2',hydrochloricacid:'HCl',chlorine:'Cl2',fluorine:'F2',hydrogen:'H2',bromine:'Br2',iodine:'I2',ethene:'C2H4',ethyne:'C2H2',carbonate:'CO3 2-',sulfate:'SO4 2-',nitrate:'NO3-',ammonium:'NH4+',hydronium:'H3O+',hydroxide:'OH-',cyanide:'CN-',oxygen:'O2',nitrogen:'N2',nitricacid:'HNO3',sulfuricacid:'H2SO4',phosphoricacid:'H3PO4',phosphate:'PO4 3-',chlorate:'ClO3-',perchlorate:'ClO4-',nitrite:'NO2-',laughinggas:'N2O',aceticacid:'CH3COOH',vinegar:'CH3COOH',ethanol:'C2H5OH',alcohol:'C2H5OH',formicacid:'HCOOH',carbonicacid:'H2CO3',acetic:'CH3COOH',freon:'CH2Cl2'};
 Object.entries(NAMES).forEach(([f,n])=>ALIAS[norm(n)]=f);
 const $=id=>document.getElementById(id);
 function norm(s){return s.toLowerCase().replace(/[₀-₉]/g,c=>c.charCodeAt(0)-8320).replace(/²/g,'2').replace(/³/g,'3').replace(/[⁻−]/g,'-').replace(/⁺/g,'+').replace(/[\s^_()]/g,'')}
@@ -189,6 +224,35 @@ function layout(c){
   });
   return A;
 }
+
+/* ---- VSEPR geometry, bond angle, polarity ---- */
+// key = "bonded atoms,lone pairs" on the central atom
+const GEO={'2,0':['Linear','180°'],'3,0':['Trigonal planar','120°'],'2,1':['Bent','< 120° (about 117°)'],'4,0':['Tetrahedral','109.5°'],'3,1':['Trigonal pyramidal','< 109.5° (about 107°)'],'2,2':['Bent','< 109.5° (about 104.5°)'],'5,0':['Trigonal bipyramidal','90° and 120°'],'4,1':['Seesaw','< 90° and < 120°'],'3,2':['T-shaped','< 90°'],'2,3':['Linear','180°'],'6,0':['Octahedral','90°'],'5,1':['Square pyramidal','< 90°'],'4,2':['Square planar','90°']};
+const EG=['','','Linear','Trigonal planar','Tetrahedral','Trigonal bipyramidal','Octahedral'],HY=['','','sp','sp²','sp³','sp³d','sp³d²'];
+const SYMM=['2,0','3,0','4,0','5,0','6,0','2,3','4,2'];
+const POL={C2H2:0,C2H4:0,C2H6:0,C6H6:0}; // multi-center molecules where the dipoles cancel overall
+function geo(c,A){
+  const nb=A.map(()=>[]);c.b.forEach(([i,j])=>{nb[i].push(A[j].s);nb[j].push(A[i].s)});
+  let ci=0;nb.forEach((x,i)=>{if(x.length>nb[ci].length||(x.length===nb[ci].length&&A[ci].s==='H'&&A[i].s!=='H'))ci=i});
+  const a=A[ci],n=nb[ci].length,L=Math.floor(a.nb/2),k=n+','+L,di=A.length===2;
+  const g=di?['Linear','— (only 2 atoms)']:(GEO[k]||['Distorted','—']);
+  const st=n+L,eg=di?'Linear':(EG[st]||'—'),hy=di?'—':(HY[st]||'—');
+  let mx=0;c.b.forEach(([i,j])=>{mx=Math.max(mx,Math.abs((EN[A[i].s]||2.5)-(EN[A[j].s]||2.5)))});
+  const tot=A.reduce((u,x)=>u+x.fc,0);
+  let pol=mx<.4?A.some(x=>x.fc)&&!SYMM.includes(k):(SYMM.includes(k)&&new Set(nb[ci]).size===1?0:1);
+  if(c.f in POL)pol=POL[c.f];
+  const bt=mx<.4?'Nonpolar covalent':mx<1.7?'Polar covalent':'Highly ionic character';
+  const multi=A.filter(x=>x.s!=='H').length>1&&!di;
+  const cell=(l,v,x='',cl='')=>`<div class="g"><span>${l}</span><b class="${cl}">${v}</b>${x?`<small>${x}</small>`:''}</div>`;
+  const ch=Math.abs(tot)>1?Math.abs(tot):'';
+  return cell('Electron geometry',eg,st?st+' electron regions':'')+
+    cell('Molecular shape',g[0],multi?'around '+a.s:`${n} bonded, ${L} lone pair${L===1?'':'s'}`)+
+    cell('Bond angle',g[1])+
+    cell('Hybridization',hy,di?'':`on ${a.s}`)+
+    cell('Polarity',tot?'Ion ('+ch+(tot>0?'+':'−')+')':pol?'Polar':'Nonpolar',tot?'molecule-level polarity n/a':(pol?'dipoles do not cancel':'dipoles cancel or none'),tot?'':pol?'pol':'non')+
+    cell('Max ΔEN',mx.toFixed(2),bt);
+}
+
 let T=[],mode='L',cur=null;
 function render(c){
   T.forEach(clearTimeout);T=[];
@@ -211,7 +275,7 @@ function render(c){
         h+=`<line class="ln" pathLength="1" style="animation-delay:${d}s" x1="${p.X+ux*23+nx*off}" y1="${p.Y+uy*23+ny*off}" x2="${q.X-ux*23+nx*off}" y2="${q.Y-uy*23+ny*off}"/>`;
       }
     }else{
-      const mx=(p.X+q.X)/2,my=(p.Y+q.Y)/2,sp=Math.min(8,(L-46)/4);
+      const mx=(p.X+q.X)/2,my=(p.Y+q.Y)/2,sp=Math.max(2,Math.min(8,(L-46)/4));
       for(let k=0;k<o;k++){
         const off=(k-(o-1)/2)*13;
         [-1,1].forEach((sg,z)=>{
@@ -255,6 +319,7 @@ function render(c){
     if(ty==='b'){b+=o;e+=2*o;$('sB').textContent=b}else{l++;e+=2;$('sL').textContent=l}
     $('sE').textContent=e;
   },d*1000)));
+  $('geo').innerHTML=geo(c,A);
   // octet summary
   const ex=[],inc=[];
   A.forEach(a=>{const n=2*a.bs+a.nb,w=a.s==='H'?2:8;if(n>w)ex.push(a.s);else if(n<w)inc.push(a.s)});
@@ -275,8 +340,9 @@ function run(raw,quiet){
   }
   $('msg').textContent='';cur=c;render(c);
 }
-const EX=['H2O','CO2','NH3','CH4','O2','N2','O3','SO2','NO3-','CO3 2-','NH4+','C2H4','CH3OH','SF6','XeF4','BF3','PCl5','HCl'];
-$('chips').innerHTML=EX.map(x=>`<button class="chip" type="button" data-f="${x}">${fmt(x)}</button>`).join('');
+const EX=[...DB.map(d=>d[0]),...Object.keys(NAMES)];
+const FEAT=['H2O','CO2','NH3','CH4','SF6','XeF4','BF3','PCl5'];
+$('chips').innerHTML=[...new Set([...FEAT,...EX])].map(x=>`<button class="chip" type="button" data-f="${x}">${fmt(x)}</button>`).join('');
 $('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(b){$('q').value=b.dataset.f;run(b.dataset.f)}});
 $('f').addEventListener('submit',e=>{e.preventDefault();run($('q').value)});
 $('rnd').addEventListener('click',()=>{const x=EX[Math.floor(Math.random()*EX.length)];$('q').value=x;run(x)});
