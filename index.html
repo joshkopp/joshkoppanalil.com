@@ -491,13 +491,15 @@ links.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>setMenu(fa
 
 document.getElementById('year').textContent=new Date().getFullYear();
 
-// ----- Access code -----
+// ----- Access codes (code -> page) -----
+const CODES={lds:'/lds/',calc:'/calc/'};
 const gf=document.getElementById('gate'),gi=document.getElementById('code'),gm=document.getElementById('gmsg');
 gf.addEventListener('submit',e=>{
   e.preventDefault();
-  if(gi.value.trim().toLowerCase()==='lds'){
+  const dest=CODES[gi.value.trim().toLowerCase()];
+  if(dest){
     gm.textContent='Access granted';gm.className='gmsg ok';
-    setTimeout(()=>{location.href='/lds/'},700);
+    setTimeout(()=>{location.href=dest},700);
   }else{
     gm.textContent='Wrong code';gm.className='gmsg';
     gi.classList.remove('shake');void gi.offsetWidth;gi.classList.add('shake');
