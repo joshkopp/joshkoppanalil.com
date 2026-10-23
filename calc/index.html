@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#09090b">
+<title>Calculus Solver</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<style>
+:root{--bg:#09090b;--panel:#111114;--text:#f4f4f5;--muted:#a1a1aa;--line:#27272a;--accent:#b8f36b;--bad:#f87171;--blue:#60a5fa}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(rgba(255,255,255,.045) 1px,transparent 1px) 0 0/28px 28px,var(--bg);color:var(--text);font-family:"DM Sans",system-ui,sans-serif;line-height:1.6}
+a{color:inherit;text-decoration:none}
+h1{font-family:"Space Grotesk",sans-serif;letter-spacing:-.05em;line-height:1.05;margin:26px 0 0;font-size:clamp(38px,8vw,68px)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
+.wrap{width:min(920px,calc(100% - 32px));margin:auto;padding:28px 0 60px}
+.back{font:700 15px "Space Grotesk",sans-serif;color:var(--muted)}.back:hover{color:var(--accent)}
+.lead{margin:12px 0 22px;color:var(--muted);max-width:560px}
+.modes{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{padding:10px 20px;background:none;border:0;color:var(--muted);font:700 15px "Space Grotesk",sans-serif;cursor:pointer}
+.seg button.on{background:var(--accent);color:#10120b}
+.also{display:flex;flex-wrap:wrap;gap:6px;align-items:center;color:var(--muted);font-size:12px}
+.chip{padding:5px 12px;background:#17171a;border:1px solid var(--line);border-radius:99px;color:#c4c4ca;font:500 13px "DM Sans",sans-serif;cursor:pointer}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#10120b;font-weight:700}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.fx{flex:1;min-width:220px;display:flex;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding-left:14px}
+.fx:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(184,243,107,.15)}
+.fx b{font:700 18px "Space Grotesk",sans-serif;color:var(--accent);white-space:nowrap}
+input{min-width:0;background:none;border:0;color:var(--text);font:500 18px "Space Grotesk",sans-serif}
+input:focus{outline:none}input::placeholder{color:#63636b}
+#q{flex:1;padding:14px 12px}
+.lim{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:0 12px}
+.lim:focus-within{border-color:var(--accent)}
+.lim span{color:var(--muted);font-size:12px;white-space:nowrap}
+.lim input{width:84px;padding:14px 0}
+.btn{padding:0 24px;border:1px solid var(--accent);border-radius:12px;background:var(--accent);color:#10120b;font:700 15px "DM Sans",sans-serif;cursor:pointer;min-height:50px}
+.btn:hover{filter:brightness(1.08)}
+.pad{display:flex;flex-wrap:wrap;gap:6px 14px;margin:14px 0 0}
+.pg{display:flex;flex-wrap:wrap;gap:5px}
+.pad button{min-width:40px;min-height:36px;padding:4px 10px;background:#17171a;border:1px solid var(--line);border-radius:8px;color:var(--text);font:500 15px "Space Grotesk",sans-serif;cursor:pointer}
+.pad button:hover{border-color:var(--accent);color:var(--accent)}
+.pad button:active{transform:scale(.95)}
+.pad .ed{color:var(--muted);font-size:13px}
+#prev{min-height:44px;margin:14px 0 0;color:var(--muted);font-size:14px;overflow-x:auto}#prev.bad{color:var(--bad)}
+.stage{margin-top:12px;background:radial-gradient(ellipse at 50% 0%,#171b12 0%,#101013 70%);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+#out{padding:18px 22px 4px;min-height:84px;overflow-x:auto}
+.eqn{font-size:1.15em}
+#nt{padding:0 22px 14px;color:var(--muted);font-size:14px}#nt.bad{color:var(--bad)}
+#use{display:none;margin:0 22px 16px;padding:7px 14px;background:none;border:1px solid var(--line);border-radius:9px;color:var(--text);font:700 13px "DM Sans",sans-serif;cursor:pointer}
+#use:hover{border-color:var(--accent);color:var(--accent)}
+canvas{display:block;width:100%;height:260px;border-top:1px solid var(--line)}
+.lg{margin-top:14px;color:#6b6b73;font-size:12px}.lg i{font-style:normal;color:var(--accent)}.lg u{text-decoration:none;color:var(--blue)}
+.shake{animation:sh .4s}@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="/">← JK.</a>
+  <h1>Calculus Solver</h1>
+  <p class="lead">Build a function with the buttons or just type it, then differentiate or integrate. Everything for AB and BC lives in one place.</p>
+  <div class="modes">
+    <div class="seg" role="group" aria-label="Operation"><button id="t-diff" class="on">d/dx Differentiate</button><button id="t-int">∫ Integrate</button></div>
+    <div class="also" id="also">also:</div>
+  </div>
+  <form class="row" id="f" autocomplete="off">
+    <label class="fx"><b>f(x) =</b><input id="q" placeholder="x² sin(x)    or    e^(2x)" spellcheck="false" autocapitalize="off" autocorrect="off" autofocus></label>
+    <label class="lim" id="la"><span id="sa"></span><input id="A" spellcheck="false"></label>
+    <label class="lim" id="lb"><span id="sb"></span><input id="B" spellcheck="false"></label>
+    <button class="btn" type="submit">Solve</button>
+  </form>
+  <div class="pad" id="pad"></div>
+  <div id="prev" aria-live="polite"></div>
+  <div class="stage">
+    <div id="out"><span style="color:var(--muted)">Your answer shows up here.</span></div>
+    <div id="nt"></div>
+    <button id="use" type="button">Use result as f(x)</button>
+    <canvas id="cv" aria-label="Graph"></canvas>
+  </div>
+  <p class="lg">Graph: <i>green</i> is f(x), <u>blue</u> is the result. Select part of your function before pressing √, a/b, xⁿ or a function button to wrap it. Multiplication can be implied (2x, x(x+1)).</p>
+</div>
+<script>
+function boot(){
+if(typeof katex==='undefined')window.katex={render:(t,el)=>{el.textContent=t}};
+const N=nerdamer,$=id=>document.getElementById(id);
+let tool='diff',lastH=null;
+const TOOLS={
+ diff:['Differentiate',['Order (1)','At x = (optional)']],
+ int:['Integrate',['From (optional)','To (optional)']],
+ avg:['Average value',['From','To']],
+ lim:['Limit',['x →']],
+ tay:['Taylor series',['Center (0)','Terms (5)']],
+ arc:['Arc length',['From','To']]};
+// keypad: [label, template, template-when-text-is-selected]. {s}=selection, |=cursor
+const PAD=[
+ [['x','x'],['π','π'],['e','e'],['∞','∞']],
+ [['x²','^2','({s})^2'],['x³','^3','({s})^3'],['xⁿ','^(|)','({s})^(|)'],['√','sqrt({s}|)'],['∛','cbrt({s}|)'],['ⁿ√','root({s}|, 3)'],['a/b','(|)/()','({s})/(|)'],['|x|','abs({s}|)'],['( )','({s}|)']],
+ [['sin','sin({s}|)'],['cos','cos({s}|)'],['tan','tan({s}|)'],['sec','sec({s}|)'],['csc','csc({s}|)'],['cot','cot({s}|)'],['sin⁻¹','asin({s}|)'],['cos⁻¹','acos({s}|)'],['tan⁻¹','atan({s}|)']],
+ [['ln','ln({s}|)'],['log₁₀','log10({s}|)'],['eˣ','e^({s}|)'],['10ˣ','10^({s}|)']],
+ [['⌫','__bs'],['Clear','__clr']]];
+$('pad').innerHTML=PAD.map((g,gi)=>'<div class="pg">'+g.map(([l],i)=>`<button type="button" class="${gi===4?'ed':''}" data-g="${gi}" data-i="${i}">${l}</button>`).join('')+'</div>').join('');
+$('pad').onclick=e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const t=PAD[b.dataset.g][b.dataset.i],q=$('q'),a=q.selectionStart,z=q.selectionEnd;q.focus();
+  if(t[1]==='__clr')q.value='';
+  else if(t[1]==='__bs'){if(a!==z)q.setRangeText('',a,z,'end');else if(a>0)q.setRangeText('',a-1,a,'end')}
+  else{
+    const s=q.value.slice(a,z);let x=((s&&t[2])||t[1]).replace('{s}',s);const c=x.indexOf('|');x=x.replace('|','');
+    q.setRangeText(x,a,z,'end');const p=a+(c<0?x.length:c);q.setSelectionRange(p,p);
+  }
+  preview();
+};
+// ---- input cleanup ----
+const SUP={'⁰':0,'¹':1,'²':2,'³':3,'⁴':4,'⁵':5,'⁶':6,'⁷':7,'⁸':8,'⁹':9,'⁻':'-'};
+function group(s,i){let d=0;for(let j=i;j<s.length;j++){if(s[j]==='(')d++;else if(s[j]===')'&&--d===0)return j}return -1}
+function roots(s){
+  for(let g=0;g<20;g++){
+    const m=/\b(root|cbrt)\(/.exec(s);if(!m)break;
+    const o=m.index+m[0].length-1,c=group(s,o);if(c<0)break;
+    const inner=s.slice(o+1,c);let rad=inner,n='3';
+    if(m[1]==='root'){let d=0,k=-1;for(let j=0;j<inner.length;j++){const ch=inner[j];if(ch==='(')d++;else if(ch===')')d--;else if(ch===','&&!d)k=j}
+      if(k>=0){rad=inner.slice(0,k);n=inner.slice(k+1).trim()||'3'}}
+    s=s.slice(0,m.index)+`((${rad})^(1/(${n})))`+s.slice(c+1);
+  }
+  return s;
+}
+function prep(s){
+  s=s.trim().replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+/g,m=>'^('+[...m].map(c=>SUP[c]).join('')+')')
+   .replace(/π/g,'pi').replace(/√\(/g,'sqrt(').replace(/√/g,'sqrt').replace(/[·×]/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/∞/g,'inf')
+   .replace(/\barc(sin|cos|tan)/g,'a$1').replace(/\bln\b/g,'log').replace(/\blog10\(/g,'LOGTEN(');
+  s=roots(s)
+   .replace(/\b(sin|cos|tan|sec|csc|cot)\^(\d+)\(([^()]*)\)/g,'($1($3))^$2')
+   .replace(/\b(sin|cos|tan|sec|csc|cot|log|sqrt|abs)\s*(x)\b/g,'$1($2)')
+   .replace(/(\d|\))\s*(?=[a-z(])/gi,'$1*')
+   .replace(/(?<![a-z])(x|pi|e)(?=(?:sin|cos|tan|sec|csc|cot|log|sqrt|abs|asin|acos|atan|x|pi)\b|\()/g,'$1*')
+   .replace(/LOGTEN\(/g,'log10(');
+  return s;
+}
+const INF=s=>/^-?inf$/.test(s);
+const num=s=>INF(s)?(s[0]==='-'?-Infinity:Infinity):+N(s).evaluate().text('decimals');
+const T=s=>{try{return INF(s)?(s[0]==='-'?'-':'')+'\\infty':N(s).toTeX()}catch(e){return s}};
+const mk=s=>{try{return N(s).buildFunction(['x'])}catch(e){return null}};
+const fmt=v=>isFinite(v)?String(+v.toPrecision(9)):(v>0?'\\infty':v<0?'-\\infty':'?');
+const simp=(g,a,b,n=4000)=>{const h=(b-a)/n;let s=g(a)+g(b);for(let i=1;i<n;i++)s+=g(a+i*h)*(i%2?4:2);return s*h/3};
+const fact=k=>k<2?1:k*fact(k-1);
+
+// ---- tools ----
+$('also').innerHTML='also: '+['avg','lim','tay','arc'].map(k=>`<button type="button" class="chip" id="t-${k}">${TOOLS[k][0]}</button>`).join('');
+function setTool(k,run){
+  tool=k;Object.keys(TOOLS).forEach(x=>{const e=$('t-'+x);e.classList.toggle('on',x===k)});
+  const L=TOOLS[k][1];$('la').style.display='';$('lb').style.display=L[1]?'':'none';
+  $('sa').textContent=L[0];$('sb').textContent=L[1]||'';$('A').value=$('B').value='';
+  if(run&&$('q').value.trim()&&(k==='diff'||k==='int'))go();
+}
+Object.keys(TOOLS).forEach(k=>$('t-'+k).onclick=()=>setTool(k,true));
+
+function preview(){
+  const p=$('prev'),s=prep($('q').value);p.className='';
+  if(!s){p.textContent='';return}
+  try{katex.render('f(x)='+N(s).toTeX(),p,{throwOnError:false})}catch(e){p.className='bad';p.textContent='Can’t read that yet…'}
+}
+$('q').addEventListener('input',preview);
+$('use').onclick=()=>{if(lastH){$('q').value=lastH.replace(/\*/g,'');$('q').value=lastH;preview();$('q').focus()}};
+
+function show(lines,note,err){
+  const o=$('out');o.innerHTML='';
+  lines.forEach(t=>{const d=document.createElement('div');d.className='eqn';try{katex.render(t,d,{displayMode:true,throwOnError:false})}catch(e){d.textContent=t}o.appendChild(d)});
+  if(err&&!lines.length)o.innerHTML='<span style="color:var(--bad)">Couldn’t solve that.</span>';
+  $('nt').textContent=note||'';$('nt').className=err?'bad':'';
+  $('use').style.display=lastH?'block':'none';
+}
+
+function draw(f,H,sh,xr){
+  const c=$('cv'),dpr=devicePixelRatio||1,W=c.clientWidth,Ht=260;c.width=W*dpr;c.height=Ht*dpr;
+  const x=c.getContext('2d');x.scale(dpr,dpr);x.clearRect(0,0,W,Ht);
+  const g=mk(f),h=H&&mk(H);if(!g)return;
+  let lo=-6,hi=6;
+  if(xr){const[p,q]=xr;if(isFinite(p)&&isFinite(q)){const w=Math.abs(q-p)||2;lo=Math.min(p,q)-w*.5;hi=Math.max(p,q)+w*.5}else if(isFinite(p)){lo=p-4;hi=p+8}else if(isFinite(q)){lo=q-8;hi=q+4}}
+  const S=u=>Array.from({length:401},(_,i)=>{const X=lo+(hi-lo)*i/400;let v;try{v=u(X)}catch(e){v=NaN}return[X,v]});
+  const G=S(g),Hh=h?S(h):[];
+  const ys=[...G,...Hh].map(p=>p[1]).filter(v=>isFinite(v)&&Math.abs(v)<1e4).sort((a,b)=>a-b);
+  if(!ys.length)return;
+  let y0=ys[Math.floor(ys.length*.03)],y1=ys[Math.floor(ys.length*.97)];
+  y0=Math.min(y0,0);y1=Math.max(y1,0);if(y1-y0<1e-6){y0-=1;y1+=1}const pd=(y1-y0)*.12;y0-=pd;y1+=pd;
+  const X=v=>(v-lo)/(hi-lo)*W,Y=v=>Ht-(v-y0)/(y1-y0)*Ht;
+  x.strokeStyle='#2f2f35';x.lineWidth=1;x.beginPath();
+  if(y0<0&&y1>0){x.moveTo(0,Y(0));x.lineTo(W,Y(0))}if(lo<0&&hi>0){x.moveTo(X(0),0);x.lineTo(X(0),Ht)}x.stroke();
+  if(sh){const p=Math.max(lo,Math.min(...sh)),q=Math.min(hi,Math.max(...sh));x.fillStyle='rgba(184,243,107,.16)';x.beginPath();x.moveTo(X(p),Y(0));
+    G.forEach(([a,v])=>{if(a>=p&&a<=q&&isFinite(v))x.lineTo(X(a),Y(Math.max(y0,Math.min(y1,v))))});x.lineTo(X(q),Y(0));x.fill()}
+  const line=(P,col)=>{x.strokeStyle=col;x.lineWidth=2.2;x.beginPath();let up=false,pv=0;
+    P.forEach(([a,v])=>{if(!isFinite(v)||(Math.abs(v-pv)>(y1-y0)*1.5&&up)){up=false;pv=isFinite(v)?v:0;return}
+      up?x.lineTo(X(a),Y(v)):x.moveTo(X(a),Y(v));up=true;pv=v});x.stroke()};
+  if(Hh.length)line(Hh,'#60a5fa');line(G,'#b8f36b');
+}
+
+function go(){
+  const f=prep($('q').value);lastH=null;
+  if(!f){$('q').parentNode.classList.remove('shake');void $('q').offsetWidth;$('q').parentNode.classList.add('shake');return show([],'Type a function of x first.',1)}
+  let a=prep($('A').value),b=prep($('B').value);
+  const need={avg:2,arc:2,lim:1}[tool]||0;
+  if((need>=1&&!a)||(need>=2&&!b))return show([],'Fill in the box'+(need>1?'es':'')+' first.',1);
+  if(tool==='int'&&(!a)!==(!b))return show([],'Fill in both limits for a definite integral, or leave both empty.',1);
+  try{
+    let L=[],note='',H=null,sh=null,xr=null;
+    const F=()=>{const s=N(`integrate(${f},x)`).toString();return/integrate/.test(s)?null:s};
+    const sub=(e,v)=>N(e,{x:v});
+    const finite=()=>{const va=num(a),vb=num(b);return isFinite(va)&&isFinite(vb)};
+    if(tool==='diff'){
+      const n=Math.max(1,Math.min(6,Math.round(+a)||1)),r=N(`diff(${f},x${n>1?','+n:''})`);H=r.toString();
+      L=[(n===1?'\\frac{d}{dx}':`\\frac{d^{${n}}}{dx^{${n}}}`)+`\\left[${T(f)}\\right]=${r.toTeX()}`];
+      if(b){const v=sub(H,b);L.push(`${n===1?"f'":`f^{(${n})}`}\\left(${T(b)}\\right)=${v.toTeX()}\\approx ${fmt(+v.evaluate().text('decimals'))}`);
+        if(n===1){L.push(`\\text{Tangent line: } y-${sub(f,b).toTeX()}=${v.toTeX()}\\left(x-${T(b)}\\right)`);xr=[num(b)-3,num(b)+3]}}
+      lastH=H;
+    }else if(tool==='int'&&!a){
+      const s=F();if(!s)return show([],'No closed form found for this one (it may need a special function). Add limits for a numeric answer.',1);
+      H=s;lastH=s;L=[`\\int ${T(f)}\\,dx=${N(s).toTeX()}+C`];
+    }else if((tool==='int'||tool==='avg')&&finite()){
+      const g=mk(f),va=num(a),vb=num(b),nv=simp(g,va,vb),s=F(),avg=tool==='avg',k=avg?`\\frac{1}{${T(b)}-${T(a)}}`:'';
+      let ex=null;
+      if(s){try{const d=N(`((${sub(s,b)})-(${sub(s,a)}))${avg?`/((${b})-(${a}))`:''}`);if(isFinite(+d.evaluate().text('decimals')))ex=d.toTeX()}catch(e){}}
+      L=[`${k}\\int_{${T(a)}}^{${T(b)}}${T(f)}\\,dx=${ex?ex+'\\approx ':'\\approx '}${fmt(avg?nv/(vb-va):nv)}`];
+      note=(ex?'':'No closed form, so this is a numeric approximation (Simpson’s rule). ')+(avg?'Average value of f on the interval.':'');
+      sh=[va,vb];xr=[va,vb];
+    }else if(tool==='int'){
+      const va=num(a),vb=num(b),g=mk(f);let sym=null;const s=F();
+      if(s){try{const up=isFinite(vb)?sub(s,b).toString():N(`limit(${s},x,${vb>0?'':'-'}Infinity)`).toString(),lw=isFinite(va)?sub(s,a).toString():N(`limit(${s},x,-Infinity)`).toString();
+        const d=N(`(${up})-(${lw})`);if(!/limit|inf|undefined/i.test(d.toString())&&isFinite(+d.evaluate().text('decimals')))sym=d}catch(e){}}
+      const v=[10,100,1000,10000].map(l=>simp(g,va===-Infinity?(isFinite(vb)?vb-l:-l):va,vb===Infinity?(isFinite(va)?va+l:l):vb,20000));
+      const conv=Math.abs(v[3]-v[2])<1e-3*(1+Math.abs(v[3])),head=`\\int_{${T(a)}}^{${T(b)}}${T(f)}\\,dx=`;
+      L=[sym?head+sym.toTeX()+`\\approx ${fmt(+sym.evaluate().text('decimals'))}`:conv?head+`\\approx ${fmt(v[3])}`:head+`\\text{diverges}`];
+      note=conv?'Improper integral: converges'+(sym?'.':' (estimated numerically).'):'Improper integral: diverges, the area grows without settling.';
+      xr=[isFinite(va)?va:-10,isFinite(vb)?vb:10];sh=xr;
+    }else if(tool==='avg'){
+      return show([],'Average value needs finite limits.',1);
+    }else if(tool==='lim'){
+      const t=INF(a)?a.replace('inf','Infinity'):a,r=N(`limit(${f},x,${t})`).toString(),v=num(a);
+      if(!/limit|undefined/.test(r))L=[`\\lim_{x\\to ${T(a)}}${T(f)}=${N(r).toTeX()}`];
+      else{const g=mk(f),l=g(v-1e-6),p=g(v+1e-6);
+        L=[Math.abs(l-p)<1e-3*(1+Math.abs(l))?`\\lim_{x\\to ${T(a)}}${T(f)}\\approx ${fmt((l+p)/2)}`:`\\text{Left}\\approx ${fmt(l)},\\ \\text{Right}\\approx ${fmt(p)}\\ \\Rightarrow\\ \\text{limit does not exist}`];
+        note='Found numerically by checking both sides.'}
+      if(isFinite(v))xr=[v-3,v+3];
+    }else if(tool==='tay'){
+      a=a||'0';const n=Math.max(1,Math.min(12,Math.round(+b)||5)),P=[];let d=f;
+      for(let k=0;k<=n;k++){const c=N(`(${sub(d,a)})/${fact(k)}`).toString();P.push(`(${c})*(x-(${a}))^${k}`);d=N(`diff(${d},x)`).toString();if(d==='0')break}
+      const p=N(P.join('+'));H=p.toString();lastH=H;
+      L=[`f(x)\\approx ${p.toTeX()}`];note=`Taylor polynomial of degree ${P.length-1} about x = ${a}${a==='0'?' (Maclaurin)':''}.`;xr=[num(a)-4,num(a)+4];
+    }else if(tool==='arc'){
+      const d=N(`diff(${f},x)`),va=num(a),vb=num(b),g=mk(`sqrt(1+(${d})^2)`);
+      L=[`L=\\int_{${T(a)}}^{${T(b)}}\\sqrt{1+\\left(${d.toTeX()}\\right)^2}\\,dx\\approx ${fmt(simp(g,va,vb))}`];note='Numeric value (Simpson’s rule).';xr=[va,vb];
+    }
+    show(L,note);draw(f,H,sh,xr);
+  }catch(e){show([],'Couldn’t solve that. Check the function (and limits) for typos or undefined points.',1);console.error(e)}
+}
+$('t-diff').onclick=()=>setTool('diff',true);$('t-int').onclick=()=>setTool('int',true);
+$('f').addEventListener('submit',e=>{e.preventDefault();go()});
+addEventListener('resize',()=>{if($('out').querySelector('.eqn'))go()});
+setTool('diff');
+}
+</script>
+<script>
+(function(){
+  const load=urls=>new Promise((ok,no)=>{let i=0;(function next(){
+    if(i>=urls.length)return no(new Error('failed '+urls[0]));
+    const s=document.createElement('script');s.src=urls[i++];s.onload=ok;s.onerror=()=>{s.remove();next()};document.head.appendChild(s);
+  })()});
+  const lib=f=>['https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/'+f,'https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/'+f,'https://unpkg.com/nerdamer@1.1.13/'+f];
+  const kx=load(['https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js','https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js']).catch(()=>{});
+  load(lib('nerdamer.core.js')).then(()=>load(lib('Algebra.js'))).then(()=>load(lib('Calculus.js')))
+    .then(()=>kx).then(()=>boot())
+    .catch(()=>{document.getElementById('out').innerHTML='<span style="color:var(--bad)">Couldn’t load the math engine. Check your connection or turn off any script blocker, then refresh.</span>'});
+})();
+</script>
+</body>
+</html>
