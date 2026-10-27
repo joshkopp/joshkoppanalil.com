@@ -240,9 +240,9 @@ footer{display:flex;justify-content:space-between;gap:15px;padding:25px 0 80px;c
       <i class="lever" aria-hidden="true"><s></s><b></b></i>
       <div class="bulbs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
       <div class="mark">
-        <span class="reel" style="--w:.58em;--n:10;--d:.75s"><span class="strip"><b>7</b><b>R</b><b>★</b><b>Q</b><b>♦</b><b>A</b><b>M</b><b>9</b><b>S</b><b>♣</b><b>J</b></span></span>
-        <span class="reel" style="--w:.68em;--n:13;--d:1s"><span class="strip"><b>♠</b><b>9</b><b>X</b><b>♣</b><b>7</b><b>B</b><b>★</b><b>P</b><b>♥</b><b>4</b><b>N</b><b>♦</b><b>Z</b><b>K</b></span></span>
-        <span class="reel s" style="--w:.34em;--n:16;--d:1.25s"><span class="strip"><b><u>★</u></b><b><u>7</u></b><b><u>♦</u></b><b><u>♣</u></b><b><u>♥</u></b><b><u>♠</u></b><b><u>$</u></b><b><u>★</u></b><b><u>7</u></b><b><u>♦</u></b><b><u>♣</u></b><b><u>♥</u></b><b><u>♠</u></b><b><u>$</u></b><b><u>★</u></b><b><u>♦</u></b><b><i class="dt"></i></b></span></span>
+        <span class="reel" style="--w:.58em;--n:17;--d:1.3s"><span class="strip"><b>P</b><b>★</b><b>♠</b><b>Q</b><b>♠</b><b>E</b><b>Q</b><b>P</b><b>Q</b><b>♣</b><b>S</b><b>Z</b><b>W</b><b>S</b><b>♣</b><b>M</b><b>♠</b><b>J</b></span></span>
+        <span class="reel" style="--w:.68em;--n:22;--d:1.7s"><span class="strip"><b>Z</b><b>♣</b><b>7</b><b>X</b><b>M</b><b>♠</b><b>★</b><b>B</b><b>H</b><b>M</b><b>♣</b><b>9</b><b>A</b><b>♠</b><b>Q</b><b>♥</b><b>B</b><b>D</b><b>7</b><b>♣</b><b>W</b><b>8</b><b>K</b></span></span>
+        <span class="reel s" style="--w:.34em;--n:27;--d:2.1s"><span class="strip"><b><u>♦</u></b><b><u>7</u></b><b><u>♣</u></b><b><u>♠</u></b><b><u>★</u></b><b><u>★</u></b><b><u>$</u></b><b><u>♥</u></b><b><u>★</u></b><b><u>♦</u></b><b><u>♥</u></b><b><u>★</u></b><b><u>♥</u></b><b><u>7</u></b><b><u>★</u></b><b><u>★</u></b><b><u>♣</u></b><b><u>♣</u></b><b><u>★</u></b><b><u>7</u></b><b><u>★</u></b><b><u>♥</u></b><b><u>♣</u></b><b><u>★</u></b><b><u>$</u></b><b><u>♥</u></b><b><u>★</u></b><b><i class="dt"></i></b></span></span>
       </div>
     </div>
     <div class="cap"></div>
@@ -426,7 +426,7 @@ const SND=(()=>{
   const begin=()=>{
     if(!document.documentElement.classList.contains('js'))return;
     if(!manual)enable(true);
-    [...Array.from({length:12},(_,i)=>[100+i*70,'tick']),[800,'lock'],[1100,'lock'],[1400,'lock'],[1450,'jk'],[1700,'leave'],[2000,'doors'],[3200,'w0'],[3520,'w1'],[3840,'w2'],[4150,'photo']].forEach(([ms,k])=>setTimeout(()=>play(k),ms));
+    [...Array.from({length:28},(_,i)=>[100+i*70,'tick']),[1270,'lock'],[1610,'lock'],[1960,'lock'],[2050,'jk'],[2800,'leave'],[3100,'doors'],[4300,'w0'],[4620,'w1'],[4940,'w2'],[5250,'photo']].forEach(([ms,k])=>setTimeout(()=>play(k),ms));
   };
   const land=()=>play('land');
   const unlock=e=>{
@@ -474,7 +474,7 @@ if(root.classList.contains('js')){
     const R=e=>e.getBoundingClientRect(),
           ty=e=>{const t=getComputedStyle(e).transform;return t&&t!=='none'?new DOMMatrix(t).f:0},
           lerp=(a,b,u)=>a+(b-a)*u;
-    const T0=1700,END=4400,t0=performance.now();
+    const T0=2800,END=5500,t0=performance.now();
     let P0=null,S0=0,S1=0,fs=0,raf=0,over=false;
     const finish=()=>{
       if(over)return;over=true;cancelAnimationFrame(raf);
@@ -489,14 +489,14 @@ if(root.classList.contains('js')){
             w0=R(ws[0]),w1=R(ws[1]),w2=R(ws[2]),c=land();
       return [
         [T0,P0[0],P0[1]],
-        [1950,W*.85,H*.2],[2350,W*.9,H*.75],[2750,W*.35,H*.9],
-        [3100,w0.left,u],
-        [3250,(w0.left+w0.right)/2,u+a],
-        [3420,w0.right+g,u-a*.3],
-        [3570,(w1.left+w1.right)/2,u+a],
-        [3740,w1.right+g,u-a*.3],
-        [3920,(w2.left+h.left)/2,u+a],
-        [4150,h.left-g*.2,u],
+        [3050,W*.85,H*.2],[3450,W*.9,H*.75],[3850,W*.35,H*.9],
+        [4200,w0.left,u],
+        [4350,(w0.left+w0.right)/2,u+a],
+        [4520,w0.right+g,u-a*.3],
+        [4670,(w1.left+w1.right)/2,u+a],
+        [4840,w1.right+g,u-a*.3],
+        [5020,(w2.left+h.left)/2,u+a],
+        [5250,h.left-g*.2,u],
         [END,c[0],c[1]]
       ];
     };
@@ -523,17 +523,17 @@ if(root.classList.contains('js')){
       }catch(err){finish()}
     };
     raf=requestAnimationFrame(frame);
-    setTimeout(finish,9000);
+    setTimeout(finish,10100);
   };
   const start=()=>{
     if(root.classList.contains('play'))return;
     root.classList.add('play');
     SND.begin();
-    setTimeout(()=>root.classList.add('win'),1450);
-    setTimeout(()=>root.classList.add('pop'),1650);
-    setTimeout(()=>root.classList.add('open'),2000);
-    setTimeout(()=>root.classList.add('go'),2900);
-    setTimeout(()=>document.getElementById('intro')?.remove(),3800);
+    setTimeout(()=>root.classList.add('win'),2050);
+    setTimeout(()=>root.classList.add('pop'),2750);
+    setTimeout(()=>root.classList.add('open'),3100);
+    setTimeout(()=>root.classList.add('go'),4000);
+    setTimeout(()=>document.getElementById('intro')?.remove(),4900);
     flyDot();
   };
   const av=document.querySelector('.pfp img');
