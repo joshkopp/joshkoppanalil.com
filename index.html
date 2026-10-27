@@ -51,7 +51,7 @@ h1,h2,h3{font-family:"Space Grotesk",sans-serif;letter-spacing:-.055em;line-heig
 nav.glass{backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%)}
 .glass::after{content:"";position:absolute;left:8%;right:8%;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);pointer-events:none}
 
-/* ===== Intro: logo, then the doors open ===== */
+/* ===== Intro: slot machine reels land on J K and the dot, then it pops open ===== */
 #intro{display:none}
 .js #intro{display:block;position:fixed;inset:0;z-index:100}
 .open #intro{pointer-events:none}
@@ -59,18 +59,51 @@ nav.glass{backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur
 .door.t{top:0}.door.b{bottom:0}
 .open .door.t{transform:translateY(-101%)}.open .door.b{transform:translateY(101%)}
 .logo{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:20px;transition:opacity .5s,transform .9s cubic-bezier(.5,0,.2,1)}
-.open .logo{opacity:0;transform:scale(1.2)}
-.mark{display:flex;align-items:baseline;overflow:hidden;padding:0 .06em .12em;font:700 clamp(84px,18vw,160px)/1 "Space Grotesk",sans-serif;letter-spacing:-.06em}
-.mark span{display:inline-block;transform:translateY(110%)}
-.mark .dt{display:inline-block;width:.15em;height:.15em;margin-left:.07em;border-radius:50%;background:var(--accent);-webkit-text-fill-color:initial;transform:scale(0)}
-.bar{width:min(220px,50vw);height:3px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
-.bar i{display:block;height:100%;background:linear-gradient(90deg,#7fd13b,var(--accent));box-shadow:0 0 12px var(--accent);transform:translateX(-100%)}
+.open .logo{opacity:0;transform:scale(1.55)}
+/* slot machine cabinet */
+.logo{gap:34px}
+.slot{position:relative;isolation:isolate;padding:.1em .13em .13em;border-radius:.26em;background:var(--glass);background-color:rgba(16,18,17,.85);border:1px solid var(--line);box-shadow:var(--lift);font:700 clamp(84px,18vw,160px)/1 "Space Grotesk",sans-serif;letter-spacing:0;scale:1;transition:scale .5s cubic-bezier(.3,1.6,.5,1),border-color .3s,box-shadow .5s}
+.js .slot{opacity:0}
+.win .slot{border-color:rgba(184,243,107,.7);box-shadow:var(--lift),0 0 70px rgba(184,243,107,.4)}
+.pop .slot{scale:1.1}
+.slot::before{content:"";position:absolute;inset:-35%;z-index:-1;border-radius:50%;background:radial-gradient(circle,rgba(184,243,107,.5),transparent 60%);opacity:0;pointer-events:none}
+.pop .slot::before{animation:burst .8s ease-out forwards}
+.bulbs{display:flex;justify-content:space-between;padding:0 .03em .09em}
+.bulbs i{width:.05em;height:.05em;border-radius:50%;background:#2a2f2c;transition:background .3s,box-shadow .3s}
+.bulbs i:nth-child(even){animation-delay:.3s!important}
+.play .bulbs i{animation:chase .6s steps(1) infinite}
+.win .bulbs i{animation:none!important;background:var(--accent);box-shadow:0 0 .1em var(--accent)}
+.mark{position:relative;display:flex;border-radius:.17em;overflow:hidden;background:linear-gradient(180deg,#0a0c0b,#141716 50%,#0a0c0b);box-shadow:inset 0 .03em .12em #000,inset 0 0 0 1px rgba(255,255,255,.06)}
+.mark::before{content:"";position:absolute;left:0;right:0;top:50%;height:2px;z-index:2;pointer-events:none;opacity:0;transition:opacity .3s;background:linear-gradient(90deg,var(--accent) 0 .09em,transparent .09em calc(100% - .09em),var(--accent) calc(100% - .09em));box-shadow:0 0 10px var(--accent)}
+.play .mark::before{opacity:.3}.win .mark::before{opacity:1}
+.mark::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.1),transparent 38%,transparent 80%,rgba(255,255,255,.04))}
+.reel{flex:none;display:block;position:relative;width:var(--w);height:1.05em;overflow:hidden;text-align:center;transition:text-shadow .4s;-webkit-mask-image:linear-gradient(transparent,#000 14%,#000 86%,transparent);mask-image:linear-gradient(transparent,#000 14%,#000 86%,transparent)}
+.reel+.reel{box-shadow:inset 1px 0 0 rgba(255,255,255,.07)}
+.win .reel{text-shadow:0 0 .22em rgba(184,243,107,.5)}
+.strip{display:block;will-change:transform}
+.strip b{display:block;height:1.05em;line-height:1.05em;font-weight:700}
+.strip b:nth-child(5n){color:var(--accent)}
+.strip u{text-decoration:none;font-size:.4em}
+.reel.s b{display:flex;align-items:center;justify-content:center}
+.mark .dt{display:block;width:.15em;height:.15em;border-radius:50%;background:var(--accent);box-shadow:0 0 .12em var(--accent)}
+.win .dt{animation:dotpop .35s ease-out}
+.play .strip{animation:roll var(--d) .15s both,mb var(--d) .15s both}
+.play .slot{animation:slotin .5s cubic-bezier(.2,.9,.3,1.2) both}
+.lever{position:absolute;right:-.2em;top:50%;width:0;height:0}
+.lever s{position:absolute;left:-.012em;top:-.36em;width:.024em;height:.36em;background:linear-gradient(90deg,#555,#ddd,#555);transform-origin:50% 100%}
+.lever b{position:absolute;left:-.04em;top:-.43em;width:.08em;height:.08em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#eaffc8,var(--accent) 55%,#7fd13b);box-shadow:0 0 .1em rgba(184,243,107,.6)}
+.play .lever s{animation:stick .7s .1s ease-in-out both}
+.play .lever b{animation:ball .7s .1s ease-in-out both}
 .cap{font-size:14px;letter-spacing:.12em;color:var(--muted);opacity:0}
-.play .mark span{animation:rise .9s cubic-bezier(.2,.8,.2,1) both}
-.play .mark span:nth-child(2){animation-delay:.12s}
-.play .mark .dt{animation:pop .6s cubic-bezier(.3,1.7,.5,1) .55s both}
-.play .bar i{animation:load 1.3s cubic-bezier(.6,0,.2,1) .3s both}
 .play .cap{animation:fade .8s .8s both}
+@keyframes roll{0%{transform:translateY(0);animation-timing-function:cubic-bezier(.35,.55,.25,1)}86%{transform:translateY(calc(var(--n)*-1.05em - .09em));animation-timing-function:ease-in-out}100%{transform:translateY(calc(var(--n)*-1.05em))}}
+@keyframes mb{0%{filter:blur(0)}8%,60%{filter:blur(3px)}86%,100%{filter:blur(0)}}
+@keyframes slotin{from{opacity:0;transform:scale(.88) translateY(14px)}to{opacity:1;transform:none}}
+@keyframes chase{0%{background:var(--accent);box-shadow:0 0 .08em var(--accent)}50%{background:#2a2f2c;box-shadow:none}}
+@keyframes stick{40%{transform:scaleY(.4)}}
+@keyframes ball{40%{transform:translateY(.22em)}}
+@keyframes burst{0%{opacity:.9;transform:scale(.4)}100%{opacity:0;transform:scale(2)}}
+@keyframes dotpop{40%{transform:scale(1.8)}}
 @keyframes rise{from{transform:translateY(110%)}to{transform:none}}
 @keyframes pop{from{transform:scale(0)}to{transform:none}}
 @keyframes load{from{transform:translateX(-100%)}to{transform:none}}
@@ -140,15 +173,25 @@ nav{height:56px;display:flex;align-items:center;padding:0 20px;border-radius:99p
 .dot::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--accent);animation:ping 1.6s ease-out infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes ping{from{transform:scale(1);opacity:.6}to{transform:scale(2.8);opacity:0}}
-.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
-.cards .card:last-child:nth-child(odd){grid-column:1/-1}
-.card{display:block;min-height:0;padding:22px;transition:transform .3s,border-color .3s,box-shadow .3s}
-.card:hover{transform:translateY(-4px);border-color:rgba(184,243,107,.5);box-shadow:var(--lift),0 18px 50px -18px rgba(184,243,107,.4)}
+
+/* ===== Curved project carousel ===== */
+.carousel{position:relative;height:340px;perspective:1400px;touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:grab;outline:none}
+.carousel:active{cursor:grabbing}
+.card{display:block;padding:22px;transition:border-color .3s,box-shadow .3s}
+.carousel .card{position:absolute;left:50%;top:50%;width:min(340px,76vw);min-height:230px;will-change:transform,opacity}
+.carousel .card.on{border-color:rgba(184,243,107,.45);box-shadow:var(--lift),0 20px 60px -20px rgba(184,243,107,.35)}
 .cardtop{display:flex;justify-content:space-between;color:var(--accent);font-size:12px}
 .card h3{margin:14px 0 6px;font-size:20px}
-.card p{max-width:640px;margin:0;color:var(--muted);font-size:13px}
+.card p{margin:0;color:var(--muted);font-size:13px}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .tags span{padding:4px 10px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:99px;color:#c0c5c2;font-size:10px}
+.carctl{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:26px}
+.carctl .btn{padding:10px 18px;color:var(--text);font-family:inherit;cursor:pointer}
+.dots{display:flex;gap:8px}
+.dots button{all:unset;width:8px;height:8px;border-radius:99px;background:rgba(255,255,255,.2);cursor:pointer;transition:width .3s,background .3s}
+.dots button.on{width:26px;background:var(--accent)}
+.dots button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
 .contactbox{display:flex;flex-direction:column;align-items:flex-start;gap:18px;padding:clamp(25px,6vw,55px);border-radius:26px}
 .contactinfo{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
 .copy{all:unset;display:flex;flex-wrap:wrap;align-items:baseline;gap:14px;cursor:pointer;font-family:"Space Grotesk",sans-serif;font-size:clamp(20px,4vw,30px);letter-spacing:-.03em}
@@ -176,7 +219,7 @@ footer{display:flex;justify-content:space-between;gap:15px;padding:25px 0 80px;c
   .pfp-m{display:block;width:92px;height:92px;margin-bottom:22px;border-radius:50%;border:2px solid var(--accent);object-fit:cover;box-shadow:0 0 0 5px var(--bg),0 0 0 6px var(--line),0 0 30px rgba(184,243,107,.3)}
   .intro{font-size:16px}
   .actions .btn{flex:1;justify-content:center}
-  .cards{grid-template-columns:1fr}.card p{font-size:14px}.tags span{font-size:11px}
+  .carousel{height:390px}.card p{font-size:14px}.tags span{font-size:11px}
   .copy{font-size:min(30px,5.3vw);overflow-wrap:anywhere}
   .section{padding:60px 0}
   .sectionhead{display:block}.sub{margin-top:12px}
@@ -193,8 +236,15 @@ footer{display:flex;justify-content:space-between;gap:15px;padding:25px 0 80px;c
 <div id="intro" aria-hidden="true">
   <div class="door t"></div><div class="door b"></div>
   <div class="logo">
-    <div class="mark"><span>J</span><span>K</span><i class="dt"></i></div>
-    <div class="bar"><i></i></div>
+    <div class="slot">
+      <i class="lever" aria-hidden="true"><s></s><b></b></i>
+      <div class="bulbs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="mark">
+        <span class="reel" style="--w:.58em;--n:10;--d:.75s"><span class="strip"><b>7</b><b>R</b><b>★</b><b>Q</b><b>♦</b><b>A</b><b>M</b><b>9</b><b>S</b><b>♣</b><b>J</b></span></span>
+        <span class="reel" style="--w:.68em;--n:13;--d:1s"><span class="strip"><b>♠</b><b>9</b><b>X</b><b>♣</b><b>7</b><b>B</b><b>★</b><b>P</b><b>♥</b><b>4</b><b>N</b><b>♦</b><b>Z</b><b>K</b></span></span>
+        <span class="reel s" style="--w:.34em;--n:16;--d:1.25s"><span class="strip"><b><u>★</u></b><b><u>7</u></b><b><u>♦</u></b><b><u>♣</u></b><b><u>♥</u></b><b><u>♠</u></b><b><u>$</u></b><b><u>★</u></b><b><u>7</u></b><b><u>♦</u></b><b><u>♣</u></b><b><u>♥</u></b><b><u>♠</u></b><b><u>$</u></b><b><u>★</u></b><b><u>♦</u></b><b><i class="dt"></i></b></span></span>
+      </div>
+    </div>
     <div class="cap">summer bummer</div>
   </div>
 </div>
@@ -254,28 +304,28 @@ footer{display:flex;justify-content:space-between;gap:15px;padding:25px 0 80px;c
     <div class="wrap">
       <div class="sectionhead rv">
         <div><div class="eyebrow">Selected work</div><h2>Projects.</h2></div>
-        <p class="sub">Some ideas I've built and published. Try them out.</p>
+        <p class="sub">Some ideas I've built and published. Drag, swipe, or tap to browse.</p>
       </div>
-      <div class="cards">
-        <a class="card glass rv" href="https://joshkopp.github.io/passwordchecker/" target="_blank" rel="noopener">
+      <div class="carousel rv" id="car" role="group" aria-roledescription="carousel" aria-label="Projects" tabindex="0">
+        <a class="card glass" href="https://joshkopp.github.io/passwordchecker/" target="_blank" rel="noopener">
           <div class="cardtop"><span>Cybersecurity</span><span>↗</span></div>
           <h3>Password Strength Checker</h3>
           <p>Scores passwords by entropy, common-password detection, patterns, and crack time. Runs fully in your browser.</p>
           <div class="tags"><span>JavaScript</span><span>Client-side</span></div>
         </a>
-        <a class="card glass rv" href="https://joshkopp.github.io/mlachecker/" target="_blank" rel="noopener">
+        <a class="card glass" href="https://joshkopp.github.io/mlachecker/" target="_blank" rel="noopener">
           <div class="cardtop"><span>Education</span><span>↗</span></div>
           <h3>MLA Format Checker</h3>
           <p>Checks an essay against MLA format and highlights every problem, with a checklist of what you got right.</p>
           <div class="tags"><span>Python</span><span>Pyodide</span></div>
         </a>
-        <a class="card glass rv" href="https://joshkopp.github.io/FlashcardGen/" target="_blank" rel="noopener">
+        <a class="card glass" href="https://joshkopp.github.io/FlashcardGen/" target="_blank" rel="noopener">
           <div class="cardtop"><span>Education</span><span>↗</span></div>
           <h3>Flashcard Generator</h3>
           <p>Turns notes, PDFs, or Word docs into flashcards that weight the terms that matter most.</p>
           <div class="tags"><span>JavaScript</span><span>Cloudflare</span></div>
         </a>
-        <a class="card glass rv" href="/lds/">
+        <a class="card glass" href="/lds/">
           <div class="cardtop"><span>Education</span><span>↗</span></div>
           <h3>Lewis Dot Structure Visualizer</h3>
           <p>Draws Lewis dot structures so you can see how atoms share and hold electrons in a molecule.</p>
@@ -358,7 +408,9 @@ const SND=(()=>{
     w2:()=>pluck(hz(81),ctx.currentTime,.13,1.3),
     photo:()=>glide(500,1000,ctx.currentTime,.16,.09),
     land:()=>{const t=ctx.currentTime;[81,85,88,95].forEach((n,i)=>pluck(hz(n),t+i*.07,.08,2.4,.55));pluck(hz(57),t,.08,2.4,.3)},
-    confirm:()=>{const t=ctx.currentTime;pluck(hz(81),t,.09,1,.4);pluck(hz(88),t+.09,.09,1.3,.4)}
+    confirm:()=>{const t=ctx.currentTime;pluck(hz(81),t,.09,1,.4);pluck(hz(88),t+.09,.09,1.3,.4)},
+    tick:()=>pluck(hz(96+Math.floor(Math.random()*3)*2),ctx.currentTime,.015,.05,.05),
+    lock:()=>{const t=ctx.currentTime;glide(160,70,t,.18,.16,.15);pluck(hz(88),t+.02,.05,.4,.3)}
   };
   const play=k=>{if(running())cues[k]()};
   const enable=v=>{
@@ -374,7 +426,7 @@ const SND=(()=>{
   const begin=()=>{
     if(!document.documentElement.classList.contains('js'))return;
     if(!manual)enable(true);
-    [[100,'jk'],[750,'dot'],[1700,'leave'],[2000,'doors'],[3200,'w0'],[3520,'w1'],[3840,'w2'],[4150,'photo']].forEach(([ms,k])=>setTimeout(()=>play(k),ms));
+    [...Array.from({length:12},(_,i)=>[100+i*70,'tick']),[800,'lock'],[1100,'lock'],[1400,'lock'],[1450,'jk'],[1700,'leave'],[2000,'doors'],[3200,'w0'],[3520,'w1'],[3840,'w2'],[4150,'photo']].forEach(([ms,k])=>setTimeout(()=>play(k),ms));
   };
   const land=()=>play('land');
   const unlock=e=>{
@@ -400,7 +452,6 @@ function roamDot(dot,hd,S1){
     requestAnimationFrame(loop);
     const W=innerWidth,H=innerHeight,y=scrollY,p=Math.min(1,y/mx),hx=bx,hy=by-y;
     const w=Math.min(1,y/(H*.45)),e=w*w*(3-2*w);
-    // a looping path across the whole page; it weaves left to right and drifts up and down
     const px=W*(.5+.38*Math.sin(p*Math.PI*6)),py=H*(.5+.3*Math.sin(p*Math.PI*4+1.2));
     const tx=hx+(px-hx)*e,ty=hy+(py-hy)*e,ts=sc*(1+e*.9);
     if(cx===null){cx=tx;cy=ty}
@@ -412,10 +463,11 @@ function roamDot(dot,hd,S1){
   loop();
 }
 
-// ----- Intro timeline: logo -> doors open -> site comes into focus -----
+// ----- Intro timeline: reels spin -> land J K . -> jackpot -> pop -> doors open -----
 if(root.classList.contains('js')){
   history.scrollRestoration='manual';scrollTo(0,0);
   root.classList.add('lock');
+
   const flyDot=()=>{
     const dot=document.getElementById('dot'),dt=document.querySelector('.mark .dt'),hd=document.querySelector('.hdot'),
           ws=[...document.querySelectorAll('.l1 .w')],l1=document.querySelector('.l1');
@@ -477,6 +529,8 @@ if(root.classList.contains('js')){
     if(root.classList.contains('play'))return;
     root.classList.add('play');
     SND.begin();
+    setTimeout(()=>root.classList.add('win'),1450);
+    setTimeout(()=>root.classList.add('pop'),1650);
     setTimeout(()=>root.classList.add('open'),2000);
     setTimeout(()=>root.classList.add('go'),2900);
     setTimeout(()=>document.getElementById('intro')?.remove(),3800);
@@ -489,14 +543,62 @@ if(root.classList.contains('js')){
   ]).catch(()=>{});
   Promise.race([ready,new Promise(r=>setTimeout(r,2000))]).then(()=>requestAnimationFrame(()=>requestAnimationFrame(start)));
 
-  // scroll reveals: blur-to-sharp glass panels, staggered
-  document.querySelectorAll('.cards .card').forEach((c,i)=>c.style.transitionDelay=(i*.12)+'s,'+(i*.12)+'s,'+(i*.12)+'s');
+  // scroll reveals
   const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){
     const el=e.target;el.classList.add('in');io.unobserve(el);
     setTimeout(()=>{el.classList.remove('rv','in');el.style.transitionDelay=''},1900);
   }}),{threshold:.15});
   document.querySelectorAll('.rv').forEach(el=>io.observe(el));
 }
+
+// ----- Curved project carousel: drag / swipe / arrows / dots / keyboard -----
+(()=>{
+  const st=document.getElementById('car');if(!st)return;
+  const cs=[...st.querySelectorAll('.card')],n=cs.length,reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let pos=0,tgt=0,dr=null,moved=0,raf=0;
+  const ctl=document.createElement('div');ctl.className='carctl';
+  ctl.innerHTML='<button class="btn" type="button" aria-label="Previous project">←</button><div class="dots"></div><button class="btn" type="button" aria-label="Next project">→</button>';
+  st.after(ctl);
+  const dots=ctl.querySelector('.dots'),[bp,bn]=ctl.querySelectorAll('.btn'),wrapi=v=>((v%n)+n)%n;
+  cs.forEach((_,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-label','Project '+(i+1));b.addEventListener('click',()=>go(i));dots.appendChild(b)});
+  const render=()=>{
+    const R=Math.min(560,st.clientWidth*.6),th=.5;
+    cs.forEach((c,i)=>{
+      let o=wrapi(i-pos);if(o>n/2)o-=n;const a=o*th,ao=Math.abs(o);
+      c.style.transform=`translate(-50%,-50%) translate3d(${Math.sin(a)*R}px,0,${(Math.cos(a)-1)*R}px) rotateY(${a*57.3}deg)`;
+      c.style.opacity=Math.max(0,1-ao*ao*.25);
+      c.style.zIndex=String(100-Math.round(ao*10));
+      c.style.filter=`brightness(${1-Math.min(ao,1.5)*.25})`;
+      c.classList.toggle('on',ao<.5);
+      c.style.pointerEvents=ao>1.9?'none':'auto';
+    });
+    [...dots.children].forEach((d,i)=>d.classList.toggle('on',i===wrapi(Math.round(pos))));
+  };
+  const tick=()=>{
+    if(!dr){pos=reduce?tgt:pos+(tgt-pos)*.14;if(Math.abs(tgt-pos)<.0008)pos=tgt}
+    render();raf=(dr||pos!==tgt)?requestAnimationFrame(tick):0;
+  };
+  const kick=()=>{if(!raf)raf=requestAnimationFrame(tick)};
+  const go=i=>{let d=wrapi(i-Math.round(pos));if(d>n/2)d-=n;tgt=Math.round(pos)+d;kick()};
+  const step=d=>{tgt=Math.round(tgt)+d;kick()};
+  bp.addEventListener('click',()=>step(-1));bn.addEventListener('click',()=>step(1));
+  st.addEventListener('pointerdown',e=>{if(e.button>0)return;dr={x:e.clientX,p:pos,id:e.pointerId};moved=0});
+  st.addEventListener('pointermove',e=>{
+    if(!dr)return;const dx=e.clientX-dr.x;moved=Math.max(moved,Math.abs(dx));
+    if(moved>6){if(!st.hasPointerCapture(dr.id))st.setPointerCapture(dr.id);pos=dr.p-dx/260;tgt=pos;kick()}
+  });
+  const up=()=>{if(!dr)return;dr=null;if(moved>6)tgt=Math.round(pos);kick()};
+  st.addEventListener('pointerup',up);st.addEventListener('pointercancel',up);
+  st.addEventListener('click',e=>{
+    if(moved>6){e.preventDefault();moved=0;return}
+    const c=e.target.closest('.card');
+    if(c&&!c.classList.contains('on')){e.preventDefault();go(cs.indexOf(c))}
+  },true);
+  st.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'){e.preventDefault();step(-1)}else if(e.key==='ArrowRight'){e.preventDefault();step(1)}});
+  st.addEventListener('dragstart',e=>e.preventDefault());
+  addEventListener('resize',render);
+  render();
+})();
 
 // ----- Scroll progress + background parallax -----
 const prog=document.getElementById('prog');let tick=false;
