@@ -44,6 +44,10 @@ h1,h2,h3{font-family:"Space Grotesk",sans-serif;letter-spacing:-.055em;line-heig
 .orb.b{top:45%;left:-20%;width:800px;height:800px;background:radial-gradient(circle,rgba(56,189,248,.13),transparent 65%)}
 .orb.c{top:80%;right:-5%;width:700px;height:700px;background:radial-gradient(circle,rgba(167,139,250,.13),transparent 65%)}
 
+
+.acc{background:none;border:0;border-bottom:1px solid var(--line);color:var(--muted);font:12px "DM Sans",sans-serif;width:110px;padding:2px 0;text-align:center}
+.acc:focus{outline:none;border-color:var(--accent)}
+
 /* glass material */
 .glass{position:relative;background:var(--glass);background-color:rgba(16,18,17,.6);border:1px solid var(--line);border-radius:20px;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--lift);overflow:hidden}
 .glass::before{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:radial-gradient(420px circle at var(--mx,30%) var(--my,0%),rgba(255,255,255,.14),transparent 60%);opacity:.0;transition:opacity .4s}
@@ -352,7 +356,7 @@ footer{display:flex;justify-content:space-between;gap:15px;padding:25px 0 80px;c
 <button class="snd" id="snd" aria-pressed="false" aria-label="Toggle sound"><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><span id="sndl">Sound off</span></button>
 
 <footer class="wrap">
-  <span>© <span id="year"></span> Josh Koppanalil</span>
+  <span>© <span id="year"></span> Josh Koppanalil<input class="acc" id="acc" type="text" placeholder="access code" autocomplete="off" spellcheck="false" aria-label="Access code"></span>
   <a class="textlink" href="#home">Back to top ↑</a>
 </footer>
 
@@ -639,6 +643,10 @@ document.querySelectorAll('.copy').forEach(btn=>btn.addEventListener('click',asy
   }
   hint.textContent='Copied!';hint.classList.add('done');
   clearTimeout(ht);ht=setTimeout(()=>{hint.textContent='Click to copy';hint.classList.remove('done')},1600);
+
+  document.getElementById('acc').addEventListener('input',e=>{
+  if(e.target.value.trim().toLowerCase()==='gam')location.href='/casino/';
+});
 }));
 </script>
 </body>
