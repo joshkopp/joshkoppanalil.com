@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>The Back Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@1,600&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--felt:#0d4a36;--deep:#05211a;--brass:#d8b45f;--ox:#8c2431;--ivory:#f6efdc;--ink:#14110d;--win:#8be28b;--lose:#ff8a8a}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--ivory);font:16px/1.5 "DM Sans",sans-serif;background:radial-gradient(1200px 700px at 50% -10%,#14634a,var(--deep) 70%) fixed}
+.wrap{max-width:980px;margin:auto;padding:22px 18px 60px}
+header{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+h1{margin:0;font:italic 600 clamp(32px,6vw,48px)/1 "Bodoni Moda",serif;color:var(--brass)}
+.bank{text-align:right}.bank small{display:block;color:#9fb8ad;font-size:13px}
+.bank b{font-size:30px;font-variant-numeric:tabular-nums}
+button{font:inherit;cursor:pointer;color:inherit}
+button:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.btn{padding:10px 20px;border-radius:99px;border:1px solid rgba(216,180,95,.5);background:rgba(0,0,0,.25);font-weight:700;transition:transform .15s,background .2s}
+.btn:hover:not(:disabled){transform:translateY(-1px);background:rgba(216,180,95,.15)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.go{background:linear-gradient(180deg,#f1d487,var(--brass));color:var(--ink);border-color:transparent}
+.btn.go:hover:not(:disabled){background:linear-gradient(180deg,#f8dd96,#e2bf6c)}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0 14px}
+.tabs button{padding:9px 18px;border-radius:99px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#bfd3c9}
+.tabs button.on{background:var(--brass);color:var(--ink);border-color:var(--brass);font-weight:700}
+.betbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.betbar label{font-weight:700;margin-right:2px}
+#bet{width:110px;padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:var(--ivory);font:inherit;font-variant-numeric:tabular-nums}
+.chip{width:46px;height:46px;border-radius:50%;border:3px dashed rgba(255,255,255,.75);background:var(--ox);font-weight:700;font-size:13px;box-shadow:0 3px 0 rgba(0,0,0,.4)}
+.chip:nth-of-type(2){background:#1d4e8f}.chip:nth-of-type(3){background:#1a1a1a}.chip:nth-of-type(4){background:#6a3b8f}
+.chip:active{transform:translateY(2px);box-shadow:none}
+.mini{padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:transparent}
+#note{color:var(--lose);font-size:14px;min-height:20px;margin:0 0 8px}
+.table{border-radius:28px;padding:28px clamp(16px,4vw,36px);background:radial-gradient(ellipse at 50% 0,#17694d,var(--felt) 70%);border:2px solid var(--brass);box-shadow:inset 0 0 0 8px rgba(0,0,0,.18),0 30px 60px -30px #000;min-height:420px}
+.game{display:none}.game.on{display:block}
+.table h2{margin:0 0 4px;font:italic 600 26px/1.1 "Bodoni Moda",serif;color:var(--brass)}
+.rule{margin:0 0 20px;color:#a9c7ba;font-size:14px}
+.msg{min-height:28px;margin:16px 0 0;font-weight:700;font-size:18px}
+.msg.win{color:var(--win)}.msg.lose{color:var(--lose)}.msg.push{color:var(--brass)}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.lbl{display:flex;align-items:center;gap:10px;margin:14px 0 8px;color:#bfd3c9;font-size:14px}
+.lbl b{background:rgba(0,0,0,.35);border-radius:99px;padding:1px 10px;color:var(--ivory)}
+.hand{display:flex;min-height:92px}
+.pc{flex:none;width:62px;height:88px;border-radius:8px;background:var(--ivory);color:var(--ink);padding:5px 7px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 4px 10px rgba(0,0,0,.45);animation:deal .25s ease-out}
+.pc+.pc{margin-left:-22px}
+.pc b{font-size:19px;line-height:1}.pc span{font-size:34px;line-height:1;align-self:center}
+.pc.red{color:#b3202e}
+.pc.back{background:repeating-linear-gradient(45deg,var(--ox) 0 6px,#a63040 6px 12px);border:4px solid var(--ivory)}
+@keyframes deal{from{transform:translateY(-14px);opacity:0}}
+.reels{display:flex;gap:12px;justify-content:center;margin:10px 0 6px}
+.reel{width:min(30vw,120px);height:min(30vw,120px);display:grid;place-items:center;border-radius:16px;background:linear-gradient(#fff6dc,#e8dcb8);color:var(--ink);font-size:min(14vw,60px);box-shadow:inset 0 6px 14px rgba(0,0,0,.25),0 0 0 4px var(--brass)}
+.sev{font:italic 600 min(16vw,72px)/1 "Bodoni Moda",serif;color:#c0182b;font-style:italic}
+.pay{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;font-size:13px;color:#a9c7ba;margin-top:10px}
+.center{text-align:center}
+.ball{width:120px;height:120px;border-radius:50%;margin:6px auto 0;display:grid;place-items:center;font:700 46px "DM Sans",sans-serif;border:5px solid var(--brass);background:#222;transition:background .15s}
+.ball.r{background:#b3202e}.ball.k{background:#161616}.ball.g{background:#1b7a3d}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:5px;margin-top:18px}
+.rgrid button{padding:8px 0;border-radius:8px;border:2px solid transparent;font-weight:700;background:#161616}
+.rgrid .r{background:#b3202e}.rgrid .g{background:#1b7a3d}
+.rgrid .out{grid-column:span 2;background:rgba(0,0,0,.3);border-color:rgba(255,255,255,.2)}
+.rgrid .sel{border-color:var(--brass);box-shadow:0 0 0 2px var(--brass)}
+.big{font:700 clamp(54px,14vw,96px)/1 "DM Sans",sans-serif;font-variant-numeric:tabular-nums;text-align:center;margin:20px 0 4px}
+.big.win{color:var(--win)}.big.lose{color:var(--lose)}
+.hist{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;font-size:13px;font-variant-numeric:tabular-nums;min-height:24px}
+.hist span{padding:1px 9px;border-radius:99px;background:rgba(0,0,0,.35)}
+.hist .win{color:var(--win)}.hist .lose{color:var(--lose)}
+.seg{display:inline-flex;border:1px solid rgba(255,255,255,.2);border-radius:99px;overflow:hidden}
+.seg button{padding:8px 18px;background:transparent;border:0}.seg .on{background:var(--brass);color:var(--ink);font-weight:700}
+input[type=range]{width:100%;accent-color:var(--brass);margin:18px 0 6px}
+.info{display:flex;justify-content:space-between;font-size:14px;color:#bfd3c9;flex-wrap:wrap;gap:6px}
+footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:22px;color:#8ba99c;font-size:13px}
+footer a,footer button{color:var(--brass);background:none;border:0;padding:0;text-decoration:underline}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+body{background:radial-gradient(900px 520px at 50% -5%,#1b6e52,transparent 70%),radial-gradient(900px 500px at 50% 125%,#4a0f1c,transparent 65%),#04150f fixed}
+.wrap{padding-bottom:120px}
+header{position:sticky;top:0;z-index:5;padding:12px 0;background:rgba(4,21,15,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);margin:0 -18px;padding-left:18px;padding-right:18px}
+h1{text-shadow:0 0 18px rgba(216,180,95,.55),0 0 2px #fff3}
+.bank{display:flex;align-items:center;gap:12px;padding:6px 16px;border-radius:99px;background:rgba(0,0,0,.4);border:1px solid rgba(216,180,95,.45)}
+.bank small{display:none}.bank br{display:none}.bank b{font-size:24px;color:#ffe9a8}
+.lead{font:italic 600 24px "Bodoni Moda",serif;color:#cfe2d8;margin:28px 0 14px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px}
+.tiles button{position:relative;overflow:hidden;text-align:left;padding:26px 24px;min-height:180px;border-radius:26px;border:2px solid rgba(216,180,95,.55);background:var(--g);display:flex;flex-direction:column;justify-content:flex-end;box-shadow:0 20px 40px -20px #000,inset 0 0 0 6px rgba(0,0,0,.2);transition:transform .25s,box-shadow .25s}
+.tiles button:hover{transform:translateY(-5px) scale(1.01);box-shadow:0 0 36px rgba(216,180,95,.4),inset 0 0 0 6px rgba(0,0,0,.2)}
+.tiles span{position:absolute;right:18px;top:4px;font:italic 600 100px/1.1 "Bodoni Moda",serif;color:var(--ivory);filter:drop-shadow(0 8px 12px rgba(0,0,0,.5))}
+.tiles b{font:italic 600 32px/1.1 "Bodoni Moda",serif}.tiles small{color:#d5e6dc;font-size:14px}
+.tiles button:nth-child(1){--g:linear-gradient(145deg,#12664a,#08301f)}
+.tiles button:nth-child(2){--g:linear-gradient(145deg,#a02a3a,#2e0a12)}
+.tiles button:nth-child(3){--g:linear-gradient(145deg,#1f4a8c,#0a1530)}
+.tiles button:nth-child(4){--g:linear-gradient(145deg,#6f3f96,#1d0e33)}
+.tiles button:nth-child(5){--g:linear-gradient(145deg,#b07a1d,#3a2508)}
+.back{margin:18px 0 10px;padding:8px 18px;border-radius:99px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.2)}
+.betbar{position:fixed;left:0;right:0;bottom:0;z-index:6;justify-content:center;margin:0;padding:26px 14px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,rgba(3,12,9,.96) 40%)}
+.table{border-radius:38px;border:10px solid #3a1d12;box-shadow:0 0 0 2px var(--brass),inset 0 0 80px rgba(0,0,0,.45),0 30px 60px -30px #000}
+.cab{--h:min(25vw,108px);position:relative;width:fit-content;max-width:100%;margin:8px auto 0;padding:14px 20px 16px;border-radius:30px;background:linear-gradient(160deg,#f1d487,#a87d2b 45%,#5c3f10);box-shadow:0 22px 50px -15px #000,inset 0 2px 0 rgba(255,255,255,.5)}
+.bulbs{display:flex;justify-content:space-between;padding:2px 4px 10px}.bulbs:last-child{padding:10px 4px 2px}
+.bulbs i{width:10px;height:10px;border-radius:50%;background:#5b3b00;box-shadow:inset 0 1px 2px #000}
+.cab.play .bulbs i{animation:chase .5s steps(1) infinite}.cab.play .bulbs i:nth-child(even){animation-delay:.25s}
+.cab.win .bulbs i{animation:none;background:#fff3b0;box-shadow:0 0 10px #ffe27a}
+@keyframes chase{0%{background:#fff3b0;box-shadow:0 0 10px #ffe27a}50%{background:#5b3b00;box-shadow:none}}
+.rwin{position:relative;display:flex;gap:6px;padding:8px;border-radius:16px;background:#0a0c0b;box-shadow:inset 0 4px 14px #000}
+.cab.win .rwin{box-shadow:inset 0 4px 14px #000,0 0 40px rgba(255,226,122,.7)}
+.rl{position:relative;width:var(--h);height:calc(var(--h)*3);overflow:hidden;border-radius:8px;background:#fff8e2}
+.rl::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(rgba(0,0,0,.5),transparent 30%,transparent 70%,rgba(0,0,0,.5))}
+.strip{will-change:transform}
+.strip b{display:grid;place-items:center;height:var(--h);font-size:calc(var(--h)*.58);font-weight:400;color:var(--ink);line-height:1}
+.strip b.hit{animation:hit .5s ease-in-out 4}
+@keyframes hit{50%{background:rgba(255,200,60,.6);transform:scale(1.1)}}
+.cab .sev{font-size:calc(var(--h)*.7)}
+.line{position:absolute;left:8px;right:8px;top:50%;height:3px;margin-top:-1px;background:#e8283c;box-shadow:0 0 8px #e8283c;z-index:3;pointer-events:none;opacity:.75}
+#spin{padding:14px 60px;font-size:20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>The Back Room</h1>
+  <div class="bank"><small>Chips</small><b id="bal">$1,000</b><br><button class="btn go" id="refill" hidden>Refill to $1,000</button></div>
+</header>
+
+<section id="lobby"><p class="lead">Pick a table</p>
+<div class="tiles" id="tabs">
+<button data-g="bj"><span>♠</span><b>Blackjack</b><small>Beat the dealer to 21</small></button>
+<button data-g="slots"><span>7</span><b>Slots</b><small>Pull for the jackpot</small></button>
+<button data-g="roul"><span>◉</span><b>Roulette</b><small>Red, black, or your lucky number</small></button>
+<button data-g="crash"><span>🚀</span><b>Crash</b><small>Cash out before it blows</small></button>
+<button data-g="dice"><span>🎲</span><b>Dice</b><small>Set your own odds</small></button>
+</div></section>
+<div id="stage" hidden><button class="back" id="back">‹ Lobby</button>
+<div class="betbar">
+  <label for="bet">Bet</label><input id="bet" type="number" min="1" value="50">
+  <button class="chip" data-b="10">10</button><button class="chip" data-b="50">50</button><button class="chip" data-b="100">100</button><button class="chip" data-b="500">500</button>
+  <button class="mini" id="half">½</button><button class="mini" id="dbl">2×</button><button class="mini" id="max">Max</button>
+</div>
+<p id="note"></p>
+
+<main class="table">
+
+<section class="game on" id="g-bj">
+  <h2>Blackjack</h2><p class="rule">Blackjack pays 3:2. Dealer stands on 17. Double on your first two cards.</p>
+  <div class="lbl">Dealer <b id="bjdv"></b></div><div class="hand" id="bjd"></div>
+  <div class="lbl">You <b id="bjpv"></b></div><div class="hand" id="bjp"></div>
+  <p class="msg" id="bjm"></p>
+  <div class="row"><button class="btn go" id="bjdeal">Deal</button><button class="btn" id="bjhit" disabled>Hit</button><button class="btn" id="bjstand" disabled>Stand</button><button class="btn" id="bjdbl" disabled>Double</button></div>
+</section>
+
+<section class="game" id="g-slots">
+  <h2>Slots</h2><p class="rule">Match three on the red line to win. Two cherries pay 2×.</p>
+  <div class="cab" id="slot"><div class="bulbs"></div>
+    <div class="rwin"><div class="rl"><div class="strip" id="s0"></div></div><div class="rl"><div class="strip" id="s1"></div></div><div class="rl"><div class="strip" id="s2"></div></div><div class="line"></div></div>
+  <div class="bulbs"></div></div>
+  <div class="pay"><span>🍒🍒🍒 5×</span><span>🍋🍋🍋 8×</span><span>🔔🔔🔔 15×</span><span>⭐⭐⭐ 25×</span><span>💎💎💎 50×</span><span>777 100×</span></div>
+  <p class="msg center" id="sm"></p>
+  <div class="row" style="justify-content:center"><button class="btn go" id="spin">Spin</button></div>
+</section>
+
+<section class="game" id="g-roul">
+  <h2>Roulette</h2><p class="rule">Pick one bet, then spin. Single number pays 35:1, dozens 2:1, everything else 1:1.</p>
+  <div class="ball" id="ball">–</div>
+  <p class="msg center" id="rm"></p>
+  <div class="rgrid" id="rgrid"></div>
+  <div class="row"><button class="btn go" id="rspin">Spin</button><span id="rsel" style="align-self:center;color:#bfd3c9">No bet selected</span></div>
+</section>
+
+<section class="game" id="g-crash">
+  <h2>Crash</h2><p class="rule">The multiplier climbs until it crashes. Cash out before it does.</p>
+  <div class="big" id="cn">1.00×</div>
+  <div class="hist" id="ch"></div>
+  <p class="msg center" id="cmsg"></p>
+  <div class="row" style="justify-content:center"><button class="btn go" id="cbtn">Place bet</button></div>
+</section>
+
+<section class="game" id="g-dice">
+  <h2>Dice</h2><p class="rule">Roll 0 to 99.99. Slide the target to change your odds and payout.</p>
+  <div class="big" id="dr">–</div>
+  <div class="center"><div class="seg" id="dseg"><button class="on" data-m="under">Roll under</button><button data-m="over">Roll over</button></div></div>
+  <input type="range" id="dt" min="2" max="98" value="50" aria-label="Target">
+  <div class="info"><span>Target <b id="dtv">50</b></span><span>Win chance <b id="dc">50%</b></span><span>Payout <b id="dp">1.96×</b></span></div>
+  <p class="msg center" id="dm"></p>
+  <div class="row" style="justify-content:center"><button class="btn go" id="droll">Roll</button></div>
+</section>
+
+</main></div>
+
+<footer><span>Play money only. Nothing here costs or pays real money.</span><span><button id="reset">Reset chips</button> · <a href="/">Back to site</a></span></footer>
+</div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const fmt=n=>'$'+Math.round(n).toLocaleString();
+const msg=(id,t,c='')=>{const e=$(id);e.textContent=t;e.className=e.className.split(' ')[0]+' '+c+(e.classList.contains('center')?' center':'')};
+let bal=1000;try{const s=localStorage.getItem('backroom');if(s!==null)bal=+s}catch(e){}
+function setBal(v){bal=Math.max(0,Math.round(v));$('#bal').textContent=fmt(bal);$('#refill').hidden=bal>=1;try{localStorage.setItem('backroom',bal)}catch(e){}}
+function getBet(){const b=Math.floor(+$('#bet').value);let n='';if(!(b>=1))n='Enter a bet of at least $1.';else if(b>bal)n='Not enough chips for that bet.';$('#note').textContent=n;return n?0:b}
+setBal(bal);
+$('#refill').onclick=$('#reset').onclick=()=>setBal(1000);
+$$('.chip').forEach(c=>c.onclick=()=>$('#bet').value=c.dataset.b);
+$('#half').onclick=()=>$('#bet').value=Math.max(1,Math.floor(+$('#bet').value/2));
+$('#dbl').onclick=()=>$('#bet').value=Math.max(1,Math.min(bal,Math.floor(+$('#bet').value*2)));
+$('#max').onclick=()=>$('#bet').value=Math.max(1,bal);
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)enter(b.dataset.g)};
+function enter(g){$$('.game').forEach(x=>x.classList.toggle('on',x.id==='g-'+g));$('#lobby').hidden=true;$('#stage').hidden=false;$('#note').textContent='';scrollTo(0,0)}
+$('#back').onclick=()=>{$('#lobby').hidden=false;$('#stage').hidden=true;scrollTo(0,0)};
+
+/* ---------- Blackjack ---------- */
+const SU=['♠','♥','♦','♣'],RK=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+let deck=[],bj={p:[],d:[],bet:0,on:false,hide:true};
+function draw(){if(deck.length<30){deck=[];for(let k=0;k<6;k++)SU.forEach(s=>RK.forEach(r=>deck.push({s,r})));for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]]}}return deck.pop()}
+function val(h){let t=0,a=0;h.forEach(c=>{if(c.r==='A'){a++;t+=11}else t+='JQK'.includes(c.r)?10:+c.r});while(t>21&&a){t-=10;a--}return t}
+const cardH=(c,hide)=>hide?'<div class="pc back"></div>':`<div class="pc ${'♥♦'.includes(c.s)?'red':''}"><b>${c.r}</b><span>${c.s}</span></div>`;
+function bjr(){
+  $('#bjd').innerHTML=bj.d.map((c,i)=>cardH(c,bj.hide&&i===1)).join('');
+  $('#bjp').innerHTML=bj.p.map(c=>cardH(c)).join('');
+  $('#bjdv').textContent=bj.d.length?(bj.hide?val([bj.d[0]]):val(bj.d)):'';
+  $('#bjpv').textContent=bj.p.length?val(bj.p):'';
+  $('#bjhit').disabled=$('#bjstand').disabled=!bj.on;
+  $('#bjdbl').disabled=!(bj.on&&bj.p.length===2&&bal>=bj.bet);
+  $('#bjdeal').disabled=bj.on;
+}
+function bjend(){
+  bj.on=false;bj.hide=false;const pv=val(bj.p),dv=val(bj.d),b=bj.bet;let w=0,t,c;
+  if(bj.nat&&!(dv===21&&bj.d.length===2)){w=b*2.5;t=`Blackjack! You win ${fmt(w-b)}`;c='win'}
+  else if(bj.nat){w=b;t='Push. Both have blackjack.';c='push'}
+  else if(pv>21){t=`Bust. You lose ${fmt(b)}`;c='lose'}
+  else if(dv>21||pv>dv){w=b*2;t=`You win ${fmt(b)}`;c='win'}
+  else if(pv===dv){w=b;t='Push. Bet returned.';c='push'}
+  else{t=`Dealer wins. You lose ${fmt(b)}`;c='lose'}
+  setBal(bal+w);msg('#bjm',t,c);bjr();
+}
+function bjstand(){bj.hide=false;while(val(bj.d)<17)bj.d.push(draw());bjend()}
+$('#bjdeal').onclick=()=>{
+  const b=getBet();if(!b||bj.on)return;setBal(bal-b);
+  bj={p:[draw(),draw()],d:[draw(),draw()],bet:b,on:true,hide:true};bj.nat=val(bj.p)===21;
+  msg('#bjm','');bjr();if(bj.nat)bjend();
+};
+$('#bjhit').onclick=()=>{bj.p.push(draw());if(val(bj.p)>21)bjend();else bjr()};
+$('#bjstand').onclick=bjstand;
+$('#bjdbl').onclick=()=>{setBal(bal-bj.bet);bj.bet*=2;bj.p.push(draw());if(val(bj.p)>21)bjend();else bjstand()};
+
+/* ---------- Slots ---------- */
+const SY=[['🍒',5,30],['🍋',8,26],['🔔',15,20],['⭐',25,12],['💎',50,8],['7',100,4]];
+const pick=()=>{let r=Math.random()*100;for(const s of SY){if((r-=s[2])<0)return s}return SY[0]};
+const cell=(s,hit)=>`<b${hit?' class="hit"':''}>${s[0]==='7'?'<i class="sev">7</i>':s[0]}</b>`;
+const setStrip=(i,l,hit)=>$('#s'+i).innerHTML=l.map((s,k)=>cell(s,hit&&k===1)).join('');
+$$('.bulbs').forEach(b=>b.innerHTML='<i></i>'.repeat(11));
+let cur=[0,1,2].map(()=>[pick(),pick(),pick()]);cur.forEach((l,i)=>setStrip(i,l));
+let spinning=false;
+$('#spin').onclick=async()=>{
+  if(spinning)return;const b=getBet();if(!b)return;spinning=true;setBal(bal-b);msg('#sm','','');
+  const cab=$('#slot');cab.classList.remove('win');cab.classList.add('play');$('#spin').disabled=true;
+  const fin=[0,1,2].map(()=>[pick(),pick(),pick()]),mid=fin.map(f=>f[1]);
+  let w=0,hit=[0,0,0];
+  if(mid[0][0]===mid[1][0]&&mid[1][0]===mid[2][0]){w=b*mid[0][1];hit=[1,1,1]}
+  else if(mid.filter(s=>s[0]==='🍒').length===2){w=b*2;hit=mid.map(s=>s[0]==='🍒'?1:0)}
+  await Promise.all([0,1,2].map(i=>{
+    const n=18+i*10,list=[...cur[i],...Array.from({length:n},()=>pick()),...fin[i]];
+    setStrip(i,list);const h=$('#s'+i).firstElementChild.offsetHeight;
+    const a=$('#s'+i).animate([
+      {transform:'translateY(0)',filter:'blur(0)'},
+      {filter:'blur(3px)',offset:.12},{filter:'blur(3px)',offset:.65},
+      {transform:`translateY(${-(n+3)*h}px)`,filter:'blur(0)'}
+    ],{duration:1600+i*700,easing:'cubic-bezier(.35,.6,.25,1.04)',fill:'forwards'});
+    return a.finished.then(()=>{setStrip(i,fin[i],hit[i]);a.cancel();cur[i]=fin[i]});
+  }));
+  cab.classList.remove('play');spinning=false;$('#spin').disabled=false;
+  if(w){cab.classList.add('win');setBal(bal+w);msg('#sm',`You win ${fmt(w-b)}`+(w>=b*25?' — jackpot!':''),'win')}
+  else msg('#sm',`No match. You lose ${fmt(b)}`,'lose');
+};
+
+/* ---------- Roulette ---------- */
+const RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const col=n=>n===0?'g':RED.has(n)?'r':'k';
+const OUT=[['Red',n=>RED.has(n),2],['Black',n=>n>0&&!RED.has(n),2],['Odd',n=>n>0&&n%2===1,2],['Even',n=>n>0&&n%2===0,2],['1–18',n=>n>=1&&n<=18,2],['19–36',n=>n>=19,2],['1st 12',n=>n>=1&&n<=12,3],['2nd 12',n=>n>=13&&n<=24,3],['3rd 12',n=>n>=25,3]];
+let rsel=null,rbusy=false;
+const rg=$('#rgrid');
+OUT.forEach(([l,t,p])=>{const b=document.createElement('button');b.className='out';b.textContent=l;b.onclick=()=>pickR(b,{l,t,p});rg.appendChild(b)});
+for(let n=0;n<=36;n++){const b=document.createElement('button');b.className=col(n);b.textContent=n;b.onclick=()=>pickR(b,{l:'Number '+n,t:x=>x===n,p:36});rg.appendChild(b)}
+function pickR(b,s){if(rbusy)return;rsel=s;$$('#rgrid button').forEach(x=>x.classList.toggle('sel',x===b));$('#rsel').textContent='Bet on: '+s.l}
+function showR(n){const e=$('#ball');e.textContent=n;e.className='ball '+col(n)}
+$('#rspin').onclick=()=>{
+  if(rbusy)return;if(!rsel){msg('#rm','Pick a bet first.','push');return}
+  const b=getBet();if(!b)return;rbusy=true;setBal(bal-b);msg('#rm','','');
+  const n=Math.floor(Math.random()*37);let i=0;
+  const tick=()=>{
+    if(i<18){showR(Math.floor(Math.random()*37));i++;setTimeout(tick,35+i*i*.6);return}
+    showR(n);rbusy=false;
+    if(rsel.t(n)){const w=b*rsel.p;setBal(bal+w);msg('#rm',`${n}. You win ${fmt(w-b)}`,'win')}else msg('#rm',`${n}. You lose ${fmt(b)}`,'lose');
+  };tick();
+};
+
+/* ---------- Crash ---------- */
+let cr=null,hist=[];
+function endC(m,ok){clearInterval(cr.id);cr=null;$('#cn').textContent=m.toFixed(2)+'×';$('#cn').className='big '+(ok?'win':'lose');hist=[m,...hist].slice(0,12);$('#ch').innerHTML=hist.map(h=>`<span class="${h>=2?'win':'lose'}">${h.toFixed(2)}×</span>`).join('');$('#cbtn').textContent='Place bet'}
+$('#cbtn').onclick=()=>{
+  if(cr){const w=Math.round(cr.b*cr.m);setBal(bal+w);msg('#cmsg',`Cashed out at ${cr.m.toFixed(2)}×. You win ${fmt(w-cr.b)}`,'win');endC(cr.m,true);return}
+  const b=getBet();if(!b)return;setBal(bal-b);msg('#cmsg','','');
+  const at=Math.min(500,Math.max(1,.97/(1-Math.random())));
+  cr={b,at,m:1,t0:performance.now()};$('#cn').className='big';$('#cn').textContent='1.00×';$('#cbtn').textContent='Cash out';
+  cr.id=setInterval(()=>{const m=Math.exp(.12*(performance.now()-cr.t0)/1000);
+    if(m>=cr.at){const a=cr.at,l=cr.b;msg('#cmsg',`Crashed at ${a.toFixed(2)}×. You lose ${fmt(l)}`,'lose');endC(a,false)}
+    else{cr.m=m;$('#cn').textContent=m.toFixed(2)+'×'}},40);
+};
+
+/* ---------- Dice ---------- */
+let dmode='under',dbusy=false;
+const dchance=()=>dmode==='under'?+$('#dt').value:100-$('#dt').value;
+function dinfo(){$('#dtv').textContent=$('#dt').value;$('#dc').textContent=dchance()+'%';$('#dp').textContent=(98/dchance()).toFixed(2)+'×'}
+$('#dt').oninput=dinfo;
+$('#dseg').onclick=e=>{const b=e.target.closest('button');if(!b)return;dmode=b.dataset.m;$$('#dseg button').forEach(x=>x.classList.toggle('on',x===b));dinfo()};
+$('#droll').onclick=()=>{
+  if(dbusy)return;const b=getBet();if(!b)return;dbusy=true;setBal(bal-b);msg('#dm','','');$('#dr').className='big';
+  const r=Math.floor(Math.random()*10000)/100,t=+$('#dt').value,mult=98/dchance();let i=0;
+  const id=setInterval(()=>{
+    if(++i<12){$('#dr').textContent=(Math.random()*100).toFixed(2);return}
+    clearInterval(id);dbusy=false;$('#dr').textContent=r.toFixed(2);
+    const win=dmode==='under'?r<t:r>t;
+    if(win){const w=Math.round(b*mult);setBal(bal+w);$('#dr').className='big win';msg('#dm',`You win ${fmt(w-b)}`,'win')}
+    else{$('#dr').className='big lose';msg('#dm',`You lose ${fmt(b)}`,'lose')}
+  },55);
+};
+dinfo();bjr();
+</script>
+</body>
+</html>
