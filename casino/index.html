@@ -174,6 +174,19 @@ h1{font-weight:900;font-size:clamp(22px,5vw,34px);letter-spacing:.12em;text-tran
 .mk i{position:absolute;left:-3px;top:0;width:6px;height:54px;border-radius:3px;background:#fff;box-shadow:0 0 16px #fff,0 0 36px #19f0ff}
 .scale{display:flex;justify-content:space-between;margin:8px 8px 0;font:12px "JetBrains Mono",monospace;color:#6f8ea3}
 .info{font-family:"JetBrains Mono",monospace}
+
+.tiles button:nth-child(6){--c:#ffb020}.tiles button:nth-child(6)::after{animation-delay:-3.2s}
+.stagec{position:relative;height:300px;display:grid;place-items:center;perspective:900px;perspective-origin:50% 25%}
+.cwr{transform-style:preserve-3d;width:150px;height:150px}
+.coin{position:relative;width:150px;height:150px;transform-style:preserve-3d}
+.cf,.ed{position:absolute;inset:0;border-radius:50%}
+.cf{display:grid;place-items:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;font:900 64px Orbitron,sans-serif;border:6px solid #19f0ff;color:#19f0ff;text-shadow:0 0 16px #19f0ff;background:radial-gradient(circle at 35% 28%,#2f7f98,#0a2433 62%);box-shadow:0 0 30px rgba(25,240,255,.5),inset 0 0 30px rgba(25,240,255,.3)}
+.cf::before{content:"";position:absolute;inset:14px;border-radius:50%;border:2px dashed rgba(25,240,255,.6)}
+.cf.f{transform:translateZ(6px)}
+.cf.b{transform:rotateX(180deg) translateZ(6px);border-color:#ff2d95;color:#ff2d95;text-shadow:0 0 16px #ff2d95;background:radial-gradient(circle at 35% 28%,#8a2a63,#2a0a24 62%);box-shadow:0 0 30px rgba(255,45,149,.5),inset 0 0 30px rgba(255,45,149,.3)}
+.cf.b::before{border-color:rgba(255,45,149,.6)}
+.ed{background:#0b3a4a;border:3px solid #19f0ff}
+.cshadow{position:absolute;bottom:14px;left:50%;width:130px;height:22px;margin-left:-65px;border-radius:50%;background:radial-gradient(#19f0ff,transparent 70%);opacity:.6}
 </style>
 </head>
 <body>
@@ -190,6 +203,7 @@ h1{font-weight:900;font-size:clamp(22px,5vw,34px);letter-spacing:.12em;text-tran
 <button data-g="roul"><span>◉</span><b>Roulette</b><small>Red, black, or your lucky number</small></button>
 <button data-g="crash"><span>🚀</span><b>Crash</b><small>Cash out before it blows</small></button>
 <button data-g="dice"><span>🎲</span><b>Dice</b><small>Set your own odds</small></button>
+<button data-g="coin"><span>◎</span><b>Coin</b><small>Heads or tails, 50/50</small></button>
 </div></section>
 <div id="stage" hidden><button class="back" id="back">‹ Lobby</button>
 <div class="betbar">
@@ -245,6 +259,14 @@ h1{font-weight:900;font-size:clamp(22px,5vw,34px);letter-spacing:.12em;text-tran
   <div class="info"><span>Target <b id="dtv">50</b></span><span>Win chance <b id="dc">50%</b></span><span>Payout <b id="dp">1.96×</b></span></div>
   <p class="msg center" id="dm"></p>
   <div class="row" style="justify-content:center"><button class="btn go" id="droll">Roll</button></div>
+</section>
+
+<section class="game" id="g-coin">
+  <h2>Coin</h2><p class="rule">Call it. Heads or tails, a true 50/50, pays 1.96×.</p>
+  <div class="stagec"><div class="cshadow" id="csh"></div><div class="cwr" id="cwr"><div class="coin" id="coin"><div class="cf f">H</div><div class="cf b">T</div></div></div></div>
+  <div class="center"><div class="seg" id="cseg"><button class="on" data-s="H">Heads</button><button data-s="T">Tails</button></div></div>
+  <p class="msg center" id="com"></p>
+  <div class="row" style="justify-content:center"><button class="btn go" id="cflip">Flip</button></div>
 </section>
 
 </main></div>
@@ -434,6 +456,33 @@ $('#droll').onclick=()=>{
     },620);
   },65);
 };
+/* ---------- Coin ---------- */
+const coin=$('#coin');let cside='H',cang=0,cbusy=false;
+for(let k=-5;k<=5;k++){const e=document.createElement('div');e.className='ed';e.style.transform=`translateZ(${k}px)`;coin.prepend(e)}
+$('#cseg').onclick=e=>{const b=e.target.closest('button');if(!b||b.disabled)return;cside=b.dataset.s;$$('#cseg button').forEach(x=>x.classList.toggle('on',x===b))};
+$('#cflip').onclick=async()=>{
+  if(cbusy)return;const b=getBet();if(!b)return;cbusy=true;setBal(bal-b);msg('#com','','');
+  $('#cflip').disabled=true;$$('#cseg button').forEach(x=>x.disabled=true);
+  const res=Math.random()<.5?'H':'T',win=res===cside,D=2400;
+  const tgt=(Math.ceil(cang/360)+5+Math.floor(Math.random()*3))*360+(res==='T'?180:0);
+  const spin=coin.animate([{transform:`rotateX(${cang}deg)`},{transform:`rotateX(${tgt}deg)`}],{duration:D,easing:'cubic-bezier(.25,.6,.3,1)',fill:'forwards'});
+  $('#cwr').animate([
+    {transform:'translateY(0) scale(1)',easing:'cubic-bezier(.2,.7,.4,1)'},
+    {transform:'translateY(-170px) scale(1.3)',offset:.42,easing:'cubic-bezier(.6,0,.8,.4)'},
+    {transform:'translateY(0) scale(1)',offset:.88,easing:'ease-out'},
+    {transform:'translateY(-16px) scale(1.03)',offset:.94,easing:'ease-in'},
+    {transform:'translateY(0) scale(1)'}
+  ],{duration:D});
+  $('#csh').animate([{transform:'scale(1)',opacity:.6},{transform:'scale(.45)',opacity:.2,offset:.42},{transform:'scale(1)',opacity:.6,offset:.88},{transform:'scale(.9)',opacity:.5,offset:.94},{transform:'scale(1)',opacity:.6}],{duration:D});
+  const trail=setInterval(()=>{const q=coin.getBoundingClientRect();spark(q.left+q.width/2,q.top+q.height/2,'#19f0ff',2,2.5)},60);
+  await spin.finished;clearInterval(trail);
+  coin.style.transform=`rotateX(${tgt}deg)`;spin.cancel();cang=tgt;
+  const q=coin.getBoundingClientRect(),x=q.left+q.width/2,y=q.top+q.height/2;
+  if(win){const w=Math.round(b*1.96);setBal(bal+w);msg('#com',`${res==='H'?'Heads':'Tails'}. You win ${fmt(w-b)}`,'win');spark(x,y,'#39ff88',110,10);spark(x,y,'#ffffff',40,12)}
+  else{msg('#com',`${res==='H'?'Heads':'Tails'}. You lose ${fmt(b)}`,'lose');spark(x,y,'#ff4d6d',80,8);shake($('.table'))}
+  cbusy=false;$('#cflip').disabled=false;$$('#cseg button').forEach(x=>x.disabled=false);
+};
+
 dinfo();bjr();cdraw();
 </script>
 </body>
