@@ -279,6 +279,7 @@ body.g .cshadow{background:radial-gradient(rgba(70,110,60,.55),transparent 70%)}
 
 #rw{display:block;width:min(86vw,360px);height:min(86vw,360px);margin:4px auto 0}
 #ball{width:60px;height:60px;font-size:24px;border-width:3px;margin:10px auto 0}
+#rw{cursor:pointer;transition:transform .25s,filter .25s;border-radius:50%}#rw:hover{transform:scale(1.025);filter:brightness(1.08)}#rw:active{transform:scale(.99)}
 </style>
 </head>
 <body>
@@ -326,7 +327,7 @@ body.g .cshadow{background:radial-gradient(rgba(70,110,60,.55),transparent 70%)}
 </section>
 
 <section class="game" id="g-roul">
-  <h2>Roulette</h2><p class="rule">Pick one bet, then spin. Single number pays 35:1, dozens 2:1, everything else 1:1.</p>
+  <h2>Roulette</h2><p class="rule">Pick one bet, then click the wheel (or Spin). Single number pays 35:1, dozens 2:1, everything else 1:1.</p>
   <canvas id="rw"></canvas><div class="ball" id="ball">–</div>
   <p class="msg center" id="rm"></p>
   <div class="rgrid" id="rgrid"></div>
@@ -474,6 +475,9 @@ $('#rspin').onclick=()=>{
   const n=Math.floor(Math.random()*37);RW.rest=-1;
   RW.sp={t0:performance.now(),D:5400,W0:RW.W,n,idx:ORD.indexOf(n),b,sel:rsel};
 };
+rwc.tabIndex=0;rwc.setAttribute('role','button');rwc.setAttribute('aria-label','Spin the wheel');
+rwc.onclick=()=>$('#rspin').click();
+rwc.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('#rspin').click()}};
 function rdone(sp){
   const {n,b,sel}=sp;showR(n);rbusy=false;$('#rspin').disabled=false;
   const q=rwc.getBoundingClientRect(),x=q.left+q.width/2,y=q.top+q.height/2;
