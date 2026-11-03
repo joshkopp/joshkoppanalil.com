@@ -280,6 +280,30 @@ body.g .cshadow{background:radial-gradient(rgba(70,110,60,.55),transparent 70%)}
 #rw{display:block;width:min(86vw,360px);height:min(86vw,360px);margin:4px auto 0}
 #ball{width:60px;height:60px;font-size:24px;border-width:3px;margin:10px auto 0}
 #rw{cursor:pointer;transition:transform .25s,filter .25s;border-radius:50%}#rw:hover{transform:scale(1.025);filter:brightness(1.08)}#rw:active{transform:scale(.99)}
+
+body{--rr:#e0145f;--rk:#0b1424;--rg:#0fb36b}
+body.g{--rr:#e0709a;--rk:#2f5d3a;--rg:#d9a62a}
+#bjp{display:flex;flex-wrap:wrap;gap:18px}
+.hh{padding:6px 10px 2px;border-radius:14px;border:2px solid transparent}
+.hh.act{border-color:var(--brass);box-shadow:0 0 18px rgba(25,240,255,.3)}
+body.g .hh.act{box-shadow:0 0 18px rgba(224,112,154,.35)}
+.rscroll{overflow-x:auto;padding:16px 6px 8px;margin-top:6px}
+.rtab{position:relative;display:grid;grid-template-columns:repeat(14,1fr);grid-template-rows:repeat(5,44px);min-width:640px;border:2px solid rgba(255,255,255,.3);border-radius:6px}
+.rtab .c{border:1px solid rgba(255,255,255,.35);margin:0;border-radius:0;color:#fff;font:700 15px "JetBrains Mono",monospace;padding:0;background:var(--rk);cursor:pointer;transition:filter .15s}
+.rtab .c:hover{filter:brightness(1.4)}
+.rtab .c.r{background:var(--rr)}.rtab .c.k{background:var(--rk)}.rtab .c.g{background:var(--rg)}.rtab .c.o{background:rgba(255,255,255,.07);font-size:13px}
+body.g .rtab{border-color:rgba(60,110,60,.5)}
+body.g .rtab .c{border-color:rgba(255,255,255,.6);font-family:Nunito,sans-serif}
+body.g .rtab .c.o{background:#e8f3df;color:#27422c}
+.hs{position:absolute;width:16px;height:16px;transform:translate(-50%,-50%);border-radius:50%;border:0;background:transparent;z-index:3;padding:0;cursor:pointer}
+.hs:hover{background:rgba(255,255,255,.7);box-shadow:0 0 8px #fff}
+#rchips{position:absolute;inset:0;pointer-events:none;z-index:5}
+.rc{position:absolute;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:700 10px "JetBrains Mono",monospace;color:var(--ink);background:var(--brass);border:2px dashed rgba(255,255,255,.85);box-shadow:0 2px 6px rgba(0,0,0,.5);animation:drop .25s ease-out}
+body.g .rc{color:#fff;font-family:Nunito,sans-serif}
+.rc.w{animation:rcw .4s ease-in-out infinite alternate;box-shadow:0 0 16px 4px #fff}
+@keyframes drop{from{transform:translate(-50%,-90%) scale(1.4);opacity:0}}
+@keyframes rcw{to{transform:translate(-50%,-50%) scale(1.3)}}
+.rtot{color:#bfd3c9;font-size:14px}body.g .rtot{color:#6b8a63}
 </style>
 </head>
 <body>
@@ -309,11 +333,11 @@ body.g .cshadow{background:radial-gradient(rgba(70,110,60,.55),transparent 70%)}
 <main class="table">
 
 <section class="game on" id="g-bj">
-  <h2>Blackjack</h2><p class="rule">Blackjack pays 3:2. Dealer stands on 17. Double on your first two cards.</p>
+  <h2>Blackjack</h2><p class="rule">Blackjack pays 3:2. Dealer stands on 17. Double on your first two cards. Split a pair once.</p>
   <div class="lbl">Dealer <b id="bjdv"></b></div><div class="hand" id="bjd"></div>
-  <div class="lbl">You <b id="bjpv"></b></div><div class="hand" id="bjp"></div>
+  <div class="lbl">You <b id="bjpv"></b></div><div id="bjp"></div>
   <p class="msg" id="bjm"></p>
-  <div class="row"><button class="btn go" id="bjdeal">Deal</button><button class="btn" id="bjhit" disabled>Hit</button><button class="btn" id="bjstand" disabled>Stand</button><button class="btn" id="bjdbl" disabled>Double</button></div>
+  <div class="row"><button class="btn go" id="bjdeal">Deal</button><button class="btn" id="bjhit" disabled>Hit</button><button class="btn" id="bjstand" disabled>Stand</button><button class="btn" id="bjdbl" disabled>Double</button><button class="btn" id="bjsplit" disabled>Split</button></div>
 </section>
 
 <section class="game" id="g-slots">
@@ -327,11 +351,12 @@ body.g .cshadow{background:radial-gradient(rgba(70,110,60,.55),transparent 70%)}
 </section>
 
 <section class="game" id="g-roul">
-  <h2>Roulette</h2><p class="rule">Pick one bet, then click the wheel (or Spin). Single number pays 35:1, dozens 2:1, everything else 1:1.</p>
+  <h2>Roulette</h2><p class="rule">Pick a chip size in the bet bar, then click the table. Click a number for a straight bet, or the lines and corners between numbers for splits, streets, corners and six lines. Place as many bets as you like, then click the wheel.</p>
   <canvas id="rw"></canvas><div class="ball" id="ball">–</div>
   <p class="msg center" id="rm"></p>
-  <div class="rgrid" id="rgrid"></div>
-  <div class="row"><button class="btn go" id="rspin">Spin</button><span id="rsel" style="align-self:center;color:#bfd3c9">No bet selected</span></div>
+  <div class="rscroll"><div class="rtab" id="rtab"><div id="rchips"></div></div></div>
+  <div class="pay"><span>Straight 35:1</span><span>Split 17:1</span><span>Street 11:1</span><span>Corner 8:1</span><span>Six line 5:1</span><span>Dozen / column 2:1</span><span>Red, black, odd, even, high, low 1:1</span></div>
+  <div class="row" style="align-items:center"><button class="btn go" id="rspin">Spin</button><button class="btn" id="rundo">Undo</button><button class="btn" id="rclear">Clear</button><button class="btn" id="rrebet">Rebet</button><span class="rtot" id="rtot">No chips on the table</span></div>
 </section>
 
 <section class="game" id="g-crash">
@@ -389,38 +414,59 @@ $('#back').onclick=()=>{$('#lobby').hidden=false;$('#stage').hidden=true;scrollT
 
 /* ---------- Blackjack ---------- */
 const SU=['♠','♥','♦','♣'],RK=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-let deck=[],bj={p:[],d:[],bet:0,on:false,hide:true};
+let deck=[],bj={h:[],d:[],i:0,on:false,hide:true};
 function draw(){if(deck.length<30){deck=[];for(let k=0;k<6;k++)SU.forEach(s=>RK.forEach(r=>deck.push({s,r})));for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]]}}return deck.pop()}
 function val(h){let t=0,a=0;h.forEach(c=>{if(c.r==='A'){a++;t+=11}else t+='JQK'.includes(c.r)?10:+c.r});while(t>21&&a){t-=10;a--}return t}
 const cardH=(c,hide)=>hide?'<div class="pc back"></div>':`<div class="pc ${'♥♦'.includes(c.s)?'red':''}"><b>${c.r}</b><span>${c.s}</span></div>`;
 function bjr(){
   $('#bjd').innerHTML=bj.d.map((c,i)=>cardH(c,bj.hide&&i===1)).join('');
-  $('#bjp').innerHTML=bj.p.map(c=>cardH(c)).join('');
   $('#bjdv').textContent=bj.d.length?(bj.hide?val([bj.d[0]]):val(bj.d)):'';
-  $('#bjpv').textContent=bj.p.length?val(bj.p):'';
+  const multi=bj.h.length>1;
+  $('#bjp').innerHTML=bj.h.map((x,k)=>`<div class="hh${bj.on&&multi&&k===bj.i?' act':''}"><div class="hand">${x.c.map(c=>cardH(c)).join('')}</div>${multi?`<div class="lbl">Hand ${k+1} <b>${val(x.c)}</b>${x.res?` <b>${x.res}</b>`:''}</div>`:''}</div>`).join('');
+  $('#bjpv').textContent=bj.h.length===1?val(bj.h[0].c):'';
+  const h=bj.h[bj.i];
   $('#bjhit').disabled=$('#bjstand').disabled=!bj.on;
-  $('#bjdbl').disabled=!(bj.on&&bj.p.length===2&&bal>=bj.bet);
+  $('#bjdbl').disabled=!(bj.on&&h&&h.c.length===2&&bal>=h.bet);
+  $('#bjsplit').disabled=!(bj.on&&bj.h.length===1&&h.c.length===2&&val([h.c[0]])===val([h.c[1]])&&bal>=h.bet);
   $('#bjdeal').disabled=bj.on;
 }
-function bjend(){
-  bj.on=false;bj.hide=false;const pv=val(bj.p),dv=val(bj.d),b=bj.bet;let w=0,t,c;
-  if(bj.nat&&!(dv===21&&bj.d.length===2)){w=b*2.5;t=`Blackjack! You win ${fmt(w-b)}`;c='win'}
-  else if(bj.nat){w=b;t='Push. Both have blackjack.';c='push'}
-  else if(pv>21){t=`Bust. You lose ${fmt(b)}`;c='lose'}
-  else if(dv>21||pv>dv){w=b*2;t=`You win ${fmt(b)}`;c='win'}
-  else if(pv===dv){w=b;t='Push. Bet returned.';c='push'}
-  else{t=`Dealer wins. You lose ${fmt(b)}`;c='lose'}
-  setBal(bal+w);msg('#bjm',t,c);bjr();
+function bjfinish(){
+  bj.hide=false;bj.on=false;
+  if(bj.h.some(h=>val(h.c)<=21&&!h.nat)){while(val(bj.d)<17)bj.d.push(draw())}
+  const dv=val(bj.d),dbj=bj.d.length===2&&dv===21;let tot=0,ret=0;
+  bj.h.forEach(h=>{const pv=val(h.c),b=h.bet;let w=0,t;
+    if(h.nat){if(dbj){w=b;t='Push'}else{w=b*2.5;t='Blackjack'}}
+    else if(pv>21)t='Bust';
+    else if(dv>21||pv>dv){w=b*2;t='Win'}
+    else if(pv===dv){w=b;t='Push'}else t='Lose';
+    h.res=t;tot+=b;ret+=w});
+  ret=Math.round(ret);setBal(bal+ret);const d=ret-tot,cls=d>0?'win':d<0?'lose':'push';let t;
+  if(bj.h.length>1)t=bj.h.map((h,k)=>`Hand ${k+1}: ${h.res}`).join(' · ')+`. Net ${d<0?'-':'+'}${fmt(Math.abs(d))}`;
+  else{const r=bj.h[0].res;t=r==='Blackjack'?`Blackjack! You win ${fmt(d)}`:r==='Bust'?`Bust. You lose ${fmt(tot)}`:r==='Win'?`You win ${fmt(d)}`:r==='Push'?(bj.h[0].nat?'Push. Both have blackjack.':'Push. Bet returned.'):`Dealer wins. You lose ${fmt(tot)}`}
+  msg('#bjm',t,cls);bjr();
 }
-function bjstand(){bj.hide=false;while(val(bj.d)<17)bj.d.push(draw());bjend()}
+function adv(){
+  bj.h[bj.i].done=true;
+  while(bj.i<bj.h.length&&bj.h[bj.i].done)bj.i++;
+  if(bj.i>=bj.h.length){bj.i=bj.h.length-1;return bjfinish()}
+  const h=bj.h[bj.i];if(h.c.length===1)h.c.push(draw());
+  if(val(h.c)===21)return adv();
+  bjr();
+}
 $('#bjdeal').onclick=()=>{
   const b=getBet();if(!b||bj.on)return;setBal(bal-b);
-  bj={p:[draw(),draw()],d:[draw(),draw()],bet:b,on:true,hide:true};bj.nat=val(bj.p)===21;
-  msg('#bjm','');bjr();if(bj.nat)bjend();
+  const p=[draw(),draw()];bj={h:[{c:p,bet:b,done:false,nat:val(p)===21}],d:[draw(),draw()],i:0,on:true,hide:true};
+  msg('#bjm','');bjr();if(bj.h[0].nat)bjfinish();
 };
-$('#bjhit').onclick=()=>{bj.p.push(draw());if(val(bj.p)>21)bjend();else bjr()};
-$('#bjstand').onclick=bjstand;
-$('#bjdbl').onclick=()=>{setBal(bal-bj.bet);bj.bet*=2;bj.p.push(draw());if(val(bj.p)>21)bjend();else bjstand()};
+$('#bjhit').onclick=()=>{const h=bj.h[bj.i];h.c.push(draw());if(val(h.c)>=21)adv();else bjr()};
+$('#bjstand').onclick=()=>adv();
+$('#bjdbl').onclick=()=>{const h=bj.h[bj.i];setBal(bal-h.bet);h.bet*=2;h.c.push(draw());adv()};
+$('#bjsplit').onclick=()=>{
+  const h=bj.h[0];setBal(bal-h.bet);const c2=h.c.pop();h.c.push(draw());h.nat=false;
+  const g={c:[c2],bet:h.bet,done:false};bj.h.push(g);
+  if(c2.r==='A'){g.c.push(draw());h.done=g.done=true;bj.i=1;return bjfinish()}
+  if(val(h.c)===21)adv();else bjr();
+};
 
 /* ---------- Slots ---------- */
 const SY=[['🍒',5,30],['🍋',8,26],['🔔',15,20],['⭐',25,12],['💎',50,8],['7',100,4]];
@@ -457,32 +503,69 @@ $('#spin').onclick=async()=>{
 /* ---------- Roulette ---------- */
 const RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 const col=n=>n===0?'g':RED.has(n)?'r':'k';
-const OUT=[['Red',n=>RED.has(n),2],['Black',n=>n>0&&!RED.has(n),2],['Odd',n=>n>0&&n%2===1,2],['Even',n=>n>0&&n%2===0,2],['1–18',n=>n>=1&&n<=18,2],['19–36',n=>n>=19,2],['1st 12',n=>n>=1&&n<=12,3],['2nd 12',n=>n>=13&&n<=24,3],['3rd 12',n=>n>=25,3]];
-let rsel=null,rbusy=false;
-const rg=$('#rgrid');
-OUT.forEach(([l,t,p])=>{const b=document.createElement('button');b.className='out';b.textContent=l;b.onclick=()=>pickR(b,{l,t,p});rg.appendChild(b)});
-for(let n=0;n<=36;n++){const b=document.createElement('button');b.className=col(n);b.textContent=n;b.onclick=()=>pickR(b,{l:'Number '+n,t:x=>x===n,p:36});rg.appendChild(b)}
-function pickR(b,s){if(rbusy)return;rsel=s;$$('#rgrid button').forEach(x=>x.classList.toggle('sel',x===b));$('#rsel').textContent='Bet on: '+s.l}
+let rbusy=false,RB={},RH=[],RL={};
 function showR(n){const e=$('#ball');e.textContent=n;e.className='ball '+col(n)}
+const RTAB=$('#rtab'),RCH=$('#rchips'),CW=100/14,RHT=44,nn=(c,r)=>3*c+3-r;
+const abbr=n=>n>=1000?(n/1000).toFixed(n%1000?1:0)+'k':n;
+function rrender(){
+  RCH.innerHTML=Object.values(RB).map(b=>`<div class="rc${b.win?' w':''}" style="left:${b.x}%;top:${b.y}px">${abbr(b.stake)}</div>`).join('');
+  const t=Object.values(RB).reduce((a,b)=>a+b.stake,0),k=Object.keys(RB).length;
+  $('#rtot').textContent=t?`On table: ${fmt(t)} · ${k} bet${k>1?'s':''}`:'No chips on the table';
+}
+function place(key,nums,pay,x,y){
+  if(rbusy)return;const u=getBet();if(!u)return;setBal(bal-u);
+  const b=RB[key]||(RB[key]={nums,pay,stake:0,x,y});b.stake+=u;RH.push([key,u]);rrender();
+}
+function cellBtn(label,cls,c0,r0,cs,rs,key,nums,pay){
+  const b=document.createElement('button');b.className='c '+cls;b.textContent=label;b.style.gridColumn=`${c0}/span ${cs}`;b.style.gridRow=`${r0}/span ${rs}`;
+  b.onclick=()=>place(key,nums,pay,(c0-1+cs/2)*CW,(r0-1+rs/2)*RHT);RTAB.insertBefore(b,RCH);
+}
+function hot(key,nums,pay,x,y,label){
+  const h=document.createElement('button');h.className='hs';h.style.left=x+'%';h.style.top=y+'px';h.setAttribute('aria-label',label);h.title=label;
+  h.onclick=e=>{e.stopPropagation();place(key,nums,pay,x,y)};RTAB.insertBefore(h,RCH);
+}
+cellBtn(0,'g',1,1,1,3,'n:0',[0],36);
+for(let c=0;c<12;c++)for(let r=0;r<3;r++){const n=nn(c,r);cellBtn(n,col(n),c+2,r+1,1,1,'n:'+n,[n],36)}
+for(let r=0;r<3;r++){const m=[0,2,1][r];cellBtn('2:1','o',14,r+1,1,1,'col'+r,Array.from({length:36},(_,k)=>k+1).filter(n=>n%3===m),3)}
+[['1st 12',1,2],['2nd 12',13,6],['3rd 12',25,10]].forEach(([l,a,c0])=>cellBtn(l,'o',c0,4,4,1,'doz'+a,Array.from({length:12},(_,k)=>a+k),3));
+[['1–18',n=>n<=18,''],['Even',n=>n%2===0,''],['Red',n=>RED.has(n),'r'],['Black',n=>n>0&&!RED.has(n),'k'],['Odd',n=>n%2===1,''],['19–36',n=>n>=19,'']].forEach(([l,f,cl],k)=>
+  cellBtn(l,cl||'o',2+k*2,5,2,1,'out'+k,Array.from({length:36},(_,q)=>q+1).filter(f),2));
+for(let c=0;c<12;c++)for(let r=0;r<3;r++){const n=nn(c,r);
+  if(c<11)hot('s:'+n+'-'+(n+3),[n,n+3],18,(c+2)*CW,r*RHT+RHT/2,`Split ${n}/${n+3}`);
+  if(r<2)hot('s:'+n+'-'+(n-1),[n,n-1],18,(c+1.5)*CW,(r+1)*RHT,`Split ${n}/${n-1}`);
+  if(c<11&&r<2)hot('c:'+n,[n,n+3,n-1,n+2],9,(c+2)*CW,(r+1)*RHT,`Corner ${n-1}-${n+3}`);
+  if(r===2){hot('st:'+c,[3*c+1,3*c+2,3*c+3],12,(c+1.5)*CW,3*RHT,`Street ${3*c+1}-${3*c+3}`);
+    if(c<11)hot('sx:'+c,[1,2,3,4,5,6].map(k=>3*c+k),6,(c+2)*CW,3*RHT,`Six line ${3*c+1}-${3*c+6}`)}}
+for(let r=0;r<3;r++)hot('s:0-'+nn(0,r),[0,nn(0,r)],18,CW,r*RHT+RHT/2,`Split 0/${nn(0,r)}`);
+hot('t:023',[0,2,3],12,CW,RHT,'Trio 0-2-3');hot('t:012',[0,1,2],12,CW,2*RHT,'Trio 0-1-2');
+$('#rundo').onclick=()=>{if(rbusy||!RH.length)return;const [k,u]=RH.pop(),b=RB[k];b.stake-=u;if(b.stake<=0)delete RB[k];setBal(bal+u);rrender()};
+$('#rclear').onclick=()=>{if(rbusy)return;Object.values(RB).forEach(b=>setBal(bal+b.stake));RB={};RH=[];rrender()};
+$('#rrebet').onclick=()=>{if(rbusy)return;let miss=false;
+  Object.entries(RL).forEach(([k,b])=>{if(bal>=b.stake){setBal(bal-b.stake);const e=RB[k]||(RB[k]={nums:b.nums,pay:b.pay,stake:0,x:b.x,y:b.y});e.stake+=b.stake;RH.push([k,b.stake])}else miss=true});
+  rrender();$('#note').textContent=miss?'Not enough chips to repeat every bet.':''};
+
 const ORD=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26],STEP=Math.PI*2/37;
 const rwc=$('#rw'),rx=rwc.getContext('2d');
 let RW={W:0,sp:null,rest:-1,last:performance.now()};
 const sm=x=>x<=0?0:x>=1?1:x*x*(3-2*x);
 function rfit(){const d=devicePixelRatio||1,w=rwc.clientWidth;rwc.width=rwc.height=Math.round(w*d);rx.setTransform(d,0,0,d,0,0)}
 $('#rspin').onclick=()=>{
-  if(rbusy)return;if(!rsel){msg('#rm','Pick a bet first.','push');return}
-  const b=getBet();if(!b)return;rbusy=true;setBal(bal-b);msg('#rm','','');$('#rspin').disabled=true;
-  const n=Math.floor(Math.random()*37);RW.rest=-1;
-  RW.sp={t0:performance.now(),D:5400,W0:RW.W,n,idx:ORD.indexOf(n),b,sel:rsel};
+  if(rbusy)return;if(!Object.keys(RB).length){msg('#rm','Place a chip on the table first.','push');return}
+  rbusy=true;msg('#rm','','');$('#rspin').disabled=true;$('#note').textContent='';
+  const n=Math.floor(Math.random()*37);RW.rest=-1;RL=JSON.parse(JSON.stringify(RB));
+  RW.sp={t0:performance.now(),D:5400,W0:RW.W,n,idx:ORD.indexOf(n),bets:RB};
 };
 rwc.tabIndex=0;rwc.setAttribute('role','button');rwc.setAttribute('aria-label','Spin the wheel');
 rwc.onclick=()=>$('#rspin').click();
 rwc.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('#rspin').click()}};
 function rdone(sp){
-  const {n,b,sel}=sp;showR(n);rbusy=false;$('#rspin').disabled=false;
-  const q=rwc.getBoundingClientRect(),x=q.left+q.width/2,y=q.top+q.height/2;
-  if(sel.t(n)){const w=b*sel.p;setBal(bal+w);msg('#rm',`${n}. You win ${fmt(w-b)}`,'win');spark(x,y,'#39ff88',110,10);spark(x,y,'#ffffff',40,12)}
-  else{msg('#rm',`${n}. You lose ${fmt(b)}`,'lose');spark(x,y,'#ff4d6d',70,8)}
+  const n=sp.n,bets=Object.values(sp.bets);let tot=0,ret=0;
+  bets.forEach(b=>{tot+=b.stake;b.win=b.nums.includes(n);if(b.win)ret+=b.stake*b.pay});
+  ret=Math.round(ret);showR(n);setBal(bal+ret);rrender();
+  const net=ret-tot,nm=n===0?'Zero':RED.has(n)?'Red':'Black',q=rwc.getBoundingClientRect(),x=q.left+q.width/2,y=q.top+q.height/2;
+  msg('#rm',`${n} ${nm}. `+(net>0?`You win ${fmt(net)}`:net<0?`You lose ${fmt(-net)}`:'You break even'),net>0?'win':net<0?'lose':'push');
+  if(net>0){spark(x,y,'#39ff88',110,10);spark(x,y,'#ffffff',40,12)}else if(net<0)spark(x,y,'#ff4d6d',70,8);
+  setTimeout(()=>{RB={};RH=[];rrender();rbusy=false;$('#rspin').disabled=false},2200);
 }
 function rdraw(){
   requestAnimationFrame(rdraw);const now=performance.now(),dt=Math.min(.05,(now-RW.last)/1000);RW.last=now;
