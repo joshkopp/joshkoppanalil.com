@@ -22,6 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+<script>window.FB='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><defs><radialGradient id="g" cx="30%" cy="25%" r="90%"><stop offset="0" stop-color="#1d2a16"/><stop offset="1" stop-color="#07080a"/></radialGradient></defs><rect width="200" height="200" fill="url(#g)"/><g stroke="#b8f36b" stroke-width="2" fill="none" opacity=".55"><path d="M0 60h50l20 20h40M200 140h-50l-20-20H90M40 200v-40l20-20M160 0v40l-20 20"/></g><g fill="#b8f36b"><circle cx="110" cy="80" r="4"/><circle cx="90" cy="120" r="4"/><circle cx="60" cy="140" r="4"/><circle cx="140" cy="60" r="4"/></g><text x="100" y="118" font-family="Arial,sans-serif" font-weight="700" font-size="76" text-anchor="middle" fill="#f4f6f4" letter-spacing="-4">JK</text></svg>');</script>
 <script>if(!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('js')</script>
 <style>
 :root{--bg:#07080a;--text:#f4f6f4;--muted:#a3a8a6;--line:rgba(255,255,255,.11);--accent:#b8f36b;--max:1080px;--padx:max(20px,calc((100vw - 1080px)/2));
@@ -39,7 +40,7 @@ h1,h2,h3{font-family:"Space Grotesk",sans-serif;letter-spacing:-.055em;line-heig
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
 .orbs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:radial-gradient(rgba(255,255,255,.04) 1px,transparent 1px) 0 0/28px 28px}
-.orb{position:absolute;border-radius:50%;will-change:transform}
+.orb{position:absolute;border-radius:50%}
 .orb.a{top:-15%;right:-15%;width:900px;height:900px;background:radial-gradient(circle,rgba(155,227,74,.2),transparent 65%)}
 .orb.b{top:45%;left:-20%;width:800px;height:800px;background:radial-gradient(circle,rgba(56,189,248,.13),transparent 65%)}
 .orb.c{top:80%;right:-5%;width:700px;height:700px;background:radial-gradient(circle,rgba(167,139,250,.13),transparent 65%)}
@@ -51,19 +52,37 @@ h1,h2,h3{font-family:"Space Grotesk",sans-serif;letter-spacing:-.055em;line-heig
 nav.glass{backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%)}
 .glass::after{content:"";position:absolute;left:8%;right:8%;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);pointer-events:none}
 
-/* ===== Intro: the lime dot drops, bounces and types the name, then opens the page ===== */
+/* ===== Intro: letters drop in and bounce, the dot lands, the name holds, then the doors open ===== */
 #intro{display:none}
-.js #intro{display:block;position:fixed;inset:0;z-index:100;background:var(--bg);cursor:pointer}
-#iname{position:absolute;inset:0;display:grid;place-content:center;font:700 clamp(48px,15vw,230px)/.84 "Space Grotesk",sans-serif;letter-spacing:-.055em;--fs:1}
-.il{display:block;white-space:nowrap;padding:0 .04em .2em;margin-bottom:-.2em;overflow:hidden}
-.ic{display:inline-block;transform:translateY(118%);transition:transform .65s cubic-bezier(.2,1.5,.4,1) calc(var(--i,0)*45ms)}
-.ic.up{transform:none}
-.ip{display:inline-block;width:.15em;height:.15em;margin-left:.05em}
-#fl{position:absolute;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);transform:scaleX(0);transition:transform .7s cubic-bezier(.2,.8,.2,1);opacity:.7}
-#fl.on{transform:none}
-.rip{position:fixed;width:20px;height:6px;margin:-3px 0 0 -10px;border:2px solid var(--accent);border-radius:50%;animation:rip .85s ease-out forwards;pointer-events:none}
-@keyframes rip{to{transform:scale(16,5);opacity:0}}
+.js #intro{display:block;position:fixed;inset:0;z-index:100;cursor:pointer;touch-action:none;contain:layout paint}
+.door{position:absolute;left:0;right:0;height:50.2%;background:var(--bg);transition:transform 1.2s cubic-bezier(.76,0,.2,1)}
+.door.t{top:0}.door.b{bottom:0}
+.exit .door.t{transform:translateY(-101%)}.exit .door.b{transform:translateY(101%)}
+.stage{position:absolute;inset:0;display:grid;place-content:center;transition:opacity .7s ease .1s,transform 1.2s cubic-bezier(.5,0,.2,1)}
+.exit .stage{opacity:0;transform:scale(1.07)}
+#iname{font:700 clamp(46px,14.5vw,220px)/.86 "Space Grotesk",sans-serif;letter-spacing:-.04em;color:var(--text)}
+.il{display:block;white-space:nowrap;padding-bottom:.12em}
+.ic,.ip{display:inline-block;transform-origin:50% 100%;opacity:0}
+.ip{width:.15em;height:.15em;margin-left:.05em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#eaffc8,var(--accent) 55%,#7fd13b);box-shadow:0 0 .105em rgba(184,243,107,.7),0 0 .3em rgba(184,243,107,.35)}
+.play .ic{animation:drop 1.15s both;animation-delay:calc(.45s + var(--i)*80ms)}
+.play .ip{animation:drop 1.3s both;animation-delay:2.2s}
+.skipped .ic,.skipped .ip{animation:none!important;opacity:1;transform:none;color:var(--text)}
+@keyframes drop{
+0%{opacity:0;transform:translateY(-85vh);color:var(--accent);animation-timing-function:cubic-bezier(.55,0,.9,.55)}
+1%{opacity:1}
+32%{transform:translateY(0) scale(1.14,.8);animation-timing-function:cubic-bezier(.2,.65,.4,1)}
+48%{transform:translateY(-34%) scale(.97,1.05);animation-timing-function:cubic-bezier(.6,0,.9,.55)}
+62%{transform:translateY(0) scale(1.07,.93);animation-timing-function:cubic-bezier(.2,.65,.4,1)}
+74%{transform:translateY(-11%) scale(1);animation-timing-function:cubic-bezier(.6,0,.9,.55)}
+85%{transform:translateY(0) scale(1.03,.97);animation-timing-function:ease-out}
+92%{transform:translateY(-3%) scale(1)}
+100%{opacity:1;transform:none;color:var(--text)}}
+.iline{height:2px;margin-top:.1em;background:linear-gradient(90deg,transparent,var(--accent),transparent);transform:scaleX(0)}
+.icap{margin-top:16px;text-align:center;color:var(--muted);font:500 clamp(13px,1.5vw,17px)/1 "DM Sans",sans-serif;letter-spacing:.16em;opacity:0}
+.hold .iline{transform:none;transition:transform 1.1s cubic-bezier(.2,.8,.2,1)}
+.hold .icap{opacity:1;transition:opacity 1s .35s}
 .skip{position:absolute;left:0;right:0;bottom:calc(26px + env(safe-area-inset-bottom,0px));text-align:center;color:#5b615e;font-size:12px;letter-spacing:.12em;opacity:0;animation:fade .6s 1s forwards}
+.exit .skip{animation:none;opacity:0}
 @keyframes fade{to{opacity:1}}
 #dot{display:none}
 .js #dot{display:block;position:fixed;left:0;top:0;width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#eaffc8,var(--accent) 55%,#7fd13b);box-shadow:0 0 14px rgba(184,243,107,.7),0 0 40px rgba(184,243,107,.35);z-index:200;pointer-events:none;opacity:0;will-change:transform}
@@ -89,17 +108,22 @@ nav{height:56px;display:flex;align-items:center;gap:14px;padding:0 20px;border-r
 .ch{display:inline-block;font-variation-settings:"wght" 700;text-align:center}
 .js:not(.done) .hero .wd{overflow:hidden;vertical-align:top;padding:0 .04em .16em;margin:0 -.04em -.16em}
 .js .hero .ch{transform:translateY(112%)}
-.go .hero .ch{transform:none;transition:transform 1s cubic-bezier(.2,.8,.2,1) calc(var(--d,0s) + var(--i)*.035s)}
+.go .hero .ch{transform:none;transition:transform 1.1s cubic-bezier(.2,.8,.2,1) calc(var(--d,0s) + var(--i)*.04s)}
 .done .hero .ch{transition:none}
 
 /* ===== Hero ===== */
 .hero{position:relative;display:flex;align-items:center;min-height:calc(100svh - 80px);padding:70px 0 90px}
 .hero h1{margin:22px 0 0}
 .l1,.l2{display:block}
-.l1{font-size:clamp(44px,10.6vw,112px);white-space:nowrap}
+.l1{font-size:clamp(42px,9.6vw,108px);white-space:nowrap}
 .l2{max-width:15em;margin-top:.2em;font-size:clamp(28px,5.6vw,62px);letter-spacing:-.045em;color:#b4bab6}
-.hdot{display:inline-block;width:.15em;height:.15em;margin-left:.05em;border-radius:50%;background:var(--accent);vertical-align:baseline;visibility:hidden}
-.hdot.lit,html:not(.js) .hdot{visibility:visible}
+.hdot{display:inline-block;width:.15em;height:.15em;margin-left:.05em;border-radius:50%;background:var(--accent);vertical-align:baseline}
+.js .hdot{visibility:hidden}
+.pfp{display:inline-block;width:1.05em;height:1.05em;margin-left:.2em;vertical-align:-.14em;border-radius:50%;border:.035em solid var(--accent);background:#17171a;overflow:hidden;box-shadow:0 0 0 .06em rgba(255,255,255,.08),0 .1em .4em rgba(184,243,107,.3)}
+.pfp img{display:block;width:100%;height:100%;object-fit:cover}
+.pfp-m{display:none}
+.js .pfp{transform:scale(0) rotate(-180deg)}
+.go .pfp{transform:none;transition:transform 1.1s cubic-bezier(.3,1.4,.5,1) .9s}
 .js .after{opacity:0;transform:translateY(18px)}
 .go .after{opacity:1;transform:none;transition:opacity 1s var(--d),transform 1s var(--d)}
 .intro{max-width:600px;margin:30px 0 0;color:var(--muted);font-size:17px}
@@ -108,11 +132,18 @@ nav{height:56px;display:flex;align-items:center;gap:14px;padding:0 20px;border-r
 .btn:hover{transform:translateY(-2px);border-color:var(--accent)}
 .btn.primary{background:linear-gradient(180deg,#d4ff9a,var(--accent) 55%,#8fd84a);border-color:rgba(255,255,255,.4);color:#10120b;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 10px 30px -8px rgba(184,243,107,.55)}
 
-/* marquee */
-.mq{overflow:hidden;border-block:1px solid var(--line);padding:18px 0;position:relative;z-index:1}
-.mqt{display:flex;width:max-content;animation:mq 38s linear infinite}
-.mqt span{font:700 clamp(30px,5vw,56px)/1 "Space Grotesk",sans-serif;letter-spacing:-.04em;color:transparent;-webkit-text-stroke:1px rgba(255,255,255,.4);padding-right:.5em;white-space:nowrap}
-.mqt span::after{content:"";display:inline-block;width:.22em;height:.22em;margin-left:.5em;border-radius:50%;background:var(--accent)}
+/* technology marquee: two rows moving in opposite directions */
+.mq{position:relative;z-index:1;display:grid;gap:14px;padding:26px 0;border-block:1px solid var(--line);overflow:hidden}
+.mq::before,.mq::after{content:"";position:absolute;top:0;bottom:0;width:9%;z-index:2;pointer-events:none}
+.mq::before{left:0;background:linear-gradient(90deg,var(--bg),transparent)}
+.mq::after{right:0;background:linear-gradient(270deg,var(--bg),transparent)}
+.mqr{overflow:hidden}
+.mqt{display:flex;width:max-content;animation:mq var(--dur,70s) linear infinite}
+.mqr.r .mqt{animation-direction:reverse}
+.mqt span{flex:none;display:flex;align-items:center;gap:.9em;padding-right:.9em;font:700 clamp(30px,5vw,60px)/1.15 "Space Grotesk",sans-serif;letter-spacing:-.04em;color:transparent;-webkit-text-stroke:1px rgba(255,255,255,.42);white-space:nowrap;transition:color .3s}
+.mqt span::after{content:"";flex:none;width:.2em;height:.2em;border:1.5px solid var(--accent);transform:rotate(45deg)}
+.mqr.r span{font-size:clamp(17px,2.4vw,28px);font-weight:500;letter-spacing:-.02em;color:#c9cdca;-webkit-text-stroke:0}
+.mqt span:hover{color:var(--accent)}
 .mq:hover .mqt{animation-play-state:paused}
 @keyframes mq{to{transform:translateX(-50%)}}
 
@@ -151,31 +182,31 @@ nav{height:56px;display:flex;align-items:center;gap:14px;padding:0 20px;border-r
 .art svg{width:100%;max-height:100%}
 .pbar{position:absolute;left:var(--padx);right:var(--padx);bottom:5svh;height:2px;background:var(--line)}
 .pbar i{display:block;height:100%;background:var(--accent);box-shadow:0 0 10px var(--accent);transform:scaleX(0);transform-origin:left}
-@keyframes pop{to{transform:scale(1)}}
-@keyframes draw{to{stroke-dashoffset:0}}
-@keyframes seg{to{background:var(--accent);transform:none}}
-@keyframes sw{to{transform:none}}
-@keyframes type{to{width:9.5em}}
-.e,.ck{transform-box:fill-box;transform-origin:center;transform:scale(0)}
-.on .e,.on .ck{animation:pop .45s cubic-bezier(.3,1.7,.5,1) forwards;animation-delay:calc(var(--i)*.09s + .25s)}
-.bd{stroke-dasharray:70;stroke-dashoffset:70}
-.on .bd{animation:draw .6s .1s forwards}
+@keyframes pop{from{transform:scale(0)}}
+@keyframes draw{from{stroke-dashoffset:70}}
+@keyframes seg{from{background:rgba(255,255,255,.14);transform:scaleY(.4)}}
+@keyframes sw{from{transform:scaleX(0)}}
+@keyframes type{from{width:0}}
+.e,.ck{transform-box:fill-box;transform-origin:center}
+.on .e,.on .ck{animation:pop .45s cubic-bezier(.3,1.7,.5,1) backwards;animation-delay:calc(var(--i)*.09s + .25s)}
+.bd{stroke-dasharray:70}
+.on .bd{animation:draw .6s .1s backwards}
 .pw{width:88%;font-family:"Space Grotesk",sans-serif}
 .pw .field{padding:14px 16px;border:1.5px solid rgba(255,255,255,.35);border-radius:12px;font-size:24px;letter-spacing:.2em;overflow:hidden}
-.pw .field span{display:inline-block;width:0;overflow:hidden;white-space:nowrap;vertical-align:bottom}
-.on .pw .field span{animation:type 1s steps(10) .1s forwards}
+.pw .field span{display:inline-block;width:9.5em;overflow:hidden;white-space:nowrap;vertical-align:bottom}
+.on .pw .field span{animation:type 1s steps(10) .1s backwards}
 .pw .segs{display:flex;gap:6px;margin:14px 0 8px}
-.pw .segs i{flex:1;height:12px;border-radius:3px;background:rgba(255,255,255,.14);transform:scaleY(.4)}
-.on .pw .segs i{animation:seg .4s forwards;animation-delay:calc(var(--i)*.18s + 1s)}
-.pw .segs i:nth-child(5){animation:none!important}
+.pw .segs i{flex:1;height:12px;border-radius:3px;background:var(--accent)}
+.pw .segs i:last-child{background:rgba(255,255,255,.14);transform:scaleY(.4)}
+.on .pw .segs i:not(:last-child){animation:seg .4s backwards;animation-delay:calc(var(--i)*.18s + 1s)}
 .pw small{color:var(--muted);font-size:13px}
 .fc{perspective:900px;width:78%;height:46%;min-height:120px}
 .fc>div{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .9s cubic-bezier(.3,1.4,.4,1)}
 .on .fc>div{transform:rotateY(180deg);transition-delay:.7s}
 .fc b{position:absolute;inset:0;display:grid;place-items:center;padding:14px;text-align:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:16px;font:700 26px "Space Grotesk",sans-serif;letter-spacing:-.03em;background:#f4f6f4;color:#10120b}
 .fc b+b{transform:rotateY(180deg);background:var(--accent);font-size:16px;font-weight:600;letter-spacing:0;line-height:1.3}
-.hl{transform-box:fill-box;transform-origin:left;transform:scaleX(0)}
-.on .hl{animation:sw .6s forwards;animation-delay:calc(var(--i)*.35s + .3s)}
+.hl{transform-box:fill-box;transform-origin:left}
+.on .hl{animation:sw .6s backwards;animation-delay:calc(var(--i)*.35s + .3s)}
 
 .contactbox{display:flex;flex-direction:column;align-items:flex-start;gap:18px;padding:clamp(25px,6vw,55px);border-radius:26px}
 .contactinfo{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
@@ -205,6 +236,9 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:15px;pa
   .pbar{display:none}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important;animation:none!important}.mqt{animation:none!important}}
+html{scrollbar-gutter:stable}
+@media(max-width:700px){.pfp{display:none}.pfp-m{display:block;width:96px;height:96px;margin-bottom:22px;border-radius:50%;border:2px solid var(--accent);object-fit:cover;background:#17171a;box-shadow:0 0 0 5px var(--bg),0 0 0 6px var(--line),0 0 30px rgba(184,243,107,.3)}.l1{font-size:11.8vw}}
+@media(prefers-reduced-motion:reduce){.mqt{flex-wrap:wrap;width:auto}.mqt [data-c]{display:none}.mqr{overflow:visible}}
 </style>
 </head>
 <body>
@@ -213,8 +247,8 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:15px;pa
 <div class="spot" id="spot" aria-hidden="true"></div>
 
 <div id="intro" aria-hidden="true">
-  <i id="fl"></i>
-  <div id="iname"><span class="il"><span class="iw">Josh</span></span><span class="il"><span class="iw">Koppanalil</span><i class="ip" id="ip"></i></span></div>
+  <div class="door t"></div><div class="door b"></div>
+  <div class="stage"><div id="iname"><span class="il"><span class="iw">Josh</span></span><span class="il"><span class="iw">Koppanalil</span><i class="ip" id="ip"></i></span><div class="iline"></div><div class="icap">Austin, Texas</div></div></div>
   <div class="skip">tap to skip</div>
 </div>
 
@@ -234,10 +268,11 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:15px;pa
 <main>
   <section class="hero" id="home">
     <div class="wrap">
+      <img class="pfp-m after" style="--d:.1s" src="avatar.jpg" alt="Joshua Koppanalil" width="96" height="96" decoding="async" fetchpriority="high" onerror="this.onerror=null;this.src=FB">
       <div class="eyebrow after" style="--d:.1s">Student · Builder · Learner</div>
       <h1>
         <span class="sr">Hi, I'm Josh. I like building things that matter.</span>
-        <span class="l1 fx" aria-hidden="true" style="--d:.1s">Hi, I'm Josh<i class="hdot"></i></span>
+        <span class="l1 fx" aria-hidden="true" style="--d:.1s">Hi, I'm Josh<i class="hdot"></i><span class="pfp"><img src="avatar.jpg" alt="" width="200" height="200" decoding="async" fetchpriority="high" onerror="this.onerror=null;this.src=FB"></span></span>
         <span class="l2 fx" aria-hidden="true" style="--d:.7s">I like building things that matter.</span>
       </h1>
       <p class="intro after" style="--d:1.5s">I'm Joshua (Josh) Koppanalil, a sophomore at Westlake High School in Austin, TX, exploring computer science, cybersecurity, machine learning, and the ideas that connect them.</p>
@@ -248,12 +283,13 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:15px;pa
     </div>
   </section>
 
-  <div class="mq" aria-hidden="true"><div class="mqt">
-    <span>Computer science</span><span>Cybersecurity</span><span>Machine learning</span><span>Mountain biking</span><span>Piano</span><span>Jet-skiing</span><span>Soccer</span>
-    <span>Computer science</span><span>Cybersecurity</span><span>Machine learning</span><span>Mountain biking</span><span>Piano</span><span>Jet-skiing</span><span>Soccer</span>
-  </div></div>
+  <div class="mq" aria-label="Fields I work in">
+    <div class="mqr"><div class="mqt" style="--dur:85s"><span>Computer Science</span><span>Cybersecurity</span><span>Artificial Intelligence</span><span>Machine Learning</span><span>Robotics</span><span>Software Engineering</span><span>Programming</span><span>Computer Engineering</span><span>Neural Networks</span><span>Data Science</span></div></div>
+    <div class="mqr r"><div class="mqt" style="--dur:95s"><span>Ethical Hacking</span><span>Cloud Computing</span><span>Automation</span><span>Information Technology</span><span>Network Security</span><span>Deep Learning</span><span>Web Development</span><span>Systems Engineering</span><span>Embedded Systems</span><span>Innovation</span><span>Technology</span></div></div>
+  </div>
 
-  <section class="section" id="about">
+  
+<section class="section" id="about">
     <div class="wrap">
       <div class="sectionhead rv"><div class="eyebrow">A little about me</div><h2 class="fx">Always exploring.</h2></div>
       <div class="aboutgrid">
@@ -333,117 +369,122 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:15px;pa
 const root=document.documentElement,$=id=>document.getElementById(id),JS=root.classList.contains('js');
 const lerp=(a,b,u)=>a+(b-a)*u,ease=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
 
-// ----- Text that reacts to the pointer: letters thin out, drift away and glow -----
-const groups=[];let PX=-1e4,PY=-1e4,mouse=false,idleOK=true;
-document.querySelectorAll('.fx').forEach((el,gi)=>{
-  const t=[...el.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join(''),keep=[...el.children],g={el,cs:[],vis:true,act:false,idle:el.classList.contains('l1')||el.classList.contains('l2')};
+// ----- Setup -----
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+document.querySelectorAll('.mqt').forEach(t=>[...t.children].forEach(n=>{const c=n.cloneNode(true);c.setAttribute('aria-hidden','true');c.dataset.c=1;t.append(c)}));
+
+// ----- Text that reacts to the pointer (cached letter positions, runs only while needed) -----
+const groups=[];let ready=false,raf=0,PX=-1e4,PY=-1e4,lastMove=0,sweep=null,roamRe=null;
+const off=el=>{let x=0,y=0;while(el){x+=el.offsetLeft;y+=el.offsetTop;el=el.offsetParent}return[x,y]};
+document.querySelectorAll('.fx').forEach(el=>{
+  const t=[...el.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join(''),keep=[...el.children],g={el,cs:[],vis:true,dyn:!!el.closest('.track')};
   el.textContent='';let i=0;
   t.split(/(\s+)/).forEach(w=>{
     if(!w)return;if(/^\s+$/.test(w)){el.append(' ');return}
     const wd=document.createElement('span');wd.className='wd';
-    [...w].forEach(c=>{const s=document.createElement('span');s.className='ch';s.textContent=c;s.style.setProperty('--i',i++);wd.append(s);g.cs.push({s,k:0,tx:0,ty:0})});
+    [...w].forEach(c=>{const s=document.createElement('span');s.className='ch';s.textContent=c;s.style.setProperty('--i',i++);wd.append(s);g.cs.push({s,k:0,tx:0,ty:0,on:0})});
     el.append(wd);
   });
   keep.forEach(k=>el.append(k));
   new IntersectionObserver(e=>g.vis=e[0].isIntersecting).observe(el);
   groups.push(g);
 });
-const lock=()=>groups.forEach(g=>{g.cs.forEach(c=>c.s.style.width='');g.cs.forEach(c=>c.w=c.s.getBoundingClientRect().width);g.cs.forEach(c=>c.s.style.width=c.w+'px');g.fs=parseFloat(getComputedStyle(g.el).fontSize)});
-(document.fonts?document.fonts.ready:Promise.resolve()).then(lock);
-let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(lock,200)});
-addEventListener('pointermove',e=>{PX=e.clientX;PY=e.clientY;mouse=e.pointerType==='mouse';idleOK=false;clearTimeout(PX.t)},{passive:true});
-addEventListener('pointerup',e=>{if(e.pointerType!=='mouse'){PX=PY=-1e4;setTimeout(()=>idleOK=true,1200)}});
-if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
-  const fx=t=>{
-    requestAnimationFrame(fx);
-    groups.forEach(g=>{
-      if(!g.vis||!g.fs)return;
-      const r=g.el.getBoundingClientRect(),R=Math.max(90,g.fs*2.1);
-      let px=PX,py=PY;
-      if(g.idle&&idleOK&&r.top<innerHeight*.8&&r.bottom>0){px=r.left+r.width*(.5+.55*Math.sin(t/1600+(g.el.classList.contains('l2')?2:0)));py=r.top+r.height*.5}
-      const near=px>r.left-R&&px<r.right+R&&py>r.top-R&&py<r.bottom+R;
-      if(!near&&!g.act)return;
-      let any=false;
-      g.cs.forEach(c=>{
-        const b=c.s.getBoundingClientRect(),cx=b.left+b.width/2-c.tx,cy=b.top+b.height/2-c.ty,dx=cx-px,dy=cy-py,d=Math.hypot(dx,dy)||1;
-        const k=near?Math.max(0,1-d/R):0;
-        c.k+=(k-c.k)*.14;
-        if(c.k<.003&&k===0){if(c.k){c.k=0;c.tx=c.ty=0;c.s.style.cssText=c.s.style.cssText.replace(/font-variation-settings[^;]*;?|translate[^;]*;?|color[^;]*;?/g,'')}return}
-        any=true;c.tx=dx/d*c.k*g.fs*.16;c.ty=dy/d*c.k*g.fs*.16;
-        c.s.style.fontVariationSettings=`"wght" ${Math.round(700-c.k*400)}`;
-        c.s.style.translate=`${c.tx}px ${c.ty}px`;
-        c.s.style.color=`color-mix(in srgb,#b8f36b ${Math.round(c.k*100)}%,currentColor)`;
-      });
-      g.act=any;
+const lock=()=>{
+  groups.forEach(g=>{
+    g.cs.forEach(c=>c.s.style.width='');
+    g.cs.forEach(c=>c.w=c.s.getBoundingClientRect().width);
+    g.cs.forEach(c=>{c.s.style.width=c.w+'px';const[o,p]=off(c.s);c.x=o+c.w/2;c.y=p+c.s.offsetHeight/2});
+    g.fs=parseFloat(getComputedStyle(g.el).fontSize);
+  });
+  roamRe&&roamRe();
+};
+const reset=c=>{c.s.style.fontVariationSettings='';c.s.style.translate='';c.s.style.color='';c.on=0;c.tx=c.ty=0};
+function step(now){
+  raf=0;let busy=false;const ox=scrollX,oy=scrollY;let px=PX,py=PY;
+  if(sweep){const u=(now-sweep.t0)/sweep.d;if(u>=1)sweep=null;else{const e=u*u*(3-2*u);px=sweep.x0+(sweep.x1-sweep.x0)*e;py=sweep.y;busy=true}}
+  groups.forEach(g=>{
+    if(!g.vis||!g.fs)return;const R=Math.max(90,g.fs*2.1);
+    g.cs.forEach(c=>{
+      let cx,cy;if(g.dyn){const b=c.s.getBoundingClientRect();cx=b.left+b.width/2-c.tx;cy=b.top+b.height/2-c.ty}else{cx=c.x-ox;cy=c.y-oy}
+      const dx=cx-px,dy=cy-py,d=Math.hypot(dx,dy)||1,k=Math.max(0,1-d/R);
+      c.k+=(k-c.k)*.14;
+      if(c.k<.004&&k===0){if(c.on)reset(c);return}
+      busy=c.on=1;c.tx=dx/d*c.k*g.fs*.16;c.ty=dy/d*c.k*g.fs*.16;
+      c.s.style.fontVariationSettings=`"wght" ${Math.round(700-c.k*400)}`;
+      c.s.style.translate=`${c.tx.toFixed(1)}px ${c.ty.toFixed(1)}px`;
+      c.s.style.color=`color-mix(in srgb,#b8f36b ${Math.round(c.k*100)}%,currentColor)`;
     });
-  };
-  requestAnimationFrame(fx);
+  });
+  if(busy||now-lastMove<300)raf=requestAnimationFrame(step);
 }
+const kick=()=>{if(!raf&&ready&&!RM)raf=requestAnimationFrame(step)};
+addEventListener('pointermove',e=>{PX=e.clientX;PY=e.clientY;lastMove=performance.now();sweep=null;kick()},{passive:true});
+['pointerup','pointercancel'].forEach(n=>addEventListener(n,e=>{if(e.pointerType!=='mouse'){PX=PY=-1e4;kick()}}));
+root.addEventListener('mouseleave',()=>{PX=PY=-1e4;kick()});
+addEventListener('scroll',()=>{if(PX>-1e3)kick()},{passive:true});
+(document.fonts?document.fonts.ready:Promise.resolve()).then(lock);
+addEventListener('load',lock);
+let lt;if('ResizeObserver' in window)new ResizeObserver(()=>{clearTimeout(lt);lt=setTimeout(lock,180)}).observe(document.body);
 
-// ----- Dot that roams the screen as you scroll (starts where the intro ends) -----
-function roamDot(dot,hd,S1,x0,y0,s0){
-  const sc=S1/20,R=e=>e.getBoundingClientRect();
-  let cx=x0,cy=y0,cs=s0,bx=0,by=0,mx=1,vis=true,snap=false;setTimeout(()=>snap=true,1400);
-  const measure=()=>{const r=R(hd);bx=r.left+r.width/2;by=r.top+scrollY+r.height/2;mx=Math.max(1,root.scrollHeight-innerHeight)};
-  measure();addEventListener('resize',measure);addEventListener('load',measure);
-  const loop=()=>{
-    requestAnimationFrame(loop);
-    const W=innerWidth,H=innerHeight,y=scrollY,p=Math.min(1,y/mx),hx=bx,hy=by-y;
-    const w=Math.min(1,y/(H*.45)),e=w*w*(3-2*w);
+// ----- The one and only dot: lands in the hero, then roams as you scroll. Runs only while moving. -----
+function startRoam(x0,y0,s0){
+  const dot=$('dot'),hd=document.querySelector('.hdot');
+  let bx=0,by=0,sc=1,mx=1,cx=0,cy=0,cs=1,fl=false,r=0;
+  const measure=()=>{const h=hd.getBoundingClientRect();bx=h.left+scrollX+h.width/2;by=h.top+scrollY+h.height/2;sc=h.width/20;mx=Math.max(1,root.scrollHeight-innerHeight)};
+  const tg=()=>{
+    const W=innerWidth,H=innerHeight,y=scrollY,p=Math.min(1,y/mx),w=Math.min(1,y/(H*.45)),e=w*w*(3-2*w),hx=bx-scrollX,hy=by-y;
     const px=W*(.5+.38*Math.sin(p*Math.PI*6)),py=H*(.5+.3*Math.sin(p*Math.PI*4+1.2));
-    const tx=hx+(px-hx)*e,ty=hy+(py-hy)*e,ts=sc*(1+e*.9),k=(w<.01&&snap)?1:.1;
-    cx+=(tx-cx)*k;cy+=(ty-cy)*k;cs+=(ts-cs)*.1;
-    dot.style.transform=`translate3d(${cx-10}px,${cy-10}px,0) scale(${cs})`;
-    const v=y<6&&snap;if(v!==vis){vis=v;hd.style.visibility=v?'visible':'hidden'}
+    return[hx+(px-hx)*e,hy+(py-hy)*e,sc*(1+e*.9),w];
   };
-  loop();
+  const put=()=>dot.style.transform=`translate3d(${cx-10}px,${cy-10}px,0) scale(${cs})`;
+  const loop=()=>{r=0;const[tx,ty,ts,w]=tg(),k=w<.004?1:.14;cx+=(tx-cx)*k;cy+=(ty-cy)*k;cs+=(ts-cs)*k;put();if(Math.abs(tx-cx)+Math.abs(ty-cy)+Math.abs(ts-cs)*20>.25)r=requestAnimationFrame(loop)};
+  const go=()=>{if(!fl&&!r)r=requestAnimationFrame(loop)};
+  measure();
+  if(x0==null){[cx,cy,cs]=tg();put();dot.style.opacity=1}
+  else{
+    cx=x0;cy=y0;cs=s0;fl=true;const[tx,ty,ts]=tg();
+    dot.style.transition='transform 1.6s cubic-bezier(.65,0,.2,1)';
+    requestAnimationFrame(()=>dot.style.transform=`translate3d(${tx-10}px,${ty-10}px,0) scale(${ts})`);
+    setTimeout(()=>{dot.style.transition='none';fl=false;cx=tx;cy=ty;cs=ts;go()},1680);
+  }
+  addEventListener('scroll',go,{passive:true});
+  roamRe=()=>{measure();go()};addEventListener('resize',roamRe);
 }
 
-// ----- Intro: the dot drops, bounces across the name typing it out, then the page opens from the dot -----
+// ----- Intro: letters bounce in one by one, the dot lands, the name holds, the doors open -----
 async function intro(){
+  const box=$('intro'),dot=$('dot'),ip=$('ip');
+  let exited=false,ended=false,holdT;
   history.scrollRestoration='manual';scrollTo(0,0);root.classList.add('lock');
-  const box=$('intro'),dot=$('dot'),nm=$('iname'),ip=$('ip'),fl=$('fl'),hd=document.querySelector('.hdot');
-  await Promise.race([document.fonts.load('700 100px "Space Grotesk"'),new Promise(r=>setTimeout(r,1500))]);
-  const lines=[...nm.querySelectorAll('.iw')].map(w=>{const t=w.textContent;w.textContent='';return [...t].map((c,i)=>{const s=document.createElement('span');s.className='ic';s.textContent=c;s.style.setProperty('--i',i);w.append(s);return s})});
-  const [josh,kop]=lines,fs=parseFloat(getComputedStyle(nm).fontSize),r=fs*.075,S=2*r/20;
-  const P=ip.getBoundingClientRect(),xe=P.left+P.width/2,floor=P.bottom;
-  const kc=kop.map(s=>{const b=s.getBoundingClientRect();return b.left+b.width/2});
-  const x1=kc[0],xm=x1+(xe-x1)*.46,left=x1-fs*.3;
-  Object.assign(fl.style,{left:left+'px',width:(xe-left+fs*.3)+'px',top:floor+3+'px'});
-  const D1=650,D2=520,D3=560,T1=D1,T2=D1+D2,T3=T2+D3,HOLD=T3+420,OPEN=950,imp=[T1,T2,T3],ix=[x1,xm,xe];
-  let fired=0,t0=performance.now(),skip=false,opened=false,ended=false;
-  const rip=(x,y)=>{const e=document.createElement('i');e.className='rip';e.style.left=x+'px';e.style.top=y+'px';box.append(e);setTimeout(()=>e.remove(),900)};
-  box.addEventListener('pointerdown',()=>{skip=true});
-  dot.style.opacity=1;fl.classList.add('on');
-  const W=innerWidth,H=innerHeight,Rmax=Math.hypot(W,H)*1.05;
-  const frame=now=>{
-    let t=now-t0;
-    if(skip&&t<HOLD){t0-=HOLD-t;t=HOLD;josh.concat(kop).forEach(s=>s.classList.add('up'));fired=3}
-    let x,y,sx=1,sy=1;
-    if(t<T1){const u=t/D1;x=x1;y=lerp(-3*r,floor-r,u*u)}
-    else if(t<T2){const u=(t-T1)/D2;x=lerp(x1,xm,u);y=floor-r-fs*.75*4*u*(1-u)}
-    else if(t<T3){const u=(t-T2)/D3;x=lerp(xm,xe,u);y=floor-r-fs*.5*4*u*(1-u)}
-    else{x=xe;y=floor-r}
-    while(fired<3&&t>=imp[fired]){rip(ix[fired],floor);if(fired===0)josh.forEach(s=>s.classList.add('up'));fired++}
-    imp.forEach(m=>{const tau=t-m;if(tau>=0&&tau<160){const q=Math.sin(Math.PI*tau/160);sx=1+.45*q;sy=1-.45*q;y=floor-r*sy}});
-    kop.forEach((s,i)=>{if(t>=T1&&x>=kc[i]-r)s.classList.add('up')});
-    if(t<HOLD){dot.style.transform=`translate3d(${x-10}px,${y-10}px,0) scale(${S*sx},${S*sy})`}
-    else{
-      if(!opened){opened=true;
-        const h=hd.getBoundingClientRect(),SH=h.width/20;
-        roamDot(dot,hd,SH*20,x-10+10,floor-r,S);
-        root.classList.add('go');
-        setTimeout(()=>{hd.classList.add('lit')},1500);setTimeout(()=>root.classList.add('done'),3600);
-      }
-      const u=Math.min(1,(t-HOLD)/OPEN),R=ease(u)*Rmax,m=`radial-gradient(circle at ${xe}px ${floor-r}px,transparent ${R}px,#000 ${R+2}px)`;
-      box.style.webkitMaskImage=box.style.maskImage=m;
-      if(u>=1&&!ended){ended=true;box.remove();root.classList.remove('lock');return}
-    }
-    if(!ended)requestAnimationFrame(frame);
-  };
-  requestAnimationFrame(frame);
+  const force=()=>{if(ended)return;ended=true;box.remove();root.classList.remove('lock');root.classList.add('go','done');ready=true;lock();startRoam()};
+  const safety=setTimeout(force,15000);
+  try{
+    await Promise.race([Promise.all([document.fonts.load('700 100px "Space Grotesk"'),document.fonts.load('400 16px "DM Sans"')]),new Promise(r=>setTimeout(r,2200))]);
+    let n=0;box.querySelectorAll('.iw').forEach(w=>{const t=w.textContent;w.textContent='';[...t].forEach(c=>{const s=document.createElement('span');s.className='ic';s.textContent=c;s.style.setProperty('--i',n++);w.append(s)})});
+    lock();
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+    const exit=()=>{
+      if(exited||ended)return;exited=true;clearTimeout(holdT);clearTimeout(safety);
+      box.classList.add('hold');void box.offsetWidth;
+      const P=ip.getBoundingClientRect(),x0=P.left+P.width/2,y0=P.top+P.height/2,s0=P.width/20;
+      dot.style.transform=`translate3d(${x0-10}px,${y0-10}px,0) scale(${s0})`;dot.style.opacity=1;ip.style.visibility='hidden';
+      box.classList.add('exit');
+      setTimeout(()=>root.classList.add('go'),450);
+      setTimeout(()=>startRoam(x0,y0,s0),750);
+      setTimeout(()=>{ended=true;box.remove();root.classList.remove('lock')},1600);
+      setTimeout(()=>{root.classList.add('done');ready=true;const h=groups[0];if(h&&h.cs.length){const c=h.cs[0];sweep={t0:performance.now(),d:2200,x0:c.x- scrollX-120,x1:c.x-scrollX+h.el.offsetWidth+120,y:c.y-scrollY};kick()}},4600);
+    };
+    const skip=()=>{if(exited)return;box.classList.add('skipped','hold');void box.offsetWidth;exit()};
+    box.addEventListener('pointerdown',skip);
+    addEventListener('keydown',e=>{if(['Enter',' ','Escape'].includes(e.key))skip()},{once:true});
+    box.classList.add('play');
+    const hold=()=>{if(exited||box.classList.contains('hold'))return;box.classList.add('hold');holdT=setTimeout(exit,1900)};
+    ip.addEventListener('animationend',hold,{once:true});
+    setTimeout(hold,5500);
+  }catch(e){force()}
 }
-if(JS)intro();else{root.classList.add('go','done')}
+if(JS&&!RM)intro();else{root.classList.add('go','done')}
+
 
 // ----- Horizontal project gallery: pinned scroll on desktop, swipe on mobile -----
 (()=>{
@@ -465,7 +506,7 @@ if(JS)intro();else{root.classList.add('go','done')}
       c.classList.toggle('on',a<.22);
     });
   };
-  addEventListener('scroll',render,{passive:true});st.addEventListener('scroll',render,{passive:true});
+  let gt=0;const sched=()=>{if(!gt)gt=requestAnimationFrame(()=>{gt=0;render()})};addEventListener('scroll',sched,{passive:true});st.addEventListener('scroll',sched,{passive:true});document.fonts&&document.fonts.ready.then(layout);
   addEventListener('resize',layout);addEventListener('load',layout);layout();
 })();
 
@@ -474,20 +515,20 @@ const prog=$('prog'),orbs=[...document.querySelectorAll('.orb')];let tk=false;
 const onScroll=()=>{if(tk)return;tk=true;requestAnimationFrame(()=>{
   tk=false;const m=Math.max(1,root.scrollHeight-innerHeight);
   prog.style.transform=`scaleX(${Math.min(1,scrollY/m)})`;
-  orbs.forEach((o,i)=>o.style.transform=`translateY(${-scrollY*(.05+i*.04)}px)`);
 })};
 addEventListener('scroll',onScroll,{passive:true});onScroll();
 if(JS){
   const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){const el=e.target;el.classList.add('in');io.unobserve(el);setTimeout(()=>{el.classList.remove('rv','in')},1900)}}),{threshold:.15});
   document.querySelectorAll('.rv').forEach(el=>io.observe(el));
 }
-const spot=$('spot');let sx=0,sy=0,tx=0,ty=0;
+const spot=$('spot');let sx=0,sy=0,tx=0,ty=0,sr=0;
+const sl=()=>{sr=0;sx+=(tx-sx)*.12;sy+=(ty-sy)*.12;spot.style.transform=`translate3d(${sx}px,${sy}px,0)`;if(Math.abs(tx-sx)+Math.abs(ty-sy)>.5)sr=requestAnimationFrame(sl)};
 addEventListener('pointermove',e=>{
-  if(e.pointerType!=='mouse')return;tx=e.clientX;ty=e.clientY;spot.style.opacity=1;
-  const g=e.target.closest&&e.target.closest('.glass');if(!g)return;
-  const r=g.getBoundingClientRect();g.style.setProperty('--mx',(e.clientX-r.left)+'px');g.style.setProperty('--my',(e.clientY-r.top)+'px');
+  if(e.pointerType!=='mouse')return;
+  const g=e.target.closest&&e.target.closest('.glass');
+  if(g){const r=g.getBoundingClientRect();g.style.setProperty('--mx',(e.clientX-r.left)+'px');g.style.setProperty('--my',(e.clientY-r.top)+'px')}
+  if(RM)return;tx=e.clientX;ty=e.clientY;spot.style.opacity=1;if(!sr)sr=requestAnimationFrame(sl);
 },{passive:true});
-(function sl(){requestAnimationFrame(sl);sx+=(tx-sx)*.1;sy+=(ty-sy)*.1;spot.style.transform=`translate3d(${sx}px,${sy}px,0)`})();
 
 // ----- Mobile menu -----
 const menu=$('menu'),links=$('navlinks');
