@@ -304,6 +304,30 @@ body.g .rc{color:#fff;font-family:Nunito,sans-serif}
 @keyframes drop{from{transform:translate(-50%,-90%) scale(1.4);opacity:0}}
 @keyframes rcw{to{transform:translate(-50%,-50%) scale(1.3)}}
 .rtot{color:#bfd3c9;font-size:14px}body.g .rtot{color:#6b8a63}
+
+.tiles button:nth-child(7){--c:#ff7a3d}.tiles button:nth-child(8){--c:#3dffc6}
+.tiles button:nth-child(7)::after{animation-delay:-.3s}.tiles button:nth-child(8)::after{animation-delay:-1s}
+body.g .tiles button:nth-child(7){--c1:#fde2e4;--c2:#f4a6b0}
+body.g .tiles button:nth-child(8){--c1:#e0f4e8;--c2:#9ad7b4}
+#pk{display:block;width:100%;max-width:560px;aspect-ratio:1/1.02;margin:6px auto 14px;border-radius:16px;border:1px solid rgba(25,240,255,.25)}
+body.g #pk{border-color:#d7e6cb}
+.mgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;max-width:400px;margin:6px auto 18px}
+.mt{aspect-ratio:1;padding:0;border:0;background:none;perspective:700px;cursor:pointer}
+.mt .in{position:relative;display:block;width:100%;height:100%;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.3,1.3,.5,1)}
+.mt.f .in{transform:rotateY(180deg)}
+.mt .fr,.mt .bk{position:absolute;inset:0;border-radius:14px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:grid;place-items:center;font-size:clamp(24px,7vw,40px)}
+.mt .fr{background:linear-gradient(160deg,#0d2238,#07121f);border:1px solid rgba(25,240,255,.4);box-shadow:inset 0 0 20px rgba(25,240,255,.1);transition:box-shadow .2s,transform .2s}
+.mt:hover .fr{box-shadow:inset 0 0 24px rgba(25,240,255,.35),0 0 14px rgba(25,240,255,.4);transform:translateY(-2px)}
+.mt .bk{transform:rotateY(180deg);background:#07121f;border:1px solid rgba(255,255,255,.1)}
+.mt .bk.g{border-color:#19f0ff;box-shadow:0 0 24px rgba(25,240,255,.55)}
+.mt .bk.m{background:#2a0a14;border-color:#ff4d6d;box-shadow:0 0 28px rgba(255,77,109,.7);animation:boomt .5s}
+.mt .bk.dim{opacity:.4;box-shadow:none;animation:none}
+@keyframes boomt{0%{transform:rotateY(180deg) scale(1.4)}100%{transform:rotateY(180deg) scale(1)}}
+body.g .mt .fr{background:linear-gradient(160deg,#e8f6dc,#cfe8c4);border-color:#bcd9ad;box-shadow:inset 0 0 14px rgba(255,255,255,.8),0 3px 8px rgba(70,110,60,.2)}
+body.g .mt:hover .fr{box-shadow:inset 0 0 14px rgba(255,255,255,.9),0 8px 16px rgba(70,110,60,.3)}
+body.g .mt .bk{background:#fffdf6;border-color:#f0d9c0}
+body.g .mt .bk.g{border-color:#f58fb1;box-shadow:0 0 20px rgba(245,143,177,.55)}
+body.g .mt .bk.m{background:#fbe3d6;border-color:#e08a5a;box-shadow:0 0 20px rgba(224,138,90,.5)}
 </style>
 </head>
 <body>
@@ -321,6 +345,8 @@ body.g .rc{color:#fff;font-family:Nunito,sans-serif}
 <button data-g="crash"><span>🚀</span><b>Crash</b><small>Cash out before it blows</small></button>
 <button data-g="dice"><span>🎲</span><b>Dice</b><small>Set your own odds</small></button>
 <button data-g="coin"><span>◎</span><b>Coin</b><small>Heads or tails, 50/50</small></button>
+<button data-g="plinko"><span>⚪</span><b>Plinko</b><small>Drop it through the pegs</small></button>
+<button data-g="mines"><span>💎</span><b>Mines</b><small>Dodge the bombs, cash out</small></button>
 </div></section>
 <div id="stage" hidden><button class="back" id="back">‹ Lobby</button>
 <div class="betbar">
@@ -385,6 +411,26 @@ body.g .rc{color:#fff;font-family:Nunito,sans-serif}
   <div class="center"><div class="seg" id="cseg"><button class="on" data-s="H">Heads</button><button data-s="T">Tails</button></div></div>
   <p class="msg center" id="com"></p>
   <div class="row" style="justify-content:center"><button class="btn go" id="cflip">Flip</button></div>
+</section>
+
+<section class="game" id="g-plinko">
+  <h2>Plinko</h2><p class="rule">Drop balls through the pegs and land in a bucket to multiply your bet. Higher risk means bigger edges and tiny middles. Drop as many as you like.</p>
+  <canvas id="pk"></canvas>
+  <div class="center" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <div class="seg" id="pkrows"><button data-r="8">8 rows</button><button data-r="12" class="on">12 rows</button><button data-r="16">16 rows</button></div>
+    <div class="seg" id="pkrisk"><button data-k="l">Low</button><button data-k="m" class="on">Medium</button><button data-k="h">High</button></div>
+  </div>
+  <p class="msg center" id="pkm"></p>
+  <div class="row" style="justify-content:center"><button class="btn go" id="pkdrop">Drop ball</button></div>
+</section>
+
+<section class="game" id="g-mines">
+  <h2>Mines</h2><p class="rule">Start a round, then reveal tiles. Every gem raises your multiplier, and one mine ends it all. Cash out any time. More mines means faster growth.</p>
+  <div class="mgrid" id="mg"></div>
+  <div class="info"><span>Mines <b id="mnv">3</b></span><span>Gems <b id="mgem">0</b></span><span>Multiplier <b id="mmul">1.00×</b></span><span>Next <b id="mnext">1.12×</b></span></div>
+  <input type="range" id="mn" min="1" max="24" value="3" aria-label="Number of mines">
+  <p class="msg center" id="mm"></p>
+  <div class="row" style="justify-content:center"><button class="btn go" id="mstart">Start</button><button class="btn" id="mcash" disabled>Cash out</button><button class="btn" id="mrand" disabled>Random tile</button></div>
 </section>
 
 </main></div>
@@ -708,6 +754,99 @@ $('#cflip').onclick=async()=>{
   cbusy=false;$('#cflip').disabled=false;$$('#cseg button').forEach(x=>x.disabled=false);
 };
 
+/* ---------- Mines ---------- */
+const MG=$('#mg');let M={on:false,mines:new Set(),rev:new Set(),bet:0,n:3};
+const ME=()=>GARDEN?['🌸','🐛']:['💎','💣'];
+const mm=(k,n)=>{let m=.98;for(let i=0;i<k;i++)m*=(25-i)/(25-n-i);return m};
+for(let i=0;i<25;i++){const t=document.createElement('button');t.className='mt';t.setAttribute('aria-label','Tile '+(i+1));t.innerHTML='<span class="in"><span class="fr"></span><span class="bk"></span></span>';t.onclick=()=>mpick(i);MG.appendChild(t)}
+function mstat(){
+  const n=M.on?M.n:+$('#mn').value,g=M.on?M.rev.size:0;
+  $('#mnv').textContent=n;$('#mgem').textContent=g;$('#mmul').textContent=(g?mm(g,n):1).toFixed(2)+'×';$('#mnext').textContent=g<25-n?mm(g+1,n).toFixed(2)+'×':'–';
+  $('#mcash').textContent=M.on&&g?`Cash out ${fmt(M.bet*mm(g,n))}`:'Cash out';
+}
+function mflip(i,mine,dim){const t=MG.children[i],bk=t.querySelector('.bk');bk.className='bk '+(mine?'m':'g')+(dim?' dim':'');bk.textContent=ME()[mine?1:0];t.classList.add('f')}
+function mend(){$('#mstart').disabled=false;$('#mn').disabled=false;$('#mcash').disabled=true;$('#mrand').disabled=true;mstat()}
+function mreveal(skip){[...Array(25).keys()].filter(k=>!M.rev.has(k)&&k!==skip).forEach((k,q)=>setTimeout(()=>mflip(k,M.mines.has(k),!M.mines.has(k)),q*35))}
+function mcash(){
+  if(!M.on||!M.rev.size)return;const m=mm(M.rev.size,M.n),pay=Math.round(M.bet*m);setBal(bal+pay);M.on=false;
+  msg('#mm',`Cashed out at ${m.toFixed(2)}×. You win ${fmt(pay-M.bet)}`,'win');mreveal(-1);
+  const q=MG.getBoundingClientRect();spark(q.left+q.width/2,q.top+q.height/2,'#39ff88',110,10);spark(q.left+q.width/2,q.top+q.height/2,'#ffffff',40,12);mend();
+}
+function mpick(i){
+  if(!M.on||M.rev.has(i))return;
+  if(M.mines.has(i)){
+    M.on=false;mflip(i,true,false);const q=MG.children[i].getBoundingClientRect();spark(q.left+q.width/2,q.top+q.height/2,'#ff4d6d',120,12);spark(q.left+q.width/2,q.top+q.height/2,'#ffe14d',60,9);shake($('.table'));
+    msg('#mm',`${GARDEN?'A bug got the bloom':'Boom'}. You lose ${fmt(M.bet)}`,'lose');mreveal(i);mend();return;
+  }
+  M.rev.add(i);mflip(i,false,false);const q=MG.children[i].getBoundingClientRect();spark(q.left+q.width/2,q.top+q.height/2,'#19f0ff',22,5);
+  $('#mcash').disabled=false;mstat();
+  if(M.rev.size===25-M.n)mcash();
+}
+$('#mn').oninput=()=>{if(!M.on)mstat()};
+$('#mstart').onclick=()=>{
+  if(M.on)return;const b=getBet();if(!b)return;const n=+$('#mn').value;setBal(bal-b);
+  const mines=new Set();while(mines.size<n)mines.add(Math.floor(Math.random()*25));
+  M={on:true,mines,rev:new Set(),bet:b,n};
+  [...MG.children].forEach(t=>{t.classList.remove('f');const bk=t.querySelector('.bk');setTimeout(()=>{bk.className='bk';bk.textContent=''},250)});
+  msg('#mm','');$('#mstart').disabled=true;$('#mn').disabled=true;$('#mrand').disabled=false;$('#mcash').disabled=true;mstat();
+};
+$('#mcash').onclick=mcash;
+$('#mrand').onclick=()=>{if(!M.on)return;const free=[...Array(25).keys()].filter(k=>!M.rev.has(k));mpick(free[Math.floor(Math.random()*free.length)])};
+mstat();
+
+/* ---------- Plinko ---------- */
+const PKT={
+ 8:{l:[5.6,2.1,1.1,1,.5,1,1.1,2.1,5.6],m:[13,3,1.3,.7,.4,.7,1.3,3,13],h:[29,4,1.5,.3,.2,.3,1.5,4,29]},
+ 12:{l:[10,3,1.6,1.4,1.1,1,.5,1,1.1,1.4,1.6,3,10],m:[33,11,4,2,1.1,.6,.3,.6,1.1,2,4,11,33],h:[170,24,8.1,2,.7,.2,.2,.2,.7,2,8.1,24,170]},
+ 16:{l:[16,9,2,1.4,1.4,1.2,1.1,1,.5,1,1.1,1.2,1.4,1.4,2,9,16],m:[110,41,10,5,3,1.5,1,.5,.3,.5,1,1.5,3,5,10,41,110],h:[1000,130,26,9,4,2,.2,.2,.2,.2,.2,2,4,9,26,130,1000]}};
+const pkc=$('#pk'),pk=pkc.getContext('2d');let PR=12,PRk='m',balls=[],hits={},bfl={};
+const pkgeo=(W,H,R)=>{const pad=14,dx=(W-pad*2)/(R+1),top=22,bh=Math.min(34,dx*.95),bt=H-bh-6,dy=(bt-top-14)/R;return{dx,top,bh,bt,dy,cx:W/2,pr:Math.max(2.2,dx*.09),br:Math.max(4,dx*.2)}};
+const pkpts=(b,g)=>{const P=[[g.cx,-g.br*2]];let k=0;for(let i=0;i<b.rows;i++){P.push([g.cx+(k-i/2)*g.dx,g.top+(i+.5)*g.dy-g.pr-g.br]);k+=b.path[i]}P.push([g.cx+(k-b.rows/2)*g.dx,g.bt+g.bh*.55]);return P};
+const pkcol=m=>GARDEN?(m<1?'#e0576b':m<2?'#f6b48a':m<5?'#f8c94d':m<20?'#9be564':'#c6a8f0'):(m<1?'#ff4d6d':m<2?'#ff9f43':m<5?'#ffe14d':m<20?'#39ff88':'#19f0ff');
+const pkfmt=m=>m>=1000?'1k':m>=10?String(m):m.toFixed(1);
+$('#pkrows').onclick=e=>{const b=e.target.closest('button');if(!b||balls.length)return;PR=+b.dataset.r;$$('#pkrows button').forEach(x=>x.classList.toggle('on',x===b))};
+$('#pkrisk').onclick=e=>{const b=e.target.closest('button');if(!b||balls.length)return;PRk=b.dataset.k;$$('#pkrisk button').forEach(x=>x.classList.toggle('on',x===b))};
+$('#pkdrop').onclick=()=>{
+  const b=getBet();if(!b)return;setBal(bal-b);
+  const path=Array.from({length:PR},()=>Math.random()<.5?1:0),pegs=[];let k=0;path.forEach((v,i)=>{pegs.push(i+':'+k);k+=v});
+  balls.push({b,path,k,rows:PR,risk:PRk,pegs,t0:performance.now(),lj:0,tr:[]});
+};
+function pkland(b){
+  const m=PKT[b.rows][b.risk][b.k],pay=Math.round(b.b*m);setBal(bal+pay);bfl[b.k]=performance.now();
+  msg('#pkm',`${m}×. `+(pay>b.b?`You win ${fmt(pay-b.b)}`:pay<b.b?`You lose ${fmt(b.b-pay)}`:'Bet returned'),pay>b.b?'win':pay<b.b?'lose':'push');
+  const W=pkc.clientWidth,H=pkc.clientHeight;if(!W)return;const g=pkgeo(W,H,b.rows),r=pkc.getBoundingClientRect(),x=r.left+g.cx+(b.k-b.rows/2)*g.dx,y=r.top+g.bt+g.bh/2;
+  spark(x,y,m>=1?'#39ff88':'#ff4d6d',m>=1?40:24,6);if(m>=10){spark(x,y,'#ffe14d',100,11);spark(x,y,'#ffffff',40,13)}
+}
+function pkdraw(){
+  requestAnimationFrame(pkdraw);const now=performance.now();
+  balls=balls.filter(b=>{
+    const D=[330,...Array(b.rows).fill(235)],tot=D.reduce((a,c)=>a+c,0),t=now-b.t0;let j=0,acc=0;
+    while(j<D.length-1&&t>=acc+D[j]){acc+=D[j];j++}
+    b.j=j;b.u=Math.min(1,(t-acc)/D[j]);
+    if(j>b.lj){for(let q=b.lj+1;q<=j;q++)hits[b.pegs[q-1]]=now;b.lj=j}
+    if(t>=tot){pkland(b);return false}return true});
+  if(!$('#g-plinko').classList.contains('on')||$('#stage').hidden)return;
+  const W=pkc.clientWidth,H=pkc.clientHeight,d=devicePixelRatio||1;if(!W)return;
+  if(pkc.width!==Math.round(W*d)){pkc.width=Math.round(W*d);pkc.height=Math.round(H*d);pk.setTransform(d,0,0,d,0,0)}
+  const G=GARDEN,R=balls.length?balls[0].rows:PR,tab=PKT[R][balls.length?balls[0].risk:PRk],g=pkgeo(W,H,R);
+  pk.clearRect(0,0,W,H);pk.fillStyle=G?'#fbf6e9':'#050b16';pk.fillRect(0,0,W,H);
+  for(let i=0;i<R;i++)for(let j=0;j<=i;j++){
+    const x=g.cx+(j-i/2)*g.dx,y=g.top+(i+.5)*g.dy,h=hits[i+':'+j],f=h?Math.max(0,1-(now-h)/320):0,r=g.pr*(1+f*.9);
+    pk.shadowColor=G?'transparent':'#19f0ff';pk.shadowBlur=G?0:6+f*14;pk.fillStyle=G?(f?'#ffd36e':'#f58fb1'):(f?'#ffffff':'#19f0ff');pk.beginPath();pk.arc(x,y,r,0,6.283);pk.fill();
+    if(G){pk.fillStyle='#ffd36e';pk.beginPath();pk.arc(x,y,r*.4,0,6.283);pk.fill()}}
+  pk.shadowBlur=0;
+  for(let k=0;k<=R;k++){const m=tab[k],fl=bfl[k],bo=fl?Math.sin(Math.min(1,(now-fl)/350)*Math.PI)*7:0,x=g.cx+(k-R/2)*g.dx-g.dx/2+1.5;
+    pk.fillStyle=pkcol(m);pk.globalAlpha=fl&&now-fl<350?1:.88;pk.beginPath();pk.roundRect?pk.roundRect(x,g.bt+bo,g.dx-3,g.bh,5):pk.rect(x,g.bt+bo,g.dx-3,g.bh);pk.fill();pk.globalAlpha=1;
+    pk.fillStyle=G?'#27422c':'#021018';pk.font=`700 ${Math.max(8,g.dx*.34)}px ${G?'Nunito':'JetBrains Mono'},sans-serif`;pk.textAlign='center';pk.textBaseline='middle';pk.fillText(pkfmt(m),x+(g.dx-3)/2,g.bt+bo+g.bh/2)}
+  balls.forEach(b=>{
+    const P=pkpts(b,g),A=P[b.j],B=P[b.j+1],u=b.u,x=A[0]+(B[0]-A[0])*u,y=b.j===0?A[1]+(B[1]-A[1])*u*u:A[1]+(B[1]-A[1])*u-g.dy*.4*4*u*(1-u);
+    b.tr.push([x,y]);if(b.tr.length>9)b.tr.shift();
+    if(!G)b.tr.forEach(([tx,ty],q)=>{pk.globalAlpha=q/b.tr.length*.35;pk.fillStyle='#19f0ff';pk.beginPath();pk.arc(tx,ty,g.br*(.4+q/b.tr.length*.5),0,6.283);pk.fill()});
+    pk.globalAlpha=1;
+    if(G){pk.font=`${g.br*2.8}px serif`;pk.textAlign='center';pk.textBaseline='middle';pk.fillText('🐞',x,y)}
+    else{pk.shadowColor='#19f0ff';pk.shadowBlur=16;pk.fillStyle='#fff';pk.beginPath();pk.arc(x,y,g.br,0,6.283);pk.fill();pk.shadowBlur=0}});
+}
+
 /* ---------- Garden crash scene ---------- */
 const mcolG=m=>m<2?'#f58fb1':m<5?'#ff9f6b':m<10?'#ffd34d':'#b57bee';
 function garden(W,H,now,m,live){
@@ -748,7 +887,7 @@ const amb=document.createElement('div');amb.id='amb';document.body.prepend(amb);
 for(let k=0;k<18;k++){const i=document.createElement('i');i.textContent=['🌸','🌼','🍃','🌷','🌿'][k%5];i.style.cssText=`left:${Math.random()*100}vw;font-size:${14+Math.random()*16}px;animation-duration:${14+Math.random()*14}s;animation-delay:${-Math.random()*26}s;--dx:${(Math.random()-.5)*30}vw`;amb.appendChild(i)}
 function theme(g){
   GARDEN=g;document.body.classList.toggle('g',g);try{localStorage.setItem('backroom-theme',g?'g':'n')}catch(e){}
-  const TG=g?['🌹','🌻','🌸','🌱','🐝','🌼']:['♠','7','◉','🚀','🎲','◎'];$$('.tiles span').forEach((x,i)=>x.textContent=TG[i]);
+  const TG=g?['🌹','🌻','🌸','🌱','🐝','🌼','🐞','🌷']:['♠','7','◉','🚀','🎲','◎','⚪','💎'];$$('.tiles span').forEach((x,i)=>x.textContent=TG[i]);
   $('.lead').textContent=g?'Wander in and pick a garden bed':'Pick a table';
   $('h1').textContent=document.title=g?'The Garden Room':'The Back Room';
   payRow();cur.forEach((l,i)=>setStrip(i,l));
@@ -756,7 +895,7 @@ function theme(g){
 $('#tsw').onclick=()=>theme(!GARDEN);
 let savedT=null;try{savedT=localStorage.getItem('backroom-theme')}catch(e){}
 theme(savedT==='g');
-dinfo();bjr();cdraw();rdraw();
+dinfo();bjr();cdraw();rdraw();pkdraw();
 </script>
 </body>
 </html>
