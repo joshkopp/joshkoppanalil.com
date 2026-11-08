@@ -4,133 +4,489 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<meta name="theme-color" content="#09090b">
-<title>Lewis Dot Lab</title>
+<meta name="theme-color" content="#07080a">
+<title>Lewis Dot Lab · JK.</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#09090b;--panel:#111114;--text:#f4f4f5;--muted:#a1a1aa;--line:#27272a;--accent:#b8f36b;--bad:#f87171;--blue:#60a5fa}
+:root{--bg:#07080a;--panel:#0f1013;--panel2:#0b0c0f;--text:#f4f6f4;--muted:#a3a8a6;--dim:#6b6b73;--line:#222227;--line2:#2f2f35;--accent:#b8f36b;--accent2:#d9ff9f;--bad:#f87171;--blue:#60a5fa;--violet:#c084fc;--mx:50%;--my:20%}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-body{margin:0;min-height:100vh;background:radial-gradient(rgba(255,255,255,.045) 1px,transparent 1px) 0 0/28px 28px,var(--bg);color:var(--text);font-family:"DM Sans",system-ui,sans-serif;line-height:1.6}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:"DM Sans",system-ui,sans-serif;line-height:1.6;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(rgba(255,255,255,.055) 1px,transparent 1px) 0 0/28px 28px;-webkit-mask-image:radial-gradient(ellipse at 50% 15%,#000 25%,transparent 85%);mask-image:radial-gradient(ellipse at 50% 15%,#000 25%,transparent 85%);pointer-events:none;z-index:-2}
+body::after{content:"";position:fixed;inset:0;background:radial-gradient(650px circle at var(--mx) var(--my),rgba(184,243,107,.07),transparent 60%);pointer-events:none;z-index:-1}
+.blob{position:fixed;width:540px;height:540px;border-radius:50%;filter:blur(120px);z-index:-3;pointer-events:none;animation:drift 24s ease-in-out infinite alternate}
+.b1{background:#b8f36b;top:-220px;left:-160px;opacity:.13}.b2{background:#60a5fa;top:38%;right:-240px;opacity:.09;animation-duration:30s}.b3{background:#c084fc;bottom:-300px;left:28%;opacity:.07;animation-duration:36s}
+@keyframes drift{to{transform:translate(140px,90px) scale(1.15)}}
 a{color:inherit;text-decoration:none}
-h1{font-family:"Space Grotesk",sans-serif;letter-spacing:-.05em;line-height:1.05;margin:0;font-size:clamp(38px,8vw,68px)}
+button{font-family:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
-.wrap{width:min(920px,calc(100% - 32px));margin:auto;padding:28px 0 60px}
-.back{font:700 15px "Space Grotesk",sans-serif;color:var(--muted)}
-.back:hover{color:var(--accent)}
-.lead{margin:12px 0 26px;color:var(--muted);max-width:520px}
+::selection{background:rgba(184,243,107,.3)}
+sub,sup{line-height:0}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+
+/* ---------- intro ---------- */
+#intro{position:fixed;inset:0;z-index:100;background:var(--bg);display:grid;place-items:center;cursor:pointer;transition:opacity .6s,visibility .6s}
+#intro.done{opacity:0;visibility:hidden}
+#intro .in{display:grid;justify-items:center;gap:14px}
+#intro .t{font:700 34px "Space Grotesk",sans-serif;letter-spacing:-.05em;opacity:0;animation:rise .7s .5s forwards}
+#intro .t i{color:var(--accent);font-style:normal}
+#intro small{color:var(--dim);font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:0;animation:fade .6s 1s forwards}
+#intro .bar{width:160px;height:2px;background:var(--line);border-radius:2px;overflow:hidden}
+#intro .bar span{display:block;height:100%;background:var(--accent);animation:load 1.5s cubic-bezier(.6,0,.2,1) forwards;transform-origin:left;transform:scaleX(0)}
+@keyframes load{to{transform:scaleX(1)}}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* ---------- header ---------- */
+header{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);background:rgba(7,8,10,.62);border-bottom:1px solid rgba(255,255,255,.06)}
+.nav{width:min(1120px,calc(100% - 32px));margin:auto;display:flex;align-items:center;gap:14px;height:62px}
+.logo{font:700 22px "Space Grotesk",sans-serif;letter-spacing:-.05em;transition:color .2s}
+.logo i{color:var(--accent);font-style:normal}
+.logo:hover{color:var(--accent)}
+.crumb{color:var(--dim);font-size:14px}.crumb b{color:var(--muted);font-weight:500}
+.links{display:flex;gap:2px;margin-left:auto}
+.links a{padding:6px 12px;border-radius:99px;color:var(--muted);font-size:14px;font-weight:500;transition:color .2s,background .2s}
+.links a:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.clock{font:500 12px "JetBrains Mono",monospace;color:var(--dim);padding:6px 12px;border:1px solid var(--line);border-radius:99px;white-space:nowrap}
+.clock b{color:var(--text);font-weight:500}
+.menu{display:none;margin-left:auto;padding:7px 14px;border:1px solid var(--line);border-radius:99px;background:none;color:var(--text);font-size:13px;cursor:pointer}
+@media(max-width:760px){.crumb,.clock{display:none}.menu{display:block}.links{display:none;position:absolute;top:62px;left:0;right:0;flex-direction:column;padding:10px 16px 16px;background:rgba(7,8,10,.96);border-bottom:1px solid var(--line)}header.open .links{display:flex}}
+
+/* ---------- layout ---------- */
+.wrap{width:min(1120px,calc(100% - 32px));margin:auto;padding:0 0 40px}
+.hero{display:grid;grid-template-columns:1.25fr .75fr;gap:20px;align-items:center;padding:46px 0 26px}
+@media(max-width:860px){.hero{grid-template-columns:1fr}.hero .orb{display:none}}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 10px;border:1px solid var(--line2);border-radius:99px;background:rgba(255,255,255,.03);color:var(--muted);font-size:13px}
+.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 rgba(184,243,107,.6);animation:ping 2s infinite}
+@keyframes ping{70%{box-shadow:0 0 0 8px rgba(184,243,107,0)}100%{box-shadow:0 0 0 0 rgba(184,243,107,0)}}
+.eyebrow .new{padding:1px 7px;border-radius:99px;background:var(--accent);color:#10120b;font-size:11px;font-weight:700}
+h1{font-family:"Space Grotesk",sans-serif;letter-spacing:-.055em;line-height:.98;margin:18px 0 0;font-size:clamp(46px,9vw,92px)}
+h1 .g{background:linear-gradient(90deg,#b8f36b 0%,#e8ffc6 25%,#b8f36b 50%,#7dd3fc 75%,#b8f36b 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 7s linear infinite}
+@keyframes shine{to{background-position:-200% 0}}
+.lead{margin:18px 0 0;color:var(--muted);max-width:560px;font-size:17px}
+.hstats{display:flex;gap:28px;margin-top:26px;flex-wrap:wrap}
+.hstats div b{display:block;font:700 30px "Space Grotesk",sans-serif;letter-spacing:-.04em}
+.hstats div span{color:var(--dim);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+.orb svg{width:100%;max-width:360px;height:auto;display:block;margin:auto;overflow:visible}
+.orb .ring{fill:none;stroke:rgba(184,243,107,.25);stroke-width:1.2}
+.orb .core{animation:breathe 3.2s ease-in-out infinite;transform-origin:center;transform-box:fill-box}
+@keyframes breathe{50%{transform:scale(1.08)}}
+
+/* ---------- search ---------- */
+.search{position:relative;margin-top:6px}
 .row{display:flex;gap:10px}
-#q{flex:1;min-width:0;padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--text);font:500 18px "Space Grotesk",sans-serif}
-#q::placeholder{color:#63636b}
-#q:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(184,243,107,.15)}
+.field{position:relative;flex:1;min-width:0}
+.field svg{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--dim);pointer-events:none}
+#q{width:100%;padding:16px 70px 16px 46px;background:rgba(15,16,19,.85);border:1px solid var(--line2);border-radius:14px;color:var(--text);font:500 18px "Space Grotesk",sans-serif;transition:border-color .2s,box-shadow .2s}
+#q::placeholder{color:#55555d}
+#q:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(184,243,107,.12),0 10px 40px -10px rgba(184,243,107,.25)}
 #q.shake{animation:shake .4s;border-color:var(--bad)}
 @keyframes shake{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
-.btn{padding:0 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);font:700 14px "DM Sans",sans-serif;cursor:pointer;transition:border-color .2s,transform .2s,color .2s}
+.kbd{position:absolute;right:14px;top:50%;transform:translateY(-50%);padding:2px 8px;border:1px solid var(--line2);border-radius:6px;color:var(--dim);font:500 12px "JetBrains Mono",monospace;pointer-events:none}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:0 18px;border:1px solid var(--line2);border-radius:12px;background:rgba(15,16,19,.85);color:var(--text);font:700 14px "DM Sans",sans-serif;cursor:pointer;transition:border-color .2s,transform .2s,color .2s,background .2s,box-shadow .2s;white-space:nowrap}
 .btn:hover{border-color:var(--accent);transform:translateY(-1px)}
-.btn.on{border-color:var(--accent);color:var(--accent)}
-.btn.go{background:var(--accent);border-color:var(--accent);color:#10120b}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0;max-height:132px;overflow:auto;padding-right:4px}
-.chip{padding:5px 11px;background:#17171a;border:1px solid var(--line);border-radius:99px;color:#c4c4ca;font-size:13px;cursor:pointer;transition:border-color .2s,color .2s}
-.chip:hover{border-color:var(--accent);color:var(--accent)}
-#msg{min-height:24px;margin:12px 0 0;color:var(--bad);font-size:14px}
-.stage{position:relative;margin-top:6px;background:radial-gradient(ellipse at 50% 40%,#171b12 0%,#101013 70%);border:1px solid var(--line);border-radius:18px;overflow:hidden}
-.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:20px 22px 0}
-#ttl{font:700 clamp(26px,5vw,38px)/1.1 "Space Grotesk",sans-serif;letter-spacing:-.04em}
-#sub{color:var(--muted);font-size:14px}
-sub,sup{line-height:0}
-.segs{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex:none}
-.seg button{padding:7px 12px;background:none;border:0;color:var(--muted);font:700 12px "DM Sans",sans-serif;cursor:pointer}
-.seg button.on{background:var(--accent);color:#10120b}
-svg{display:block;width:100%;height:auto}
-#cv{display:block;width:100%;aspect-ratio:8/5;touch-action:none;cursor:grab}
-#cv:active{cursor:grabbing}
-.stats,.geo{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-top:1px solid var(--line)}
-.stat,.g{padding:14px 18px;background:#0e0e11}
-.stat b{display:block;font:700 28px "Space Grotesk",sans-serif;letter-spacing:-.04em}
-.stat span,.g span{color:var(--muted);font-size:12px}
-.g span{display:block;text-transform:uppercase;letter-spacing:.06em;font-size:11px}
-.g b{display:block;font:700 18px/1.25 "Space Grotesk",sans-serif;letter-spacing:-.02em;margin-top:2px}
-.g b.pol{color:var(--blue)}.g b.non{color:var(--accent)}
-.g small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
-#note{padding:14px 22px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
-#note i{font-style:normal;color:var(--accent)}
-#ctl,#ctl3{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center}
-#ctl .btn,#ctl3 .btn{padding:9px 16px}
-#ctl3 .hint{color:#6b6b73;font-size:12px}
-.lg{margin-top:18px;color:#6b6b73;font-size:12px}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn.on{border-color:var(--accent);color:var(--accent);background:rgba(184,243,107,.07)}
+.btn.go{background:var(--accent);border-color:var(--accent);color:#10120b;box-shadow:0 8px 30px -8px rgba(184,243,107,.55)}
+.btn.go:hover{box-shadow:0 10px 36px -6px rgba(184,243,107,.75)}
+.btn.sm{padding:8px 14px;font-size:13px;border-radius:10px}
+#sug{position:absolute;z-index:30;left:0;right:0;top:calc(100% + 8px);background:rgba(13,14,17,.97);backdrop-filter:blur(12px);border:1px solid var(--line2);border-radius:14px;padding:6px;box-shadow:0 30px 60px -20px rgba(0,0,0,.8);max-height:360px;overflow:auto}
+#sug button{display:flex;width:100%;align-items:center;gap:12px;padding:9px 12px;background:none;border:0;border-radius:10px;color:var(--text);cursor:pointer;text-align:left}
+#sug button.act,#sug button:hover{background:rgba(184,243,107,.08)}
+#sug .sf{font:700 16px "Space Grotesk",sans-serif;min-width:96px}
+#sug .sn{color:var(--muted);font-size:14px;flex:1}
+#sug .st{font-size:11px;color:var(--dim);border:1px solid var(--line2);border-radius:99px;padding:1px 8px}
+#msg{min-height:22px;margin:10px 0 0;color:var(--bad);font-size:14px}
+#msg.ok{color:var(--accent)}
 
-/* diagram animation */
-svg .atom{transform-box:fill-box;transform-origin:center;animation:pop .6s cubic-bezier(.3,1.6,.5,1) both}
-svg .ln{fill:none;stroke:var(--accent);stroke-width:3.5;stroke-linecap:round;stroke-dasharray:1;animation:draw .55s ease-out both;filter:drop-shadow(0 0 3px rgba(184,243,107,.5))}
-svg .br{fill:none;stroke:#71717a;stroke-width:2.5;stroke-linecap:round;stroke-dasharray:1;animation:draw .8s ease-out both}
-svg .e{fill:var(--accent);transform-box:fill-box;transform-origin:center;animation:fly .8s cubic-bezier(.2,.9,.3,1) both;filter:drop-shadow(0 0 4px rgba(184,243,107,.75))}
-svg .pair{animation:tw 2.6s ease-in-out infinite}
-svg .fade{animation:fade .6s both}
-svg .rip{fill:none;stroke:var(--accent);stroke-width:2;transform-box:fill-box;transform-origin:center;animation:rip 1.2s ease-out both}
+/* ---------- tabs + chips ---------- */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.tab{padding:6px 12px;border:1px solid var(--line);border-radius:99px;background:none;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;transition:.2s}
+.tab span{color:var(--dim);margin-left:4px;font-size:11px}
+.tab:hover{color:var(--text);border-color:var(--line2)}
+.tab.on{background:var(--text);color:#0b0c0f;border-color:var(--text)}.tab.on span{color:#55555d}
+.chipwrap{position:relative;margin-top:12px}
+.chips{display:flex;flex-wrap:wrap;gap:7px;max-height:118px;overflow:auto;padding:2px 4px 18px 2px;-webkit-mask-image:linear-gradient(#000 75%,transparent);mask-image:linear-gradient(#000 75%,transparent);transition:max-height .4s}
+.chips.open{max-height:520px}
+.chip{padding:5px 11px;background:rgba(23,23,26,.8);border:1px solid var(--line);border-radius:99px;color:#c4c4ca;font-size:13px;cursor:pointer;transition:border-color .2s,color .2s,transform .2s;animation:chipIn .35s both}
+.chip:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+.chip.cur{border-color:var(--accent);color:#10120b;background:var(--accent)}
+@keyframes chipIn{from{opacity:0;transform:translateY(6px)}}
+.more{margin-top:-6px;background:none;border:0;color:var(--dim);font-size:12px;cursor:pointer}
+.more:hover{color:var(--accent)}
+
+/* ---------- stage ---------- */
+.stage{position:relative;margin-top:18px;border-radius:22px;background:linear-gradient(180deg,rgba(18,20,16,.92),rgba(11,12,15,.95));border:1px solid var(--line2);overflow:hidden;box-shadow:0 40px 120px -40px rgba(184,243,107,.18),0 0 0 1px rgba(255,255,255,.02) inset}
+.stage::before{content:"";position:absolute;inset:-1px;border-radius:22px;padding:1px;background:conic-gradient(from var(--ang,0deg),transparent 0 70%,rgba(184,243,107,.7) 80%,transparent 90%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;animation:spinb 8s linear infinite;opacity:.6}
+@property --ang{syntax:'<angle>';initial-value:0deg;inherits:false}
+@keyframes spinb{to{--ang:360deg}}
+.stage:fullscreen{overflow:auto;border-radius:0}
+.stage:fullscreen #cv,.stage:fullscreen #svg{max-height:68vh}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:20px 22px 0;position:relative;z-index:2}
+#ttl{font:700 clamp(28px,5vw,42px)/1.05 "Space Grotesk",sans-serif;letter-spacing:-.045em}
+#ttl.anim{animation:rise .5s both}
+#sub{color:var(--muted);font-size:15px}
+#tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.tg{font-size:11px;padding:2px 9px;border-radius:99px;border:1px solid var(--line2);color:var(--muted);letter-spacing:.02em}
+.tg.a{border-color:rgba(184,243,107,.4);color:var(--accent)}.tg.b{border-color:rgba(96,165,250,.4);color:var(--blue)}.tg.c{border-color:rgba(192,132,252,.4);color:var(--violet)}.tg.d{border-color:rgba(248,113,113,.4);color:var(--bad)}
+.segs{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.seg{display:flex;border:1px solid var(--line2);border-radius:10px;overflow:hidden;flex:none;background:rgba(0,0,0,.25)}
+.seg button{padding:7px 12px;background:none;border:0;color:var(--muted);font:700 12px "DM Sans",sans-serif;cursor:pointer;transition:background .2s,color .2s}
+.seg button:hover{color:var(--text)}
+.seg button.on{background:var(--accent);color:#10120b}
+.steps{display:flex;align-items:center;gap:14px;margin:14px 22px 0;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(0,0,0,.25);position:relative;z-index:2;min-height:46px}
+.steps .n{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#10120b;font:700 13px "Space Grotesk",sans-serif}
+.steps .tx{flex:1;min-width:0;font-size:14px;line-height:1.35}
+.steps .tx b{display:block;font-weight:700}
+.steps .tx span{color:var(--muted);font-size:13px}
+.steps .tx.anim{animation:rise .35s both}
+.pips{display:flex;gap:5px;flex:none}
+.pips i{width:18px;height:4px;border-radius:2px;background:var(--line2);transition:background .3s}
+.pips i.on{background:var(--accent)}
+#d2,#d3{position:relative}
+#svg{display:block;width:100%;height:auto}
+#cv{display:block;width:100%;aspect-ratio:16/10;touch-action:none;cursor:grab;outline:none}
+#cv:active{cursor:grabbing}
+.tip{position:fixed;z-index:60;pointer-events:none;padding:9px 12px;background:rgba(10,11,13,.96);border:1px solid var(--line2);border-radius:10px;font-size:13px;line-height:1.45;box-shadow:0 20px 40px -10px rgba(0,0,0,.7);max-width:260px;opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s}
+.tip.on{opacity:1;transform:none}
+.tip b{font:700 15px "Space Grotesk",sans-serif}
+.tip .m{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--accent)}
+.tip span{color:var(--muted)}
+.stats,.geo{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-top:1px solid var(--line)}
+.stat,.g{padding:14px 18px;background:#0c0d10;transition:background .3s}
+.stat:hover,.g:hover{background:#101114}
+.stat b{display:block;font:700 30px "Space Grotesk",sans-serif;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.stat b{transform-origin:left center}.stat b.bump{animation:bump .3s}
+@keyframes bump{40%{transform:scale(1.18);color:var(--accent)}}
+.stat span,.g span{color:var(--muted);font-size:12px}
+.g span{display:block;text-transform:uppercase;letter-spacing:.07em;font-size:11px;color:var(--dim)}
+.g b{display:block;font:700 18px/1.25 "Space Grotesk",sans-serif;letter-spacing:-.02em;margin-top:3px}
+.g b.pol{color:var(--blue)}.g b.non{color:var(--accent)}.g b.ion{color:var(--violet)}
+.g small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.g.anim{animation:fade .5s both}
+#note{padding:14px 22px;border-top:1px solid var(--line);color:var(--muted);font-size:14px;background:#0a0b0d}
+#note i{font-style:normal;color:var(--accent)}
+.ctl{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;align-items:center}
+.ctl .hint{color:var(--dim);font-size:12px;margin-left:auto}
+.ctl .sep{width:1px;height:22px;background:var(--line2);margin:0 4px}
+
+/* diagram animation (durations scale with --k) */
+#svg .atom{transform-box:fill-box;transform-origin:center;animation:pop calc(.6s*var(--k,1)) cubic-bezier(.3,1.6,.5,1) both;cursor:pointer}
+#svg .atom:hover circle.ac{stroke-width:3.5;filter:drop-shadow(0 0 8px currentColor)}
+#svg .halo{fill:none;stroke-width:2;transform-box:fill-box;transform-origin:center;animation:halo calc(1s*var(--k,1)) ease-out both;opacity:0}
+#svg .ln{fill:none;stroke:var(--accent);stroke-width:3.5;stroke-linecap:round;stroke-dasharray:1;animation:draw calc(.55s*var(--k,1)) ease-out both;filter:drop-shadow(0 0 3px rgba(184,243,107,.5))}
+#svg .br{fill:none;stroke:#8b8b94;stroke-width:2.5;stroke-linecap:round;stroke-dasharray:1;animation:draw calc(.8s*var(--k,1)) ease-out both}
+#svg .e{fill:var(--accent);transform-box:fill-box;transform-origin:center;animation:fly calc(.85s*var(--k,1)) cubic-bezier(.2,.9,.3,1) both;filter:drop-shadow(0 0 4px rgba(184,243,107,.75))}
+#svg .e.tx{fill:#93c5fd;filter:drop-shadow(0 0 6px rgba(96,165,250,.95));animation-duration:calc(1.3s*var(--k,1))}
+#svg .ghost{fill:#93c5fd;animation:fade calc(.4s*var(--k,1)) both,out calc(.35s*var(--k,1)) forwards}
+#svg .pair{animation:tw 2.6s ease-in-out infinite}
+#svg .fade{animation:fade calc(.6s*var(--k,1)) both}
+#svg .rip{fill:none;stroke:var(--accent);stroke-width:2;transform-box:fill-box;transform-origin:center;animation:rip calc(1.3s*var(--k,1)) ease-out both;opacity:0}
+#svg .spk{fill:var(--accent2);transform-box:fill-box;transform-origin:center;animation:spk calc(.6s*var(--k,1)) ease-out both;opacity:0}
 @keyframes pop{from{transform:scale(0)}to{transform:none}}
+@keyframes halo{0%{transform:scale(1);opacity:.8}100%{transform:scale(2.2);opacity:0}}
 @keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
 @keyframes fly{from{transform:translate(var(--fx),var(--fy)) scale(.2);opacity:0}to{transform:none;opacity:1}}
 @keyframes tw{50%{opacity:.55}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
-@keyframes rip{from{transform:scale(.2);opacity:.9}to{transform:scale(7);opacity:0}}
-@media(max-width:560px){.btn.go{padding:0 14px}.top{flex-direction:column}.segs{justify-content:flex-start}.stat b{font-size:22px}.geo{grid-template-columns:repeat(2,1fr)}}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+@keyframes out{to{opacity:0;transform:scale(.2)}}
+@keyframes rip{from{transform:scale(.2);opacity:.9}to{transform:scale(8);opacity:0}}
+@keyframes spk{0%{transform:scale(0);opacity:1}100%{transform:scale(2.4);opacity:0}}
+
+/* ---------- quiz ---------- */
+.quiz{margin-top:18px;padding:20px 22px;border:1px solid rgba(184,243,107,.35);border-radius:18px;background:linear-gradient(135deg,rgba(184,243,107,.08),rgba(96,165,250,.04));animation:rise .4s both}
+.qh{display:flex;align-items:center;gap:10px}
+.qh .tg{border-color:var(--accent);color:var(--accent)}
+#qs{color:var(--muted);font-size:13px;margin-left:auto}
+#qs b{color:var(--accent)}
+.qx{background:none;border:0;color:var(--dim);font-size:20px;cursor:pointer;line-height:1}
+.qx:hover{color:var(--text)}
+#qf{font:700 46px/1.1 "Space Grotesk",sans-serif;letter-spacing:-.04em;margin-top:10px}
+#qq{color:var(--muted);margin-top:4px}
+.qo{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}
+@media(max-width:560px){.qo{grid-template-columns:1fr}}
+.qo button{padding:12px 14px;border:1px solid var(--line2);border-radius:12px;background:rgba(10,11,13,.7);color:var(--text);font:500 15px "DM Sans",sans-serif;text-align:left;cursor:pointer;transition:.2s}
+.qo button:hover:not(:disabled){border-color:var(--accent);transform:translateY(-1px)}
+.qo button.right{border-color:var(--accent);background:rgba(184,243,107,.14);color:var(--accent)}
+.qo button.wrong{border-color:var(--bad);background:rgba(248,113,113,.1);color:var(--bad);animation:shake .4s}
+.qo button:disabled{cursor:default}
+#qr{margin-top:12px;font-size:14px;color:var(--muted);min-height:20px}
+#qr b{color:var(--text)}
+
+/* ---------- section heads ---------- */
+.sh{display:flex;align-items:end;justify-content:space-between;gap:16px;margin:70px 0 18px;flex-wrap:wrap}
+.sh h2{font:700 clamp(30px,5vw,46px)/1 "Space Grotesk",sans-serif;letter-spacing:-.05em;margin:8px 0 0}
+.sh p{color:var(--muted);margin:8px 0 0;max-width:520px}
+.lab{font:500 12px "JetBrains Mono",monospace;color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+.rv{opacity:0;transform:translateY(24px);transition:opacity .8s,transform .8s cubic-bezier(.2,.8,.2,1)}
+.rv.in{opacity:1;transform:none}
+
+/* ---------- periodic table ---------- */
+.ptw{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+@media(max-width:980px){.ptw{grid-template-columns:1fr}}
+.ptscroll{overflow-x:auto;padding-bottom:6px;border:1px solid var(--line);border-radius:18px;background:rgba(11,12,15,.8);padding:14px}
+.pt{display:grid;grid-template-columns:repeat(18,minmax(36px,1fr));gap:3px;min-width:700px}
+.el{position:relative;aspect-ratio:1/1.12;border-radius:7px;border:1px solid rgba(255,255,255,.06);background:color-mix(in srgb,var(--c) 9%,#0d0e11);cursor:pointer;padding:3px 4px;display:flex;flex-direction:column;justify-content:space-between;transition:transform .2s,border-color .2s,background .2s,box-shadow .2s;color:var(--text);font-family:inherit;text-align:left;animation:elIn .5s both}
+.el:hover{transform:translateY(-2px) scale(1.08);border-color:var(--c);z-index:2;box-shadow:0 8px 24px -8px var(--c)}
+.el.sel{border-color:var(--c);background:color-mix(in srgb,var(--c) 26%,#0d0e11);box-shadow:0 0 0 1px var(--c),0 0 22px -4px var(--c)}
+.el.dim{opacity:.22}
+.el i{font:500 9px "JetBrains Mono",monospace;color:var(--dim);font-style:normal;line-height:1}
+.el b{font:700 15px/1 "Space Grotesk",sans-serif;color:var(--c)}
+.el small{font-size:7.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1}
+.el.has::after{content:"";position:absolute;top:4px;right:4px;width:4px;height:4px;border-radius:50%;background:var(--accent)}
+.ph{display:flex;align-items:center;justify-content:center;border:1px dashed var(--line2);border-radius:7px;color:var(--dim);font-size:9px}
+@keyframes elIn{from{opacity:0;transform:scale(.6)}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:12px;font-size:12px;color:var(--muted)}
+.legend button{display:flex;align-items:center;gap:6px;background:none;border:0;color:inherit;cursor:pointer;padding:2px 0;font-size:12px}
+.legend button:hover{color:var(--text)}
+.legend button.on{color:var(--text);text-decoration:underline;text-underline-offset:3px}
+.legend i{width:9px;height:9px;border-radius:3px;background:var(--c)}
+.ecard{border:1px solid var(--line2);border-radius:18px;background:rgba(13,14,17,.9);padding:18px;position:sticky;top:80px}
+.ecard .eh{display:flex;align-items:center;gap:12px}
+.ecard .ez{font:500 12px "JetBrains Mono",monospace;color:var(--dim)}
+.ecard h3{margin:0;font:700 26px/1.05 "Space Grotesk",sans-serif;letter-spacing:-.04em}
+.ecard .ec{font-size:12px}
+#esvg{display:block;width:100%;height:auto;margin:6px 0}
+#esvg .e{fill:var(--accent);filter:drop-shadow(0 0 4px rgba(184,243,107,.8));transform-box:fill-box;transform-origin:center;animation:fly .8s cubic-bezier(.2,.9,.3,1) both}
+#esvg .sym{animation:pop .5s cubic-bezier(.3,1.6,.5,1) both;transform-box:fill-box;transform-origin:center}
+.ef{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.ef div{background:#0c0d10;padding:8px 10px}
+.ef span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--dim)}
+.ef b{font:700 15px "Space Grotesk",sans-serif}
+.ecard .fi{margin-top:12px;font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em}
+.ecard .chips{max-height:150px;margin-top:6px;-webkit-mask-image:none;mask-image:none;padding-bottom:2px}
+.ecard p{color:var(--muted);font-size:13px;margin:10px 0 0}
+
+/* ---------- how-to ---------- */
+.how{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:860px){.how{grid-template-columns:repeat(2,1fr)}}
+.hc{border:1px solid var(--line);border-radius:16px;padding:16px;background:rgba(13,14,17,.8);transition:border-color .3s,transform .3s}
+.hc:hover{border-color:var(--line2);transform:translateY(-3px)}
+.hc svg{width:100%;height:70px;display:block;margin-bottom:8px}
+.hc b{font:700 16px "Space Grotesk",sans-serif}
+.hc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+
+footer{border-top:1px solid var(--line);margin-top:70px}
+footer .nav{height:auto;padding:22px 0;color:var(--dim);font-size:14px}
+footer a:hover{color:var(--accent)}
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);padding:10px 16px;border-radius:99px;background:var(--accent);color:#10120b;font-weight:700;font-size:14px;opacity:0;transition:.3s;z-index:90;pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+@media(max-width:620px){.top{flex-direction:column}.segs{justify-content:flex-start}.stat b{font-size:22px}.geo{grid-template-columns:repeat(2,1fr)}.row{flex-wrap:wrap}.field{flex-basis:100%}.row .btn{flex:1;justify-content:center;height:46px}.kbd{display:none}.steps .pips{display:none}.ctl .hint{display:none}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <a class="back" href="/">← JK.</a>
-  <h1 style="margin-top:26px">Lewis Dot Lab</h1>
-  <p class="lead">Type a compound by formula or name and watch its Lewis structure build, one bond and electron at a time. Then read off its geometry, bond angle and polarity, or switch to 3D and orbit around it.</p>
-  <form class="row" id="f" autocomplete="off">
-    <input id="q" placeholder="H2O, carbon dioxide, NH4+, SF6, benzene…" aria-label="Compound" spellcheck="false" autofocus>
-    <button class="btn go" type="submit">Draw</button>
-    <button class="btn" type="button" id="rnd" title="Random compound" aria-label="Random compound">Surprise me</button>
-  </form>
-  <div class="chips" id="chips"></div>
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+
+<div id="intro" aria-hidden="true">
+  <div class="in">
+    <svg width="150" height="150" viewBox="-110 -110 220 220">
+      <g fill="none" stroke="rgba(184,243,107,.3)" stroke-width="1.4">
+        <ellipse rx="95" ry="32"/><ellipse rx="95" ry="32" transform="rotate(60)"/><ellipse rx="95" ry="32" transform="rotate(120)"/>
+      </g>
+      <g fill="#b8f36b">
+        <circle r="6"><animateMotion dur="1.6s" repeatCount="indefinite" path="M-95,0 a95,32 0 1,0 190,0 a95,32 0 1,0 -190,0"/></circle>
+        <g transform="rotate(60)"><circle r="6"><animateMotion dur="2.1s" repeatCount="indefinite" path="M95,0 a95,32 0 1,0 -190,0 a95,32 0 1,0 190,0"/></circle></g>
+        <g transform="rotate(120)"><circle r="6"><animateMotion dur="1.8s" repeatCount="indefinite" path="M-95,0 a95,32 0 1,1 190,0 a95,32 0 1,1 -190,0"/></circle></g>
+      </g>
+      <circle r="18" fill="#0d0e11" stroke="#b8f36b" stroke-width="2"/><text text-anchor="middle" dominant-baseline="central" font-family="Space Grotesk" font-weight="700" font-size="16" fill="#b8f36b">JK</text>
+    </svg>
+    <div class="t">Lewis Dot Lab<i>.</i></div>
+    <div class="bar"><span></span></div>
+    <small>tap to skip</small>
+  </div>
+</div>
+
+<header id="hdr">
+  <div class="nav">
+    <a class="logo" href="/">JK<i>.</i></a>
+    <span class="crumb">/ <b>Lewis Dot Lab</b></span>
+    <nav class="links">
+      <a href="/#about">About</a><a href="/#projects">Projects</a><a href="/allproj">All projects</a><a href="/#contact">Contact</a>
+    </nav>
+    <span class="clock">Austin <b id="clk">--:--</b></span>
+    <button class="menu" id="menu" aria-expanded="false">Menu</button>
+  </div>
+</header>
+
+<main class="wrap" id="top">
+  <section class="hero">
+    <div>
+      <span class="eyebrow"><span class="dot"></span>Chemistry · Interactive lab <span class="new">v2</span></span>
+      <h1>Lewis <span class="g">Dot Lab</span></h1>
+      <p class="lead">Type any compound and watch its Lewis structure build step by step: bonds, lone pairs, formal charges. Then read off its VSEPR shape, or flip to 3D and orbit around it.</p>
+      <div class="hstats">
+        <div><b data-count="0" id="hc1">0</b><span>compounds</span></div>
+        <div><b data-count="118">0</b><span>elements</span></div>
+        <div><b data-count="0" id="hc3">0</b><span>VSEPR shapes</span></div>
+      </div>
+    </div>
+    <div class="orb" aria-hidden="true">
+      <svg viewBox="-170 -170 340 340">
+        <defs><radialGradient id="cg"><stop offset="0" stop-color="#e8ffc6"/><stop offset=".5" stop-color="#b8f36b"/><stop offset="1" stop-color="#4d6b26"/></radialGradient>
+        <radialGradient id="glow"><stop offset="0" stop-color="rgba(184,243,107,.28)"/><stop offset="1" stop-color="rgba(184,243,107,0)"/></radialGradient></defs>
+        <circle r="160" fill="url(#glow)"/>
+        <ellipse class="ring" rx="150" ry="50"/><ellipse class="ring" rx="150" ry="50" transform="rotate(60)"/><ellipse class="ring" rx="150" ry="50" transform="rotate(120)"/>
+        <circle class="ring" r="105" stroke-dasharray="3 7"/>
+        <g fill="#b8f36b" style="filter:drop-shadow(0 0 6px #b8f36b)">
+          <circle r="6"><animateMotion dur="3.2s" repeatCount="indefinite" path="M-150,0 a150,50 0 1,0 300,0 a150,50 0 1,0 -300,0"/></circle>
+          <g transform="rotate(60)"><circle r="6"><animateMotion dur="4.1s" repeatCount="indefinite" path="M150,0 a150,50 0 1,0 -300,0 a150,50 0 1,0 300,0"/></circle></g>
+          <g transform="rotate(120)"><circle r="6"><animateMotion dur="3.6s" repeatCount="indefinite" path="M-150,0 a150,50 0 1,1 300,0 a150,50 0 1,1 -300,0"/></circle></g>
+          <circle r="4" fill="#60a5fa"><animateMotion dur="7s" repeatCount="indefinite" path="M-105,0 a105,105 0 1,0 210,0 a105,105 0 1,0 -210,0"/></circle>
+        </g>
+        <g class="core"><circle r="34" fill="url(#cg)"/><text text-anchor="middle" dominant-baseline="central" font-family="Space Grotesk" font-weight="700" font-size="26" fill="#10120b">e⁻</text></g>
+      </svg>
+    </div>
+  </section>
+
+  <div class="search">
+    <form class="row" id="f" autocomplete="off">
+      <div class="field">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" placeholder="H2O, sulfuric acid, NH4+, XeF4, salt, benzene…" aria-label="Compound" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="sug" aria-autocomplete="list">
+        <span class="kbd">/</span>
+      </div>
+      <button class="btn go" type="submit">Draw ↘</button>
+      <button class="btn" type="button" id="rnd" title="Random compound">🎲 Surprise me</button>
+      <button class="btn" type="button" id="qz" title="Quiz yourself">⚡ Quiz me</button>
+    </form>
+    <div id="sug" role="listbox" hidden></div>
+  </div>
   <div id="msg" role="status"></div>
 
-  <div class="stage">
+  <div class="tabs" id="tabs"></div>
+  <div class="chipwrap"><div class="chips" id="chips"></div></div>
+  <button class="more" id="more">Show all ↓</button>
+
+  <section class="quiz" id="quiz" hidden aria-live="polite">
+    <div class="qh"><span class="tg">Quiz</span><span id="qtype" class="tg"></span><span id="qs"></span><button class="qx" id="qclose" aria-label="Close quiz">×</button></div>
+    <div id="qf"></div>
+    <div id="qq"></div>
+    <div class="qo" id="qo"></div>
+    <div id="qr"></div>
+    <div class="ctl"><button class="btn sm go" id="qn" hidden>Next question →</button></div>
+  </section>
+
+  <div class="stage" id="stage">
     <div class="top">
-      <div><div id="ttl">&nbsp;</div><div id="sub"></div></div>
+      <div><div id="ttl">&nbsp;</div><div id="sub"></div><div id="tags"></div></div>
       <div class="segs">
         <div class="seg" role="group" aria-label="View"><button id="v2" class="on">2D</button><button id="v3">3D</button></div>
         <div class="seg" id="bseg" role="group" aria-label="Bond style"><button id="mL" class="on">Lines</button><button id="mD">Dots</button></div>
+        <div class="seg" id="spseg" role="group" aria-label="Speed"><button data-s=".5">.5×</button><button data-s="1" class="on">1×</button><button data-s="2">2×</button></div>
+        <div class="seg" id="sseg" role="group" aria-label="3D style" hidden><button data-st="ball" class="on">Ball &amp; stick</button><button data-st="space">Space-fill</button><button data-st="wire">Wire</button></div>
       </div>
     </div>
-    <svg id="svg" viewBox="0 0 640 400" role="img" aria-label="Lewis structure diagram"></svg>
-    <canvas id="cv" hidden role="img" aria-label="Interactive 3D model of the molecule"></canvas>
+    <div class="steps" id="steps"><div class="n" id="stn">1</div><div class="tx" id="stt"></div><div class="pips" id="pips"></div></div>
+    <div id="d2"><svg id="svg" viewBox="0 0 640 400" role="img" aria-label="Lewis structure diagram"></svg></div>
+    <div id="d3" hidden><canvas id="cv" tabindex="0" role="img" aria-label="Interactive 3D model of the molecule"></canvas></div>
     <div class="stats">
       <div class="stat"><b id="sE">0</b><span id="sEl">electrons placed</span></div>
-      <div class="stat"><b id="sB">0</b><span>bonds</span></div>
+      <div class="stat"><b id="sB">0</b><span id="sBl">bonds</span></div>
       <div class="stat"><b id="sL">0</b><span>lone pairs</span></div>
     </div>
     <div class="geo" id="geo"></div>
     <div id="note"></div>
   </div>
-  <div id="ctl"><button class="btn" id="re">Replay animation</button></div>
-  <div id="ctl3" hidden>
-    <button class="btn on" id="aS">Auto-spin</button>
-    <button class="btn" id="sp">Space-fill</button>
-    <button class="btn" id="vf">Front</button>
-    <button class="btn" id="vt">Top</button>
-    <button class="btn" id="vs">Side</button>
-    <button class="btn" id="rs">Reset view</button>
-    <span class="hint">Drag to orbit · scroll or pinch to zoom</span>
+  <div class="ctl" id="ctl">
+    <button class="btn sm" id="re">↻ Replay</button>
+    <button class="btn sm" id="share">🔗 Share</button>
+    <button class="btn sm" id="fs1">⛶ Fullscreen</button>
+    <span class="hint">Hover an atom for its formal-charge math · click it to open it in the element explorer</span>
   </div>
-  <p class="lg">Green lines are shared pairs (bonds). Loose dots are lone pairs. Small badges show formal charge. Geometry is predicted with VSEPR theory; for molecules with several centers it describes the most-connected atom. In 3D, glowing lobes are lone pairs and every bond angle comes from VSEPR, so the model is idealized rather than measured.</p>
-</div>
+  <div class="ctl" id="ctl3" hidden>
+    <button class="btn sm on" id="aS">⟳ Auto-spin</button>
+    <button class="btn sm on" id="tLb">Labels</button>
+    <button class="btn sm on" id="tLp">Lone pairs</button>
+    <button class="btn sm" id="tAn">∠ Angles</button>
+    <button class="btn sm" id="tDp">μ Dipole</button>
+    <span class="sep"></span>
+    <button class="btn sm" id="vf">Front</button>
+    <button class="btn sm" id="vt">Top</button>
+    <button class="btn sm" id="vs">Side</button>
+    <button class="btn sm" id="rs">Reset</button>
+    <span class="sep"></span>
+    <button class="btn sm" id="snap">📸 Snapshot</button>
+    <button class="btn sm" id="fs2">⛶</button>
+    <span class="hint">Drag to orbit · flick to spin · scroll / pinch to zoom · double-click to reset</span>
+  </div>
+
+  <div class="sh rv" id="explorer">
+    <div><div class="lab">// Element explorer</div><h2>All 118 elements</h2><p>Tap any element to see its Lewis dot symbol and every compound in the lab that contains it. Green dots mark elements you can build with.</p></div>
+  </div>
+  <div class="ptw rv">
+    <div>
+      <div class="ptscroll"><div class="pt" id="pt"></div></div>
+      <div class="legend" id="leg"></div>
+    </div>
+    <aside class="ecard" id="ecard"></aside>
+  </div>
+
+  <div class="sh rv"><div><div class="lab">// How to read it</div><h2>The legend</h2></div></div>
+  <div class="how rv">
+    <div class="hc"><svg viewBox="0 0 200 70"><circle cx="45" cy="35" r="18" fill="#0d0d10" stroke="#f87171" stroke-width="2"/><text x="45" y="35" text-anchor="middle" dominant-baseline="central" font-family="Space Grotesk" font-weight="700" font-size="18" fill="#f87171">O</text><line x1="66" y1="31" x2="134" y2="31" stroke="#b8f36b" stroke-width="3.5" stroke-linecap="round"/><line x1="66" y1="40" x2="134" y2="40" stroke="#b8f36b" stroke-width="3.5" stroke-linecap="round"/><circle cx="155" cy="35" r="18" fill="#0d0d10" stroke="#a1a1aa" stroke-width="2"/><text x="155" y="35" text-anchor="middle" dominant-baseline="central" font-family="Space Grotesk" font-weight="700" font-size="18" fill="#a1a1aa">C</text></svg><b>Bonds</b><p>Each green line is one shared pair (2 electrons). Two lines = double bond.</p></div>
+    <div class="hc"><svg viewBox="0 0 200 70"><circle cx="100" cy="38" r="18" fill="#0d0d10" stroke="#86efac" stroke-width="2"/><text x="100" y="38" text-anchor="middle" dominant-baseline="central" font-family="Space Grotesk" font-weight="700" font-size="18" fill="#86efac">F</text><g fill="#b8f36b"><circle cx="94" cy="8" r="4"/><circle cx="106" cy="8" r="4"/><circle cx="130" cy="32" r="4"/><circle cx="130" cy="44" r="4"/><circle cx="70" cy="32" r="4"/><circle cx="70" cy="44" r="4"/></g></svg><b>Lone pairs</b><p>Loose dot pairs belong to one atom only. They push bonds closer together.</p></div>
+    <div class="hc"><svg viewBox="0 0 200 70"><circle cx="100" cy="38" r="18" fill="#0d0d10" stroke="#60a5fa" stroke-width="2"/><text x="100" y="38" text-anchor="middle" dominant-baseline="central" font-family="Space Grotesk" font-weight="700" font-size="18" fill="#60a5fa">N</text><circle cx="120" cy="17" r="10" fill="#0d0d10" stroke="#60a5fa" stroke-width="1.5"/><text x="120" y="17" text-anchor="middle" dominant-baseline="central" font-family="Space Grotesk" font-weight="700" font-size="12" fill="#60a5fa">+</text></svg><b>Formal charge</b><p>FC = valence − lone electrons − bonds. Badges show any atom that isn't 0.</p></div>
+    <div class="hc"><svg viewBox="0 0 200 70"><path d="M64 6H52V64H64M136 6H148V64H136" fill="none" stroke="#8b8b94" stroke-width="2.5"/><circle cx="100" cy="35" r="18" fill="#0d0d10" stroke="#4ade80" stroke-width="2"/><text x="100" y="35" text-anchor="middle" dominant-baseline="central" font-family="Space Grotesk" font-weight="700" font-size="16" fill="#4ade80">Cl</text><text x="154" y="16" font-family="Space Grotesk" font-weight="700" font-size="18" fill="#d4d4d8">−</text></svg><b>Brackets</b><p>Ions get brackets with their overall charge. Blue electrons were transferred.</p></div>
+  </div>
+  <p style="color:var(--dim);font-size:12px;margin-top:18px;max-width:760px">Shapes come from VSEPR theory; for molecules with several centers the panel describes the most connected heavy atom. The 3D model relaxes electron domains with a repulsion model (lone pairs push harder than bonds), so its angles are close to, but not exactly, measured values.</p>
+</main>
+
+<footer><div class="nav"><span>© Josh Koppanalil</span><a href="#top" style="margin-left:auto">Back to top ↑</a></div></footer>
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast"></div>
 
 <script>
-const V={H:1,Li:1,Be:2,B:3,C:4,N:5,O:6,F:7,Ne:8,Na:1,Mg:2,Al:3,Si:4,P:5,S:6,Cl:7,Ar:8,K:1,Ge:4,As:5,Se:6,Br:7,Kr:8,I:7,Xe:8};
-const EN={H:2.2,Li:.98,Be:1.57,B:2.04,C:2.55,N:3.04,O:3.44,F:3.98,Na:.93,Mg:1.31,Al:1.61,Si:1.9,P:2.19,S:2.58,Cl:3.16,K:.82,Ge:2.01,As:2.18,Se:2.55,Br:2.96,Kr:3,I:2.66,Xe:2.6};
-const COL={H:'#f4f4f5',C:'#a1a1aa',N:'#60a5fa',O:'#f87171',F:'#86efac',Cl:'#86efac',Br:'#fb923c',I:'#c084fc',S:'#fde047',P:'#fb923c',B:'#f9a8d4',Xe:'#67e8f9'};
-const HAL=['F','Cl','Br','I'],S=.87;
+'use strict';
+const $=id=>document.getElementById(id);
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= ELEMENTS ================= */
+const ESYM='H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og'.split(' ');
+const ENAME='Hydrogen Helium Lithium Beryllium Boron Carbon Nitrogen Oxygen Fluorine Neon Sodium Magnesium Aluminum Silicon Phosphorus Sulfur Chlorine Argon Potassium Calcium Scandium Titanium Vanadium Chromium Manganese Iron Cobalt Nickel Copper Zinc Gallium Germanium Arsenic Selenium Bromine Krypton Rubidium Strontium Yttrium Zirconium Niobium Molybdenum Technetium Ruthenium Rhodium Palladium Silver Cadmium Indium Tin Antimony Tellurium Iodine Xenon Cesium Barium Lanthanum Cerium Praseodymium Neodymium Promethium Samarium Europium Gadolinium Terbium Dysprosium Holmium Erbium Thulium Ytterbium Lutetium Hafnium Tantalum Tungsten Rhenium Osmium Iridium Platinum Gold Mercury Thallium Lead Bismuth Polonium Astatine Radon Francium Radium Actinium Thorium Protactinium Uranium Neptunium Plutonium Americium Curium Berkelium Californium Einsteinium Fermium Mendelevium Nobelium Lawrencium Rutherfordium Dubnium Seaborgium Bohrium Hassium Meitnerium Darmstadtium Roentgenium Copernicium Nihonium Flerovium Moscovium Livermorium Tennessine Oganesson'.split(' ');
+const ZOF={},LSYM={};ESYM.forEach((s,i)=>{ZOF[s]=i+1;LSYM[s.toLowerCase()]=s});
+const ename=s=>ENAME[ZOF[s]-1];
+function ppos(z){
+  const P=[[1,2],[3,10],[11,18],[19,36],[37,54],[55,86],[87,118]];
+  const p=P.findIndex(([a,b])=>z>=a&&z<=b)+1,i=z-P[p-1][0];
+  if(p===1)return{p,g:z===1?1:18};
+  if(p<=3)return{p,g:i<2?i+1:i+11};
+  if(p<=5)return{p,g:i+1};
+  if(i<2)return{p,g:i+1};
+  if(i===2)return{p,g:3};
+  if(i<=16)return{p,g:0,f:p-5,fi:i-3};
+  return{p,g:i-13};
+}
+const V={};ESYM.forEach((s,i)=>{const{g}=ppos(i+1);if(g===1||g===2)V[s]=g;else if(g>=13)V[s]=g-10});V.He=2;
+const EN={H:2.2,Li:.98,Be:1.57,B:2.04,C:2.55,N:3.04,O:3.44,F:3.98,Na:.93,Mg:1.31,Al:1.61,Si:1.9,P:2.19,S:2.58,Cl:3.16,K:.82,Ca:1,Sc:1.36,Ti:1.54,V:1.63,Cr:1.66,Mn:1.55,Fe:1.83,Co:1.88,Ni:1.91,Cu:1.9,Zn:1.65,Ga:1.81,Ge:2.01,As:2.18,Se:2.55,Br:2.96,Kr:3,Rb:.82,Sr:.95,Y:1.22,Zr:1.33,Nb:1.6,Mo:2.16,Tc:1.9,Ru:2.2,Rh:2.28,Pd:2.2,Ag:1.93,Cd:1.69,In:1.78,Sn:1.96,Sb:2.05,Te:2.1,I:2.66,Xe:2.6,Cs:.79,Ba:.89,La:1.1,Ce:1.12,Pr:1.13,Nd:1.14,Sm:1.17,Gd:1.2,Dy:1.22,Ho:1.23,Er:1.24,Tm:1.25,Lu:1.27,Hf:1.3,Ta:1.5,W:2.36,Re:1.9,Os:2.2,Ir:2.2,Pt:2.28,Au:2.54,Hg:2,Tl:1.62,Pb:2.33,Bi:2.02,Po:2,At:2.2,Rn:2.2,Fr:.7,Ra:.9,Ac:1.1,Th:1.3,Pa:1.5,U:1.38,Np:1.36,Pu:1.28};
+const RAD={H:.31,He:.28,Li:1.28,Be:.96,B:.84,C:.76,N:.71,O:.66,F:.57,Ne:.58,Na:1.66,Mg:1.41,Al:1.21,Si:1.11,P:1.07,S:1.05,Cl:1.02,Ar:1.06,K:2.03,Ca:1.76,Ga:1.22,Ge:1.2,As:1.19,Se:1.2,Br:1.2,Kr:1.16,Rb:2.2,Sr:1.95,In:1.42,Sn:1.39,Sb:1.39,Te:1.38,I:1.39,Xe:1.4,Cs:2.44,Ba:2.15,Tl:1.45,Pb:1.46,Bi:1.48,Po:1.4,At:1.5,Rn:1.5};
+const CATS={alk:['Alkali metal','#f87171'],ae:['Alkaline earth','#fb923c'],tm:['Transition metal','#facc15'],post:['Post-transition','#94a3b8'],met:['Metalloid','#5eead4'],non:['Nonmetal','#b8f36b'],hal:['Halogen','#86efac'],noble:['Noble gas','#67e8f9'],lan:['Lanthanide','#f9a8d4'],act:['Actinide','#c084fc']};
+function ecat(z){
+  const s=ESYM[z-1],{g,f}=ppos(z);
+  if(f===1||z===57)return'lan';if(f===2||z===89)return'act';
+  if('He Ne Ar Kr Xe Rn Og'.split(' ').includes(s))return'noble';
+  if('F Cl Br I At Ts'.split(' ').includes(s))return'hal';
+  if('H C N O P S Se'.split(' ').includes(s))return'non';
+  if('B Si Ge As Sb Te'.split(' ').includes(s))return'met';
+  if(g===1)return'alk';if(g===2)return'ae';if(g>=3&&g<=12)return'tm';return'post';
+}
+const COL={H:'#f4f4f5',C:'#a1a1aa',N:'#60a5fa',O:'#f87171',F:'#86efac',Cl:'#4ade80',Br:'#fb923c',I:'#c084fc',S:'#fde047',P:'#fdba74',B:'#f9a8d4',Si:'#e2c08d',Se:'#fbbf24',Te:'#d4a373',As:'#d8b4fe',Ge:'#94a3b8',Sb:'#a5b4fc',Sn:'#cbd5e1',Pb:'#8b8fa3',Bi:'#f0abfc',Al:'#cbd5e1',Ga:'#a7f3d0',In:'#93c5fd',Be:'#bef264',Xe:'#67e8f9',Kr:'#5eead4',Rn:'#22d3ee',At:'#a3e635'};
+const col=s=>COL[s]||(ZOF[s]?CATS[ecat(ZOF[s])][1]:'#b8f36b');
+const rd=s=>RAD[s]||1.4;
+const HAL=['F','Cl','Br','I','At'],S=.87;
+const IONM={Li:1,Na:1,K:1,Rb:1,Cs:1,Fr:1,Mg:2,Ca:2,Sr:2,Ba:2,Ra:2};
+const ANI={F:1,Cl:1,Br:1,I:1,H:1,O:2,S:2,Se:2,N:3,P:3};
+const ROOT={H:'hydr',F:'fluor',Cl:'chlor',Br:'brom',I:'iod',At:'astat',O:'ox',S:'sulf',Se:'selen',Te:'tellur',N:'nitr',P:'phosph',C:'carb',As:'arsen'};
+const PRE=['','mono','di','tri','tetra','penta','hexa','hepta','octa'];
+
+/* ================= COMPOUND LIBRARY ================= */
 const R3='Resonance: the double bond can sit on any of the oxygens.';
+const R4='Resonance: the single bond (and the charge) can sit on any of the four oxygens.';
+const RC='Resonance: the negative charge is shared by both oxygens.';
+// [formula, name, atoms [sym,x,y,formalCharge], bonds [i,j,order], note]
 const DB=[
 ['O2','Oxygen',[['O',-.5,0],['O',.5,0]],[[0,1,2]]],
 ['N2','Nitrogen',[['N',-.5,0],['N',.5,0]],[[0,1,3]]],
@@ -145,7 +501,7 @@ const DB=[
 ['SO3','Sulfur trioxide',[['S',0,0],['O',0,-1],['O',S,.5],['O',-S,.5]],[[0,1,2],[0,2,2],[0,3,2]]],
 ['NO3-','Nitrate',[['N',0,0,1],['O',0,-1],['O',S,.5,-1],['O',-S,.5,-1]],[[0,1,2],[0,2,1],[0,3,1]],'Resonance: the double bond can sit on any of the three oxygens.'],
 ['CO3 2-','Carbonate',[['C',0,0],['O',0,-1],['O',S,.5,-1],['O',-S,.5,-1]],[[0,1,2],[0,2,1],[0,3,1]],'Resonance: the double bond can sit on any of the three oxygens.'],
-['SO4 2-','Sulfate',[['S',0,0],['O',0,-1,-1],['O',1,0],['O',0,1,-1],['O',-1,0]],[[0,1,1],[0,2,2],[0,3,1],[0,4,2]]],
+['SO4 2-','Sulfate',[['S',0,0],['O',0,-1,-1],['O',1,0],['O',0,1,-1],['O',-1,0]],[[0,1,1],[0,2,2],[0,3,1],[0,4,2]],R3],
 ['NH4+','Ammonium',[['N',0,0,1],['H',0,-1],['H',1,0],['H',0,1],['H',-1,0]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1]]],
 ['H3O+','Hydronium',[['O',0,0,1],['H',-1,0],['H',1,0],['H',0,1]],[[0,1,1],[0,2,1],[0,3,1]]],
 ['OH-','Hydroxide',[['O',-.5,0,-1],['H',.5,0]],[[0,1,1]]],
@@ -158,44 +514,48 @@ const DB=[
 ['H3PO4','Phosphoric acid',[['P',0,0],['O',0,-1],['O',-1,0],['O',1,0],['O',0,1],['H',-1.9,0],['H',1.9,0],['H',0,1.9]],[[0,1,2],[0,2,1],[0,3,1],[0,4,1],[2,5,1],[3,6,1],[4,7,1]]],
 ['PO4 3-','Phosphate',[['P',0,0],['O',0,-1,-1],['O',1,0,-1],['O',0,1,-1],['O',-1,0]],[[0,1,1],[0,2,1],[0,3,1],[0,4,2]],R3],
 ['ClO3-','Chlorate',[['Cl',0,0],['O',0,-1],['O',S,.5],['O',-S,.5,-1]],[[0,1,2],[0,2,2],[0,3,1]],R3],
-['ClO4-','Perchlorate',[['Cl',0,0],['O',0,-1],['O',1,0],['O',0,1],['O',-1,0,-1]],[[0,1,2],[0,2,2],[0,3,2],[0,4,1]],R3],
+['ClO4-','Perchlorate',[['Cl',0,0],['O',0,-1],['O',1,0],['O',0,1],['O',-1,0,-1]],[[0,1,2],[0,2,2],[0,3,2],[0,4,1]],R4],
 ['SCN-','Thiocyanate',[['S',-1,0,-1],['C',0,0],['N',1,0]],[[0,1,1],[1,2,3]]],
 ['N2O','Nitrous oxide',[['N',-1,0],['N',0,0,1],['O',1,0,-1]],[[0,1,3],[1,2,1]]],
 ['CS2','Carbon disulfide',[['S',-1,0],['C',0,0],['S',1,0]],[[0,1,2],[1,2,2]]],
 ['OCS','Carbonyl sulfide',[['O',-1,0],['C',0,0],['S',1,0]],[[0,1,2],[1,2,2]]],
 ['COCl2','Phosgene',[['C',0,0],['O',0,-1],['Cl',S,.5],['Cl',-S,.5]],[[0,1,2],[0,2,1],[0,3,1]]],
+['COF2','Carbonyl fluoride',[['C',0,0],['O',0,-1],['F',S,.5],['F',-S,.5]],[[0,1,2],[0,2,1],[0,3,1]]],
 ['SOCl2','Thionyl chloride',[['S',0,0],['O',0,-1],['Cl',S,.5],['Cl',-S,.5]],[[0,1,2],[0,2,1],[0,3,1]]],
 ['XeO3','Xenon trioxide',[['Xe',0,0],['O',0,-1],['O',S,.5],['O',-S,.5]],[[0,1,2],[0,2,2],[0,3,2]]],
+['XeO4','Xenon tetroxide',[['Xe',0,0],['O',0,-1],['O',1,0],['O',0,1],['O',-1,0]],[[0,1,2],[0,2,2],[0,3,2],[0,4,2]]],
+['XeOF4','Xenon oxytetrafluoride',[['Xe',0,0],['O',0,-1],['F',1,0],['F',-1,0],['F',.7,.75],['F',-.7,.75]],[[0,1,2],[0,2,1],[0,3,1],[0,4,1],[0,5,1]]],
+['XeO2F2','Xenon dioxydifluoride',[['Xe',0,0],['O',0,-1],['O',0,1],['F',1,0],['F',-1,0]],[[0,1,2],[0,2,2],[0,3,1],[0,4,1]]],
 ['HOCl','Hypochlorous acid',[['O',0,0],['H',-S,.5],['Cl',S,.5]],[[0,1,1],[0,2,1]]],
+['HOBr','Hypobromous acid',[['O',0,0],['H',-S,.5],['Br',S,.5]],[[0,1,1],[0,2,1]]],
+['HClO2','Chlorous acid',[['Cl',0,0],['O',S,.5],['O',-S,.5],['H',-1.35,1.25]],[[0,1,2],[0,2,1],[2,3,1]]],
+['HClO3','Chloric acid',[['Cl',0,0],['O',0,-1],['O',S,.5],['O',-S,.5],['H',-1.35,1.25]],[[0,1,2],[0,2,2],[0,3,1],[3,4,1]]],
+['HClO4','Perchloric acid',[['Cl',0,0],['O',0,-1],['O',1,0],['O',0,1],['O',-1,0],['H',-1.9,0]],[[0,1,2],[0,2,2],[0,3,2],[0,4,1],[4,5,1]]],
+['HIO3','Iodic acid',[['I',0,0],['O',0,-1],['O',S,.5],['O',-S,.5],['H',-1.35,1.25]],[[0,1,2],[0,2,2],[0,3,1],[3,4,1]]],
+['H2SO3','Sulfurous acid',[['S',0,0],['O',0,-1],['O',S,.5],['O',-S,.5],['H',1.35,1.25],['H',-1.35,1.25]],[[0,1,2],[0,2,1],[0,3,1],[2,4,1],[3,5,1]]],
 ['H2CO3','Carbonic acid',[['C',0,0],['O',0,-1],['O',S,.5],['O',-S,.5],['H',1.35,1.25],['H',-1.35,1.25]],[[0,1,2],[0,2,1],[0,3,1],[2,4,1],[3,5,1]]],
+['B(OH)3','Boric acid',[['B',0,0],['O',0,-1],['O',S,.5],['O',-S,.5],['H',.87,-1.5],['H',.87,1.5],['H',-1.74,0]],[[0,1,1],[0,2,1],[0,3,1],[1,4,1],[2,5,1],[3,6,1]]],
 ['HCOOH','Formic acid',[['C',0,0],['O',0,-1],['H',-S,.5],['O',S,.5],['H',1.8,1]],[[0,1,2],[0,2,1],[0,3,1],[3,4,1]]],
 ['CH3COOH','Acetic acid',[['C',-.5,0],['C',.5,0],['O',1,-S],['O',1,S],['H',1.9,1.17],['H',-1.5,0],['H',-1,-S],['H',-1,S]],[[0,1,1],[1,2,2],[1,3,1],[3,4,1],[0,5,1],[0,6,1],[0,7,1]]],
+['HNO2','Nitrous acid',[['N',0,0],['O',S,.5],['O',-S,.5],['H',-1.8,1]],[[0,1,2],[0,2,1],[2,3,1]]],
+['HN3','Hydrazoic acid',[['N',-1,0],['N',0,0,1],['N',1,0,-1],['H',-1.5,.85]],[[0,1,2],[1,2,2],[0,3,1]]],
+['HNCO','Isocyanic acid',[['H',-1.4,.6],['N',-.5,0],['C',.5,0],['O',1.5,0]],[[0,1,1],[1,2,2],[2,3,2]]],
 ['C2H6','Ethane',[['C',-.5,0],['C',.5,0],['H',-1.5,0],['H',-1,-S],['H',-1,S],['H',1.5,0],['H',1,-S],['H',1,S]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1],[1,5,1],[1,6,1],[1,7,1]]],
+['C3H8','Propane',[['C',-1.5,0],['C',0,0],['C',1.5,0],['H',0,-1],['H',0,1],['H',-2.5,0],['H',-1.5,-1],['H',-1.5,1],['H',2.5,0],['H',1.5,-1],['H',1.5,1]],[[0,1,1],[1,2,1],[1,3,1],[1,4,1],[0,5,1],[0,6,1],[0,7,1],[2,8,1],[2,9,1],[2,10,1]]],
+['C4H10','Butane',[['C',-1.5,0],['C',-.5,0],['C',.5,0],['C',1.5,0],['H',-1.5,-1],['H',-1.5,1],['H',-.5,-1],['H',-.5,1],['H',.5,-1],['H',.5,1],['H',1.5,-1],['H',1.5,1],['H',-2.5,0],['H',2.5,0]],[[0,1,1],[1,2,1],[2,3,1],[0,4,1],[0,5,1],[0,12,1],[1,6,1],[1,7,1],[2,8,1],[2,9,1],[3,10,1],[3,11,1],[3,13,1]]],
+['C3H6','Propene',[['C',-1.2,0],['C',0,0],['C',1.2,0],['H',-1.7,-S],['H',-1.7,S],['H',0,-1],['H',1.2,-1],['H',1.2,1],['H',2.2,0]],[[0,1,2],[1,2,1],[0,3,1],[0,4,1],[1,5,1],[2,6,1],[2,7,1],[2,8,1]]],
+['C2F4','Tetrafluoroethylene',[['C',-.5,0],['C',.5,0],['F',-1,-S],['F',-1,S],['F',1,-S],['F',1,S]],[[0,1,2],[0,2,1],[0,3,1],[1,4,1],[1,5,1]]],
 ['C2H5OH','Ethanol',[['C',-1,0],['C',0,0],['O',1,0],['H',-1.5,-S],['H',-1.5,S],['H',-2,0],['H',0,-1],['H',0,1],['H',1.5,S]],[[0,1,1],[1,2,1],[0,3,1],[0,4,1],[0,5,1],[1,6,1],[1,7,1],[2,8,1]]],
+['CH3OCH3','Dimethyl ether',[['O',0,-.3],['C',-1,.4],['C',1,.4],['H',-2,.4],['H',-1,1.4],['H',-1.5,-.45],['H',2,.4],['H',1,1.4],['H',1.5,-.45]],[[0,1,1],[0,2,1],[1,3,1],[1,4,1],[1,5,1],[2,6,1],[2,7,1],[2,8,1]]],
+['CH3SH','Methanethiol',[['C',-.5,0],['S',.5,0],['H',-1.4,0],['H',-.5,-1],['H',-.5,1],['H',1,S]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1],[1,5,1]]],
+['(CH3)2SO','Dimethyl sulfoxide',[['S',0,0],['O',0,-1],['C',-1,.6],['C',1,.6],['H',-2,.6],['H',-1,1.6],['H',-1.6,-.2],['H',2,.6],['H',1,1.6],['H',1.6,-.2]],[[0,1,2],[0,2,1],[0,3,1],[2,4,1],[2,5,1],[2,6,1],[3,7,1],[3,8,1],[3,9,1]]],
 ['CH3NH2','Methylamine',[['C',-.5,0],['N',.5,0],['H',-1.4,0],['H',-.5,-1],['H',-.5,1],['H',1,-S],['H',1,S]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1],[1,5,1],[1,6,1]]],
+['CH3NO2','Nitromethane',[['C',-.6,0],['N',.4,0,1],['O',.9,-S],['O',.9,S,-1],['H',-1.6,0],['H',-.6,-1],['H',-.6,1]],[[0,1,1],[1,2,2],[1,3,1],[0,4,1],[0,5,1],[0,6,1]],RC],
+['HCONH2','Formamide',[['C',0,0],['O',0,-1],['H',-S,.5],['N',S,.5],['H',1.8,.1],['H',.9,1.5]],[[0,1,2],[0,2,1],[0,3,1],[3,4,1],[3,5,1]]],
+['CO(NH2)2','Urea',[['C',0,0],['O',0,-1],['N',-S,.5],['N',S,.5],['H',-1.8,.1],['H',-.9,1.5],['H',1.8,.1],['H',.9,1.5]],[[0,1,2],[0,2,1],[0,3,1],[2,4,1],[2,5,1],[3,6,1],[3,7,1]]],
 ['CH3Cl','Chloromethane',[['C',0,0],['Cl',1,0],['H',-1,0],['H',0,-1],['H',0,1]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1]]],
 ['CH2Cl2','Dichloromethane',[['C',0,0],['Cl',1,0],['Cl',0,1],['H',-1,0],['H',0,-1]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1]]],
 ['CHCl3','Chloroform',[['C',0,0],['Cl',1,0],['Cl',0,1],['Cl',-1,0],['H',0,-1]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1]]],
-['N2H4','Hydrazine',[['N',-.5,0],['N',.5,0],['H',-1,-S],['H',-1,S],['H',1,-S],['H',1,S]],[[0,1,1],[0,2,1],[0,3,1],[1,4,1],[1,5,1]]],
-['C6H6','Benzene',[['C',1,0],['C',.5,S],['C',-.5,S],['C',-1,0],['C',-.5,-S],['C',.5,-S],['H',1.9,0],['H',.95,1.65],['H',-.95,1.65],['H',-1.9,0],['H',-.95,-1.65],['H',.95,-1.65]],[[0,1,2],[1,2,1],[2,3,2],[3,4,1],[4,5,2],[5,0,1],[0,6,1],[1,7,1],[2,8,1],[3,9,1],[4,10,1],[5,11,1]],'Resonance: the three double bonds can shift, giving a delocalized ring.'],
-// ---- more ions and oxyanions ----
-['ClO2-','Chlorite',[['Cl',0,0],['O',-S,.5],['O',S,.5,-1]],[[0,1,2],[0,2,1]],'Resonance: the double bond can sit on either oxygen.'],
-['ClO-','Hypochlorite',[['O',-.5,0,-1],['Cl',.5,0]],[[0,1,1]]],
-['BrO3-','Bromate',[['Br',0,0],['O',0,-1],['O',S,.5],['O',-S,.5,-1]],[[0,1,2],[0,2,2],[0,3,1]],R3],
-['IO3-','Iodate',[['I',0,0],['O',0,-1],['O',S,.5],['O',-S,.5,-1]],[[0,1,2],[0,2,2],[0,3,1]],R3],
-['SO3 2-','Sulfite',[['S',0,0],['O',0,-1],['O',S,.5,-1],['O',-S,.5,-1]],[[0,1,2],[0,2,1],[0,3,1]],R3],
-['HCO3-','Bicarbonate',[['C',0,0],['O',0,-1],['O',S,.5,-1],['O',-S,.5],['H',-1.35,1.25]],[[0,1,2],[0,2,1],[0,3,1],[3,4,1]],'Resonance: the double bond can swap with the charged oxygen.'],
-['HSO4-','Hydrogen sulfate',[['S',0,0],['O',0,-1,-1],['O',1,0],['O',0,1],['O',-1,0],['H',-1.9,0]],[[0,1,1],[0,2,2],[0,3,2],[0,4,1],[4,5,1]]],
-['CH3COO-','Acetate',[['C',-.5,0],['C',.5,0],['O',1,-S],['O',1,S,-1],['H',-1.5,0],['H',-1,-S],['H',-1,S]],[[0,1,1],[1,2,2],[1,3,1],[0,4,1],[0,5,1],[0,6,1]],'Resonance: the negative charge is shared by both oxygens.'],
-['NO+','Nitrosonium',[['N',-.5,0],['O',.5,0,1]],[[0,1,3]]],
-['NO2+','Nitronium',[['O',-1,0],['N',0,0,1],['O',1,0]],[[0,1,2],[1,2,2]]],
-['N3-','Azide',[['N',-1,0,-1],['N',0,0,1],['N',1,0,-1]],[[0,1,2],[1,2,2]]],
-['I3-','Triiodide',[['I',-1,0],['I',0,0,-1],['I',1,0]],[[0,1,1],[1,2,1]]],
-['ICl4-','Tetrachloroiodate',[['I',0,0,-1],['Cl',1,0],['Cl',0,1],['Cl',-1,0],['Cl',0,-1]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1]]],
-['HNO2','Nitrous acid',[['N',0,0],['O',S,.5],['O',-S,.5],['H',-1.8,1]],[[0,1,2],[0,2,1],[2,3,1]]],
-// ---- more molecules ----
-['SO2Cl2','Sulfuryl chloride',[['S',0,0],['O',0,-1],['O',0,1],['Cl',1,0],['Cl',-1,0]],[[0,1,2],[0,2,2],[0,3,1],[0,4,1]]],
-['POCl3','Phosphoryl chloride',[['P',0,0],['O',0,-1],['Cl',1,0],['Cl',0,1],['Cl',-1,0]],[[0,1,2],[0,2,1],[0,3,1],[0,4,1]]],
 ['CH3F','Fluoromethane',[['C',0,0],['F',1,0],['H',-1,0],['H',0,-1],['H',0,1]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1]]],
 ['CH3Br','Bromomethane',[['C',0,0],['Br',1,0],['H',-1,0],['H',0,-1],['H',0,1]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1]]],
 ['CH3I','Iodomethane',[['C',0,0],['I',1,0],['H',-1,0],['H',0,-1],['H',0,1]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1]]],
@@ -204,56 +564,161 @@ const DB=[
 ['CH3CN','Acetonitrile',[['C',-1,0],['C',0,0],['N',1,0],['H',-1.5,-S],['H',-1.5,S],['H',-2,0]],[[0,1,1],[1,2,3],[0,3,1],[0,4,1],[0,5,1]]],
 ['CH3CHO','Acetaldehyde',[['C',0,0],['O',0,-1],['H',S,.5],['C',-S,.5],['H',-1.9,.2],['H',-S,1.5],['H',-1.5,-.4]],[[0,1,2],[0,2,1],[0,3,1],[3,4,1],[3,5,1],[3,6,1]]],
 ['C3H6O','Acetone',[['C',0,0],['O',0,-1],['C',-S,.5],['C',S,.5],['H',-1.9,.2],['H',-S,1.5],['H',-1.5,-.4],['H',1.9,.2],['H',S,1.5],['H',1.5,-.4]],[[0,1,2],[0,2,1],[0,3,1],[2,4,1],[2,5,1],[2,6,1],[3,7,1],[3,8,1],[3,9,1]]],
-['C3H8','Propane',[['C',-1.5,0],['C',0,0],['C',1.5,0],['H',0,-1],['H',0,1],['H',-2.5,0],['H',-1.5,-1],['H',-1.5,1],['H',2.5,0],['H',1.5,-1],['H',1.5,1]],[[0,1,1],[1,2,1],[1,3,1],[1,4,1],[0,5,1],[0,6,1],[0,7,1],[2,8,1],[2,9,1],[2,10,1]]]
+['N2H4','Hydrazine',[['N',-.5,0],['N',.5,0],['H',-1,-S],['H',-1,S],['H',1,-S],['H',1,S]],[[0,1,1],[0,2,1],[0,3,1],[1,4,1],[1,5,1]]],
+['NH2OH','Hydroxylamine',[['N',-.5,0],['O',.5,0],['H',-1,-S],['H',-1,S],['H',1,S]],[[0,1,1],[0,2,1],[0,3,1],[1,4,1]]],
+['H3NBH3','Ammonia borane',[['N',-.5,0,1],['B',.5,0,-1],['H',-1.5,0],['H',-1,-S],['H',-1,S],['H',1.5,0],['H',1,-S],['H',1,S]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1],[1,5,1],[1,6,1],[1,7,1]]],
+['C6H6','Benzene',[['C',1,0],['C',.5,S],['C',-.5,S],['C',-1,0],['C',-.5,-S],['C',.5,-S],['H',1.9,0],['H',.95,1.65],['H',-.95,1.65],['H',-1.9,0],['H',-.95,-1.65],['H',.95,-1.65]],[[0,1,2],[1,2,1],[2,3,2],[3,4,1],[4,5,2],[5,0,1],[0,6,1],[1,7,1],[2,8,1],[3,9,1],[4,10,1],[5,11,1]],'Resonance: the three double bonds can shift, giving a delocalized ring.'],
+['C2N2','Cyanogen',[['N',-1.5,0],['C',-.5,0],['C',.5,0],['N',1.5,0]],[[0,1,3],[1,2,1],[2,3,3]]],
+['N2O4','Dinitrogen tetroxide',[['N',-.5,0,1],['N',.5,0,1],['O',-1,-S],['O',-1,S,-1],['O',1,-S],['O',1,S,-1]],[[0,1,1],[0,2,2],[0,3,1],[1,4,2],[1,5,1]],'Resonance: each NO₂ half shares its charge across both oxygens.'],
+['N2F2','Dinitrogen difluoride',[['N',-.5,0],['N',.5,0],['F',-1,S],['F',1,-S]],[[0,1,2],[0,2,1],[1,3,1]]],
+['S2Cl2','Disulfur dichloride',[['S',-.5,0],['S',.5,0],['Cl',-1,S],['Cl',1,-S]],[[0,1,1],[0,2,1],[1,3,1]]],
+['O2F2','Dioxygen difluoride',[['O',-.5,0],['O',.5,0],['F',-1,S],['F',1,-S]],[[0,1,1],[0,2,1],[1,3,1]]],
+['NOCl','Nitrosyl chloride',[['N',0,0],['O',-S,.5],['Cl',S,.5]],[[0,1,2],[0,2,1]]],
+['NO2Cl','Nitryl chloride',[['N',0,0,1],['O',0,-1],['O',-S,.5,-1],['Cl',S,.5]],[[0,1,2],[0,2,1],[0,3,1]],'Resonance: the double bond can sit on either oxygen.'],
+['SO2Cl2','Sulfuryl chloride',[['S',0,0],['O',0,-1],['O',0,1],['Cl',1,0],['Cl',-1,0]],[[0,1,2],[0,2,2],[0,3,1],[0,4,1]]],
+['POCl3','Phosphoryl chloride',[['P',0,0],['O',0,-1],['Cl',1,0],['Cl',0,1],['Cl',-1,0]],[[0,1,2],[0,2,1],[0,3,1],[0,4,1]]],
+['SeO2','Selenium dioxide',[['Se',0,0],['O',-S,.5],['O',S,.5]],[[0,1,2],[0,2,2]]],
+['SeO3','Selenium trioxide',[['Se',0,0],['O',0,-1],['O',S,.5],['O',-S,.5]],[[0,1,2],[0,2,2],[0,3,2]]],
+// ---- ions ----
+['ClO2-','Chlorite',[['Cl',0,0],['O',-S,.5],['O',S,.5,-1]],[[0,1,2],[0,2,1]],'Resonance: the double bond can sit on either oxygen.'],
+['ClO-','Hypochlorite',[['O',-.5,0,-1],['Cl',.5,0]],[[0,1,1]]],
+['BrO-','Hypobromite',[['O',-.5,0,-1],['Br',.5,0]],[[0,1,1]]],
+['BrO3-','Bromate',[['Br',0,0],['O',0,-1],['O',S,.5],['O',-S,.5,-1]],[[0,1,2],[0,2,2],[0,3,1]],R3],
+['BrO4-','Perbromate',[['Br',0,0],['O',0,-1],['O',1,0],['O',0,1],['O',-1,0,-1]],[[0,1,2],[0,2,2],[0,3,2],[0,4,1]],R4],
+['IO3-','Iodate',[['I',0,0],['O',0,-1],['O',S,.5],['O',-S,.5,-1]],[[0,1,2],[0,2,2],[0,3,1]],R3],
+['IO4-','Periodate',[['I',0,0],['O',0,-1],['O',1,0],['O',0,1],['O',-1,0,-1]],[[0,1,2],[0,2,2],[0,3,2],[0,4,1]],R4],
+['SO3 2-','Sulfite',[['S',0,0],['O',0,-1],['O',S,.5,-1],['O',-S,.5,-1]],[[0,1,2],[0,2,1],[0,3,1]],R3],
+['HSO3-','Bisulfite',[['S',0,0],['O',0,-1],['O',S,.5,-1],['O',-S,.5],['H',-1.35,1.25]],[[0,1,2],[0,2,1],[0,3,1],[3,4,1]]],
+['SeO4 2-','Selenate',[['Se',0,0],['O',0,-1,-1],['O',1,0],['O',0,1,-1],['O',-1,0]],[[0,1,1],[0,2,2],[0,3,1],[0,4,2]],R3],
+['S2O3 2-','Thiosulfate',[['S',0,0],['S',0,-1],['O',1,0],['O',0,1,-1],['O',-1,0,-1]],[[0,1,2],[0,2,2],[0,3,1],[0,4,1]],'Resonance: the charges spread over the oxygens.'],
+['AsO4 3-','Arsenate',[['As',0,0],['O',0,-1,-1],['O',1,0,-1],['O',0,1,-1],['O',-1,0]],[[0,1,1],[0,2,1],[0,3,1],[0,4,2]],R3],
+['HPO4 2-','Hydrogen phosphate',[['P',0,0],['O',0,-1],['O',1,0,-1],['O',0,1,-1],['O',-1,0],['H',-1.9,0]],[[0,1,2],[0,2,1],[0,3,1],[0,4,1],[4,5,1]]],
+['H2PO4-','Dihydrogen phosphate',[['P',0,0],['O',0,-1],['O',1,0,-1],['O',0,1],['O',-1,0],['H',0,1.9],['H',-1.9,0]],[[0,1,2],[0,2,1],[0,3,1],[0,4,1],[3,5,1],[4,6,1]]],
+['HCO3-','Bicarbonate',[['C',0,0],['O',0,-1],['O',S,.5,-1],['O',-S,.5],['H',-1.35,1.25]],[[0,1,2],[0,2,1],[0,3,1],[3,4,1]],'Resonance: the double bond can swap with the charged oxygen.'],
+['HSO4-','Hydrogen sulfate',[['S',0,0],['O',0,-1,-1],['O',1,0],['O',0,1],['O',-1,0],['H',-1.9,0]],[[0,1,1],[0,2,2],[0,3,2],[0,4,1],[4,5,1]]],
+['HCOO-','Formate',[['C',0,0],['O',0,-1],['O',S,.5,-1],['H',-S,.5]],[[0,1,2],[0,2,1],[0,3,1]],RC],
+['CH3COO-','Acetate',[['C',-.5,0],['C',.5,0],['O',1,-S],['O',1,S,-1],['H',-1.5,0],['H',-1,-S],['H',-1,S]],[[0,1,1],[1,2,2],[1,3,1],[0,4,1],[0,5,1],[0,6,1]],RC],
+['C2O4 2-','Oxalate',[['C',-.5,0],['C',.5,0],['O',-1,-S],['O',-1,S,-1],['O',1,-S],['O',1,S,-1]],[[0,1,1],[0,2,2],[0,3,1],[1,4,2],[1,5,1]],'Resonance: each end shares its charge across both oxygens.'],
+['OCN-','Cyanate',[['O',-1,0,-1],['C',0,0],['N',1,0]],[[0,1,1],[1,2,3]]],
+['NO+','Nitrosonium',[['N',-.5,0],['O',.5,0,1]],[[0,1,3]]],
+['NO2+','Nitronium',[['O',-1,0],['N',0,0,1],['O',1,0]],[[0,1,2],[1,2,2]]],
+['N3-','Azide',[['N',-1,0,-1],['N',0,0,1],['N',1,0,-1]],[[0,1,2],[1,2,2]]],
+['O2 2-','Peroxide',[['O',-.5,0,-1],['O',.5,0,-1]],[[0,1,1]]],
+['C2 2-','Acetylide',[['C',-.5,0,-1],['C',.5,0,-1]],[[0,1,3]]],
+['I3-','Triiodide',[['I',-1,0],['I',0,0,-1],['I',1,0]],[[0,1,1],[1,2,1]]],
+['ICl4-','Tetrachloroiodate',[['I',0,0,-1],['Cl',1,0],['Cl',0,1],['Cl',-1,0],['Cl',0,-1]],[[0,1,1],[0,2,1],[0,3,1],[0,4,1]]]
 ];
-const NAMES={H2:'Hydrogen',F2:'Fluorine',Cl2:'Chlorine',Br2:'Bromine',I2:'Iodine',H2O:'Water',NH3:'Ammonia',CH4:'Methane',HCl:'Hydrogen chloride',HF:'Hydrogen fluoride',HBr:'Hydrogen bromide',H2S:'Hydrogen sulfide',BF3:'Boron trifluoride',PCl3:'Phosphorus trichloride',PCl5:'Phosphorus pentachloride',SF6:'Sulfur hexafluoride',SF4:'Sulfur tetrafluoride',XeF4:'Xenon tetrafluoride',CCl4:'Carbon tetrachloride',CF4:'Carbon tetrafluoride',BeH2:'Beryllium hydride',ClF3:'Chlorine trifluoride',SiH4:'Silane',PH3:'Phosphine',OF2:'Oxygen difluoride',SCl2:'Sulfur dichloride',BeCl2:'Beryllium chloride',IF5:'Iodine pentafluoride',XeF2:'Xenon difluoride',
-BCl3:'Boron trichloride',BBr3:'Boron tribromide',AlCl3:'Aluminum chloride',NF3:'Nitrogen trifluoride',NCl3:'Nitrogen trichloride',AsH3:'Arsine',AsCl3:'Arsenic trichloride',PF3:'Phosphorus trifluoride',PF5:'Phosphorus pentafluoride',PBr3:'Phosphorus tribromide',SiCl4:'Silicon tetrachloride',SiF4:'Silicon tetrafluoride',GeH4:'Germane',CBr4:'Carbon tetrabromide',SeF4:'Selenium tetrafluoride',SeCl2:'Selenium dichloride',BrF3:'Bromine trifluoride',BrF5:'Bromine pentafluoride',ClF5:'Chlorine pentafluoride',XeF6:'Xenon hexafluoride',Cl2O:'Dichlorine monoxide',H2Se:'Hydrogen selenide',
-ClF:'Chlorine monofluoride',BrF:'Bromine monofluoride',BrCl:'Bromine monochloride',ICl:'Iodine monochloride',IBr:'Iodine monobromide',HI:'Hydrogen iodide',SF2:'Sulfur difluoride',SeF2:'Selenium difluoride',SeF6:'Selenium hexafluoride',SeBr2:'Selenium dibromide',NBr3:'Nitrogen tribromide',NI3:'Nitrogen triiodide',PI3:'Phosphorus triiodide',PBr5:'Phosphorus pentabromide',AsF3:'Arsenic trifluoride',AsF5:'Arsenic pentafluoride',AsBr3:'Arsenic tribromide',GeCl4:'Germanium tetrachloride',GeF4:'Germanium tetrafluoride',SiBr4:'Silicon tetrabromide',SiI4:'Silicon tetraiodide',CI4:'Carbon tetraiodide',BI3:'Boron triiodide',AlF3:'Aluminum fluoride',AlBr3:'Aluminum bromide',BeF2:'Beryllium fluoride',BeBr2:'Beryllium bromide',KrF2:'Krypton difluoride',XeCl2:'Xenon dichloride',ICl3:'Iodine trichloride',IF3:'Iodine trifluoride',BrCl3:'Bromine trichloride'};
-const ALIAS={water:'H2O',ammonia:'NH3',methane:'CH4',ethylene:'C2H4',acetylene:'C2H2',hydrochloricacid:'HCl',chlorine:'Cl2',fluorine:'F2',hydrogen:'H2',bromine:'Br2',iodine:'I2',ethene:'C2H4',ethyne:'C2H2',carbonate:'CO3 2-',sulfate:'SO4 2-',nitrate:'NO3-',ammonium:'NH4+',hydronium:'H3O+',hydroxide:'OH-',cyanide:'CN-',oxygen:'O2',nitrogen:'N2',nitricacid:'HNO3',sulfuricacid:'H2SO4',phosphoricacid:'H3PO4',phosphate:'PO4 3-',chlorate:'ClO3-',perchlorate:'ClO4-',nitrite:'NO2-',laughinggas:'N2O',aceticacid:'CH3COOH',vinegar:'CH3COOH',ethanol:'C2H5OH',alcohol:'C2H5OH',formicacid:'HCOOH',carbonicacid:'H2CO3',acetic:'CH3COOH',freon:'CH2Cl2',sulphate:'SO4 2-',sulphite:'SO3 2-',bleach:'ClO-',nailpolishremover:'C3H6O',dimethylketone:'C3H6O',bakingsoda:'HCO3-',iodide:'I3-',ozone:'O3',hydrogenperoxide:'H2O2',rubbingalcohol:'C3H6O'};
-Object.entries(NAMES).forEach(([f,n])=>ALIAS[norm(n)]=f);
-const $=id=>document.getElementById(id);
-function norm(s){return s.toLowerCase().replace(/[₀-₉]/g,c=>c.charCodeAt(0)-8320).replace(/²/g,'2').replace(/³/g,'3').replace(/[⁻−]/g,'-').replace(/⁺/g,'+').replace(/[\s^_()]/g,'')}
-DB.forEach(d=>{ALIAS[norm(d[1])]=d[0]});
-const SYM={};Object.keys(V).forEach(s=>SYM[s.toLowerCase()]=s);
-function parse(s){
-  if(!s)return[];
-  for(const n of[2,1]){
-    const m=s.slice(0,n);
-    if(m.length===n&&SYM[m]){
-      const d=/^\d*/.exec(s.slice(n))[0],t=parse(s.slice(n+d.length));
-      if(t)return[[SYM[m],d?+d:1],...t];
-    }
-  }
-  return null;
-}
+const AUTO='H2,F2,Cl2,Br2,I2,HF,HCl,HBr,HI,H2O,H2S,H2Se,H2Te,NH3,PH3,AsH3,SbH3,BiH3,CH4,SiH4,GeH4,SnH4,PbH4,BH3,AlH3,GaH3,BeH2,BF3,BCl3,BBr3,BI3,AlCl3,AlBr3,AlI3,GaCl3,GaBr3,InCl3,CF4,CCl4,CBr4,CI4,SiF4,SiCl4,SiBr4,SiI4,GeF4,GeCl4,GeBr4,SnCl4,SnBr4,SnI4,PbCl4,NF3,NCl3,NBr3,NI3,PF3,PCl3,PBr3,PI3,PF5,PCl5,PBr5,AsF3,AsCl3,AsBr3,AsI3,AsF5,SbF3,SbCl3,SbF5,SbCl5,BiF3,BiCl3,OF2,Cl2O,SF2,SCl2,SF4,SF6,SeF2,SeCl2,SeBr2,SeF4,SeCl4,SeF6,TeF4,TeCl4,TeF6,ClF,ClF3,ClF5,BrF,BrCl,BrF3,BrF5,BrCl3,IF,IF3,IF5,IF7,ICl,ICl3,IBr,XeF2,XeF4,XeF6,XeCl2,KrF2,RnF2,BeF2,BeCl2,BeBr2,BeI2,CH2Br2,CH2I2,CHBr3,CHI3,CF2Cl2,CFCl3,CF3Cl,CF3Br,CF3I,SiH3Cl,SiH2Cl2,SiHCl3,GeH3Cl,CH3+,CH3-,NH2-,PH4+,BF4-,BH4-,AlH4-,AlCl4-,GaCl4-,PF6-,AsF6-,SbF6-,SbCl6-,SiF6 2-,GeF6 2-,SnCl6 2-,AlF6 3-,PCl4+,PCl6-,NF4+,ClF2+,ClF4-,BrF2+,BrF4-,ICl2-,IF4+,IF6+,SF3+,SF5-,TeF5-,XeF3+,XeF5+,XeF5-,LiF,LiCl,LiBr,LiI,LiH,Li2O,Li3N,NaF,NaCl,NaBr,NaI,NaH,Na2O,Na2S,KF,KCl,KBr,KI,KH,K2O,K2S,RbF,RbCl,CsF,CsCl,CsI,MgF2,MgCl2,MgBr2,MgO,MgS,MgH2,Mg3N2,CaF2,CaCl2,CaBr2,CaO,CaS,CaH2,Ca3N2,SrCl2,SrO,BaF2,BaCl2,BaO'.split(',');
+const NAMES={H2:'Hydrogen',F2:'Fluorine',Cl2:'Chlorine',Br2:'Bromine',I2:'Iodine',HF:'Hydrogen fluoride',HCl:'Hydrogen chloride',HBr:'Hydrogen bromide',HI:'Hydrogen iodide',H2O:'Water',H2S:'Hydrogen sulfide',H2Se:'Hydrogen selenide',H2Te:'Hydrogen telluride',NH3:'Ammonia',PH3:'Phosphine',AsH3:'Arsine',SbH3:'Stibine',BiH3:'Bismuthine',CH4:'Methane',SiH4:'Silane',GeH4:'Germane',SnH4:'Stannane',PbH4:'Plumbane',BH3:'Borane',AlH3:'Alane',GaH3:'Gallane',BeH2:'Beryllium hydride',AlCl3:'Aluminum chloride',AlBr3:'Aluminum bromide',AlI3:'Aluminum iodide',CHBr3:'Bromoform',CHI3:'Iodoform',CF2Cl2:'Dichlorodifluoromethane (Freon-12)',CFCl3:'Trichlorofluoromethane (Freon-11)',CF3Cl:'Chlorotrifluoromethane (Freon-13)',CF3Br:'Bromotrifluoromethane (Halon 1301)',
+'CH3+':'Methyl cation','CH3-':'Methyl anion','NH2-':'Amide','PH4+':'Phosphonium','BF4-':'Tetrafluoroborate','BH4-':'Borohydride','AlH4-':'Tetrahydroaluminate','AlCl4-':'Tetrachloroaluminate','GaCl4-':'Tetrachlorogallate','PF6-':'Hexafluorophosphate','AsF6-':'Hexafluoroarsenate','SbF6-':'Hexafluoroantimonate','SbCl6-':'Hexachloroantimonate','SiF6 2-':'Hexafluorosilicate','GeF6 2-':'Hexafluorogermanate','SnCl6 2-':'Hexachlorostannate','AlF6 3-':'Hexafluoroaluminate','PCl4+':'Tetrachlorophosphonium','PCl6-':'Hexachlorophosphate','NF4+':'Tetrafluoroammonium','ClF2+':'Difluorochloronium','ClF4-':'Tetrafluorochlorate','BrF2+':'Difluorobromonium','BrF4-':'Tetrafluorobromate','ICl2-':'Dichloroiodate','IF4+':'Tetrafluoroiodonium','IF6+':'Hexafluoroiodonium','SF3+':'Trifluorosulfonium','SF5-':'Pentafluorosulfanide','TeF5-':'Pentafluorotellurate','XeF3+':'Trifluoroxenonium','XeF5+':'Pentafluoroxenonium','XeF5-':'Pentafluoroxenate'};
+const ALIAS={water:'H2O',ammonia:'NH3',methane:'CH4',ethylene:'C2H4',acetylene:'C2H2',hydrochloricacid:'HCl',hydrofluoricacid:'HF',hydrobromicacid:'HBr',hydroiodicacid:'HI',chlorine:'Cl2',fluorine:'F2',hydrogen:'H2',bromine:'Br2',iodine:'I2',oxygen:'O2',nitrogen:'N2',ozone:'O3',laughinggas:'N2O',vinegar:'CH3COOH',aceticacid:'CH3COOH',alcohol:'C2H5OH',grainalcohol:'C2H5OH',woodalcohol:'CH3OH',freon:'CF2Cl2',freon12:'CF2Cl2',freon11:'CFCl3',sulphate:'SO4 2-',sulphite:'SO3 2-',sulphuricacid:'H2SO4',bleach:'ClO-',nailpolishremover:'C3H6O',bakingsoda:'HCO3-',salt:'NaCl',tablesalt:'NaCl',quicklime:'CaO',lime:'CaO',fluorite:'CaF2',dryice:'CO2',marshgas:'CH4',naturalgas:'CH4',dmso:'(CH3)2SO',teflon:'C2F4',tfe:'C2F4',propylene:'C3H6',formalin:'CH2O',ether:'CH3OCH3',carbide:'C2 2-',hydride:'LiH',boricacid:'B(OH)3'};
+
+/* ================= PARSING + BUILDING ================= */
+function clean(s){return String(s).replace(/[₀-₉]/g,c=>c.charCodeAt(0)-8320).replace(/[⁰¹²³⁴-⁹]/g,c=>'⁰¹²³⁴⁵⁶⁷⁸⁹'.indexOf(c)).replace(/[⁻−–]/g,'-').replace(/⁺/g,'+').trim()}
+function norm(s){return clean(s).toLowerCase().replace(/[\s^_()\[\]{}.,'·]/g,'')}
 function fmt(f){
   const m=/^(\S+?)(?: (\d[+-])|([+-]))$/.exec(f),b=m?m[1]:f,c=m?(m[2]||m[3]):'';
   return b.replace(/(\d+)/g,'<sub>$1</sub>')+(c?'<sup>'+c.replace('-','−')+'</sup>':'');
 }
-// build a simple A-Xn molecule (single bonds, octets) for anything not in the library
-function build(tok){
-  let cs,os,n;
-  if(tok.length===1&&tok[0][1]===2){cs=os=tok[0][0];n=1}
-  else if(tok.length===2){
-    const ok=x=>x[0]==='H'||HAL.includes(x[0]);let c=null;
-    for(const[x,y]of[[tok[0],tok[1]],[tok[1],tok[0]]])if(!c&&x[1]===1&&x[0]!=='H'&&ok(y))c=[x,y];
-    if(!c)return null;cs=c[0][0];os=c[1][0];n=c[1][1];
-  }else return null;
-  const ob=os==='H'?0:6,nb=V[cs]+n*V[os]-2*n-n*ob;
-  if(n>6||nb<0||nb%2)return null;
-  const L=nb/2,st=360/(n+L),a0=n===1?0:L?90-(n-1)*st/2:0,A=[[cs,0,0,V[cs]-nb-n]],B=[];
-  for(let k=0;k<n;k++){const a=(a0+k*st)*Math.PI/180;A.push([os,Math.cos(a),Math.sin(a),0]);B.push([0,k+1,1])}
-  const f=tok.length===1?cs+'2':tok.map(t=>t[0]+(t[1]>1?t[1]:'')).join('');
-  return{f,n:NAMES[f]||'',a:A,b:B};
+const chg=q=>q?(Math.abs(q)>1?' '+Math.abs(q):'')+(q>0?'+':'-'):'';
+const cap=s=>s?s[0].toUpperCase()+s.slice(1):s;
+function ide(s,n){let p=PRE[n]||'';const r=ROOT[s]+'ide';if(/[ao]$/.test(p)&&r[0]==='o')p=p.slice(0,-1);return p+r}
+function tokC(s){
+  if(!/^([A-Z][a-z]?\d*)+$/.test(s))return null;
+  const t=[];s.replace(/([A-Z][a-z]?)(\d*)/g,(_,e,d)=>{t.push([e,d?+d:1]);return''});
+  return t.every(x=>ZOF[x[0]])?t:null;
 }
-function resolve(raw){
-  let k=norm(raw);if(!k)return null;
-  if(ALIAS[k])k=norm(ALIAS[k]);
-  const d=DB.find(d=>norm(d[0])===k);
-  if(d)return{f:d[0],n:d[1],a:d[2],b:d[3],note:d[4]};
-  if(!/^[a-z0-9]+$/.test(k))return null;
-  const t=parse(k);return t&&build(t);
+function tokL(s){
+  const out=[];
+  (function rec(i,acc){
+    if(out.length>16)return;
+    if(i===s.length){if(acc.length)out.push(acc);return}
+    for(const n of[2,1]){const m=s.slice(i,i+n);if(m.length===n&&LSYM[m]){const d=/^\d*/.exec(s.slice(i+n))[0];rec(i+n+d.length,[...acc,[LSYM[m],d?+d:1]])}}
+  })(0,[]);
+  return out;
 }
+function chargeCands(s){
+  s=clean(s);
+  let m=/^(.*?\S)[\s^]+(\d*)([+-])$/.exec(s);
+  if(m)return[[m[1].replace(/\s/g,''),(m[3]==='-'?-1:1)*(+m[2]||1)]];
+  s=s.replace(/\s/g,'');
+  m=/^(.*?)(\d?)([+-])$/.exec(s);
+  if(!m)return[[s,0]];
+  const sg=m[3]==='-'?-1:1,out=[[m[1]+m[2],sg]];
+  if(m[2])out.push([m[1],sg*+m[2]]);
+  return out;
+}
+function genName(T,cs,q){
+  if(q)return'';
+  if(T.length===2){
+    const[[s1,n1],[s2,n2]]=T;if(!ROOT[s2])return'';
+    if(s1==='H')return'Hydrogen '+ROOT[s2]+'ide';
+    return cap((n1>1?PRE[n1]:'')+ename(s1).toLowerCase()+' '+ide(s2,n2));
+  }
+  const parent={C:'methane',Si:'silane',Ge:'germane',Sn:'stannane'}[cs];
+  if(parent){
+    const sub=T.filter(([s])=>s!==cs&&s!=='H').map(([s,n])=>[{F:'fluoro',Cl:'chloro',Br:'bromo',I:'iodo'}[s],n]).sort((a,b)=>a[0].localeCompare(b[0]));
+    return cap(sub.map(([r,n])=>(n>1?PRE[n]:'')+r).join('')+parent);
+  }
+  return'';
+}
+function ionic(T,q,f){
+  if(q||T.length!==2)return null;
+  const[m,x]=IONM[T[0][0]]?[T[0],T[1]]:[T[1],T[0]];
+  if(!IONM[m[0]]||!ANI[x[0]])return null;
+  const cq=IONM[m[0]],aq=ANI[x[0]];
+  if(cq*m[1]!==aq*x[1]||m[1]+x[1]>7)return null;
+  let nm=m[1],nx=x[1];const seq=[],big=nm>=nx;
+  while(nm||nx){if(big){if(nm){seq.push('m');nm--}if(nx){seq.push('x');nx--}}else{if(nx){seq.push('x');nx--}if(nm){seq.push('m');nm--}}}
+  const A=seq.map((t,i)=>t==='m'?[m[0],i*1.25,0,cq]:[x[0],i*1.25,0,-aq]);
+  return{f,n:NAMES[f]||ename(m[0])+' '+ROOT[x[0]]+'ide',a:A,b:[],ionic:true};
+}
+function build(tok,q=0){
+  if(Math.abs(q)>3)return null;
+  const mp=new Map();tok.forEach(([s,n])=>mp.set(s,(mp.get(s)||0)+n));
+  const T=[...mp];
+  if(T.some(([s])=>V[s]==null))return null;
+  const f=T.map(([s,n])=>s+(n>1?n:'')).join('')+chg(q);
+  if(T.length===1){
+    const[s,n]=T[0];if(n!==2||q||!(s==='H'||HAL.includes(s)))return null;
+    return{f,n:NAMES[f]||'',a:[[s,-.5,0],[s,.5,0]],b:[[0,1,1]]};
+  }
+  if(T.some(([s])=>IONM[s]))return ionic(T,q,f);
+  const term=s=>s==='H'||HAL.includes(s);
+  const cands=T.filter(([s,n])=>n===1&&s!=='H'&&T.every(([s2])=>s2===s||term(s2)));
+  if(!cands.length)return null;
+  cands.sort((a,b)=>(EN[a[0]]||2.5)-(EN[b[0]]||2.5));
+  const cs=cands[0][0],ts=[];
+  T.forEach(([s,n])=>{if(s!==cs)for(let i=0;i<n;i++)ts.push(s)});
+  ts.sort((a,b)=>(a==='H')-(b==='H'));
+  const n=ts.length;if(n<1||n>7)return null;
+  const tot=V[cs]+ts.reduce((u,s)=>u+V[s],0)-q,nb=tot-2*n-ts.reduce((u,s)=>u+(s==='H'?0:6),0);
+  if(nb<0||nb%2||2*n+nb>14)return null;
+  if(ppos(ZOF[cs]).p<=2&&2*n+nb>8)return null;
+  const L=nb/2;let st=360/(n+L),a0=n===1?0:L?90-(n-1)*st/2:0;
+  if(n===4&&L===2){st=90;a0=45}else if(n===2&&L===3){st=180;a0=0}
+  const A=[[cs,0,0,V[cs]-nb-n]],B=[];
+  ts.forEach((s,k)=>{const a=(a0+k*st)*Math.PI/180;A.push([s,Math.cos(a),Math.sin(a),0]);B.push([0,k+1,1])});
+  return{f,n:NAMES[f]||genName(T,cs,q),a:A,b:B};
+}
+const fromDB=d=>({f:d[0],n:d[1],a:d[2],b:d[3],note:d[4]});
+const DBM={};DB.forEach(d=>DBM[norm(d[0])]=d);
+const LIB=[],LIBM={};
+function resolve(raw,depth=0){
+  const s0=clean(raw||'');if(!s0)return null;
+  const k=norm(s0);
+  if(ALIAS[k]&&depth<2)return resolve(ALIAS[k],depth+1);
+  if(LIBM[k])return LIBM[k].c;
+  if(DBM[k])return fromDB(DBM[k]);
+  for(const[b,q]of chargeCands(s0)){
+    if(!b)continue;
+    const c1=tokC(b),ts=c1?[c1]:tokL(b.toLowerCase());
+    for(const t of ts){const c=build(t,q);if(c)return c}
+  }
+  return null;
+}
+
+/* ================= LAYOUT + ANALYSIS ================= */
 function layout(c){
   const A=c.a.map(([s,x,y,fc=0])=>({s,x,y,fc,bs:0,ang:[]}));
   c.b.forEach(([i,j,o])=>{
@@ -263,255 +728,601 @@ function layout(c){
   });
   A.forEach(a=>{
     a.nb=V[a.s]-a.fc-a.bs;a.la=[];
-    const m=Math.floor(a.nb/2);if(m<=0||!a.ang.length)return;
-    const s=[...a.ang].sort((p,q)=>p-q);let best=-1,g0=0;
-    s.forEach((v,i)=>{const nx=i<s.length-1?s[i+1]:s[0]+360;if(nx-v>best){best=nx-v;g0=v}});
-    for(let j=0;j<m;j++)a.la.push(g0+(j+1)*best/(m+1));
+    const m=Math.floor(a.nb/2);if(m<=0)return;
+    if(!a.ang.length){for(let j=0;j<m;j++)a.la.push(m===1?0:j*360/m);return}
+    const s=[...a.ang].sort((p,q)=>p-q);
+    if(s.length===1){for(let j=0;j<m;j++)a.la.push(s[0]+(j+1)*360/(m+1));return}
+    // spread lone pairs over the open gaps between bonds (biggest gaps first, then away from other pairs)
+    const gaps=s.map((v,i)=>({v,w:(i<s.length-1?s[i+1]:s[0]+360)-v,n:0})),placed=[];
+    const far=cAng=>placed.length?Math.min(...placed.map(p=>{const d=Math.abs(((cAng-p)%360+540)%360-180);return d})):0;
+    for(let j=0;j<m;j++){let bg=gaps[0],bs=-1;gaps.forEach(gp=>{const sc=gp.w/(gp.n+1)+.01*far(gp.v+gp.w/2);if(sc>bs){bs=sc;bg=gp}});bg.n++;placed.push(bg.v+bg.w/2)}
+    gaps.forEach(gp=>{for(let j=0;j<gp.n;j++)a.la.push(gp.v+(j+1)*gp.w/(gp.n+1))});
   });
   return A;
 }
-
-/* ---- VSEPR geometry, bond angle, polarity ---- */
-const GEO={'2,0':['Linear','180°'],'3,0':['Trigonal planar','120°'],'2,1':['Bent','< 120° (about 117°)'],'4,0':['Tetrahedral','109.5°'],'3,1':['Trigonal pyramidal','< 109.5° (about 107°)'],'2,2':['Bent','< 109.5° (about 104.5°)'],'5,0':['Trigonal bipyramidal','90° and 120°'],'4,1':['Seesaw','< 90° and < 120°'],'3,2':['T-shaped','< 90°'],'2,3':['Linear','180°'],'6,0':['Octahedral','90°'],'5,1':['Square pyramidal','< 90°'],'4,2':['Square planar','90°']};
-const EG=['','','Linear','Trigonal planar','Tetrahedral','Trigonal bipyramidal','Octahedral'],HY=['','','sp','sp²','sp³','sp³d','sp³d²'];
-const SYMM=['2,0','3,0','4,0','5,0','6,0','2,3','4,2'];
-const POL={C2H2:0,C2H4:0,C2H6:0,C6H6:0,C3H8:0};
-function geo(c,A){
-  const nb=A.map(()=>[]);c.b.forEach(([i,j])=>{nb[i].push(A[j].s);nb[j].push(A[i].s)});
-  let ci=0;nb.forEach((x,i)=>{if(x.length>nb[ci].length||(x.length===nb[ci].length&&A[ci].s==='H'&&A[i].s!=='H'))ci=i});
-  const a=A[ci],n=nb[ci].length,L=Math.floor(a.nb/2),k=n+','+L,di=A.length===2;
-  const g=di?['Linear','— (only 2 atoms)']:(GEO[k]||['Distorted','—']);
+const GEO={'2,0':['Linear','180°'],'3,0':['Trigonal planar','120°'],'2,1':['Bent','< 120° (about 117°)'],'4,0':['Tetrahedral','109.5°'],'3,1':['Trigonal pyramidal','< 109.5° (about 107°)'],'2,2':['Bent','< 109.5° (about 104.5°)'],'5,0':['Trigonal bipyramidal','90° and 120°'],'4,1':['Seesaw','< 90° and < 120°'],'3,2':['T-shaped','< 90°'],'2,3':['Linear','180°'],'6,0':['Octahedral','90°'],'5,1':['Square pyramidal','< 90°'],'4,2':['Square planar','90°'],'7,0':['Pentagonal bipyramidal','72° and 90°'],'6,1':['Distorted octahedral','—'],'5,2':['Pentagonal planar','72°']};
+const EG=['','','Linear','Trigonal planar','Tetrahedral','Trigonal bipyramidal','Octahedral','Pentagonal bipyramidal'],HY=['','','sp','sp²','sp³','sp³d','sp³d²','sp³d³'];
+const SYMM=['2,0','3,0','4,0','5,0','6,0','2,3','4,2','7,0','5,2'];
+const POL={C2H2:0,C2H4:0,C2H6:0,C6H6:0,C3H8:0,C4H10:0,C2F4:0,C2N2:0,N2F2:0,N2O4:0};
+function nbrsOf(c,A){const nb=A.map(()=>[]);c.b.forEach(([i,j])=>{nb[i].push(j);nb[j].push(i)});return nb}
+function centerIdx(A,nb){let best=0,bs=-1e9;A.forEach((a,i)=>{const sc=nb[i].filter(j=>A[j].s!=='H').length*100+nb[i].length*2+(a.s!=='H'?1:-1000);if(sc>bs){bs=sc;best=i}});return best}
+function analyze(c,A){
+  const tot=A.reduce((u,x)=>u+x.fc,0);
+  if(c.ionic){
+    const ca=A.find(a=>a.fc>0),an=A.find(a=>a.fc<0),mx=Math.abs((EN[ca.s]||1)-(EN[an.s]||3));
+    return{ionic:true,tot:0,mx,shape:'Ionic lattice',eg:'—',angle:'—',hy:'—',pol:2,n:0,L:0,ci:A.indexOf(an),center:an.s,bt:'Ionic bond',key:'ion'};
+  }
+  const nb=nbrsOf(c,A),ci=centerIdx(A,nb),a=A[ci],n=nb[ci].length,L=Math.floor(a.nb/2),key=n+','+L,di=A.length===2;
+  const g=di?['Linear','180° (only 2 atoms)']:(GEO[key]||['Distorted','—']);
   const st=n+L,eg=di?'Linear':(EG[st]||'—'),hy=di?'—':(HY[st]||'—');
   let mx=0;c.b.forEach(([i,j])=>{mx=Math.max(mx,Math.abs((EN[A[i].s]||2.5)-(EN[A[j].s]||2.5)))});
-  const tot=A.reduce((u,x)=>u+x.fc,0);
-  let pol=mx<.4?A.some(x=>x.fc)&&!SYMM.includes(k):(SYMM.includes(k)&&new Set(nb[ci]).size===1?0:1);
+  let pol=di?(mx>0?1:0):mx<.4?(A.some(x=>x.fc)&&!SYMM.includes(key)?1:0):(SYMM.includes(key)&&new Set(nb[ci].map(j=>A[j].s)).size===1?0:1);
   if(c.f in POL)pol=POL[c.f];
   const bt=mx<.4?'Nonpolar covalent':mx<1.7?'Polar covalent':'Highly ionic character';
-  const multi=A.filter(x=>x.s!=='H').length>1&&!di;
-  const cell=(l,v,x='',cl='')=>`<div class="g"><span>${l}</span><b class="${cl}">${v}</b>${x?`<small>${x}</small>`:''}</div>`;
-  const ch=Math.abs(tot)>1?Math.abs(tot):'';
-  return cell('Electron geometry',eg,st?st+' electron regions':'')+
-    cell('Molecular shape',g[0],multi?'around '+a.s:`${n} bonded, ${L} lone pair${L===1?'':'s'}`)+
-    cell('Bond angle',g[1])+
-    cell('Hybridization',hy,di?'':`on ${a.s}`)+
-    cell('Polarity',tot?'Ion ('+ch+(tot>0?'+':'−')+')':pol?'Polar':'Nonpolar',tot?'molecule-level polarity n/a':(pol?'dipoles do not cancel':'dipoles cancel or none'),tot?'':pol?'pol':'non')+
-    cell('Max ΔEN',mx.toFixed(2),bt);
+  return{ci,center:a.s,n,L,key,shape:g[0],angle:g[1],eg,hy,pol,tot,mx,bt,multi:A.filter(x=>x.s!=='H').length>1&&!di,di,st};
 }
+function octets(A){const ex=[],inc=[];A.forEach(a=>{const n=2*a.bs+a.nb,w=a.s==='H'||a.s==='He'?2:8;if(n>w)ex.push(a.s);else if(n<w)inc.push(a.s)});return{ex,inc}}
+function catsOf(c,A,an){
+  const t=[];
+  if(c.ionic)t.push('ionic');
+  else if(an.tot)t.push('ion');else t.push('mol');
+  const syms=new Set(A.map(a=>a.s));
+  if(!c.ionic&&syms.has('C')&&syms.has('H'))t.push('org');
+  if(/acid/i.test(c.n||''))t.push('acid');
+  if(!c.ionic){const o=octets(A);if(o.ex.length)t.push('exp');if(o.inc.length)t.push('inc')}
+  if(/Resonance/.test(c.note||''))t.push('res');
+  return t;
+}
+const TABS=[['all','All'],['mol','Molecules'],['ion','Polyatomic ions'],['ionic','Ionic'],['org','Organic'],['acid','Acids'],['exp','Expanded octet'],['inc','Incomplete octet'],['res','Resonance']];
+function addLib(c){const k=norm(c.f);if(!c||LIBM[k])return;const A=layout(c),an=analyze(c,A);const e={c,A,an,cats:catsOf(c,A,an),syms:[...new Set(A.map(a=>a.s))]};LIB.push(e);LIBM[k]=e}
+DB.forEach(d=>addLib(fromDB(d)));
+AUTO.forEach(f=>{const c=resolve(f);if(c)addLib(c);else console.warn('Could not build',f)});
+LIB.forEach(e=>{if(e.c.n){const k=norm(e.c.n);if(!ALIAS[k])ALIAS[k]=e.c.f}});
 
-let T=[],mode='L',cur=null,lastA=null,view3=false;
+/* ================= 2D RENDER ================= */
+let T=[],mode='L',SPD=1,cur=null,lastA=null,lastAn=null,view3=false;
+function stepUI(steps,i){
+  const s=steps[i];$('stn').textContent=i+1;
+  const tx=$('stt');tx.classList.remove('anim');void tx.offsetWidth;tx.classList.add('anim');
+  tx.innerHTML=`<b>${s[1]}</b><span>${s[2]}</span>`;
+  [...$('pips').children].forEach((p,j)=>p.classList.toggle('on',j<=i));
+}
+function bump(id,v){const b=$(id);b.textContent=v;b.classList.remove('bump');void b.offsetWidth;b.classList.add('bump')}
 function render(c){
   T.forEach(clearTimeout);T=[];
-  const A=layout(c),W=640,H=400;lastA=A;
+  const A=layout(c),an=analyze(c,A),W=640,H=400;lastA=A;lastAn=an;
   const xs=A.map(a=>a.x),ys=A.map(a=>a.y),minx=Math.min(...xs),maxx=Math.max(...xs),miny=Math.min(...ys),maxy=Math.max(...ys);
-  const s=Math.min(120,400/Math.max(maxx-minx,.01),200/Math.max(maxy-miny,.01));
-  const cx=(minx+maxx)/2,cy=(miny+maxy)/2;
+  const s=Math.min(120,400/Math.max(maxx-minx,.01),200/Math.max(maxy-miny,.01)),cx=(minx+maxx)/2,cy=(miny+maxy)/2;
   A.forEach(a=>{a.X=W/2+(a.x-cx)*s;a.Y=H/2+(a.y-cy)*s});
-  const N=A.length,t1=.3+.13*N;let h='',ev=[];
+  const K=RM?0:1/SPD,N=A.length,tot=an.tot,valence=A.reduce((u,a)=>u+V[a.s],0)-tot;
+  $('svg').style.setProperty('--k',K||.001);
+  let h='',t;const ev=[],steps=[];
+  steps.push([0,'Count valence electrons',`${A.map(a=>a.s).filter((x,i,arr)=>arr.indexOf(x)===i).map(x=>{const n=A.filter(a=>a.s===x).length;return(n>1?n+'×':'')+x+' '+V[x]}).join(' + ')}${tot?` ${tot>0?'−':'+'} ${Math.abs(tot)} (charge)`:''} = ${valence} electrons`]);
   A.forEach((a,i)=>{
-    const col=COL[a.s]||'var(--accent)';
-    h+=`<g class="atom" style="animation-delay:${.1+.13*i}s"><circle cx="${a.X}" cy="${a.Y}" r="21" fill="#0d0d10" stroke="${col}" stroke-width="2"/><text x="${a.X}" y="${a.Y}" text-anchor="middle" dominant-baseline="central" font-family="Space Grotesk,sans-serif" font-size="25" font-weight="700" fill="${col}">${a.s}</text></g>`;
+    const cl=col(a.s),d=(.1+.1*i)*K;
+    h+=`<g class="atom" data-i="${i}" style="animation-delay:${d}s;color:${cl}"><circle class="halo" cx="${a.X}" cy="${a.Y}" r="21" stroke="${cl}" style="animation-delay:${d}s"/><circle class="ac" cx="${a.X}" cy="${a.Y}" r="21" fill="#0d0d10" stroke="${cl}" stroke-width="2"/><text x="${a.X}" y="${a.Y}" text-anchor="middle" dominant-baseline="central" font-family="Space Grotesk,sans-serif" font-size="${a.s.length>1?22:25}" font-weight="700" fill="${cl}">${a.s}</text></g>`;
   });
-  let nbond=0,t=t1;
-  c.b.forEach(([i,j,o],bi)=>{
-    const p=A[i],q=A[j],dx=q.X-p.X,dy=q.Y-p.Y,L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L,nx=-uy,ny=ux,d=t1+.2*bi;
-    if(mode==='L'){
-      for(let k=0;k<o;k++){
-        const off=(k-(o-1)/2)*9;
-        h+=`<line class="ln" pathLength="1" style="animation-delay:${d}s" x1="${p.X+ux*23+nx*off}" y1="${p.Y+uy*23+ny*off}" x2="${q.X-ux*23+nx*off}" y2="${q.Y-uy*23+ny*off}"/>`;
-      }
-    }else{
-      const mx=(p.X+q.X)/2,my=(p.Y+q.Y)/2,sp=Math.max(2,Math.min(8,(L-46)/4));
-      for(let k=0;k<o;k++){
-        const off=(k-(o-1)/2)*13;
-        [-1,1].forEach((sg,z)=>{
-          h+=`<circle class="e" r="4" cx="${mx+ux*sg*sp+nx*off}" cy="${my+uy*sg*sp+ny*off}" style="--fx:${(Math.random()-.5)*300}px;--fy:${(Math.random()-.5)*300}px;animation-delay:${d+.08*(k*2+z)}s"/>`;
-        });
-      }
-    }
-    ev.push([d+.3,'b',o]);nbond+=o;
-  });
-  t=t1+.2*c.b.length+.35;let lp=0,k=0;
-  A.forEach(a=>a.la.forEach(ang=>{
-    const r=ang*Math.PI/180,ux=Math.cos(r),uy=Math.sin(r),px=a.X+ux*36,py=a.Y+uy*36,d=t+.12*k++;
-    h+=`<g class="pair" style="animation-delay:${d+1}s">`+[-1,1].map(sg=>{
+  t=.25+.1*N;
+  steps.push([.1,c.ionic?'Place the ions':'Arrange the skeleton',c.ionic?'Metal cations and nonmetal anions sit side by side':(A.length>2?`${an.center} is the central atom; the rest surround it`:'Two atoms, side by side')]);
+  const pairDots=(a,ang,d,fromFn)=>{
+    const r=ang*Math.PI/180,ux=Math.cos(r),uy=Math.sin(r),px=a.X+ux*36,py=a.Y+uy*36;
+    return`<g class="pair" style="animation-delay:${d+1}s">`+[-1,1].map((sg,z)=>{
+      const x=px-uy*sg*6,y=py+ux*sg*6,fr=fromFn?fromFn(x,y,z):null;
+      if(fr)return`<circle class="e tx" r="4" cx="${x}" cy="${y}" style="--fx:${fr[0]}px;--fy:${fr[1]}px;animation-delay:${d}s"/>`;
       const a0=Math.random()*6.28,R=170+Math.random()*120;
-      return `<circle class="e" r="4" cx="${px-uy*sg*6}" cy="${py+ux*sg*6}" style="--fx:${Math.cos(a0)*R}px;--fy:${Math.sin(a0)*R}px;animation-delay:${d}s"/>`;
+      return`<circle class="e" r="4" cx="${x}" cy="${y}" style="--fx:${Math.cos(a0)*R}px;--fy:${Math.sin(a0)*R}px;animation-delay:${d}s"/>`;
     }).join('')+'</g>';
-    ev.push([d+.4,'l',1]);lp++;
-  }));
-  const end=t+.12*k+.9;
-  A.forEach(a=>{
-    if(!a.fc)return;
-    const lbl=(Math.abs(a.fc)>1?Math.abs(a.fc):'')+(a.fc>0?'+':'−'),col=a.fc>0?'#60a5fa':'#f87171';
-    h+=`<g class="fade" style="animation-delay:${end}s"><circle cx="${a.X+20}" cy="${a.Y-21}" r="10" fill="#0d0d10" stroke="${col}" stroke-width="1.5"/><text x="${a.X+20}" y="${a.Y-21}" text-anchor="middle" dominant-baseline="central" font-family="Space Grotesk,sans-serif" font-size="12" font-weight="700" fill="${col}">${lbl}</text></g>`;
-  });
-  const tot=A.reduce((u,a)=>u+a.fc,0);
-  if(tot){
-    const x0=Math.min(...A.map(a=>a.X))-56,x1=Math.max(...A.map(a=>a.X))+56,y0=Math.min(...A.map(a=>a.Y))-56,y1=Math.max(...A.map(a=>a.Y))+56;
-    h+=`<path class="br" pathLength="1" style="animation-delay:${end}s" d="M${x0+14} ${y0}H${x0}V${y1}H${x0+14}"/><path class="br" pathLength="1" style="animation-delay:${end}s" d="M${x1-14} ${y0}H${x1}V${y1}H${x1-14}"/>`+
-      `<text class="fade" style="animation-delay:${end+.3}s" x="${x1+8}" y="${y0+8}" font-family="Space Grotesk,sans-serif" font-size="22" font-weight="700" fill="#d4d4d8">${(Math.abs(tot)>1?Math.abs(tot):'')+(tot>0?'+':'−')}</text>`;
+  };
+  let lp=0,end;
+  if(c.ionic){
+    const cats=A.filter(a=>a.fc>0);
+    // ghost valence electrons on the metals that will be given away
+    A.forEach(a=>{if(a.fc>0)for(let k=0;k<a.fc;k++){const ang=(-90+k*180)*Math.PI/180;h+=`<circle class="ghost" r="4" cx="${a.X+Math.cos(ang)*32}" cy="${a.Y+Math.sin(ang)*32}" style="animation-delay:${(.3+.1*A.indexOf(a))*K}s,${t*K}s"/>`}});
+    steps.push([t,'Transfer electrons','Each metal gives its valence electrons to the nonmetal (blue)']);
+    let k=0;
+    A.forEach(a=>{
+      if(a.fc>=0)return;
+      const near=cats.reduce((p,q)=>Math.abs(q.X-a.X)<Math.abs(p.X-a.X)?q:p,cats[0]);
+      let left=-a.fc,dotIdx=0;const total=a.la.length*2;
+      a.la.forEach(ang=>{
+        const d=(t+.14*k++)*K;
+        h+=pairDots(a,ang,d,(x,y)=>{dotIdx++;return dotIdx>total-left?[near.X-x,near.Y-y]:null});
+        ev.push([d+.4*K,'l',1]);lp++;
+      });
+    });
+    end=(t+.14*k+1)*K;
+    steps.push([end/K,'Ions form','Opposite charges attract: an ionic bond, no shared pairs']);
+    A.forEach(a=>{
+      const lbl=(Math.abs(a.fc)>1?Math.abs(a.fc):'')+(a.fc>0?'+':'−');
+      if(a.fc<0){
+        const x0=a.X-44,x1=a.X+44,y0=a.Y-46,y1=a.Y+46;
+        h+=`<path class="br" pathLength="1" style="animation-delay:${end}s" d="M${x0+11} ${y0}H${x0}V${y1}H${x0+11}"/><path class="br" pathLength="1" style="animation-delay:${end}s" d="M${x1-11} ${y0}H${x1}V${y1}H${x1-11}"/><text class="fade" style="animation-delay:${end+.3*K}s" x="${x1+5}" y="${y0+10}" font-family="Space Grotesk,sans-serif" font-size="18" font-weight="700" fill="#f87171">${lbl}</text>`;
+      }else h+=`<text class="fade" style="animation-delay:${end}s" x="${a.X+22}" y="${a.Y-18}" font-family="Space Grotesk,sans-serif" font-size="18" font-weight="700" fill="#60a5fa">${lbl}</text>`;
+    });
+  }else{
+    steps.push([t,'Connect with single bonds',`${c.b.length} bond${c.b.length===1?'':'s'} = ${2*c.b.length} electrons shared`]);
+    const piece=(p,q,o,k,d)=>{
+      const dx=q.X-p.X,dy=q.Y-p.Y,L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L,nx=-uy,ny=ux;
+      if(mode==='L'){const off=(k-(o-1)/2)*9;return`<line class="ln" pathLength="1" style="animation-delay:${d}s" x1="${p.X+ux*23+nx*off}" y1="${p.Y+uy*23+ny*off}" x2="${q.X-ux*23+nx*off}" y2="${q.Y-uy*23+ny*off}"/>`}
+      const mx=(p.X+q.X)/2,my=(p.Y+q.Y)/2,sp=Math.max(2,Math.min(8,(L-46)/4)),off=(k-(o-1)/2)*13;
+      return[-1,1].map((sg,z)=>`<circle class="e" r="4" cx="${mx+ux*sg*sp+nx*off}" cy="${my+uy*sg*sp+ny*off}" style="--fx:${(Math.random()-.5)*300}px;--fy:${(Math.random()-.5)*300}px;animation-delay:${d+.08*z*K}s"/>`).join('');
+    };
+    const spark=(p,q,d)=>`<circle class="spk" r="6" cx="${(p.X+q.X)/2}" cy="${(p.Y+q.Y)/2}" style="animation-delay:${d}s"/>`;
+    c.b.forEach(([i,j,o],bi)=>{const d=(t+.14*bi)*K;h+=piece(A[i],A[j],o,0,d)+spark(A[i],A[j],d+.35*K);ev.push([d+.3*K,'b',1])});
+    t+=.14*c.b.length+.35;
+    const multi=c.b.filter(b=>b[2]>1);
+    if(multi.length){
+      const nd=multi.filter(b=>b[2]===2).length,nt=multi.filter(b=>b[2]===3).length;
+      steps.push([t,'Share extra pairs',`Octets aren't full yet, so form ${[nd?nd+' double':'',nt?nt+' triple':''].filter(Boolean).join(' + ')} bond${multi.length>1?'s':''}`]);
+      multi.forEach(([i,j,o],mi)=>{for(let k=1;k<o;k++){const d=(t+.2*mi+.12*k)*K;h+=piece(A[i],A[j],o,k,d)+spark(A[i],A[j],d+.35*K);ev.push([d+.3*K,'b',1])}});
+      t+=.2*multi.length+.45;
+    }
+    let k=0;const nLP=A.reduce((u,a)=>u+a.la.length,0);
+    if(nLP)steps.push([t,'Fill in lone pairs',`${nLP} lone pair${nLP===1?'':'s'} (${2*nLP} electrons) complete the octets`]);
+    A.forEach(a=>a.la.forEach(ang=>{const d=(t+.1*k++)*K;h+=pairDots(a,ang,d);ev.push([d+.4*K,'l',1]);lp++}));
+    end=(t+.1*k+.8)*K;
+    const fcs=A.filter(a=>a.fc);
+    steps.push([end/K,fcs.length?'Check formal charges':'Structure complete ✓',fcs.length?`FC = valence − lone e⁻ − bonds: ${fcs.map(a=>a.s+' '+(a.fc>0?'+':'−')+(Math.abs(a.fc)>1?Math.abs(a.fc):'')).join(', ')}${tot?` · overall ${Math.abs(tot)>1?Math.abs(tot):''}${tot>0?'+':'−'}`:''}`:'Every formal charge is zero, so this is the best structure']);
+    fcs.forEach(a=>{
+      const lbl=(Math.abs(a.fc)>1?Math.abs(a.fc):'')+(a.fc>0?'+':'−'),cc=a.fc>0?'#60a5fa':'#f87171';
+      h+=`<g class="fade" style="animation-delay:${end}s"><circle cx="${a.X+20}" cy="${a.Y-21}" r="10" fill="#0d0d10" stroke="${cc}" stroke-width="1.5"/><text x="${a.X+20}" y="${a.Y-21}" text-anchor="middle" dominant-baseline="central" font-family="Space Grotesk,sans-serif" font-size="12" font-weight="700" fill="${cc}">${lbl}</text></g>`;
+    });
+    if(tot){
+      const x0=Math.min(...A.map(a=>a.X))-58,x1=Math.max(...A.map(a=>a.X))+58,y0=Math.min(...A.map(a=>a.Y))-58,y1=Math.max(...A.map(a=>a.Y))+58;
+      h+=`<path class="br" pathLength="1" style="animation-delay:${end}s" d="M${x0+14} ${y0}H${x0}V${y1}H${x0+14}"/><path class="br" pathLength="1" style="animation-delay:${end}s" d="M${x1-14} ${y0}H${x1}V${y1}H${x1-14}"/>`+
+        `<text class="fade" style="animation-delay:${end+.3*K}s" x="${x1+8}" y="${y0+8}" font-family="Space Grotesk,sans-serif" font-size="22" font-weight="700" fill="#d4d4d8">${(Math.abs(tot)>1?Math.abs(tot):'')+(tot>0?'+':'−')}</text>`;
+    }
   }
   h+=`<circle class="rip" cx="${W/2}" cy="${H/2}" r="30" style="animation-delay:${end}s"/>`;
   $('svg').innerHTML=h;
-  const valence=A.reduce((u,a)=>u+V[a.s],0)-tot;
-  $('ttl').innerHTML=fmt(c.f);$('sub').textContent=c.n||'';
+  // header
+  const tt=$('ttl');tt.innerHTML=fmt(c.f);tt.classList.remove('anim');void tt.offsetWidth;tt.classList.add('anim');
+  $('sub').textContent=c.n||'';
+  const e=LIBM[norm(c.f)],cats=e?e.cats:catsOf(c,A,an);
+  const TL={mol:['Molecule','a'],ion:['Polyatomic ion','c'],ionic:['Ionic compound','c'],org:['Organic','a'],acid:['Acid','d'],exp:['Expanded octet','b'],inc:['Incomplete octet','b'],res:['Resonance','b']};
+  $('tags').innerHTML=cats.map(k=>`<span class="tg ${TL[k][1]}">${TL[k][0]}</span>`).join('');
   $('sEl').textContent='of '+valence+' electrons placed';
+  $('sBl').textContent=c.ionic?'ions':'bonds';
+  // steps bar
+  $('pips').innerHTML=steps.map(()=>'<i></i>').join('');
+  steps.forEach((st,i)=>T.push(setTimeout(()=>stepUI(steps,i),st[0]*K*1000)));
+  // counters
   ['sE','sB','sL'].forEach(i=>$(i).textContent='0');
-  let e=0,b=0,l=0;
-  ev.sort((p,q)=>p[0]-q[0]).forEach(([d,ty,o])=>T.push(setTimeout(()=>{
-    if(ty==='b'){b+=o;e+=2*o;$('sB').textContent=b}else{l++;e+=2;$('sL').textContent=l}
-    $('sE').textContent=e;
+  let ee=0,bb=0,ll=0;
+  if(c.ionic)$('sB').textContent=A.length;
+  if(view3||RM){
+    const sb=c.b.reduce((u,b)=>u+b[2],0);
+    $('sE').textContent=valence;$('sB').textContent=c.ionic?A.length:sb;$('sL').textContent=lp;
+    stepUI(steps,steps.length-1);
+  }else ev.sort((p,q)=>p[0]-q[0]).forEach(([d,ty])=>T.push(setTimeout(()=>{
+    if(ty==='b'){bb++;ee+=2;bump('sB',bb)}else{ll++;ee+=2;bump('sL',ll)}
+    bump('sE',ee);
   },d*1000)));
-  $('geo').innerHTML=geo(c,A);
-  const ex=[],inc=[];
-  A.forEach(a=>{const n=2*a.bs+a.nb,w=a.s==='H'?2:8;if(n>w)ex.push(a.s);else if(n<w)inc.push(a.s)});
-  const u=x=>[...new Set(x)].join(', ');
-  let note=!ex.length&&!inc.length?'<i>Every atom is satisfied.</i> Octets complete (duplet for hydrogen).':'';
-  if(ex.length)note+=`<i>Expanded octet</i> on ${u(ex)}: it has more than 8 electrons around it. `;
-  if(inc.length)note+=`<i>Incomplete octet</i> on ${u(inc)}: it has fewer than 8 electrons around it. `;
-  if(c.note)note+=' '+c.note;
-  $('note').innerHTML=`${note}`;
-  history.replaceState(null,'','#'+encodeURIComponent(c.f.replace(' ','')));
+  $('geo').innerHTML=geoHTML(an);
+  // note
+  let note='';
+  if(c.ionic){
+    const m=A.find(a=>a.fc>0),x=A.find(a=>a.fc<0);
+    note=`<i>Ionic bonding.</i> Each ${m.s} gives away ${m.fc} electron${m.fc>1?'s':''} and each ${x.s} gains ${-x.fc}, so both end up with noble-gas configurations. Nothing is shared, so there are no bond lines.`;
+  }else{
+    const{ex,inc}=octets(A),u=x=>[...new Set(x)].join(', ');
+    note=!ex.length&&!inc.length?'<i>Every atom is satisfied.</i> Octets complete (duplet for hydrogen). ':'';
+    if(ex.length)note+=`<i>Expanded octet</i> on ${u(ex)}: more than 8 electrons around it (possible from period 3 down). `;
+    if(inc.length)note+=`<i>Incomplete octet</i> on ${u(inc)}: fewer than 8 electrons around it. `;
+    if(c.note)note+=c.note;
+  }
+  $('note').innerHTML=note;
+  try{history.replaceState(null,'','#'+encodeURIComponent(c.f.replace(' ','')))}catch(_){}
+  document.querySelectorAll('#chips .chip').forEach(b=>b.classList.toggle('cur',b.dataset.f===c.f));
   if(view3)init3D();
 }
-function run(raw,quiet){
+function geoHTML(an){
+  const cell=(l,v,x='',cl='')=>`<div class="g anim"><span>${l}</span><b class="${cl}">${v}</b>${x?`<small>${x}</small>`:''}</div>`;
+  if(an.ionic)return cell('Bonding','Ionic','electrons transferred')+cell('Structure','Ionic lattice','ions held by attraction')+cell('Bond angle','—','no directional bonds')+cell('Hybridization','—')+cell('Polarity','Ionic','full charges, not partial','ion')+cell('Max ΔEN',an.mx.toFixed(2),an.mx>=1.7?'above 1.7 → ionic':'treated as ionic');
+  const ch=Math.abs(an.tot)>1?Math.abs(an.tot):'';
+  return cell('Electron geometry',an.eg,an.di?'':an.st+' electron regions')+
+    cell('Molecular shape',an.shape,an.multi?'around '+an.center:`${an.n} bonded, ${an.L} lone pair${an.L===1?'':'s'}`)+
+    cell('Bond angle',an.angle)+
+    cell('Hybridization',an.hy,an.di?'':`on ${an.center}`)+
+    cell('Polarity',an.tot?'Ion ('+ch+(an.tot>0?'+':'−')+')':an.pol?'Polar':'Nonpolar',an.tot?'molecule-level polarity n/a':(an.pol?'dipoles do not cancel':'dipoles cancel or none'),an.tot?'ion':an.pol?'pol':'non')+
+    cell('Max ΔEN',an.mx.toFixed(2),an.bt);
+}
+
+/* ---- atom tooltip (2D) ---- */
+const tip=$('tip');
+function atomTip(i,x,y){
+  const a=lastA[i];if(!a)return;
+  const cl=col(a.s),lpn=Math.floor(a.nb/2);
+  tip.innerHTML=cur.ionic?`<b style="color:${cl}">${a.s}${a.fc?(Math.abs(a.fc)>1?Math.abs(a.fc):'')+(a.fc>0?'+':'−'):''}</b> <span>${ename(a.s)} ${a.fc>0?'cation':'anion'}</span><br><span>${a.fc>0?`gave away ${a.fc} e⁻`:`gained ${-a.fc} e⁻ → ${a.nb} valence e⁻`}</span>`:
+    `<b style="color:${cl}">${a.s}</b> <span>${ename(a.s)}</span><br><span class="m">FC = ${V[a.s]} − ${a.nb} − ${a.bs} = ${a.fc>0?'+':''}${a.fc}</span><br><span>${V[a.s]} valence · ${a.bs} bond${a.bs===1?'':'s'} · ${lpn} lone pair${lpn===1?'':'s'}</span>`;
+  tip.style.left=Math.min(innerWidth-270,x+14)+'px';tip.style.top=(y+14)+'px';tip.classList.add('on');
+}
+$('svg').addEventListener('pointermove',e=>{const g=e.target.closest('.atom');if(g)atomTip(+g.dataset.i,e.clientX,e.clientY);else tip.classList.remove('on')});
+$('svg').addEventListener('pointerleave',()=>tip.classList.remove('on'));
+$('svg').addEventListener('click',e=>{const g=e.target.closest('.atom');if(g&&lastA){selectEl(ZOF[lastA[+g.dataset.i].s]);$('explorer').scrollIntoView({behavior:'smooth'})}});
+
+/* ================= UI ================= */
+let tab='all';
+function run(raw,opt={}){
   const c=resolve(raw);
   if(!c){
+    const k=norm(raw),z=ESYM.findIndex(s=>s.toLowerCase()===k)+1||ENAME.findIndex(n=>n.toLowerCase()===k)+1;
+    if(z){selectEl(z);$('msg').className='ok';$('msg').textContent=`${ENAME[z-1]} is an element. Opened it in the explorer below.`;if(!opt.quiet)$('explorer').scrollIntoView({behavior:'smooth'});return}
     const q=$('q');q.classList.remove('shake');void q.offsetWidth;q.classList.add('shake');
-    $('msg').textContent=`I can't draw "${raw.trim()}" yet. Try a formula like CH4 or a name like ammonia, or tap one of the examples.`;
+    $('msg').className='';$('msg').textContent=`I can't draw "${String(raw).trim()}" yet. Try a formula like CH4, an ion like BF4-, or a name like ammonia.`;
     return;
   }
-  $('msg').textContent='';cur=c;render(c);
+  $('msg').textContent='';cur=c;render(c);hideSug();
+  if(opt.scroll)$('stage').scrollIntoView({behavior:'smooth',block:'center'});
 }
-const EX=[...DB.map(d=>d[0]),...Object.keys(NAMES)];
-const FEAT=['H2O','CO2','NH3','CH4','SF6','XeF4','BF3','PCl5'];
-$('chips').innerHTML=[...new Set([...FEAT,...EX])].map(x=>`<button class="chip" type="button" data-f="${x}">${fmt(x)}</button>`).join('');
+function drawTabs(){
+  $('tabs').innerHTML=TABS.map(([k,l])=>`<button class="tab${k===tab?' on':''}" data-t="${k}">${l}<span>${k==='all'?LIB.length:LIB.filter(e=>e.cats.includes(k)).length}</span></button>`).join('');
+}
+function drawChips(){
+  const list=LIB.filter(e=>tab==='all'||e.cats.includes(tab));
+  $('chips').innerHTML=list.map((e,i)=>`<button class="chip${cur&&cur.f===e.c.f?' cur':''}" type="button" data-f="${e.c.f}" title="${e.c.n||''}" style="animation-delay:${Math.min(i,40)*12}ms">${fmt(e.c.f)}</button>`).join('');
+}
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b){tab=b.dataset.t;drawTabs();drawChips()}});
 $('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(b){$('q').value=b.dataset.f;run(b.dataset.f)}});
-$('f').addEventListener('submit',e=>{e.preventDefault();run($('q').value)});
-$('rnd').addEventListener('click',()=>{const x=EX[Math.floor(Math.random()*EX.length)];$('q').value=x;run(x)});
+$('more').addEventListener('click',()=>{const o=$('chips').classList.toggle('open');$('more').textContent=o?'Show less ↑':'Show all ↓'});
+$('f').addEventListener('submit',e=>{e.preventDefault();const a=document.querySelector('#sug .act');if(a&&!$('sug').hidden){a.click();return}run($('q').value)});
+$('rnd').addEventListener('click',()=>{const L=LIB.filter(e=>tab==='all'||e.cats.includes(tab)),x=L[Math.floor(Math.random()*L.length)].c.f;$('q').value=x;run(x)});
 $('re').addEventListener('click',()=>cur&&render(cur));
 [['mL','L'],['mD','D']].forEach(([id,m])=>$(id).addEventListener('click',()=>{mode=m;$('mL').classList.toggle('on',m==='L');$('mD').classList.toggle('on',m==='D');cur&&render(cur)}));
+$('spseg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;SPD=+b.dataset.s;[...$('spseg').children].forEach(x=>x.classList.toggle('on',x===b));cur&&render(cur)});
+const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1800)};
+$('share').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.href);toast('Link copied')}catch(_){toast(location.href)}});
+const fsx=()=>{const s=$('stage');if(document.fullscreenElement)document.exitFullscreen();else s.requestFullscreen&&s.requestFullscreen().catch(()=>{})};
+$('fs1').addEventListener('click',fsx);$('fs2').addEventListener('click',fsx);
+document.addEventListener('fullscreenchange',()=>view3&&draw());
 
-/* ---- 3D view: VSEPR coordinates, drag to orbit, wheel / pinch to zoom ---- */
-const RAD={H:.31,Li:1.28,Be:.96,B:.84,C:.76,N:.71,O:.66,F:.57,Ne:.58,Na:1.66,Mg:1.41,Al:1.21,Si:1.11,P:1.07,S:1.05,Cl:1.02,Ar:1.06,K:2,Ge:1.2,As:1.19,Se:1.2,Br:1.2,Kr:1.16,I:1.39,Xe:1.4};
-const rd=s=>RAD[s]||1,col=s=>COL[s]||'#b8f36b';
+/* ---- autocomplete ---- */
+let sugI=-1;
+function hideSug(){$('sug').hidden=true;$('q').setAttribute('aria-expanded','false');sugI=-1}
+function showSug(){
+  const raw=$('q').value.trim(),k=norm(raw),lo=raw.toLowerCase();
+  if(!k){hideSug();return}
+  const sc=e=>{const f=norm(e.c.f),n=(e.c.n||'').toLowerCase();return f===k?6:f.startsWith(k)?4:n.startsWith(lo)?3:n.includes(lo)?2:f.includes(k)?1:0};
+  const res=LIB.map(e=>[sc(e),e]).filter(x=>x[0]).sort((a,b)=>b[0]-a[0]||a[1].c.f.length-b[1].c.f.length).slice(0,8);
+  const zs=ESYM.map((s,i)=>i).filter(i=>ESYM[i].toLowerCase()===k||ENAME[i].toLowerCase().startsWith(lo)&&lo.length>2).slice(0,2);
+  const TL={mol:'molecule',ion:'ion',ionic:'ionic'};
+  let h=res.map(([,e])=>`<button type="button" role="option" data-f="${e.c.f}"><span class="sf">${fmt(e.c.f)}</span><span class="sn">${e.c.n||''}</span><span class="st">${TL[e.cats[0]]}</span></button>`).join('');
+  h+=zs.map(i=>`<button type="button" role="option" data-z="${i+1}"><span class="sf" style="color:${CATS[ecat(i+1)][1]}">${ESYM[i]}</span><span class="sn">${ENAME[i]}</span><span class="st">element</span></button>`).join('');
+  if(!h){hideSug();return}
+  $('sug').innerHTML=h;$('sug').hidden=false;$('q').setAttribute('aria-expanded','true');sugI=-1;
+}
+$('q').addEventListener('input',showSug);
+$('q').addEventListener('keydown',e=>{
+  const it=[...$('sug').querySelectorAll('button')];
+  if($('sug').hidden||!it.length)return;
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();sugI=(sugI+(e.key==='ArrowDown'?1:-1)+it.length)%it.length;it.forEach((b,i)=>b.classList.toggle('act',i===sugI));it[sugI].scrollIntoView({block:'nearest'})}
+  else if(e.key==='Escape')hideSug();
+});
+$('sug').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.z){hideSug();selectEl(+b.dataset.z);$('explorer').scrollIntoView({behavior:'smooth'})}else{$('q').value=b.dataset.f;run(b.dataset.f)}});
+document.addEventListener('click',e=>{if(!e.target.closest('.search'))hideSug()});
+document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement.tagName!=='INPUT'){e.preventDefault();$('q').focus();$('q').select()}});
+
+/* ================= 3D ================= */
 const unit=v=>{const l=Math.hypot(...v)||1;return v.map(x=>x/l)};
-const DIR={2:[[1,0,0],[-1,0,0]],3:[[1,0,0],[-.5,0,.866],[-.5,0,-.866]],4:[[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]].map(unit),
-  5:[[0,1,0],[0,-1,0],[1,0,0],[-.5,0,.866],[-.5,0,-.866]],6:[[0,1,0],[0,-1,0],[1,0,0],[-1,0,0],[0,0,1],[0,0,-1]]};
-// lone pairs always take the last slots, so they land equatorial (trigonal bipyramid) or opposite each other (octahedron)
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const DIR={1:[[1,0,0]],2:[[1,0,0],[-1,0,0]],3:[[1,0,0],[-.5,0,.866],[-.5,0,-.866]],4:[[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]].map(unit),
+  5:[[0,1,0],[0,-1,0],[1,0,0],[-.5,0,.866],[-.5,0,-.866]],6:[[0,1,0],[0,-1,0],[1,0,0],[-1,0,0],[0,0,1],[0,0,-1]],
+  7:[0,1,2,3,4].map(k=>[Math.cos(k*1.2566),0,Math.sin(k*1.2566)]).concat([[0,1,0],[0,-1,0]])};
+// lone pairs take the last slots: equatorial in a trigonal bipyramid, trans in an octahedron, axial in a pentagonal bipyramid
 function rotTo(a,b){
-  const c=a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
-  let k=[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],s=Math.hypot(...k),ang;
-  if(s<1e-6){if(c>0)return v=>v;k=Math.abs(a[1])<.9?[0,1,0]:[1,0,0];ang=Math.PI}else{k=k.map(x=>x/s);ang=Math.atan2(s,c)}
+  const c=dot(a,b);let k=cross(a,b),s=Math.hypot(...k),ang;
+  if(s<1e-6){if(c>0)return v=>v;k=Math.abs(a[1])<.9?[0,1,0]:[1,0,0];k=unit(cross(a,k));ang=Math.PI}else{k=k.map(x=>x/s);ang=Math.atan2(s,c)}
   const co=Math.cos(ang),si=Math.sin(ang);
-  return v=>{const d=k[0]*v[0]+k[1]*v[1]+k[2]*v[2],x=[k[1]*v[2]-k[2]*v[1],k[2]*v[0]-k[0]*v[2],k[0]*v[1]-k[1]*v[0]];return[0,1,2].map(i=>v[i]*co+x[i]*si+k[i]*d*(1-co))};
+  return v=>{const d=dot(k,v),x=cross(k,v);return[0,1,2].map(i=>v[i]*co+x[i]*si+k[i]*d*(1-co))};
+}
+// VSEPR repulsion: lone pairs push harder than bonding pairs
+function relax(dirs,kinds,fixed){
+  const n=dirs.length;if(n<3)return dirs;
+  const W=(a,b)=>a==='l'&&b==='l'?1.45:(a==='l'||b==='l')?1.2:1;
+  const d=dirs.map(v=>[...v]);
+  for(let it=0;it<260;it++){
+    const F=d.map(()=>[0,0,0]);
+    for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
+      const r=[d[i][0]-d[j][0],d[i][1]-d[j][1],d[i][2]-d[j][2]],l=Math.hypot(...r)||1e-3,w=W(kinds[i],kinds[j])/(l*l*l);
+      for(let m=0;m<3;m++){F[i][m]+=r[m]*w;F[j][m]-=r[m]*w}
+    }
+    for(let i=0;i<n;i++){if(i===fixed)continue;const f=F[i],p=dot(f,d[i]);d[i]=unit([0,1,2].map(m=>d[i][m]+.012*(f[m]-p*d[i][m])))}
+  }
+  return d;
 }
 function build3D(c,A){
-  const N=A.length,adj=A.map(()=>[]);c.b.forEach(([i,j])=>{adj[i].push(j);adj[j].push(i)});
-  const P=A.map(()=>[0,0,0]),LP=A.map(()=>[]);
-  if(c.b.length>=N){ // ring (benzene): keep the flat layout
+  const N=A.length,adj=A.map(()=>[]),ord={};
+  c.b.forEach(([i,j,o])=>{adj[i].push(j);adj[j].push(i);ord[i+'-'+j]=ord[j+'-'+i]=o});
+  const P=A.map(()=>[0,0,0]),LP=A.map(()=>[]),ci=centerIdx(A,adj);
+  const blen=(i,j)=>{const o=ord[i+'-'+j]||1;return(rd(A[i].s)+rd(A[j].s))*(o===2?.87:o===3?.78:1)};
+  if(c.ionic){
+    A.forEach((a,i)=>{P[i]=[a.x*2.3,0,a.y*2.3];const m=Math.floor(a.nb/2);(m===4?DIR[4]:m===1?[[0,1,0]]:(DIR[m]||[])).forEach(v=>LP[i].push(v))});
+  }else if(c.b.length>=N){
     A.forEach((a,i)=>{P[i]=[a.x*1.4,0,a.y*1.4];a.la.forEach(g=>LP[i].push([Math.cos(g*Math.PI/180),0,Math.sin(g*Math.PI/180)]))});
   }else{
-    let r=0;adj.forEach((x,i)=>{if(x.length>adj[r].length||(x.length===adj[r].length&&A[r].s==='H'&&A[i].s!=='H'))r=i});
-    const q=[[r,-1,null]];
+    const seen=new Set([ci]),q=[[ci,-1,null]];
     while(q.length){
-      const[i,par,pd]=q.shift(),L=Math.floor(A[i].nb/2),st=Math.min(6,adj[i].length+L),Sl=DIR[st];
+      const[i,par,pd]=q.shift(),L=Math.floor(A[i].nb/2),kids=adj[i].filter(j=>j!==par&&!seen.has(j)),st=Math.min(7,adj[i].length+L),Sl=DIR[st];
       if(!Sl)continue;
-      const R=pd?rotTo(Sl[0],pd):v=>v;let k=pd?1:0;
-      adj[i].forEach(j=>{
-        if(j===par)return;
-        const d=R(Sl[k++]),len=rd(A[i].s)+rd(A[j].s);
-        P[j]=P[i].map((x,m)=>x+d[m]*len);q.push([j,i,d.map(x=>-x)]);
-      });
-      for(;k<st;k++)LP[i].push(R(Sl[k]));
+      const R=pd?rotTo(Sl[0],pd):v=>v;let dirs=Sl.map(R);
+      const kinds=dirs.map((_,k)=>pd&&k===0?'b':k<(pd?1:0)+kids.length?'b':'l');
+      if(!RM||true)dirs=relax(dirs,kinds,pd?0:-1);
+      let k=pd?1:0;
+      kids.forEach(j=>{const d=dirs[k++];if(!d)return;seen.add(j);const len=blen(i,j);P[j]=P[i].map((x,m)=>x+d[m]*len);q.push([j,i,d.map(x=>-x)])});
+      for(;k<st;k++)LP[i].push(dirs[k]);
     }
   }
   const m=[0,1,2].map(i=>P.reduce((u,p)=>u+p[i],0)/N);P.forEach(p=>{for(let i=0;i<3;i++)p[i]-=m[i]});
-  return{P,LP,A,B:c.b,R:Math.max(...P.map(p=>Math.hypot(...p)),.6)+1.2};
+  // bond angles around the center
+  const angs=[];
+  if(!c.ionic&&adj[ci].length>=2){
+    const nb=adj[ci],U=nb.map(j=>unit(P[j].map((x,k)=>x-P[ci][k]))),seenP=new Set();
+    const AN=(a,b)=>Math.acos(Math.max(-1,Math.min(1,dot(U[a],U[b]))))*180/Math.PI;
+    nb.forEach((j,a)=>{let best=-1,bd=999;nb.forEach((j2,b)=>{if(b===a)return;const t=AN(a,b);if(t<bd){bd=t;best=b}});const key=[a,best].sort().join();if(!seenP.has(key)){seenP.add(key);angs.push([ci,j,nb[best],bd])}});
+    const vals=new Set(angs.map(x=>Math.round(x[3])));
+    for(let a=0;a<nb.length;a++)for(let b=a+1;b<nb.length;b++){const t=AN(a,b),r=Math.round(t);if(r<178&&!vals.has(r)&&angs.length<8){vals.add(r);angs.push([ci,nb[a],nb[b],t])}}
+  }
+  // dipole: bond dipoles point to the more electronegative atom, lone pairs add along their direction
+  let dp=[0,0,0];
+  c.b.forEach(([i,j])=>{const u=unit(P[j].map((x,k)=>x-P[i][k])),dE=(EN[A[j].s]||2.5)-(EN[A[i].s]||2.5);for(let k=0;k<3;k++)dp[k]+=u[k]*dE});
+  LP.forEach(ls=>ls.forEach(d=>{for(let k=0;k<3;k++)dp[k]+=d[k]*.3}));
+  return{P,LP,A,B:c.b,ci,angs,dip:unit(dp),dipm:Math.hypot(...dp),R:Math.max(...P.map(p=>Math.hypot(...p)),.6)+1.3};
 }
 const cv=$('cv'),g=cv.getContext('2d');
-let sc3=null,yaw=.6,pit=-.25,zm=1,auto=!matchMedia('(prefers-reduced-motion: reduce)').matches,space=false,goto3=null,raf3=0,drag=false;
-function init3D(){if(cur&&lastA){sc3=build3D(cur,lastA);draw()}}
-const mix=(h,t,k)=>{const n=parseInt(h.slice(1),16);return`rgb(${[n>>16&255,n>>8&255,n&255].map(v=>Math.round(v+(t-v)*k))})`};
+const S3={style:'ball',labels:true,lp:true,ang:false,dip:false};
+let sc3=null,yaw=.6,pit=-.3,zm=1,auto=!RM,goto3=null,raf3=0,drag=false,vy=0,vp=0,t3=1,t3s=0,hov=-1,lastPts=null;
+const STARS=Array.from({length:200},()=>{const u=Math.random()*2-1,th=Math.random()*6.283,r=Math.sqrt(1-u*u);return[r*Math.cos(th),u,r*Math.sin(th),Math.random()]});
+function init3D(){if(cur&&lastA){sc3=build3D(cur,lastA);t3s=performance.now();t3=RM?1:0;hov=-1}}
+const hex=h=>{const n=parseInt(h.slice(1),16);return[n>>16&255,n>>8&255,n&255]};
+const mix=(h,t,k)=>`rgb(${hex(h).map(v=>Math.round(v+(t-v)*k))})`;
+const mixA=(h,t,k,a)=>`rgba(${hex(h).map(v=>Math.round(v+(t-v)*k))},${a})`;
+const aR=(s,k)=>(S3.style==='space'?.35+.95*rd(s):S3.style==='wire'?.08+.1*rd(s):.2+.3*rd(s))*k;
+const easeB=x=>{const c1=1.4,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2)};
 function draw(){
-  const dpr=devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;
+  const dpr=Math.min(devicePixelRatio||1,2),w=cv.clientWidth,h=cv.clientHeight;
   if(!w)return;
   if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr)}
   g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
+  const cyw=Math.cos(yaw),syw=Math.sin(yaw),cp=Math.cos(pit),sp=Math.sin(pit);
+  const rot=p=>{const x1=p[0]*cyw+p[2]*syw,z1=-p[0]*syw+p[2]*cyw;return[x1,p[1]*cp-z1*sp,p[1]*sp+z1*cp]};
+  // starfield
+  const SR=Math.max(w,h)*.75;
+  for(const s of STARS){const[x,y,z]=rot(s);g.fillStyle=`rgba(${s[3]>.85?'184,243,107':'228,228,231'},${(z>0?.5:.18)*(.3+.7*s[3])})`;g.fillRect(w/2+x*SR,h/2-y*SR,s[3]>.9?2:1.2,s[3]>.9?2:1.2)}
   if(!sc3)return;
-  const{P,LP,A,B,R}=sc3,cyw=Math.cos(yaw),syw=Math.sin(yaw),cp=Math.cos(pit),sp=Math.sin(pit),D=R*4,base=Math.min(w,h)*.5/R*zm;
-  const pr=p=>{const x1=p[0]*cyw+p[2]*syw,z1=-p[0]*syw+p[2]*cyw,y2=p[1]*cp-z1*sp,z2=p[1]*sp+z1*cp,k=base*D/(D-z2);return{x:w/2+x1*k,y:h/2-y2*k,z:z2,k}};
-  const pts=P.map(pr),items=[];
+  if(t3<1)t3=Math.min(1,(performance.now()-t3s)/1000);
+  const ea=easeB(t3),eb=Math.min(1,Math.max(0,(t3-.35)/.65));
+  const{P,LP,A,B,R}=sc3,D=R*4,base=Math.min(w,h)*.5/R*zm;
+  const pr=p=>{const[x,y,z]=rot(p),k=base*D/(D-z);return{x:w/2+x*k,y:h/2-y*k,z,k}};
+  const Pe=P.map(p=>p.map(x=>x*ea));
+  // floor glow
+  const fy=h/2+R*base*.92,fg=g.createRadialGradient(w/2,fy,0,w/2,fy,R*base*.95);
+  fg.addColorStop(0,'rgba(184,243,107,.13)');fg.addColorStop(1,'rgba(184,243,107,0)');
+  g.save();g.translate(w/2,fy);g.scale(1,.2);g.translate(-w/2,-fy);g.fillStyle=fg;g.beginPath();g.arc(w/2,fy,R*base*.95,0,7);g.fill();g.restore();
+  const pts=Pe.map(pr);lastPts=pts;
+  const zs=pts.map(p=>p.z),zmin=Math.min(...zs),zmax=Math.max(...zs),fog=z=>zmax-zmin<1e-3?1:.55+.45*(z-zmin)/(zmax-zmin);
+  const items=[];
   pts.forEach((p,i)=>items.push({z:p.z,t:0,i}));
-  B.forEach(([i,j,o])=>items.push({z:(pts[i].z+pts[j].z)/2,t:1,i,j,o}));
-  LP.forEach((ls,i)=>ls.forEach(d=>{const o=.5+.3*rd(A[i].s),p=pr(P[i].map((x,m)=>x+d[m]*o));items.push({z:p.z,t:2,p,i})}));
+  if(S3.style!=='space'&&eb>0)B.forEach(([i,j,o])=>{const m=Pe[i].map((x,k)=>(x+Pe[j][k])/2),pm=pr(m);items.push({z:(pts[i].z+pm.z)/2-.01,t:1,a:i,pm,o});items.push({z:(pts[j].z+pm.z)/2-.01,t:1,a:j,pm,o})});
+  if(S3.lp&&eb>0)LP.forEach((ls,i)=>ls.forEach(d=>{const o=(S3.style==='space'?.4+.95*rd(A[i].s):.55+.3*rd(A[i].s))*ea,p=pr(Pe[i].map((x,m)=>x+d[m]*o));items.push({z:p.z,t:2,p,i})}));
   items.sort((a,b)=>a.z-b.z);
   for(const it of items){
     if(it.t===1){
-      const a=pts[it.i],b=pts[it.j],mx=(a.x+b.x)/2,my=(a.y+b.y)/2,L=Math.hypot(b.x-a.x,b.y-a.y)||1,nx=-(b.y-a.y)/L,ny=(b.x-a.x)/L,k=(a.k+b.k)/2;
-      g.lineCap='round';g.lineWidth=Math.max(2,.09*k);
+      const a0=pts[it.a],b=it.pm,L=Math.hypot(b.x-a0.x,b.y-a0.y)||1,ux=(b.x-a0.x)/L,uy=(b.y-a0.y)/L,sh=Math.min(aR(A[it.a].s,a0.k)*ea*.8,L*.9),a={x:a0.x+ux*sh,y:a0.y+uy*sh,z:a0.z,k:a0.k},nx=-uy,ny=ux,k=(a.k+b.k)/2,c0=col(A[it.a].s),fz=fog((a.z+b.z)/2);
+      const bw=(S3.style==='wire'?.07:.15)*k*(it.o>1?.62:1);
+      g.globalAlpha=eb;g.lineCap='round';
       for(let q=0;q<it.o;q++){
-        const off=(q-(it.o-1)/2)*.17*k;
-        g.strokeStyle=col(A[it.i].s);g.beginPath();g.moveTo(a.x+nx*off,a.y+ny*off);g.lineTo(mx+nx*off,my+ny*off);g.stroke();
-        g.strokeStyle=col(A[it.j].s);g.beginPath();g.moveTo(mx+nx*off,my+ny*off);g.lineTo(b.x+nx*off,b.y+ny*off);g.stroke();
+        const off=(q-(it.o-1)/2)*bw*1.35,x0=a.x+nx*off,y0=a.y+ny*off,x1=b.x+nx*off,y1=b.y+ny*off,mx=(x0+x1)/2,my=(y0+y1)/2;
+        const gr=g.createLinearGradient(mx-nx*bw/2,my-ny*bw/2,mx+nx*bw/2,my+ny*bw/2);
+        gr.addColorStop(0,mix(c0,0,.7-.3*fz));gr.addColorStop(.38,mix(c0,255,.25*fz));gr.addColorStop(1,mix(c0,0,.75-.3*fz));
+        g.strokeStyle=gr;g.lineWidth=Math.max(1.5,bw);g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.stroke();
       }
+      g.globalAlpha=1;
     }else if(it.t===2){
-      const p=it.p,r=.34*p.k,a=pts[it.i],L=Math.hypot(p.x-a.x,p.y-a.y)||1,nx=-(p.y-a.y)/L,ny=(p.x-a.x)/L;
-      const gr=g.createRadialGradient(p.x,p.y,0,p.x,p.y,r);gr.addColorStop(0,'rgba(184,243,107,.55)');gr.addColorStop(1,'rgba(184,243,107,0)');
-      g.fillStyle=gr;g.beginPath();g.arc(p.x,p.y,r,0,7);g.fill();
-      g.fillStyle='#d9ff9f';g.shadowColor='#b8f36b';g.shadowBlur=8;
-      [-1,1].forEach(sg=>{g.beginPath();g.arc(p.x+nx*sg*.08*p.k,p.y+ny*sg*.08*p.k,Math.max(1.6,.05*p.k),0,7);g.fill()});
-      g.shadowBlur=0;
+      const p=it.p,a=pts[it.i],dx=p.x-a.x,dy=p.y-a.y,pl=Math.hypot(dx,dy)||1,ang=Math.atan2(dy,dx),rb=.2*p.k,ra=Math.max(rb,Math.min(.38*p.k,pl*.75));
+      g.save();g.globalAlpha=eb;g.translate(p.x,p.y);g.rotate(ang);
+      const gr=g.createRadialGradient(-ra*.3,0,0,0,0,ra);gr.addColorStop(0,'rgba(217,255,159,.55)');gr.addColorStop(.6,'rgba(184,243,107,.22)');gr.addColorStop(1,'rgba(184,243,107,0)');
+      g.fillStyle=gr;g.beginPath();g.ellipse(0,0,ra,rb*1.15,0,0,7);g.fill();
+      g.fillStyle='#e6ffbf';g.shadowColor='#b8f36b';g.shadowBlur=10;
+      [-1,1].forEach(sg=>{g.beginPath();g.arc(ra*.15,sg*.075*p.k,Math.max(1.6,.045*p.k),0,7);g.fill()});
+      g.restore();
     }else{
-      const a=A[it.i],p=pts[it.i],r=(space?.32+.95*rd(a.s):.18+.3*rd(a.s))*p.k,c0=col(a.s);
-      const gr=g.createRadialGradient(p.x-.35*r,p.y-.35*r,r*.08,p.x,p.y,r);
-      gr.addColorStop(0,mix(c0,255,.7));gr.addColorStop(.45,c0);gr.addColorStop(1,mix(c0,0,.6));
-      g.fillStyle=gr;g.beginPath();g.arc(p.x,p.y,r,0,7);g.fill();
-      g.strokeStyle='rgba(255,255,255,.16)';g.lineWidth=1;g.stroke();
-      if(r>10){g.fillStyle='#0d0d10';g.font=`700 ${Math.min(r*.85,26)}px "Space Grotesk",sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(a.s,p.x,p.y+1)}
-      if(a.fc){
-        const bx=p.x+.72*r,by=p.y-.72*r,cc=a.fc>0?'#60a5fa':'#f87171';
+      const a=A[it.i],p=pts[it.i],c0=col(a.s),fz=fog(p.z);
+      const r=aR(a.s,p.k)*Math.max(.01,ea);
+      const gr=g.createRadialGradient(p.x-.35*r,p.y-.38*r,r*.06,p.x,p.y,r);
+      gr.addColorStop(0,mix(c0,255,.78));gr.addColorStop(.42,mix(c0,0,.15*(1-fz)));gr.addColorStop(1,mix(c0,0,.72-.2*fz));
+      if(it.i===hov){g.shadowColor=c0;g.shadowBlur=26}
+      g.fillStyle=gr;g.beginPath();g.arc(p.x,p.y,r,0,7);g.fill();g.shadowBlur=0;
+      g.strokeStyle=it.i===hov?c0:'rgba(255,255,255,.14)';g.lineWidth=it.i===hov?2:1;g.stroke();
+      // rim light
+      g.strokeStyle='rgba(184,243,107,.18)';g.lineWidth=1;g.beginPath();g.arc(p.x,p.y,r*.96,.6,2.2);g.stroke();
+      if(S3.labels&&r>9&&S3.style!=='wire'){g.fillStyle='rgba(8,9,11,.85)';g.font=`700 ${Math.min(r*.8,26)}px "Space Grotesk",sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(a.s,p.x,p.y+1)}
+      if(S3.labels&&S3.style==='wire'){g.fillStyle=c0;g.font='700 13px "Space Grotesk",sans-serif';g.textAlign='left';g.textBaseline='middle';g.fillText(a.s,p.x+r+3,p.y)}
+      if(a.fc&&S3.labels){
+        const bx=p.x+.72*r+4,by=p.y-.72*r-4,cc=a.fc>0?'#60a5fa':'#f87171';
         g.fillStyle='#0d0d10';g.strokeStyle=cc;g.lineWidth=1.5;g.beginPath();g.arc(bx,by,9,0,7);g.fill();g.stroke();
         g.fillStyle=cc;g.font='700 12px "Space Grotesk",sans-serif';g.textAlign='center';g.textBaseline='middle';
         g.fillText((Math.abs(a.fc)>1?Math.abs(a.fc):'')+(a.fc>0?'+':'−'),bx,by+.5);
       }
     }
   }
+  if(t3<1)return;
+  // angle arcs
+  if(S3.ang&&sc3.angs.length){
+    for(const[c0,i,j,deg]of sc3.angs){
+      const pc=P[c0],u=unit(P[i].map((x,k)=>x-pc[k])),wv=unit(P[j].map((x,k)=>x-pc[k])),th=deg*Math.PI/180;
+      let pp=wv.map((x,k)=>x-u[k]*dot(u,wv));if(Math.hypot(...pp)<1e-3)pp=cross(u,Math.abs(u[1])<.9?[0,1,0]:[1,0,0]);pp=unit(pp);
+      const rA=.45*Math.min(Math.hypot(...P[i].map((x,k)=>x-pc[k])),Math.hypot(...P[j].map((x,k)=>x-pc[k])));
+      const at=(f,r)=>pr(pc.map((x,k)=>x+r*(Math.cos(f)*u[k]+Math.sin(f)*pp[k])));
+      g.strokeStyle='rgba(184,243,107,.95)';g.lineWidth=1.8;g.setLineDash([4,3]);g.beginPath();
+      for(let s=0;s<=20;s++){const q=at(th*s/20,rA);s?g.lineTo(q.x,q.y):g.moveTo(q.x,q.y)}g.stroke();g.setLineDash([]);
+      const lp=at(th/2,rA*1.55),txt=deg.toFixed(1)+'°';g.font='700 12px "JetBrains Mono",monospace';const tw=g.measureText(txt).width+12;
+      g.fillStyle='rgba(10,11,13,.88)';g.strokeStyle='rgba(184,243,107,.6)';g.lineWidth=1;g.beginPath();g.roundRect?g.roundRect(lp.x-tw/2,lp.y-10,tw,20,10):g.rect(lp.x-tw/2,lp.y-10,tw,20);g.fill();g.stroke();
+      g.fillStyle='#d9ff9f';g.textAlign='center';g.textBaseline='middle';g.fillText(txt,lp.x,lp.y+.5);
+    }
+  }
+  // dipole
+  if(S3.dip){
+    const an=lastAn;g.font='600 13px "DM Sans",sans-serif';g.textAlign='center';g.textBaseline='middle';
+    if(an.ionic||an.tot){g.fillStyle='#a1a1aa';g.fillText(an.ionic?'Ionic: full charges, no single dipole arrow':'Ion: molecular dipole not defined',w/2,h-22)}
+    else if(!an.pol||sc3.dipm<.05){g.fillStyle='#b8f36b';g.fillText('No net dipole: bond dipoles cancel',w/2,h-22)}
+    else{
+      const L=R*.85,d=sc3.dip,p0=pr(d.map(x=>-x*L/2)),p1=pr(d.map(x=>x*L/2)),ang=Math.atan2(p1.y-p0.y,p1.x-p0.x);
+      g.strokeStyle='#60a5fa';g.fillStyle='#60a5fa';g.lineWidth=3;g.shadowColor='#60a5fa';g.shadowBlur=12;
+      g.beginPath();g.moveTo(p0.x,p0.y);g.lineTo(p1.x-Math.cos(ang)*12,p1.y-Math.sin(ang)*12);g.stroke();
+      g.beginPath();g.moveTo(p1.x,p1.y);g.lineTo(p1.x-Math.cos(ang-.45)*16,p1.y-Math.sin(ang-.45)*16);g.lineTo(p1.x-Math.cos(ang+.45)*16,p1.y-Math.sin(ang+.45)*16);g.closePath();g.fill();
+      const tx=p0.x+Math.cos(ang)*14,ty=p0.y+Math.sin(ang)*14;g.beginPath();g.moveTo(tx-Math.sin(ang)*8,ty+Math.cos(ang)*8);g.lineTo(tx+Math.sin(ang)*8,ty-Math.cos(ang)*8);g.stroke();
+      g.shadowBlur=0;g.font='700 15px "Space Grotesk",sans-serif';g.fillText('μ',p1.x+Math.cos(ang)*16,p1.y+Math.sin(ang)*16);
+      g.fillStyle='#a1a1aa';g.font='600 13px "DM Sans",sans-serif';g.fillText('Arrow points toward the partial negative end (δ−)',w/2,h-22);
+    }
+  }
 }
 function loop(){
   raf3=requestAnimationFrame(loop);
   if(goto3){yaw+=(goto3[0]-yaw)*.12;pit+=(goto3[1]-pit)*.12;if(Math.abs(goto3[0]-yaw)+Math.abs(goto3[1]-pit)<.003)goto3=null}
-  else if(auto&&!drag)yaw+=.006;
+  else if(!drag&&(Math.abs(vy)>1e-4||Math.abs(vp)>1e-4)){yaw+=vy;pit=Math.max(-1.5,Math.min(1.5,pit+vp));vy*=.95;vp*=.95}
+  else if(auto&&!drag)yaw+=.005;
   draw();
 }
 function setView(v){
-  view3=v;$('svg').hidden=v;cv.hidden=!v;$('ctl').hidden=v;$('ctl3').hidden=!v;$('bseg').hidden=v;
+  view3=v;$('d2').hidden=v;$('d3').hidden=!v;$('ctl').hidden=v;$('ctl3').hidden=!v;$('bseg').hidden=v;$('spseg').hidden=v;$('sseg').hidden=!v;$('steps').hidden=v;
   $('v2').classList.toggle('on',!v);$('v3').classList.toggle('on',v);
-  cancelAnimationFrame(raf3);if(v){init3D();loop()}
+  tip.classList.remove('on');cancelAnimationFrame(raf3);
+  if(v){init3D();loop()}else if(cur)render(cur);
 }
-$('v2').addEventListener('click',()=>setView(false));$('v3').addEventListener('click',()=>setView(true));
-const paint=()=>{$('aS').classList.toggle('on',auto);$('sp').classList.toggle('on',space)};
-const go=(y,p,keep)=>{yaw=((yaw+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;goto3=[y,p];if(!keep){auto=false;paint()}};
+$('v2').addEventListener('click',()=>view3&&setView(false));$('v3').addEventListener('click',()=>!view3&&setView(true));
+$('sseg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S3.style=b.dataset.st;[...$('sseg').children].forEach(x=>x.classList.toggle('on',x===b))});
+const tg3=(id,k)=>$(id).addEventListener('click',()=>{S3[k]=!S3[k];$(id).classList.toggle('on',S3[k])});
+tg3('tLb','labels');tg3('tLp','lp');tg3('tAn','ang');tg3('tDp','dip');
+const paint=()=>$('aS').classList.toggle('on',auto);
+const go=(y,p,keep)=>{yaw=((yaw+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;vy=vp=0;goto3=[y,p];if(!keep){auto=false;paint()}};
 $('aS').addEventListener('click',()=>{auto=!auto;paint()});
-$('sp').addEventListener('click',()=>{space=!space;paint()});
-$('vf').addEventListener('click',()=>go(0,0));
-$('vt').addEventListener('click',()=>go(0,1.5));
-$('vs').addEventListener('click',()=>go(Math.PI/2,0));
-$('rs').addEventListener('click',()=>{zm=1;go(.6,-.25,true)});
+$('vf').addEventListener('click',()=>go(0,0));$('vt').addEventListener('click',()=>go(0,1.5));$('vs').addEventListener('click',()=>go(Math.PI/2,0));
+const reset3=()=>{zm=1;go(.6,-.3,true)};
+$('rs').addEventListener('click',reset3);cv.addEventListener('dblclick',reset3);
+$('snap').addEventListener('click',()=>{
+  const c2=document.createElement('canvas');c2.width=cv.width;c2.height=cv.height;const x=c2.getContext('2d');
+  x.fillStyle='#07080a';x.fillRect(0,0,c2.width,c2.height);x.drawImage(cv,0,0);
+  const s=c2.width/cv.clientWidth;x.fillStyle='#f4f4f5';x.font=`700 ${26*s}px "Space Grotesk",sans-serif`;x.fillText(cur.f,20*s,40*s);
+  x.fillStyle='#a1a1aa';x.font=`500 ${14*s}px "DM Sans",sans-serif`;x.fillText((cur.n||'')+' · Lewis Dot Lab · JK.',20*s,62*s);
+  const a=document.createElement('a');a.download=`lewis-${cur.f.replace(/\s/g,'')}.png`;a.href=c2.toDataURL('image/png');a.click();toast('Snapshot saved');
+});
 paint();
 const ptr=new Map(),pdist=()=>{const[a,b]=[...ptr.values()];return Math.hypot(a[0]-b[0],a[1]-b[1])||1};let pd0=1;
-cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptr.set(e.pointerId,[e.clientX,e.clientY]);goto3=null;drag=true;if(ptr.size===2)pd0=pdist()});
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptr.set(e.pointerId,[e.clientX,e.clientY]);goto3=null;drag=true;vy=vp=0;tip.classList.remove('on');if(ptr.size===2)pd0=pdist()});
 cv.addEventListener('pointermove',e=>{
-  const o=ptr.get(e.pointerId);if(!o)return;ptr.set(e.pointerId,[e.clientX,e.clientY]);
-  if(ptr.size===1){yaw+=(e.clientX-o[0])*.008;pit=Math.max(-1.5,Math.min(1.5,pit+(e.clientY-o[1])*.008))}
+  const o=ptr.get(e.pointerId);
+  if(!o){ // hover pick
+    if(!lastPts||!sc3)return;const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;let best=-1,bz=-1e9;
+    lastPts.forEach((p,i)=>{const rr=Math.max(aR(sc3.A[i].s,p.k),8);if(Math.hypot(p.x-mx,p.y-my)<rr+3&&p.z>bz){bz=p.z;best=i}});
+    hov=best;if(best>=0){const a=sc3.A[best];tip.innerHTML=`<b style="color:${col(a.s)}">${a.s}</b> <span>${ename(a.s)}</span><br><span>${cur.ionic?(a.fc>0?'cation ':'anion ')+(a.fc>0?'+':'−')+(Math.abs(a.fc)>1?Math.abs(a.fc):''):`${a.bs} bond${a.bs===1?'':'s'} · ${Math.floor(a.nb/2)} lone pair${Math.floor(a.nb/2)===1?'':'s'} · FC ${a.fc>0?'+':''}${a.fc}`}</span>`;tip.style.left=Math.min(innerWidth-270,e.clientX+14)+'px';tip.style.top=e.clientY+14+'px';tip.classList.add('on')}else tip.classList.remove('on');
+    return;
+  }
+  ptr.set(e.pointerId,[e.clientX,e.clientY]);
+  if(ptr.size===1){const dx=(e.clientX-o[0])*.008,dy=(e.clientY-o[1])*.008;yaw+=dx;pit=Math.max(-1.5,Math.min(1.5,pit+dy));vy=dx;vp=dy}
   else if(ptr.size===2){const d=pdist();zm=Math.max(.5,Math.min(3,zm*d/pd0));pd0=d}
 });
 ['pointerup','pointercancel'].forEach(t=>cv.addEventListener(t,e=>{ptr.delete(e.pointerId);if(!ptr.size)drag=false}));
+cv.addEventListener('pointerleave',()=>{if(!drag){hov=-1;tip.classList.remove('on')}});
 cv.addEventListener('wheel',e=>{e.preventDefault();zm=Math.max(.5,Math.min(3,zm*Math.exp(-e.deltaY*.0015)))},{passive:false});
+cv.addEventListener('keydown',e=>{const k=e.key;if(k==='ArrowLeft')vy=-.04;else if(k==='ArrowRight')vy=.04;else if(k==='ArrowUp')vp=-.03;else if(k==='ArrowDown')vp=.03;else if(k==='+'||k==='=')zm=Math.min(3,zm*1.15);else if(k==='-')zm=Math.max(.5,zm/1.15);else if(k===' '){auto=!auto;paint()}else return;e.preventDefault()});
 addEventListener('resize',()=>view3&&draw());
 
+/* ================= ELEMENT EXPLORER ================= */
+let selZ=0,catF=null;
+function drawPT(){
+  let h='';
+  for(let z=1;z<=118;z++){
+    const{p,g:gr,f,fi}=ppos(z),c=ecat(z),row=f?p+3:p,colm=f?fi+4:gr,s=ESYM[z-1],has=LIB.some(e=>e.syms.includes(s));
+    h+=`<button class="el${has?' has':''}" data-z="${z}" style="grid-row:${row};grid-column:${colm};--c:${CATS[c][1]};animation-delay:${(p*18+(colm||0))*6}ms" title="${ENAME[z-1]}"><i>${z}</i><b>${s}</b><small>${ENAME[z-1]}</small></button>`;
+  }
+  h+=`<div class="ph" style="grid-row:9;grid-column:1/4">f-block →</div><div style="grid-row:8;grid-column:1/-1;height:8px"></div>`;
+  $('pt').innerHTML=h;
+  $('leg').innerHTML=Object.entries(CATS).map(([k,[l,c]])=>`<button data-c="${k}" style="--c:${c}"><i></i>${l}</button>`).join('');
+}
+function lewisSym(s,z){
+  const v=V[s],W=240,H=170,cx=W/2,cy=H/2,cl=col(s);
+  let dots='';
+  if(v!=null){
+    const sides=[[0,-1],[1,0],[0,1],[-1,0]],cnt=[0,0,0,0];
+    if(s==='He')cnt[0]=2;else for(let k=0;k<v;k++)cnt[k%4]++;
+    let n=0;
+    sides.forEach(([dx,dy],si)=>{for(let k=0;k<cnt[si];k++){const off=cnt[si]===2?(k?7:-7):0,x=cx+dx*44+(dy?off:0),y=cy+dy*44+(dx?off:0),a0=Math.random()*6.28;dots+=`<circle class="e" r="5" cx="${x}" cy="${y}" style="--fx:${Math.cos(a0)*160}px;--fy:${Math.sin(a0)*160}px;animation-delay:${.25+.12*n++}s"/>`}});
+  }
+  return`<svg id="esvg" viewBox="0 0 ${W} ${H}"><defs><radialGradient id="eg"><stop offset="0" stop-color="${cl}" stop-opacity=".22"/><stop offset="1" stop-color="${cl}" stop-opacity="0"/></radialGradient></defs><circle cx="${cx}" cy="${cy}" r="80" fill="url(#eg)"/><g class="sym"><circle cx="${cx}" cy="${cy}" r="27" fill="#0d0d10" stroke="${cl}" stroke-width="2"/><text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central" font-family="Space Grotesk,sans-serif" font-weight="700" font-size="${s.length>1?26:30}" fill="${cl}">${s}</text></g>${dots}</svg>`;
+}
+function selectEl(z){
+  selZ=z;const s=ESYM[z-1],c=ecat(z),{p,g:gr}=ppos(z),v=V[s],cl=CATS[c][1];
+  document.querySelectorAll('#pt .el').forEach(b=>b.classList.toggle('sel',+b.dataset.z===z));
+  const found=LIB.filter(e=>e.syms.includes(s));
+  $('ecard').innerHTML=`<div class="eh"><div><div class="ez">#${z} · ${s}</div><h3>${ENAME[z-1]}</h3><span class="tg ec" style="border-color:${cl};color:${cl}">${CATS[c][0]}</span></div></div>
+  ${lewisSym(s,z)}
+  <div class="ef"><div><span>Group</span><b>${gr||'f-block'}</b></div><div><span>Period</span><b>${p}</b></div><div><span>Valence e⁻</span><b>${v!=null?v:'varies'}</b></div><div><span>Electroneg.</span><b>${EN[s]!=null?EN[s].toFixed(2):'—'}</b></div>
+  <div><span>Covalent r</span><b>${RAD[s]?RAD[s].toFixed(2)+' Å':'—'}</b></div><div><span>Typical ion</span><b>${IONM[s]?s+'<sup>'+(IONM[s]>1?IONM[s]:'')+'+</sup>':ANI[s]?s+'<sup>'+(ANI[s]>1?ANI[s]:'')+'−</sup>':c==='noble'?'none':'—'}</b></div></div>
+  ${v==null?`<p>${c==='tm'?'Transition metals':'f-block elements'} use d or f electrons in bonding, so a simple Lewis dot symbol doesn't really apply.</p>`:v===8||s==='He'?`<p>A full valence shell: ${s==='He'?'2':'8'} electrons, so it rarely bonds${['Xe','Kr','Rn'].includes(s)?' (though heavy noble gases can form expanded-octet compounds)':''}.</p>`:''}
+  <div class="fi">Found in ${found.length} compound${found.length===1?'':'s'}</div>
+  <div class="chips" id="echips">${found.map(e=>`<button class="chip" data-f="${e.c.f}" title="${e.c.n||''}">${fmt(e.c.f)}</button>`).join('')||'<span style="color:var(--dim);font-size:13px">None in the lab yet.</span>'}</div>`;
+  $('echips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(b){$('q').value=b.dataset.f;run(b.dataset.f,{scroll:true})}});
+}
+$('pt').addEventListener('click',e=>{const b=e.target.closest('.el');if(b)selectEl(+b.dataset.z)});
+$('leg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;catF=catF===b.dataset.c?null:b.dataset.c;[...$('leg').children].forEach(x=>x.classList.toggle('on',x.dataset.c===catF));document.querySelectorAll('#pt .el').forEach(el=>el.classList.toggle('dim',!!catF&&ecat(+el.dataset.z)!==catF))});
+
+/* ================= QUIZ ================= */
+let qS={n:0,ok:0,streak:0},qCur=null;
+const SHAPES=[...new Set(Object.values(GEO).map(x=>x[0]))];
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function qNew(){
+  const pool=LIB.filter(e=>!e.c.ionic&&!e.an.di&&GEO[e.an.key]&&e.an.key!=='6,1');
+  const e=pool[Math.floor(Math.random()*pool.length)],an=e.an,types=['shape','shape','lp','hy','eg'];
+  if(!an.tot)types.push('pol','pol');
+  const ty=types[Math.floor(Math.random()*types.length)];
+  let q,ans,opts;
+  if(ty==='shape'){q=`What is the molecular shape${an.multi?' around '+an.center:''}?`;ans=an.shape;opts=shuffle([ans,...shuffle(SHAPES.filter(s=>s!==ans)).slice(0,3)])}
+  else if(ty==='pol'){q='Is this molecule polar or nonpolar?';ans=an.pol?'Polar':'Nonpolar';opts=['Polar','Nonpolar']}
+  else if(ty==='hy'){q=`What is the hybridization of ${an.center}?`;ans=an.hy;opts=shuffle([ans,...shuffle(['sp','sp²','sp³','sp³d','sp³d²'].filter(s=>s!==ans)).slice(0,3)])}
+  else if(ty==='lp'){q=`How many lone pairs are on ${an.center}${an.multi?'':' (the central atom)'}?`;ans=String(an.L);opts=['0','1','2','3']}
+  else{q=`What is the electron geometry${an.multi?' around '+an.center:''}?`;ans=an.eg;opts=shuffle([ans,...shuffle(EG.filter(s=>s&&s!==ans)).slice(0,3)])}
+  qCur={e,ans};
+  $('qtype').textContent={shape:'Shape',pol:'Polarity',hy:'Hybridization',lp:'Lone pairs',eg:'Electron geometry'}[ty];
+  $('qf').innerHTML=fmt(e.c.f)+(e.c.n?` <span style="font-size:18px;color:var(--muted);letter-spacing:0;font-weight:500">${e.c.n}</span>`:'');
+  $('qq').textContent=q;
+  $('qo').innerHTML=opts.map(o=>`<button data-o="${o}">${o}</button>`).join('');
+  $('qr').textContent='Hint: draw the Lewis structure in your head first, then count electron regions on the center.';
+  $('qn').hidden=true;qStat();
+}
+function qStat(){$('qs').innerHTML=`Score <b>${qS.ok}/${qS.n}</b> · Streak <b>${qS.streak}${qS.streak>=3?' 🔥':''}</b>`}
+$('qo').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b||!qCur||b.disabled)return;
+  const ok=b.dataset.o===qCur.ans;qS.n++;if(ok){qS.ok++;qS.streak++}else qS.streak=0;
+  [...$('qo').children].forEach(x=>{x.disabled=true;if(x.dataset.o===qCur.ans)x.classList.add('right');else if(x===b)x.classList.add('wrong')});
+  const an=qCur.e.an;
+  $('qr').innerHTML=(ok?'<b>Nice, that\'s right.</b> ':`<b>Not quite: it's ${qCur.ans}.</b> `)+`${an.center} has ${an.n} bonded atom${an.n===1?'':'s'} and ${an.L} lone pair${an.L===1?'':'s'} → ${an.st} regions (${an.eg.toLowerCase()}), so the shape is ${an.shape.toLowerCase()}. Drawn below.`;
+  $('qn').hidden=false;qStat();cur=qCur.e.c;render(cur);$('q').value=cur.f;
+});
+$('qn').addEventListener('click',qNew);
+$('qz').addEventListener('click',()=>{$('quiz').hidden=false;qNew();$('quiz').scrollIntoView({behavior:'smooth',block:'center'})});
+$('qclose').addEventListener('click',()=>{$('quiz').hidden=true});
+
+/* ================= CHROME: intro, clock, spotlight, reveal ================= */
+(function intro(){
+  const el=$('intro');let seen=false;try{seen=sessionStorage.getItem('ldl-intro')}catch(_){}
+  const done=()=>{el.classList.add('done');setTimeout(()=>el.remove(),700);try{sessionStorage.setItem('ldl-intro','1')}catch(_){}};
+  if(seen||RM){el.remove();return}
+  el.addEventListener('click',done);setTimeout(done,1700);
+})();
+function tick(){try{$('clk').textContent=new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'}).format(new Date())}catch(_){}}
+tick();setInterval(tick,15000);
+$('menu').addEventListener('click',()=>{const o=$('hdr').classList.toggle('open');$('menu').setAttribute('aria-expanded',o)});
+addEventListener('pointermove',e=>{document.body.style.setProperty('--mx',e.clientX+'px');document.body.style.setProperty('--my',e.clientY+'px')},{passive:true});
+const io='IntersectionObserver'in window?new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target)}}),{threshold:.12}):null;
+document.querySelectorAll('.rv').forEach(el=>io?io.observe(el):el.classList.add('in'));
+$('hc1').dataset.count=LIB.length;$('hc3').dataset.count=SHAPES.length;
+document.querySelectorAll('[data-count]').forEach(b=>{const n=+b.dataset.count,t0=performance.now()+(RM?0:600);(function f(t){const k=Math.max(0,Math.min(1,(t-t0)/1200));b.textContent=Math.round(n*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(f)})(t0)});
+
+/* ================= BOOT ================= */
+drawTabs();drawChips();drawPT();selectEl(8);
 const h0=decodeURIComponent(location.hash.slice(1));
-setTimeout(()=>{if(h0){$('q').value=h0;run(h0)}else run('H2O')},250);
+setTimeout(()=>{if(h0){$('q').value=h0;run(h0,{quiet:true})}else run('H2O')},RM?0:900);
 </script>
 </body>
 </html>
