@@ -208,6 +208,32 @@ nav{height:56px;display:flex;align-items:center;gap:14px;padding:0 20px;border-r
 .hl{transform-box:fill-box;transform-origin:left}
 .on .hl{animation:sw .6s backwards;animation-delay:calc(var(--i)*.35s + .3s)}
 
+
+/* ===== "New" featured card (FRC predictor) ===== */
+.pc.new{border-color:rgba(184,243,107,.55);background-image:linear-gradient(160deg,rgba(184,243,107,.14),rgba(255,255,255,.03) 45%),var(--glass);
+  box-shadow:var(--lift),0 0 0 1px rgba(184,243,107,.15),0 24px 90px -26px rgba(184,243,107,.5);animation:newglow 3.4s ease-in-out infinite}
+@keyframes newglow{0%,100%{box-shadow:var(--lift),0 0 0 1px rgba(184,243,107,.15),0 24px 90px -30px rgba(184,243,107,.35)}50%{box-shadow:var(--lift),0 0 0 1px rgba(184,243,107,.45),0 24px 100px -18px rgba(184,243,107,.7)}}
+.pc.new .sheen{position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:inherit;overflow:hidden}
+.pc.new .sheen::before{content:"";position:absolute;top:-20%;bottom:-20%;left:0;width:38%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.2),transparent);transform:translateX(-160%) skewX(-18deg);animation:sheen 4.6s cubic-bezier(.4,0,.2,1) 1.2s infinite}
+@keyframes sheen{0%{transform:translateX(-160%) skewX(-18deg)}38%,100%{transform:translateX(420%) skewX(-18deg)}}
+.nb{display:inline-flex;align-items:center;gap:7px;margin-left:10px;padding:3px 10px 3px 8px;border-radius:99px;background:var(--accent);color:#10120b;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;box-shadow:0 0 18px rgba(184,243,107,.55);vertical-align:1px}
+.nb i{width:6px;height:6px;border-radius:50%;background:#10120b;animation:blink 1.2s ease-in-out infinite}
+.fr{width:92%;display:grid;justify-items:center;gap:10px;font-family:"Space Grotesk",sans-serif}
+.fr svg{width:min(100%,210px)}
+.fr .rg{stroke-dasharray:428;stroke-dashoffset:97}
+.on .fr .rg{animation:ringd 1.6s cubic-bezier(.2,.8,.2,1) .15s backwards}
+@keyframes ringd{from{stroke-dashoffset:428}}
+.fr .num{opacity:1}
+.on .fr .num{animation:numin .9s cubic-bezier(.2,.8,.2,1) .5s backwards}
+@keyframes numin{from{opacity:0;transform:scale(.7)}}
+.fr .num{transform-box:fill-box;transform-origin:center}
+.fr .mini{display:grid;grid-template-columns:auto 1fr auto;gap:8px 10px;align-items:center;width:100%;font:500 11px "DM Sans",sans-serif;color:var(--muted)}
+.fr .mini i{display:block;height:6px;border-radius:9px;background:rgba(255,255,255,.1);overflow:hidden;position:relative}
+.fr .mini i::after{content:"";position:absolute;inset:0;width:var(--w);border-radius:9px;background:linear-gradient(90deg,#4b5450,#7b857f);transform-origin:left}
+.fr .mini i.hot::after{background:linear-gradient(90deg,#7fd13b,var(--accent));box-shadow:0 0 10px rgba(184,243,107,.6)}
+.on .fr .mini i::after{animation:sw 1s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i)*.15s + .6s)}
+.fr .mini b{color:var(--text);font-weight:600}
+
 .contactbox{display:flex;flex-direction:column;align-items:flex-start;gap:18px;padding:clamp(25px,6vw,55px);border-radius:26px}
 .contactinfo{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
 .copy{all:unset;display:flex;flex-wrap:wrap;align-items:baseline;gap:14px;cursor:pointer;font-family:"Space Grotesk",sans-serif;font-size:clamp(20px,4vw,30px);letter-spacing:-.03em}
@@ -305,6 +331,16 @@ html{scrollbar-gutter:stable}
   <section class="work" id="projects">
     <div class="stick" id="stick"><div class="track" id="track">
       <div class="phead"><div class="eyebrow">Selected work</div><h2 class="fx">Projects.</h2><p>Some ideas I've built and published. Keep scrolling and they slide across.</p></div>
+
+      <a class="pc glass new" href="https://frc-predictor-c8bkzggpngxjfjmcdfntmr.streamlit.app/#frc-2026-rebuilt-match-predictor" target="_blank" rel="noopener">
+        <span class="sheen" aria-hidden="true"></span>
+        <div class="cardtop"><span>Machine Learning<b class="nb"><i></i>New</b></span><span>↗</span></div>
+        <div class="art"><div class="fr" aria-hidden="true"><svg viewBox="0 0 200 170" font-family="Space Grotesk,sans-serif" font-weight="700" text-anchor="middle"><circle cx="100" cy="85" r="68" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="10"/><circle class="rg" cx="100" cy="85" r="68" fill="none" stroke="#b8f36b" stroke-width="10" stroke-linecap="round" transform="rotate(-90 100 85)"/><text class="num" x="100" y="94" font-size="34" fill="#f4f6f4">77.3%</text><text x="100" y="112" font-size="8" letter-spacing="1.2" fill="#a3a8a6" font-family="DM Sans,sans-serif" font-weight="600">WINNER ACCURACY</text></svg>
+          <div class="mini"><span>Coin flip</span><i style="--i:0;--w:50%"></i><b>50%</b><span>This model</span><i class="hot" style="--i:1;--w:77.3%"></i><b>77.3%</b></div></div></div>
+        <h3>FRC Match Predictor</h3>
+        <p>Pick six robotics teams and it calls the winner before the match. Trained on 18,000+ official 2026 matches and tested on ones it never saw.</p>
+        <div class="tags"><span>Python</span><span>XGBoost</span><span>Machine Learning</span></div>
+      </a>
 
       <a class="pc glass" href="/lds/">
         <div class="cardtop"><span>Education</span><span>↗</span></div>
