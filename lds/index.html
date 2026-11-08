@@ -64,7 +64,7 @@ header{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px) saturate(140%
 @keyframes ping{70%{box-shadow:0 0 0 8px rgba(184,243,107,0)}100%{box-shadow:0 0 0 0 rgba(184,243,107,0)}}
 .eyebrow .new{padding:1px 7px;border-radius:99px;background:var(--accent);color:#10120b;font-size:11px;font-weight:700}
 h1{font-family:"Space Grotesk",sans-serif;letter-spacing:-.055em;line-height:.98;margin:18px 0 0;font-size:clamp(46px,9vw,92px)}
-h1 .g{background:linear-gradient(90deg,#b8f36b 0%,#e8ffc6 25%,#b8f36b 50%,#7dd3fc 75%,#b8f36b 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 7s linear infinite}
+h1 .grad{background:linear-gradient(90deg,#b8f36b 0%,#e8ffc6 25%,#b8f36b 50%,#7dd3fc 75%,#b8f36b 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 7s linear infinite}
 @keyframes shine{to{background-position:-200% 0}}
 .lead{margin:18px 0 0;color:var(--muted);max-width:560px;font-size:17px}
 .hstats{display:flex;gap:28px;margin-top:26px;flex-wrap:wrap}
@@ -316,7 +316,7 @@ footer a:hover{color:var(--accent)}
   <section class="hero">
     <div>
       <span class="eyebrow"><span class="dot"></span>Chemistry · Interactive lab <span class="new">v2</span></span>
-      <h1>Lewis <span class="g">Dot Lab</span></h1>
+      <h1>Lewis <span class="grad">Dot Lab</span></h1>
       <p class="lead">Type any compound and watch its Lewis structure build step by step: bonds, lone pairs, formal charges. Then read off its VSEPR shape, or flip to 3D and orbit around it.</p>
       <div class="hstats">
         <div><b data-count="0" id="hc1">0</b><span>compounds</span></div>
