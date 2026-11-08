@@ -210,6 +210,13 @@ nav{height:56px;display:flex;align-items:center;gap:14px;padding:0 20px;border-r
 
 
 /* ===== "New" featured card (FRC predictor) ===== */
+.ringx{position:relative;width:min(200px,100%,24svh);aspect-ratio:1;container-type:inline-size}
+.ringx svg{display:block;width:100%;height:100%;max-height:none}
+.rn{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;white-space:nowrap;font:700 20cqw/1 "Space Grotesk",sans-serif;letter-spacing:-.05em;color:#f4f6f4}
+.rn small{font-size:.5em;color:#b8f36b;letter-spacing:-.02em;margin-left:.04em}
+.rl{margin-top:12px;font:600 11px "DM Sans",sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#a3a8a6;text-align:center}
+.rg{stroke-dasharray:552.9;stroke-dashoffset:125.5}
+
 .pc.new{border-color:rgba(184,243,107,.55);background-image:linear-gradient(160deg,rgba(184,243,107,.14),rgba(255,255,255,.03) 45%),var(--glass);
   box-shadow:var(--lift),0 0 0 1px rgba(184,243,107,.15),0 24px 90px -26px rgba(184,243,107,.5);animation:newglow 3.4s ease-in-out infinite}
 @keyframes newglow{0%,100%{box-shadow:var(--lift),0 0 0 1px rgba(184,243,107,.15),0 24px 90px -30px rgba(184,243,107,.35)}50%{box-shadow:var(--lift),0 0 0 1px rgba(184,243,107,.45),0 24px 100px -18px rgba(184,243,107,.7)}}
@@ -218,13 +225,13 @@ nav{height:56px;display:flex;align-items:center;gap:14px;padding:0 20px;border-r
 @keyframes sheen{0%{transform:translateX(-160%) skewX(-18deg)}38%,100%{transform:translateX(420%) skewX(-18deg)}}
 .nb{display:inline-flex;align-items:center;gap:7px;margin-left:10px;padding:3px 10px 3px 8px;border-radius:99px;background:var(--accent);color:#10120b;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;box-shadow:0 0 18px rgba(184,243,107,.55);vertical-align:1px}
 .nb i{width:6px;height:6px;border-radius:50%;background:#10120b;animation:blink 1.2s ease-in-out infinite}
-.fr{width:100%;height:100%;display:grid;place-items:center;font-family:"Space Grotesk",sans-serif}
+.fr{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:"Space Grotesk",sans-serif}
 .fr svg{width:min(100%,250px);max-height:100%}
-.fr .rg{stroke-dasharray:540.4;stroke-dashoffset:122.7}
+
 .on .fr .rg{animation:ringd 1.6s cubic-bezier(.2,.8,.2,1) .15s backwards}
-@keyframes ringd{from{stroke-dashoffset:540.4}}
+@keyframes ringd{from{stroke-dashoffset:552.9}}
 .fr .num{opacity:1}
-.on .fr .num{animation:numin .9s cubic-bezier(.2,.8,.2,1) .5s backwards}
+.on .fr .rn{animation:numin .9s cubic-bezier(.2,.8,.2,1) .5s backwards}
 @keyframes numin{from{opacity:0;transform:scale(.7)}}
 .fr .num{transform-box:fill-box;transform-origin:center}
 .fr .mini{display:grid;grid-template-columns:auto 1fr auto;gap:8px 10px;align-items:center;width:100%;font:500 11px "DM Sans",sans-serif;color:var(--muted)}
@@ -338,10 +345,10 @@ html{scrollbar-gutter:stable}
     <div class="stick" id="stick"><div class="track" id="track">
       <div class="phead"><div class="eyebrow">Selected work</div><h2 class="fx">Projects.</h2><p>Some ideas I've built and published. Keep scrolling and they slide across.</p></div>
 
-      <a class="pc glass new" href="https://YOUR-APP.streamlit.app" target="_blank" rel="noopener">
+      <a class="pc glass new" href="https://frc-predictor-c8bkzggpngxjfjmcdfntmr.streamlit.app/" target="_blank" rel="noopener">
         <span class="sheen" aria-hidden="true"></span>
         <div class="cardtop"><span>Machine Learning<b class="nb"><i></i>New</b></span><span>↗</span></div>
-        <div class="art"><div class="fr" aria-hidden="true"><svg viewBox="0 0 200 200" font-family="Space Grotesk,sans-serif" font-weight="700" text-anchor="middle"><circle cx="100" cy="100" r="86" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="12"/><circle class="rg" cx="100" cy="100" r="86" fill="none" stroke="#b8f36b" stroke-width="12" stroke-linecap="round" transform="rotate(-90 100 100)"/><text class="num" x="100" y="108" font-size="44" fill="#f4f6f4">77.3%</text><text x="100" y="130" font-size="10" letter-spacing="1.8" fill="#a3a8a6" font-family="DM Sans,sans-serif" font-weight="600">WINNER ACCURACY</text></svg>
+        <div class="art"><div class="fr" aria-hidden="true"><div class="ringx"><svg viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="88" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="12"/><circle class="rg" cx="100" cy="100" r="88" fill="none" stroke="#b8f36b" stroke-width="12" stroke-linecap="round" transform="rotate(-90 100 100)"/></svg><div class="rn"><span>77.3<small>%</small></span></div></div><div class="rl">Winner accuracy</div>
           </div></div>
         <h3>FRC Match Predictor</h3>
         <p>Pick six robotics teams and it calls the winner before the match. Trained on 18,000+ official 2026 matches and tested on ones it never saw.</p>
