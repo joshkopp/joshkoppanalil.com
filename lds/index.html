@@ -64,8 +64,8 @@ header{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px) saturate(140%
 @keyframes ping{70%{box-shadow:0 0 0 8px rgba(184,243,107,0)}100%{box-shadow:0 0 0 0 rgba(184,243,107,0)}}
 .eyebrow .new{padding:1px 7px;border-radius:99px;background:var(--accent);color:#10120b;font-size:11px;font-weight:700}
 h1{font-family:"Space Grotesk",sans-serif;letter-spacing:-.055em;line-height:.98;margin:18px 0 0;font-size:clamp(46px,9vw,92px)}
-h1 .grad{background:linear-gradient(90deg,#b8f36b 0%,#e8ffc6 25%,#b8f36b 50%,#7dd3fc 75%,#b8f36b 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 7s linear infinite}
-@keyframes shine{to{background-position:-200% 0}}
+h1 .grad{color:var(--accent);text-shadow:0 0 40px rgba(184,243,107,.25);animation:shine 7s ease-in-out infinite}
+@keyframes shine{0%,100%{color:#b8f36b}30%{color:#e8ffc6}65%{color:#9fe0fb}}
 .lead{margin:18px 0 0;color:var(--muted);max-width:560px;font-size:17px}
 .hstats{display:flex;gap:28px;margin-top:26px;flex-wrap:wrap}
 .hstats div b{display:block;font:700 30px "Space Grotesk",sans-serif;letter-spacing:-.04em}
