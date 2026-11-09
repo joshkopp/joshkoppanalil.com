@@ -2,7 +2,7 @@
 'use strict';
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const LUCKY=new URLSearchParams(location.search).get('luck')==='1',KEY=LUCKY?'backroom-lucky':'backroom';
+const LUCKY=new URLSearchParams(location.search).get('luck')==='1'||(()=>{try{return sessionStorage.getItem('br-x')==='1'}catch(e){return false}})(),KEY=LUCKY?'backroom-lucky':'backroom';
 /* lucky mode (?luck=1, the "dam" code): most rounds get quietly tilted your way */
 const LUCK=LUCKY?.7:0,lucky=()=>Math.random()<LUCK;
 function bestOf(n,gen,score){let b=gen(),bs=score(b);for(let i=1;i<n;i++){const x=gen(),s=score(x);if(s>bs){b=x;bs=s}}return b}
@@ -181,7 +181,6 @@ function dust(){const cv=$('#dust');if(RM||!cv)return;const g=cv.getContext('2d'
 
 function boot(){
   Bank.paint();paintStats();buildLobby();bulbs();addEventListener('resize',bulbs);dust();
-  if(LUCKY){$('#lucky').hidden=false;document.body.classList.add('luckym')}
   // bet bar
   $('#rack').innerHTML=[[1,'c1'],[5,'c5'],[25,'c25'],[100,'c100'],[500,'c500'],[1000,'c1k'],[5000,'c5k']].map(([v,c])=>`<button class="chip ${c}" data-v="${v}" aria-label="${v} chip">${v>=1000?v/1000+'K':v}</button>`).join('');
   $('#rack').onclick=e=>{const c=e.target.closest('.chip');if(c)Bet.chip(+c.dataset.v)};

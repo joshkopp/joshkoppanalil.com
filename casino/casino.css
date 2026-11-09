@@ -587,9 +587,6 @@ footer a{color:var(--gold)}
 }
 
 /* ---- v3: lucky badge, top bar, lobby art that always moves */
-#lucky{margin-top:16px}
-#lucky span{display:inline-block;padding:7px 16px;border-radius:99px;font:800 12px "DM Sans",sans-serif;letter-spacing:.08em;color:#05220f;background:linear-gradient(180deg,#b6ffd0,#5cff9d 50%,#1fa35a);box-shadow:0 0 24px rgba(92,255,157,.55);animation:ribbon 2.4s ease-in-out infinite}
-body.luckym .purse{box-shadow:0 0 0 1px rgba(92,255,157,.5),0 0 22px rgba(92,255,157,.3)}
 @media(max-width:640px){body.ingame .brand i{display:none}body.ingame .brand{font-size:14px;letter-spacing:.04em}.brand{font-size:16px}}
 @media(max-width:370px){body.ingame .brand{display:none}}
 .a-reels div span{animation:reel 1.6s linear infinite}
