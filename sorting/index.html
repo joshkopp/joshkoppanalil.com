@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#07080a">
+<meta name="description" content="A visual library of sorting algorithms: watch dozens of sorts run step by step, learn their rules, compare complexity, and race them head to head. Built by Josh Koppanalil.">
+<title>Sorting Algorithm Library · Josh Koppanalil</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080a;--panel:#0e0f12;--text:#f4f6f4;--muted:#a3a8a6;--dim:#6b706e;--line:rgba(255,255,255,.11);--line2:rgba(255,255,255,.17);--accent:#b8f36b;--blue:#7dd3fc;--orange:#fb923c;--pink:#f9a8d4;--glass:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.02));--mx:50%;--my:20%}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:"DM Sans",system-ui,sans-serif;line-height:1.6;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;background:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px) 0 0/28px 28px;-webkit-mask-image:radial-gradient(ellipse at 50% 10%,#000 25%,transparent 80%);mask-image:radial-gradient(ellipse at 50% 10%,#000 25%,transparent 80%)}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(600px circle at var(--mx) var(--my),rgba(184,243,107,.06),transparent 60%)}
+.blob{position:fixed;border-radius:50%;filter:blur(130px);pointer-events:none;z-index:-3;animation:drift 26s ease-in-out infinite alternate}
+.b1{width:520px;height:520px;background:#b8f36b;opacity:.11;top:-200px;right:-140px}
+.b2{width:480px;height:480px;background:#7dd3fc;opacity:.07;bottom:-240px;left:-160px;animation-duration:32s}
+@keyframes drift{to{transform:translate(-110px,90px) scale(1.15)}}
+a{color:inherit;text-decoration:none}
+button,select,input{font-family:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
+::selection{background:rgba(184,243,107,.3)}
+.wrap{width:min(1120px,calc(100% - 32px));margin:auto}
+header{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);background:rgba(7,8,10,.62);border-bottom:1px solid rgba(255,255,255,.06)}
+.nav{width:min(1120px,calc(100% - 32px));margin:auto;display:flex;align-items:center;gap:14px;height:62px}
+.logo{font:700 22px "Space Grotesk",sans-serif;letter-spacing:-.05em;transition:color .2s}
+.logo i{color:var(--accent);font-style:normal}
+.logo:hover{color:var(--accent)}
+.crumb{color:var(--dim);font-size:14px}.crumb b{color:var(--muted);font-weight:500}
+.links{display:flex;gap:2px;margin-left:auto}
+.links a{padding:6px 12px;border-radius:99px;color:var(--muted);font-size:14px;font-weight:500;transition:color .2s,background .2s}
+.links a:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.clock{font:500 12px "JetBrains Mono",monospace;color:var(--dim);padding:6px 12px;border:1px solid var(--line);border-radius:99px;white-space:nowrap}
+.clock b{color:var(--text);font-weight:500}
+.menu{display:none;margin-left:auto;padding:7px 14px;border:1px solid var(--line);border-radius:99px;background:none;color:var(--text);font-size:13px;cursor:pointer}
+@media(max-width:760px){.crumb,.clock{display:none}.menu{display:block}.links{display:none;position:absolute;top:62px;left:0;right:0;flex-direction:column;padding:10px 16px 16px;background:rgba(7,8,10,.96);border-bottom:1px solid var(--line)}header.open .links{display:flex}}
+footer{border-top:1px solid var(--line);margin-top:80px}
+footer .nav{height:auto;padding:22px 0;color:var(--dim);font-size:14px}
+footer a:hover{color:var(--accent)}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1.3fr .7fr;gap:26px;align-items:center;padding:56px 0 26px}
+@media(max-width:860px){.hero{grid-template-columns:1fr}.hero .art{display:none}}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 10px;border:1px solid var(--line2);border-radius:99px;background:rgba(255,255,255,.03);color:var(--muted);font-size:13px}
+.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:ping 2s infinite}
+.eyebrow .new{padding:1px 7px;border-radius:99px;background:var(--accent);color:#10120b;font-size:11px;font-weight:700}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(184,243,107,.6)}70%,100%{box-shadow:0 0 0 8px rgba(184,243,107,0)}}
+h1,h2,h3{font-family:"Space Grotesk",sans-serif;letter-spacing:-.055em;line-height:1.02;margin:0}
+h1{font-size:clamp(46px,8vw,92px);margin:18px 0 16px}
+h1 .w{display:inline-block;animation:word 1s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--d)*1s)}
+@keyframes word{from{opacity:0;transform:translateY(.4em);filter:blur(10px)}}
+h1 .hl{color:var(--accent)}
+.lead{max-width:580px;margin:0;color:var(--muted);font-size:17px;animation:rise .8s .45s both}
+.hstats{display:flex;gap:28px;margin-top:24px;flex-wrap:wrap;animation:rise .8s .6s both}
+.hstats b{display:block;font:700 28px "Space Grotesk",sans-serif;letter-spacing:-.04em}
+.hstats span{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.09em}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}}
+.hero .art canvas{width:100%;aspect-ratio:1.3;display:block}
+
+/* visualizer */
+.lab{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
+@media(max-width:980px){.lab{grid-template-columns:1fr}}
+.card{position:relative;border:1px solid var(--line2);border-radius:24px;background:linear-gradient(180deg,rgba(18,20,17,.92),rgba(10,11,13,.95));padding:18px;box-shadow:0 40px 120px -40px rgba(184,243,107,.2),inset 0 1px 0 rgba(255,255,255,.08)}
+.card.glow::before{content:"";position:absolute;inset:-1px;border-radius:24px;padding:1px;background:conic-gradient(from var(--ang),transparent 0 70%,rgba(184,243,107,.8) 82%,transparent 92%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;animation:spinb 7s linear infinite;opacity:.7}
+@property --ang{syntax:'<angle>';initial-value:0deg;inherits:false}
+@keyframes spinb{to{--ang:360deg}}
+.vtop{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.vtitle{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+#vName{font:700 30px/1 "Space Grotesk",sans-serif;letter-spacing:-.045em}
+#vName.anim{animation:rise .4s both}
+.vcat{font:700 11px "JetBrains Mono",monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.seg{display:flex;border:1px solid var(--line2);border-radius:10px;overflow:hidden;background:rgba(0,0,0,.25)}
+.seg button{padding:7px 12px;background:none;border:0;color:var(--muted);font-weight:700;font-size:12px;cursor:pointer;transition:.2s}
+.seg button:hover{color:var(--text)}
+.seg button.on{background:var(--accent);color:#10120b}
+.stagebox{position:relative;margin-top:14px;border-radius:16px;overflow:hidden;background:#050608;border:1px solid var(--line)}
+#cv{display:block;width:100%;height:clamp(240px,42vh,400px)}
+.done{position:absolute;top:12px;right:12px;padding:5px 12px;border-radius:99px;background:var(--accent);color:#10120b;font-weight:700;font-size:12px;opacity:0;transform:translateY(-6px);transition:.35s;pointer-events:none}
+.done.on{opacity:1;transform:none}
+.done.bad{background:#f87171}
+.ctrls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:40px;padding:0 15px;border:1px solid var(--line2);border-radius:11px;background:rgba(255,255,255,.03);color:var(--text);font-weight:700;font-size:13px;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s,background .2s;white-space:nowrap}
+.btn:hover{border-color:var(--accent);transform:translateY(-1px)}
+.btn:active{transform:scale(.96)}
+.btn.go{background:var(--accent);border-color:var(--accent);color:#10120b;box-shadow:0 10px 26px -10px rgba(184,243,107,.7);min-width:96px}
+.btn svg{width:15px;height:15px}
+.btn.on{border-color:var(--accent);color:var(--accent);background:rgba(184,243,107,.07)}
+.sl{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;min-width:150px;flex:1}
+.sl b{color:var(--accent);font:700 13px "JetBrains Mono",monospace;min-width:36px;text-align:right}
+input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:5px;border-radius:9px;background:linear-gradient(90deg,var(--accent) var(--p,50%),rgba(255,255,255,.1) var(--p,50%));outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#f4f6f4;border:3px solid var(--accent);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#f4f6f4;border:3px solid var(--accent)}
+select{height:40px;padding:0 34px 0 12px;border:1px solid var(--line2);border-radius:11px;background:rgba(255,255,255,.03) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3a8a6' stroke-width='2.4'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center/14px;color:var(--text);font-weight:600;font-size:13px;cursor:pointer;-webkit-appearance:none;appearance:none}
+select option{background:#0f1112}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-top:14px;border-radius:14px;overflow:hidden;background:var(--line);border:1px solid var(--line)}
+.stat{padding:11px 14px;background:#0c0d10}
+.stat b{display:block;font:700 22px "Space Grotesk",sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.stat span{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;display:flex;align-items:center;gap:6px}
+.stat span i{width:8px;height:8px;border-radius:2px;background:var(--c)}
+@media(max-width:560px){.stats{grid-template-columns:1fr 1fr}}
+.note{margin-top:10px;font-size:12.5px;color:var(--orange);min-height:18px}
+
+.info h3{font-size:24px;letter-spacing:-.04em}
+.info .meta{color:var(--dim);font-size:12.5px;margin-top:4px}
+.info p{color:#cfd4d1;font-size:14px;margin:12px 0 0}
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.bdg{padding:3px 10px;border-radius:99px;border:1px solid var(--line2);font-size:11.5px;font-weight:600;color:var(--muted)}
+.bdg.y{border-color:rgba(184,243,107,.45);color:var(--accent)}
+.bdg.n{border-color:rgba(248,113,113,.4);color:#fca5a5}
+.cx{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-top:14px;border-radius:12px;overflow:hidden;background:var(--line);border:1px solid var(--line)}
+.cx div{background:#0c0d10;padding:8px 9px}
+.cx span{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim)}
+.cx b{font:700 13px "JetBrains Mono",monospace;color:var(--text);white-space:nowrap}
+.rules{list-style:none;margin:16px 0 0;padding:0;counter-reset:r;display:flex;flex-direction:column;gap:8px}
+.rules li{counter-increment:r;display:grid;grid-template-columns:24px 1fr;gap:10px;font-size:13.5px;color:#d4d8d6;animation:slide .4s both;animation-delay:calc(var(--i)*60ms)}
+.rules li::before{content:counter(r);width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:rgba(184,243,107,.12);color:var(--accent);font:700 12px "JetBrains Mono",monospace}
+@keyframes slide{from{opacity:0;transform:translateX(-8px)}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px;background:var(--c)}
+
+/* sections */
+.sh{margin:80px 0 20px;display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap}
+.lab2{font:500 12px "JetBrains Mono",monospace;color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+.sh h2{font-size:clamp(32px,5vw,50px);margin-top:8px}
+.sh p{color:var(--muted);margin:10px 0 0;max-width:600px}
+.rv{opacity:0;transform:translateY(26px);transition:opacity .8s,transform .8s cubic-bezier(.2,.8,.2,1)}
+.rv.in{opacity:1;transform:none}
+
+/* race */
+.race{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.race{grid-template-columns:1fr}}
+.lane{position:relative;padding:14px;border-radius:18px;border:1px solid var(--line);background:var(--glass),var(--panel);transition:border-color .4s,box-shadow .4s}
+.lane.win{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 20px 60px -20px rgba(184,243,107,.5)}
+.lane .lh{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.lane select{flex:1;min-width:0}
+.lane canvas{display:block;width:100%;height:190px;margin-top:12px;border-radius:12px;background:#050608;border:1px solid var(--line)}
+.lane .ls{display:flex;gap:14px;margin-top:10px;font-size:12px;color:var(--dim);font-family:"JetBrains Mono",monospace;flex-wrap:wrap}
+.lane .ls b{color:var(--text)}
+.crown{position:absolute;top:-12px;right:16px;padding:3px 10px;border-radius:99px;background:var(--accent);color:#10120b;font-weight:700;font-size:12px;opacity:0;transform:scale(.6);transition:.4s cubic-bezier(.3,1.6,.5,1)}
+.lane.win .crown{opacity:1;transform:none}
+.racebar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+
+/* library */
+.libbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.search{position:relative}
+.search input{width:min(260px,100%);height:40px;padding:0 14px 0 38px;border-radius:99px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);font:500 14px "DM Sans",sans-serif;transition:border-color .3s}
+.search input:focus{outline:none;border-color:var(--accent)}
+.search svg{position:absolute;left:13px;top:50%;width:16px;height:16px;transform:translateY(-50%);color:var(--muted)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:7px 13px;border-radius:99px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#c9cdca;font-size:12.5px;font-weight:600;cursor:pointer;transition:.25s}
+.chip:hover{border-color:var(--accent);color:var(--text)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#10120b}
+.chip span{opacity:.6;margin-left:4px;font-size:11px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.ac{position:relative;display:flex;flex-direction:column;text-align:left;padding:16px;border-radius:18px;border:1px solid var(--line);background:var(--glass),var(--panel);color:var(--text);cursor:pointer;transition:transform .35s cubic-bezier(.2,.8,.2,1),border-color .3s,box-shadow .35s;animation:rise .5s both;animation-delay:calc(var(--i)*20ms)}
+.ac:hover{transform:translateY(-4px);border-color:rgba(184,243,107,.5);box-shadow:0 20px 50px -24px rgba(184,243,107,.45)}
+.ac.cur{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.ac .ct{font:700 10.5px "JetBrains Mono",monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.ac h3{font-size:20px;letter-spacing:-.035em;margin-top:6px}
+.ac p{color:var(--muted);font-size:13px;margin:6px 0 0;flex:1}
+.ac .mini{display:flex;align-items:flex-end;gap:2px;height:30px;margin:12px 0 10px}
+.ac .mini i{flex:1;border-radius:2px 2px 0 0;background:rgba(255,255,255,.22);transition:background .3s,height .5s cubic-bezier(.2,.8,.2,1)}
+.ac:hover .mini i{background:var(--accent)}
+.ac .ft{display:flex;gap:10px;font:500 11px "JetBrains Mono",monospace;color:var(--dim)}
+.ac .ft b{color:#d4d8d6;font-weight:700}
+.empty{display:none;padding:40px;text-align:center;color:var(--muted)}
+.empty.show{display:block}
+
+/* table */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:18px;background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:760px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap}
+th{position:sticky;top:0;background:#101114;color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;user-select:none}
+th:hover{color:var(--accent)}
+th.s::after{content:" ↓";color:var(--accent)}
+th.s.r::after{content:" ↑"}
+td{color:#d4d8d6;font-family:"JetBrains Mono",monospace;font-size:12px}
+td:first-child{font-family:"DM Sans",sans-serif;font-weight:700;font-size:13.5px;color:var(--text)}
+tr{cursor:pointer;transition:background .2s}
+tbody tr:hover{background:rgba(184,243,107,.05)}
+.ok{color:var(--accent)}.no{color:#fca5a5}
+.cg{font-weight:700}
+.cg.g{color:var(--accent)}.cg.m{color:#facc15}.cg.b{color:#fb923c}.cg.x{color:#f87171}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="blob b1"></div><div class="blob b2"></div>
+<header id="hdr">
+  <div class="nav">
+    <a class="logo" href="/">JK<i>.</i></a>
+    <span class="crumb">/ <b>Sorting Algorithms</b></span>
+    <nav class="links">
+      <a href="/#about">About</a><a href="/#projects">Projects</a><a href="/allproj">All projects</a><a href="/#contact">Contact</a>
+    </nav>
+    <span class="clock">Austin <b id="clk">--:--</b></span>
+    <button class="menu" id="menu" aria-expanded="false">Menu</button>
+  </div>
+</header>
+
+<main class="wrap" id="top">
+  <section class="hero">
+    <div>
+      <span class="eyebrow"><span class="dot"></span>Math · Computer science <span class="new">library</span></span>
+      <h1><span class="w" style="--d:.05">Every</span> <span class="w" style="--d:.14">way</span> <span class="w" style="--d:.23">to</span> <span class="w hl" style="--d:.34">sort.</span></h1>
+      <p class="lead">A visual library of sorting algorithms, from bubble sort to bitonic networks to the joke ones. Watch each one move, read its rules, compare their complexity, then race them.</p>
+      <div class="hstats"><div><b id="hN">0</b><span>algorithms</span></div><div><b id="hC">0</b><span>families</span></div><div><b>1</b><span>array to rule them all</span></div></div>
+    </div>
+    <div class="art" aria-hidden="true"><canvas id="heroCv"></canvas></div>
+  </section>
+
+  <section class="lab">
+    <div class="card glow">
+      <div class="vtop">
+        <div class="vtitle"><div id="vName">Bubble Sort</div><span class="vcat" id="vCat">Exchange</span></div>
+        <div class="seg" id="views" role="group" aria-label="View"><button data-v="bars" class="on">Bars</button><button data-v="dots">Dots</button><button data-v="rainbow">Rainbow</button></div>
+      </div>
+      <div class="stagebox"><canvas id="cv" aria-label="Sorting visualization"></canvas><div class="done" id="done">Sorted ✓</div></div>
+      <div class="ctrls">
+        <select id="algoSel" aria-label="Algorithm"></select>
+        <button class="btn go" id="play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg><span>Sort</span></button>
+        <button class="btn" id="step" title="One step">Step</button>
+        <button class="btn" id="shuf" title="New array"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>Shuffle</button>
+        <select id="pattern" aria-label="Input"><option value="random">Random</option><option value="nearly">Nearly sorted</option><option value="reversed">Reversed</option><option value="few">Few unique</option><option value="sorted">Already sorted</option></select>
+        <button class="btn" id="snd" title="Sound">🔇 Sound</button>
+      </div>
+      <div class="ctrls">
+        <label class="sl">Size <input type="range" id="size" min="8" max="400" value="64"><b id="sizeV">64</b></label>
+        <label class="sl">Speed <input type="range" id="speed" min="0" max="100" value="45"><b id="speedV">1×</b></label>
+      </div>
+      <div class="stats">
+        <div class="stat"><b id="sC">0</b><span><i style="--c:var(--blue)"></i>Comparisons</span></div>
+        <div class="stat"><b id="sS">0</b><span><i style="--c:var(--accent)"></i>Swaps</span></div>
+        <div class="stat"><b id="sW">0</b><span><i style="--c:var(--pink)"></i>Writes</span></div>
+        <div class="stat"><b id="sA">0</b><span><i style="--c:#d4d8d6"></i>Array accesses</span></div>
+      </div>
+      <div class="note" id="note"></div>
+    </div>
+    <aside class="card info" id="info"></aside>
+  </section>
+
+  <div class="sh rv"><div><div class="lab2">// Race</div><h2>Head to head</h2><p>Same array, same speed: every operation costs one tick. Whoever finishes in fewer steps wins.</p></div></div>
+  <section class="rv">
+    <div class="racebar">
+      <button class="btn go" id="raceGo"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg><span>Race</span></button>
+      <button class="btn" id="raceNew">New array</button>
+      <select id="racePat" aria-label="Race input"><option value="random">Random</option><option value="nearly">Nearly sorted</option><option value="reversed">Reversed</option><option value="few">Few unique</option></select>
+      <label class="sl" style="max-width:260px">Size <input type="range" id="raceSize" min="16" max="300" value="100"><b id="raceSizeV">100</b></label>
+    </div>
+    <div class="race">
+      <div class="lane" id="laneA"><div class="crown">Winner</div><div class="lh"><select id="raceA" aria-label="Racer A"></select></div><canvas id="cvA"></canvas><div class="ls" id="lsA"></div></div>
+      <div class="lane" id="laneB"><div class="crown">Winner</div><div class="lh"><select id="raceB" aria-label="Racer B"></select></div><canvas id="cvB"></canvas><div class="ls" id="lsB"></div></div>
+    </div>
+  </section>
+
+  <div class="sh rv"><div><div class="lab2">// Library</div><h2>The collection</h2><p>Click any algorithm to load it into the visualizer.</p></div></div>
+  <section class="rv">
+    <div class="libbar">
+      <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search algorithms" aria-label="Search algorithms" autocomplete="off"></label>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="empty">No algorithms match that.</div>
+  </section>
+
+  <div class="sh rv"><div><div class="lab2">// Cheat sheet</div><h2>Complexity at a glance</h2><p>Big-O for time and extra memory. Click a column to sort the table (with a sort, naturally).</p></div></div>
+  <section class="tw rv"><table id="tbl"><thead><tr></tr></thead><tbody></tbody></table></section>
+</main>
+
+<footer><div class="nav"><span>© Josh Koppanalil</span><a href="#top" style="margin-left:auto">Back to top ↑</a></div></footer>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* =====================================================================
+   Algorithms. Each is a generator over array a with helper X:
+     X.c(i,j)  compare a[i] with a[j]        X.cv(i)   compare a[i] with a held value
+     X.s(i,j)  swap a[i], a[j]               X.w(i,v)  write v into a[i]
+     X.pv(i)   mark a pivot                  X.ok(i)   mark index i as final
+   Generators mutate a directly and yield the op for the visualizer.
+   ===================================================================== */
+const P2=n=>{let k=1;while(k<n)k<<=1;return k>>1};
+function* insertionRange(a,X,lo,hi){for(let i=lo+1;i<=hi;i++){let j=i;while(j>lo){yield X.c(j-1,j);if(a[j-1]>a[j]){yield X.s(j-1,j);j--}else break}}}
+function* siftDown(a,X,s,e,off){let r=s;while(2*r+1<=e){let c=2*r+1,sw=r;yield X.c(off+sw,off+c);if(a[off+sw]<a[off+c])sw=c;if(c+1<=e){yield X.c(off+sw,off+c+1);if(a[off+sw]<a[off+c+1])sw=c+1}if(sw===r)return;yield X.s(off+r,off+sw);r=sw}}
+function* heapRange(a,X,lo,hi){const n=hi-lo+1;for(let s=(n>>1)-1;s>=0;s--)yield* siftDown(a,X,s,n-1,lo);for(let e=n-1;e>0;e--){yield X.s(lo,lo+e);X.ok(lo+e);yield* siftDown(a,X,0,e-1,lo)}}
+function* mergeRange(a,X,l,m,r){const t=a.slice(l,r+1);let i=0,j=m-l+1,k=l;const L=m-l+1,R=r-l+1;
+  while(i<L&&j<R){yield X.c(l+i,l+j);if(t[i]<=t[j])yield X.w(k++,t[i++]);else yield X.w(k++,t[j++])}
+  while(i<L)yield X.w(k++,t[i++]);while(j<R)yield X.w(k++,t[j++])}
+function* binInsert(a,X,lo,hi){for(let i=lo+1;i<=hi;i++){const key=a[i];let L=lo,R=i;while(L<R){const m=(L+R)>>1;yield X.cv(m);if(a[m]<=key)L=m+1;else R=m}for(let j=i;j>L;j--)yield X.w(j,a[j-1]);if(L!==i)yield X.w(L,key)}}
+function sortedQ(a){for(let i=1;i<a.length;i++)if(a[i-1]>a[i])return false;return true}
+function* isSortedG(a,X){for(let i=1;i<a.length;i++){yield X.c(i-1,i);if(a[i-1]>a[i])return false}return true}
+
+const ALGOS=[
+ {id:'bubble',name:'Bubble Sort',cat:'Exchange',b:'n',a:'n²',w:'n²',s:'1',st:1,ip:1,yr:'1956',by:'Edward Friend (first described)',
+  d:'Repeatedly walks the list, swapping neighbors that are out of order. The largest values "bubble" to the end on each pass.',
+  r:['Compare each pair of neighbors, left to right.','If the left one is bigger, swap them.','After one pass the largest value is in its final spot.','Repeat on the unsorted part; stop early if a pass makes no swaps.'],
+  f:function*(a,X){const n=a.length;for(let e=n-1;e>0;e--){let sw=false;for(let i=0;i<e;i++){yield X.c(i,i+1);if(a[i]>a[i+1]){yield X.s(i,i+1);sw=true}}X.ok(e);if(!sw)break}}},
+ {id:'cocktail',name:'Cocktail Shaker Sort',cat:'Exchange',b:'n',a:'n²',w:'n²',s:'1',st:1,ip:1,yr:'1973',by:'Knuth (described)',
+  d:'Bubble sort in both directions: forward pushes the max right, backward pushes the min left. Fixes "turtles" (small values stuck at the end).',
+  r:['Pass left to right, swapping out-of-order neighbors.','Pass right to left, doing the same.','Shrink both ends after each pair of passes.','Stop when a full round makes no swaps.'],
+  f:function*(a,X){let lo=0,hi=a.length-1,sw=true;while(sw&&lo<hi){sw=false;for(let i=lo;i<hi;i++){yield X.c(i,i+1);if(a[i]>a[i+1]){yield X.s(i,i+1);sw=true}}X.ok(hi);hi--;for(let i=hi;i>lo;i--){yield X.c(i-1,i);if(a[i-1]>a[i]){yield X.s(i-1,i);sw=true}}X.ok(lo);lo++}}},
+ {id:'oddeven',name:'Odd-Even Sort',cat:'Exchange',b:'n',a:'n²',w:'n²',s:'1',st:1,ip:1,yr:'1972',by:'Nico Habermann',
+  d:'Alternates between comparing all odd/even neighbor pairs and all even/odd pairs. Each phase\'s comparisons are independent, so it parallelizes well.',
+  r:['Compare pairs (1,2), (3,4), (5,6)… and swap if out of order.','Then compare pairs (0,1), (2,3), (4,5)… and swap.','Alternate phases until a full round makes no swaps.'],
+  f:function*(a,X){const n=a.length;let sorted=false;while(!sorted){sorted=true;for(const st of[1,0])for(let i=st;i<n-1;i+=2){yield X.c(i,i+1);if(a[i]>a[i+1]){yield X.s(i,i+1);sorted=false}}}}},
+ {id:'comb',name:'Comb Sort',cat:'Exchange',b:'n log n',a:'n²/2ᵖ',w:'n²',s:'1',st:0,ip:1,yr:'1980',by:'Włodzimierz Dobosiewicz',
+  d:'Bubble sort with a shrinking gap. Comparing far-apart elements first moves small values left quickly, then the gap shrinks to 1.',
+  r:['Start with a gap equal to the list length.','Shrink the gap by a factor of about 1.3.','Compare and swap elements that are "gap" apart.','When the gap reaches 1, finish like bubble sort until no swaps happen.'],
+  f:function*(a,X){const n=a.length;let g=n,sorted=false;while(!sorted){g=Math.floor(g/1.3);if(g<=1){g=1;sorted=true}for(let i=0;i+g<n;i++){yield X.c(i,i+g);if(a[i]>a[i+g]){yield X.s(i,i+g);sorted=false}}}}},
+ {id:'gnome',name:'Gnome Sort',cat:'Exchange',b:'n',a:'n²',w:'n²',s:'1',st:1,ip:1,yr:'2000',by:'Hamid Sarbazi-Azad',
+  d:'A garden gnome sorting flower pots: step forward while things are in order; when they aren\'t, swap and step back.',
+  r:['Look at the pot in front of you and the one behind.','If they are in order, step forward.','If not, swap them and step back.','At the start, always step forward. Done when you walk off the end.'],
+  f:function*(a,X){let i=1;const n=a.length;while(i<n){if(i===0){i=1;continue}yield X.c(i-1,i);if(a[i-1]<=a[i])i++;else{yield X.s(i-1,i);i--}}}},
+ {id:'exchange',name:'Exchange Sort',cat:'Exchange',b:'n²',a:'n²',w:'n²',s:'1',st:0,ip:1,yr:'1950s',by:'Classic',
+  d:'Compares the first element with every other element and swaps whenever a smaller one appears, then moves to the second element, and so on.',
+  r:['Fix position i, starting at 0.','Compare a[i] with every later element.','Swap whenever a later element is smaller.','Move to the next position.'],
+  f:function*(a,X){const n=a.length;for(let i=0;i<n-1;i++){for(let j=i+1;j<n;j++){yield X.c(i,j);if(a[j]<a[i])yield X.s(i,j)}X.ok(i)}}},
+ {id:'selection',name:'Selection Sort',cat:'Selection',b:'n²',a:'n²',w:'n²',s:'1',st:0,ip:1,yr:'1950s',by:'Classic',
+  d:'Finds the smallest remaining element and puts it in the next slot. Uses at most n−1 swaps, which is handy when writes are expensive.',
+  r:['Scan the unsorted part for its smallest value.','Swap it into the first unsorted position.','That position is now final.','Repeat on the rest.'],
+  f:function*(a,X){const n=a.length;for(let i=0;i<n-1;i++){let m=i;X.pv(m);for(let j=i+1;j<n;j++){yield X.c(j,m);if(a[j]<a[m]){m=j;X.pv(m)}}if(m!==i)yield X.s(i,m);X.ok(i)}}},
+ {id:'dselection',name:'Double Selection Sort',cat:'Selection',b:'n²',a:'n²',w:'n²',s:'1',st:0,ip:1,yr:'—',by:'Selection sort variant',
+  d:'Finds both the minimum and the maximum in each pass, placing one at each end. Roughly halves the number of passes.',
+  r:['Scan the unsorted middle for its min and max.','Swap the min to the left end.','Swap the max to the right end.','Shrink both ends and repeat.'],
+  f:function*(a,X){let lo=0,hi=a.length-1;while(lo<hi){let mn=lo,mx=lo;for(let i=lo+1;i<=hi;i++){yield X.c(i,mn);if(a[i]<a[mn])mn=i;yield X.c(i,mx);if(a[i]>a[mx])mx=i}if(mn!==lo)yield X.s(lo,mn);if(mx===lo)mx=mn;if(mx!==hi)yield X.s(hi,mx);X.ok(lo);X.ok(hi);lo++;hi--}}},
+ {id:'heap',name:'Heap Sort',cat:'Selection',b:'n log n',a:'n log n',w:'n log n',s:'1',st:0,ip:1,yr:'1964',by:'J. W. J. Williams',
+  d:'Turns the array into a max-heap (a tree where every parent beats its children), then repeatedly moves the root, the biggest value, to the end.',
+  r:['Build a max-heap: sift every parent down below its larger child.','Swap the root (max) with the last element of the heap.','Shrink the heap by one; that slot is final.','Sift the new root down to restore the heap. Repeat.'],
+  f:function*(a,X){yield* heapRange(a,X,0,a.length-1)}},
+ {id:'cycle',name:'Cycle Sort',cat:'Selection',b:'n²',a:'n²',w:'n²',s:'1',st:0,ip:1,yr:'1990',by:'B. K. Haddon',
+  d:'Writes each element directly to its final position by counting how many elements are smaller. Uses the theoretical minimum number of writes.',
+  r:['Take an item and count how many items are smaller: that\'s its home.','Write it home, picking up whatever was there.','Repeat with the picked-up item until the cycle closes.','Move to the next start position.'],
+  f:function*(a,X){const n=a.length;for(let cs=0;cs<n-1;cs++){let item=a[cs],pos=cs;for(let i=cs+1;i<n;i++){yield X.cv(i);if(a[i]<item)pos++}if(pos===cs){X.ok(cs);continue}while(item===a[pos]){yield X.cv(pos);pos++}let t=a[pos];yield X.w(pos,item);item=t;while(pos!==cs){pos=cs;for(let i=cs+1;i<n;i++){yield X.cv(i);if(a[i]<item)pos++}while(item===a[pos]){yield X.cv(pos);pos++}t=a[pos];yield X.w(pos,item);item=t}X.ok(cs)}}},
+ {id:'pancake',name:'Pancake Sort',cat:'Selection',b:'n',a:'n²',w:'n²',s:'1',st:0,ip:1,yr:'1975',by:'Jacob Goodman',
+  d:'You may only flip the top k pancakes of a stack. Flip the biggest to the top, then flip it down to the bottom. At most 2n flips.',
+  r:['Find the largest pancake in the unsorted stack.','Flip from the top down to it, bringing it to the top.','Flip the whole unsorted stack so it lands at the bottom.','Shrink the stack and repeat.'],
+  f:function*(a,X){const flip=function*(k){let i=0;while(i<k){yield X.s(i,k);i++;k--}};for(let sz=a.length;sz>1;sz--){let mi=0;for(let i=1;i<sz;i++){yield X.c(i,mi);if(a[i]>a[mi])mi=i}if(mi!==sz-1){if(mi>0)yield* flip(mi);yield* flip(sz-1)}X.ok(sz-1)}}},
+ {id:'insertion',name:'Insertion Sort',cat:'Insertion',b:'n',a:'n²',w:'n²',s:'1',st:1,ip:1,yr:'1946',by:'John Mauchly (described)',
+  d:'Builds the sorted list one item at a time, sliding each new item left until it fits, like sorting a hand of cards. Very fast on nearly sorted data.',
+  r:['Treat the first element as a sorted list.','Take the next element.','Slide it left past every larger element.','Repeat until every element has been inserted.'],
+  f:function*(a,X){yield* insertionRange(a,X,0,a.length-1)}},
+ {id:'binsertion',name:'Binary Insertion Sort',cat:'Insertion',b:'n log n',a:'n²',w:'n²',s:'1',st:1,ip:1,yr:'1946',by:'John Mauchly',
+  d:'Insertion sort that finds each item\'s spot with binary search, cutting comparisons to O(n log n). Shifting elements still costs O(n²).',
+  r:['Take the next unsorted element.','Binary-search the sorted part for where it belongs.','Shift everything after that spot one to the right.','Drop the element into the gap.'],
+  f:function*(a,X){yield* binInsert(a,X,0,a.length-1)}},
+ {id:'shell',name:'Shell Sort',cat:'Insertion',b:'n log n',a:'≈ n^1.25',w:'n^1.5',s:'1',st:0,ip:1,yr:'1959',by:'Donald Shell',
+  d:'Insertion sort on elements that are far apart first, then closer, using a shrinking gap sequence (Ciura\'s gaps here). Small values travel far in few moves.',
+  r:['Pick a gap from the sequence 701, 301, 132, 57, 23, 10, 4, 1.','Insertion-sort every "gap-th" element.','Move to the next smaller gap.','The final pass with gap 1 is plain insertion sort on almost-sorted data.'],
+  f:function*(a,X){const n=a.length;for(const g of[701,301,132,57,23,10,4,1]){if(g>=n)continue;for(let i=g;i<n;i++){let j=i;while(j>=g){yield X.c(j-g,j);if(a[j-g]>a[j]){yield X.s(j-g,j);j-=g}else break}}}}},
+ {id:'tree',name:'Tree Sort',cat:'Insertion',b:'n log n',a:'n log n',w:'n²',s:'n',st:1,ip:0,yr:'1960s',by:'Classic',
+  d:'Inserts every element into a binary search tree, then reads the tree in order. Worst case is a sorted input, which makes the tree a long chain.',
+  r:['Insert each element into a binary search tree: smaller goes left, equal or bigger goes right.','Walk the tree in order (left, node, right).','Write the values back in that order.'],
+  f:function*(a,X){const n=a.length,L=new Int32Array(n).fill(-1),R=new Int32Array(n).fill(-1),v=a.slice();for(let i=1;i<n;i++){let c=0;while(true){yield X.c(c,i);if(v[i]<v[c]){if(L[c]<0){L[c]=i;break}c=L[c]}else{if(R[c]<0){R[c]=i;break}c=R[c]}}}const out=[];const st=[];let c=0;while(st.length||c>=0){while(c>=0){st.push(c);c=L[c]}c=st.pop();out.push(v[c]);c=R[c]}for(let i=0;i<n;i++)yield X.w(i,out[i])}},
+ {id:'merge',name:'Merge Sort',cat:'Merge',b:'n log n',a:'n log n',w:'n log n',s:'n',st:1,ip:0,yr:'1945',by:'John von Neumann',
+  d:'Divide and conquer: split the list in half, sort each half, then merge the two sorted halves by repeatedly taking the smaller front item.',
+  r:['Split the list into two halves.','Recursively sort each half.','Merge: compare the fronts of both halves and take the smaller one.','A list of one element is already sorted.'],
+  f:function*(a,X){const ms=function*(l,r){if(l>=r)return;const m=(l+r)>>1;yield* ms(l,m);yield* ms(m+1,r);yield* mergeRange(a,X,l,m,r)};yield* ms(0,a.length-1)}},
+ {id:'bumerge',name:'Bottom-up Merge Sort',cat:'Merge',b:'n log n',a:'n log n',w:'n log n',s:'n',st:1,ip:0,yr:'1945',by:'von Neumann (iterative form)',
+  d:'Merge sort without recursion: merge runs of size 1 into runs of 2, then 4, then 8, until one run covers the whole list.',
+  r:['Treat every element as a sorted run of length 1.','Merge neighboring runs pairwise.','Double the run width.','Repeat until a single run remains.'],
+  f:function*(a,X){const n=a.length;for(let w=1;w<n;w*=2)for(let l=0;l<n-w;l+=2*w)yield* mergeRange(a,X,l,l+w-1,Math.min(l+2*w-1,n-1))}},
+ {id:'tim',name:'Tim Sort',cat:'Hybrid',b:'n',a:'n log n',w:'n log n',s:'n',st:1,ip:0,yr:'2002',by:'Tim Peters',
+  d:'Python and Java\'s default sort (simplified here). Binary-insertion-sorts small chunks called runs, then merges runs together. Excellent on real-world, partly sorted data.',
+  r:['Cut the array into runs of a minimum length (32 here).','Binary-insertion-sort each run.','Merge neighboring runs, doubling their size.','The real version also detects natural runs and uses "galloping" merges.'],
+  f:function*(a,X){const n=a.length,RUN=32;for(let i=0;i<n;i+=RUN)yield* binInsert(a,X,i,Math.min(i+RUN-1,n-1));for(let w=RUN;w<n;w*=2)for(let l=0;l<n-w;l+=2*w)yield* mergeRange(a,X,l,l+w-1,Math.min(l+2*w-1,n-1))}},
+ {id:'strand',name:'Strand Sort',cat:'Merge',b:'n',a:'n²',w:'n²',s:'n',st:1,ip:0,yr:'—',by:'Classic',
+  d:'Repeatedly pulls an increasing "strand" out of the input and merges it into the result. Fast when the data already contains long sorted runs.',
+  r:['Take the first remaining item to start a strand.','Walk the rest, pulling out every item bigger than the strand\'s last.','Merge the strand into the sorted result.','Repeat until the input is empty.'],
+  f:function*(a,X){const n=a.length;let rest=a.slice(),res=[];while(rest.length){const s=[rest[0]],keep=[];for(let i=1;i<rest.length;i++){yield X.cv(n-rest.length+i);if(rest[i]>=s[s.length-1])s.push(rest[i]);else keep.push(rest[i])}const m=[];let i=0,j=0;while(i<res.length&&j<s.length){yield X.cv(Math.min(i+j,n-1));m.push(res[i]<=s[j]?res[i++]:s[j++])}while(i<res.length)m.push(res[i++]);while(j<s.length)m.push(s[j++]);res=m;rest=keep;const all=res.concat(rest);for(let k=0;k<n;k++)if(a[k]!==all[k])yield X.w(k,all[k])}}},
+ {id:'patience',name:'Patience Sort',cat:'Merge',b:'n',a:'n log n',w:'n log n',s:'n',st:0,ip:0,yr:'1962',by:'Colin Mallows',
+  d:'Named after the card game: deal cards onto piles where each pile is decreasing, then merge the piles by always taking the smallest top card.',
+  r:['Deal each element onto the leftmost pile whose top is ≥ it, or start a new pile.','Each pile is now sorted (smallest on top).','Repeatedly take the smallest top card among all piles.','The number of piles equals the longest increasing subsequence.'],
+  f:function*(a,X){const n=a.length,piles=[];for(let i=0;i<n;i++){const v=a[i];let lo=0,hi=piles.length;while(lo<hi){const m=(lo+hi)>>1;yield X.cv(i);if(piles[m][piles[m].length-1]>=v)hi=m;else lo=m+1}if(lo===piles.length)piles.push([v]);else piles[lo].push(v)}for(let k=0;k<n;k++){let b=-1;for(let p=0;p<piles.length;p++){if(!piles[p].length)continue;if(b<0||piles[p][piles[p].length-1]<piles[b][piles[b].length-1])b=p;yield X.cv(k)}yield X.w(k,piles[b].pop())}}},
+ {id:'quick',name:'Quick Sort (Lomuto)',cat:'Partition',b:'n log n',a:'n log n',w:'n²',s:'log n',st:0,ip:1,yr:'1959',by:'Tony Hoare (Lomuto\'s scheme)',
+  d:'Pick a pivot, move everything smaller to its left and bigger to its right, then sort each side. Lomuto\'s version uses the last element as pivot.',
+  r:['Choose the last element as the pivot.','Walk the range; swap every element smaller than the pivot to the front.','Swap the pivot right after those smaller elements: it\'s now final.','Recursively sort the left and right parts.'],
+  f:function*(a,X){const q=function*(lo,hi){if(lo>=hi){if(lo===hi)X.ok(lo);return}X.pv(hi);let i=lo;for(let j=lo;j<hi;j++){yield X.c(j,hi);if(a[j]<a[hi]){if(i!==j)yield X.s(i,j);i++}}if(i!==hi)yield X.s(i,hi);X.ok(i);yield* q(lo,i-1);yield* q(i+1,hi)};yield* q(0,a.length-1)}},
+ {id:'hoare',name:'Quick Sort (Hoare)',cat:'Partition',b:'n log n',a:'n log n',w:'n²',s:'log n',st:0,ip:1,yr:'1959',by:'Tony Hoare',
+  d:'The original quicksort. Two pointers start at the ends and walk inward, swapping pairs that are on the wrong side of the pivot. Fewer swaps than Lomuto.',
+  r:['Pick the middle element\'s value as the pivot.','Move the left pointer right until it finds an element ≥ pivot.','Move the right pointer left until it finds an element ≤ pivot.','Swap them; repeat until the pointers cross, then recurse on both sides.'],
+  f:function*(a,X){const q=function*(lo,hi){if(lo>=hi)return;const mid=(lo+hi)>>1,p=a[mid];X.pv(mid);let i=lo-1,j=hi+1;while(true){do{i++;yield X.cv(i)}while(a[i]<p);do{j--;yield X.cv(j)}while(a[j]>p);if(i>=j)break;yield X.s(i,j)}yield* q(lo,j);yield* q(j+1,hi)};yield* q(0,a.length-1)}},
+ {id:'quick3',name:'3-Way Quick Sort',cat:'Partition',b:'n',a:'n log n',w:'n²',s:'log n',st:0,ip:1,yr:'1976',by:'Edsger Dijkstra (Dutch flag)',
+  d:'Splits into three groups: less than, equal to, and greater than the pivot. Excellent when there are many duplicates.',
+  r:['Take the first element as pivot.','Sort elements into three zones: < pivot, = pivot, > pivot.','The "equal" zone is final.','Recurse on the "less" and "greater" zones only.'],
+  f:function*(a,X){const q=function*(lo,hi){if(lo>=hi)return;X.pv(lo);let lt=lo,gt=hi,i=lo+1;const v=a[lo];while(i<=gt){yield X.cv(i);if(a[i]<v){yield X.s(lt,i);lt++;i++}else if(a[i]>v){yield X.s(i,gt);gt--}else i++}for(let k=lt;k<=gt;k++)X.ok(k);yield* q(lo,lt-1);yield* q(gt+1,hi)};yield* q(0,a.length-1)}},
+ {id:'dualpivot',name:'Dual-Pivot Quick Sort',cat:'Partition',b:'n log n',a:'n log n',w:'n²',s:'log n',st:0,ip:1,yr:'2009',by:'Vladimir Yaroslavskiy',
+  d:'Uses two pivots to split the array into three parts at once. Java uses this for sorting primitive arrays.',
+  r:['Pick two pivots p ≤ q (the ends of the range).','Partition into < p, between p and q, and > q.','Place both pivots in their final spots.','Recurse on all three parts.'],
+  f:function*(a,X){const q=function*(lo,hi){if(lo>=hi)return;yield X.c(lo,hi);if(a[lo]>a[hi])yield X.s(lo,hi);X.pv(lo);let lt=lo+1,gt=hi-1,i=lo+1;while(i<=gt){yield X.c(i,lo);if(a[i]<a[lo]){yield X.s(i,lt);lt++}else{yield X.c(i,hi);if(a[i]>a[hi]){while(i<gt){yield X.c(gt,hi);if(a[gt]>a[hi])gt--;else break}yield X.s(i,gt);gt--;yield X.c(i,lo);if(a[i]<a[lo]){yield X.s(i,lt);lt++}}}i++}lt--;gt++;yield X.s(lo,lt);yield X.s(hi,gt);X.ok(lt);X.ok(gt);yield* q(lo,lt-1);yield* q(lt+1,gt-1);yield* q(gt+1,hi)};yield* q(0,a.length-1)}},
+ {id:'intro',name:'Intro Sort',cat:'Hybrid',b:'n log n',a:'n log n',w:'n log n',s:'log n',st:0,ip:1,yr:'1997',by:'David Musser',
+  d:'C++\'s std::sort. Starts as quicksort, switches to heapsort if recursion gets too deep (so it never hits O(n²)), and finishes small pieces with insertion sort.',
+  r:['Quicksort with a median-of-three pivot.','If recursion depth exceeds 2·log₂(n), heap-sort that piece instead.','Pieces smaller than 16 get insertion sort.','Result: quicksort speed with a guaranteed O(n log n).'],
+  f:function*(a,X){const n=a.length;const go=function*(lo,hi,d){while(hi-lo>15){if(d===0){yield* heapRange(a,X,lo,hi);return}d--;const m=(lo+hi)>>1;yield X.c(m,lo);if(a[m]<a[lo])yield X.s(m,lo);yield X.c(hi,lo);if(a[hi]<a[lo])yield X.s(hi,lo);yield X.c(hi,m);if(a[hi]<a[m])yield X.s(hi,m);yield X.s(m,hi);X.pv(hi);let i=lo;for(let j=lo;j<hi;j++){yield X.c(j,hi);if(a[j]<a[hi]){if(i!==j)yield X.s(i,j);i++}}yield X.s(i,hi);yield* go(i+1,hi,d);hi=i-1}yield* insertionRange(a,X,lo,hi)};yield* go(0,n-1,2*Math.floor(Math.log2(Math.max(n,2))))}},
+ {id:'bitonic',name:'Bitonic Sort',cat:'Network',b:'n log² n',a:'n log² n',w:'n log² n',s:'1',st:0,ip:1,yr:'1968',by:'Ken Batcher',
+  d:'A sorting network: a fixed pattern of compare-and-swaps that doesn\'t depend on the data, so GPUs can run whole layers in parallel. Builds bitonic (up-then-down) sequences and merges them.',
+  r:['Sort the first half ascending and the second half descending: a bitonic sequence.','Compare each element with its partner a fixed distance away and swap into order.','Recursively merge both halves the same way.','The comparison pattern is identical for every input.'],
+  f:function*(a,X){const bm=function*(lo,n,up){if(n<=1)return;const m=P2(n);for(let i=lo;i<lo+n-m;i++){yield X.c(i,i+m);if((a[i]>a[i+m])===up)yield X.s(i,i+m)}yield* bm(lo,m,up);yield* bm(lo+m,n-m,up)};const bs=function*(lo,n,up){if(n<=1)return;const m=n>>1;yield* bs(lo,m,!up);yield* bs(lo+m,n-m,up);yield* bm(lo,n,up)};yield* bs(0,a.length,true)}},
+ {id:'circle',name:'Circle Sort',cat:'Network',b:'n log n',a:'n log n',w:'n log² n',s:'log n',st:0,ip:1,yr:'2016',by:'Popularized on Rosetta Code',
+  d:'Compares elements in concentric "circles": first with last, second with second-to-last, and so on, then recurses into each half. Repeats until nothing swaps.',
+  r:['Compare the outermost pair (first and last) and swap if needed.','Move inward, comparing mirror-image pairs.','Recurse into each half.','Repeat whole passes until a pass makes no swaps.'],
+  f:function*(a,X){const cs=function*(lo,hi){if(lo>=hi)return false;let sw=false,l=lo,h=hi;while(l<h){yield X.c(l,h);if(a[l]>a[h]){yield X.s(l,h);sw=true}l++;h--}if(l===h&&h+1<=hi){yield X.c(l,h+1);if(a[l]>a[h+1]){yield X.s(l,h+1);sw=true}}const m=(lo+hi)>>1;const s1=yield* cs(lo,m),s2=yield* cs(m+1,hi);return sw||s1||s2};while(yield* cs(0,a.length-1)){}}},
+ {id:'counting',name:'Counting Sort',cat:'Distribution',b:'n + k',a:'n + k',w:'n + k',s:'k',st:1,ip:0,yr:'1954',by:'Harold Seward',
+  d:'Doesn\'t compare at all. Counts how many times each value appears, then writes the values back in order. Only works for small integer ranges (k).',
+  r:['Count occurrences of every value.','Turn counts into starting positions (running total).','Place each element at its position.','No comparisons between elements ever happen.'],
+  f:function*(a,X){const n=a.length,mx=Math.max(...a),c=new Array(mx+1).fill(0);for(let i=0;i<n;i++){yield X.r(i);c[a[i]]++}let k=0;for(let v=0;v<=mx;v++)for(let t=0;t<c[v];t++)yield X.w(k++,v)}},
+ {id:'pigeonhole',name:'Pigeonhole Sort',cat:'Distribution',b:'n + k',a:'n + k',w:'n + k',s:'n + k',st:1,ip:0,yr:'—',by:'Classic',
+  d:'Like counting sort, but each "hole" stores the actual elements. Fill holes in one pass, then empty them in order.',
+  r:['Make one hole for every possible value between min and max.','Drop each element into its hole.','Walk the holes in order and write back their contents.'],
+  f:function*(a,X){const n=a.length,mn=Math.min(...a),mx=Math.max(...a),h=Array.from({length:mx-mn+1},()=>[]);for(let i=0;i<n;i++){yield X.r(i);h[a[i]-mn].push(a[i])}let k=0;for(const b of h)for(const v of b)yield X.w(k++,v)}},
+ {id:'bucket',name:'Bucket Sort',cat:'Distribution',b:'n + k',a:'n + n²/k + k',w:'n²',s:'n + k',st:1,ip:0,yr:'1950s',by:'Classic',
+  d:'Scatter values into √n buckets by range, sort each bucket (insertion sort here), then gather. Shines on uniformly spread data.',
+  r:['Create √n buckets that each cover an equal slice of the value range.','Put every element into its bucket.','Write the buckets back in order.','Insertion-sort inside each bucket.'],
+  f:function*(a,X){const n=a.length,mx=Math.max(...a)+1,k=Math.max(1,Math.round(Math.sqrt(n))),B=Array.from({length:k},()=>[]);for(let i=0;i<n;i++){yield X.r(i);B[Math.floor(a[i]*k/mx)].push(a[i])}let p=0;const st=[];for(const b of B){st.push(p);for(const v of b)yield X.w(p++,v)}for(let i=0;i<k;i++){const lo=st[i],hi=lo+B[i].length-1;if(hi>lo)yield* insertionRange(a,X,lo,hi)}}},
+ {id:'radixlsd',name:'Radix Sort (LSD)',cat:'Distribution',b:'n·d',a:'n·d',w:'n·d',s:'n + b',st:1,ip:0,yr:'1887',by:'Herman Hollerith (punch-card machines)',
+  d:'Sorts by the last digit, then the tens digit, then hundreds, each pass with a stable counting sort. After the last digit the whole list is sorted.',
+  r:['Look only at the ones digit; stable-sort by it.','Then the tens digit, keeping ties in their current order.','Continue up to the largest digit (d passes in base b = 10).','Stability is what makes earlier passes still count.'],
+  f:function*(a,X){const n=a.length,mx=Math.max(...a);for(let e=1;Math.floor(mx/e)>0;e*=10){const c=new Array(10).fill(0),o=new Array(n);for(let i=0;i<n;i++){yield X.r(i);c[Math.floor(a[i]/e)%10]++}for(let d=1;d<10;d++)c[d]+=c[d-1];for(let i=n-1;i>=0;i--)o[--c[Math.floor(a[i]/e)%10]]=a[i];for(let i=0;i<n;i++)yield X.w(i,o[i])}}},
+ {id:'radixmsd',name:'Radix Sort (MSD)',cat:'Distribution',b:'n·d',a:'n·d',w:'n·d',s:'n + b',st:1,ip:0,yr:'1950s',by:'Classic',
+  d:'Starts with the most significant digit: splits the list into 10 groups by leading digit, then recursively sorts each group by the next digit.',
+  r:['Group elements by their highest digit.','Write the groups back in digit order.','Recursively sort each group by the next digit.','Groups of size 1 are done.'],
+  f:function*(a,X){const mx=Math.max(...a);let e=1;while(Math.floor(mx/e)>=10)e*=10;const rs=function*(lo,hi,e){if(hi<=lo||e<1)return;const g=Array.from({length:10},()=>[]);for(let i=lo;i<=hi;i++){yield X.r(i);g[Math.floor(a[i]/e)%10].push(a[i])}let k=lo;const st=[];for(const b of g){st.push(k);for(const v of b)yield X.w(k++,v)}for(let d=0;d<10;d++)yield* rs(st[d],st[d]+g[d].length-1,Math.floor(e/10))};yield* rs(0,a.length-1,e)}},
+ {id:'gravity',name:'Gravity (Bead) Sort',cat:'Distribution',b:'n',a:'S',w:'S',s:'n²',st:0,ip:0,yr:'2002',by:'Arulanandham, Calude & Dinneen',
+  d:'Imagine each number as beads on an abacus; let them fall under gravity and they pile up sorted. O(n) in hardware; in software it costs the total of all values (S).',
+  r:['Represent each number as a row of beads on vertical poles.','Let all beads fall down their poles.','Count beads in each row from the bottom: those are the sorted values.'],
+  f:function*(a,X){const n=a.length,mx=Math.max(...a),col=new Array(mx).fill(0);for(let i=0;i<n;i++){yield X.r(i);for(let j=0;j<a[i];j++)col[j]++}for(let r=n-1;r>=0;r--){let v=0;for(let j=0;j<mx;j++){if(col[j]>=n-r)v++;else break}yield X.w(r,v)}}},
+ {id:'sleep',name:'Sleep Sort',cat:'Joke',b:'n + max',a:'n + max',w:'n + max',s:'n',st:0,ip:0,yr:'2011',by:'Anonymous (4chan)',
+  d:'Starts one timer per number that waits proportional to its value, and prints the number when it wakes up. Small numbers wake first. Simulated here.',
+  r:['For every element, start a timer of length = its value.','When a timer fires, append its value to the output.','The output comes out sorted (if the timers are precise enough).'],
+  f:function*(a,X){const n=a.length,ev=a.map((v,i)=>[v,i]).sort((p,q)=>p[0]-q[0]||p[1]-q[1]);for(let i=0;i<n;i++)yield X.r(i);for(let k=0;k<n;k++)yield X.w(k,ev[k][0])}},
+ {id:'stooge',name:'Stooge Sort',cat:'Joke',b:'n^2.71',a:'n^2.71',w:'n^2.71',s:'n',st:0,ip:1,yr:'—',by:'Textbook exercise (CLRS)',max:48,
+  d:'Sorts the first two-thirds, then the last two-thirds, then the first two-thirds again. Correct, but famously slow: worse than bubble sort.',
+  r:['If the first element is bigger than the last, swap them.','If 3 or more elements remain, sort the first ⅔ recursively,','then the last ⅔,','then the first ⅔ again.'],
+  f:function*(a,X){const s=function*(i,j){yield X.c(i,j);if(a[i]>a[j])yield X.s(i,j);if(j-i+1>2){const t=Math.floor((j-i+1)/3);yield* s(i,j-t);yield* s(i+t,j);yield* s(i,j-t)}};yield* s(0,a.length-1)}},
+ {id:'slow',name:'Slow Sort',cat:'Joke',b:'n^(log n)',a:'n^(log n)',w:'n^(log n)',s:'n',st:0,ip:1,yr:'1986',by:'Andrei Broder & Jorge Stolfi',max:28,
+  d:'A deliberately terrible "multiply and surrender" algorithm. It recursively finds the maximum, moves it to the end, then sorts the rest the same pointless way.',
+  r:['Recursively slow-sort the first half and the second half.','Compare the two halves\' last elements; swap so the max is at the end.','Slow-sort everything except that last element.'],
+  f:function*(a,X){const s=function*(i,j){if(i>=j)return;const m=(i+j)>>1;yield* s(i,m);yield* s(m+1,j);yield X.c(m,j);if(a[m]>a[j])yield X.s(m,j);yield* s(i,j-1)};yield* s(0,a.length-1)}},
+ {id:'bogo',name:'Bogo Sort',cat:'Joke',b:'n',a:'n·n!',w:'∞',s:'1',st:0,ip:1,yr:'1984',by:'Folklore (Jargon File)',max:7,
+  d:'Shuffle the whole list randomly. Is it sorted? No? Shuffle again. Expected to take n! tries, so it\'s capped at 7 elements here.',
+  r:['Check if the list is sorted.','If not, shuffle it completely at random.','Repeat. Pray.'],
+  f:function*(a,X){let tries=0;while(!(yield* isSortedG(a,X))&&tries++<40000){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));yield X.s(i,j)}}}},
+ {id:'bozo',name:'Bozo Sort',cat:'Joke',b:'n',a:'n·n!',w:'∞',s:'1',st:0,ip:1,yr:'—',by:'Bogo sort\'s cousin',max:7,
+  d:'Even lazier than bogo sort: swap two random elements, check whether the list is sorted, repeat.',
+  r:['Check if the list is sorted.','If not, swap two random elements.','Repeat.'],
+  f:function*(a,X){let tries=0;while(!(yield* isSortedG(a,X))&&tries++<200000){const i=Math.floor(Math.random()*a.length),j=Math.floor(Math.random()*a.length);yield X.s(i,j)}}},
+];
+const BY={};ALGOS.forEach(x=>BY[x.id]=x);
+const CATS=[...new Set(ALGOS.map(x=>x.cat))];
+
+/* ===================== data ===================== */
+function makeArray(n,pat){
+  let a=Array.from({length:n},(_,i)=>i+1);
+  if(pat==='few'){const k=4;a=a.map((_,i)=>Math.floor(i*k/n)*Math.floor(n/k)+Math.floor(n/k/2)+1)}
+  if(pat==='reversed')return a.reverse();
+  if(pat==='sorted')return a;
+  for(let i=n-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
+  if(pat==='nearly'){a.sort((p,q)=>p-q);for(let t=0;t<Math.max(1,n/20);t++){const i=Math.floor(Math.random()*n),j=Math.min(n-1,i+1+Math.floor(Math.random()*3));[a[i],a[j]]=[a[j],a[i]]}}
+  return a;
+}
+
+/* ===================== player ===================== */
+const COL={c:'#7dd3fc',s:'#b8f36b',w:'#f9a8d4',p:'#fb923c',ok:'rgba(184,243,107,.42)',base:'rgba(228,231,229,.78)'};
+class Player{
+  constructor(cv,opts={}){this.cv=cv;this.g=cv.getContext('2d');this.view='bars';this.opts=opts;this.reset([1])}
+  reset(arr,algo){
+    this.a=arr.slice();this.max=Math.max(...this.a,1);this.algo=algo;this.gen=null;this.done=false;this.sweep=-1;this.hl=[];this.okSet=new Set();this.pivot=-1;
+    const P=this;this.X={cmp:0,swp:0,wr:0,acc:0,
+      c(i,j){P.X.cmp++;P.X.acc+=2;return{k:'c',i,j}},cv(i){P.X.cmp++;P.X.acc++;return{k:'c',i,j:-1}},r(i){P.X.acc++;return{k:'c',i,j:-1}},
+      s(i,j){const t=P.a[i];P.a[i]=P.a[j];P.a[j]=t;P.X.swp++;P.X.acc+=4;return{k:'s',i,j}},
+      w(i,v){P.a[i]=v;P.X.wr++;P.X.acc++;return{k:'w',i,j:-1}},pv(i){P.pivot=i},ok(i){P.okSet.add(i)}};
+    if(algo)this.gen=BY[algo].f(this.a,this.X);
+    this.draw();
+  }
+  step(k){ // run up to k operations; returns ops for sound
+    if(this.done||!this.gen)return[];
+    const ops=[];this.hl=[];
+    for(let t=0;t<k;t++){const r=this.gen.next();if(r.done){this.finish();break}if(r.value){ops.push(r.value);if(this.hl.length<4)this.hl.push(r.value);else this.hl[t%4]=r.value}}
+    return ops;
+  }
+  finish(){this.done=true;this.hl=[];this.pivot=-1;this.sweep=0;this.ok=sortedQ(this.a);this.opts.onDone&&this.opts.onDone(this)}
+  draw(){
+    const cv=this.cv,dpr=Math.min(devicePixelRatio||1,2),W=cv.clientWidth,H=cv.clientHeight;if(!W)return;
+    if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr)}
+    const g=this.g;g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,W,H);
+    const a=this.a,n=a.length,bw=W/n,pad=n>120?0:Math.min(2,bw*.18),top=10;
+    const mark=new Map();this.hl.forEach(o=>{mark.set(o.i,o.k);if(o.j>=0)mark.set(o.j,o.k)});
+    if(this.pivot>=0&&!this.done)mark.set(this.pivot,mark.get(this.pivot)||'p');
+    const sw=this.sweep;
+    for(let i=0;i<n;i++){
+      const v=a[i]/this.max,h=Math.max(2,v*(H-top)),x=i*bw;
+      let c=COL.base;
+      if(this.view==='rainbow')c=`hsl(${(a[i]/this.max)*300},85%,62%)`;
+      if(this.okSet.has(i)&&!this.done&&this.view!=='rainbow')c=COL.ok;
+      if(sw>=0&&i<=sw)c=this.ok?'#b8f36b':'#f87171';
+      const m=mark.get(i);if(m)c=COL[m];
+      g.fillStyle=c;
+      if(this.view==='dots'){const r=Math.max(1.6,Math.min(5,bw*.38));g.beginPath();g.arc(x+bw/2,H-h,r,0,7);g.fill();if(m){g.globalAlpha=.25;g.beginPath();g.arc(x+bw/2,H-h,r*2.6,0,7);g.fill();g.globalAlpha=1}}
+      else if(this.view==='rainbow'){g.fillRect(x,0,Math.ceil(bw)-(n>200?0:.5),H);if(m){g.fillStyle='rgba(255,255,255,.85)';g.fillRect(x,0,Math.ceil(bw),6)}}
+      else{const rr=Math.min(3,bw/3);g.beginPath();g.roundRect?g.roundRect(x+pad/2,H-h,Math.max(1,bw-pad),h,[rr,rr,0,0]):g.rect(x+pad/2,H-h,Math.max(1,bw-pad),h);g.fill();
+        if(m){g.globalAlpha=.18;g.fillRect(x,0,bw,H-h);g.globalAlpha=1}}
+    }
+    if(sw>=0&&sw<n)this.sweep=Math.min(n,sw+Math.max(1,Math.ceil(n/40)));
+  }
+}
+
+/* ===================== sound ===================== */
+let AC=null,soundOn=false,lastBeep=0;
+function beep(v){if(!soundOn)return;const t=performance.now();if(t-lastBeep<16)return;lastBeep=t;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type='triangle';o.frequency.value=180+v*820;g.gain.setValueAtTime(.06,AC.currentTime);g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+.07);o.connect(g).connect(AC.destination);o.start();o.stop(AC.currentTime+.08)}catch(_){}}
+
+/* ===================== main visualizer ===================== */
+const main=new Player($('cv'),{onDone:p=>{$('done').className='done on'+(p.ok?'':' bad');$('done').textContent=p.ok?'Sorted ✓':'Gave up (that\'s the joke)';setPlay(false)}});
+let cur='bubble',running=false,base=[];
+const fmt=n=>n.toLocaleString();
+function speedOps(){const s=+$('speed').value;return s<=0?1:Math.max(1,Math.round(Math.pow(10,s/100*3.4)/6))}
+function speedDelay(){const s=+$('speed').value;return s<20?Math.round((20-s)*14):0}
+function setLabels(){const n=+$('size').value;$('sizeV').textContent=n;const o=speedOps(),d=speedDelay();$('speedV').textContent=d?`${(1000/((d||16)+16)).toFixed(0)}/s`:o+'×';['size','speed','raceSize'].forEach(id=>{const r=$(id);r.style.setProperty('--p',((r.value-r.min)/(r.max-r.min)*100)+'%')})}
+function setPlay(on){running=on;$('play').querySelector('span').textContent=on?'Pause':main.done?'Again':'Sort';$('play').querySelector('svg').innerHTML=on?'<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>':'<path d="M7 4v16l13-8z"/>'}
+function newData(){
+  const A=BY[cur];let n=+$('size').value;$('note').textContent='';
+  if(A.max&&n>A.max){n=A.max;$('note').textContent=`${A.name} is capped at ${A.max} elements. Any more and it would run for days (or forever).`}
+  base=makeArray(n,$('pattern').value);main.reset(base,cur);$('done').className='done';setPlay(false);updStats();
+}
+function restart(){main.reset(base,cur);$('done').className='done'}
+function updStats(){$('sC').textContent=fmt(main.X.cmp);$('sS').textContent=fmt(main.X.swp);$('sW').textContent=fmt(main.X.wr);$('sA').textContent=fmt(main.X.acc)}
+let lastT=0;
+function frame(t){
+  requestAnimationFrame(frame);
+  if(running&&!main.done){const d=speedDelay();if(!d||t-lastT>=d){lastT=t;const ops=main.step(speedOps());if(ops.length){const o=ops[ops.length-1];beep(main.a[o.i]/main.max)}updStats()}}
+  main.draw();race.forEach(r=>r.draw());raceTick();heroTick(t);
+}
+$('play').addEventListener('click',()=>{if(main.done){restart()}setPlay(!running)});
+$('step').addEventListener('click',()=>{setPlay(false);if(main.done)restart();const ops=main.step(1);if(ops[0])beep(main.a[ops[0].i]/main.max);updStats()});
+$('shuf').addEventListener('click',newData);
+$('pattern').addEventListener('change',newData);
+$('size').addEventListener('input',()=>{setLabels();newData()});
+$('speed').addEventListener('input',setLabels);
+$('snd').addEventListener('click',()=>{soundOn=!soundOn;$('snd').classList.toggle('on',soundOn);$('snd').textContent=soundOn?'🔊 Sound':'🔇 Sound';if(soundOn)beep(.5)});
+$('views').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;main.view=b.dataset.v;race.forEach(r=>r.view=b.dataset.v);[...$('views').children].forEach(x=>x.classList.toggle('on',x===b))});
+const opts=ALGOS.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
+$('algoSel').innerHTML=CATS.map(c=>`<optgroup label="${c}">${ALGOS.filter(x=>x.cat===c).map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}</optgroup>`).join('');
+$('algoSel').addEventListener('change',()=>select($('algoSel').value));
+document.addEventListener('keydown',e=>{if(e.target.matches('input,select,textarea'))return;if(e.code==='Space'){e.preventDefault();$('play').click()}else if(e.key==='ArrowRight')$('step').click();else if(e.key==='r')newData()});
+
+function select(id,scroll){
+  cur=id;const A=BY[id];$('algoSel').value=id;
+  const nm=$('vName');nm.textContent=A.name;nm.classList.remove('anim');void nm.offsetWidth;nm.classList.add('anim');$('vCat').textContent=A.cat;
+  const cls=v=>/^(1|log n|n)$/.test(v)?'':'';
+  $('info').innerHTML=`<div class="vcat">${A.cat}</div><h3 style="margin-top:6px">${A.name}</h3><div class="meta">${A.yr} · ${A.by}</div>
+    <div class="badges"><span class="bdg ${A.st?'y':'n'}">${A.st?'Stable':'Not stable'}</span><span class="bdg ${A.ip?'y':'n'}">${A.ip?'In-place':'Needs extra memory'}</span>${A.cat==='Distribution'?'<span class="bdg">No comparisons needed</span>':''}${A.cat==='Network'?'<span class="bdg">Parallel-friendly</span>':''}</div>
+    <div class="cx"><div><span>Best</span><b>${A.b}</b></div><div><span>Average</span><b>${A.a}</b></div><div><span>Worst</span><b>${A.w}</b></div><div><span>Memory</span><b>${A.s}</b></div></div>
+    <p>${A.d}</p><ol class="rules">${A.r.map((t,i)=>`<li style="--i:${i}">${t}</li>`).join('')}</ol>
+    <div class="legend"><span><i style="--c:var(--blue)"></i>Compare / read</span><span><i style="--c:var(--accent)"></i>Swap</span><span><i style="--c:var(--pink)"></i>Write</span><span><i style="--c:var(--orange)"></i>Pivot / candidate</span></div>`;
+  document.querySelectorAll('.ac').forEach(c=>c.classList.toggle('cur',c.dataset.id===id));
+  newData();
+  if(scroll)$('cv').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+/* ===================== race ===================== */
+let race=[],raceOn=false,raceBase=[],raceWinner=null;
+const raceTick=()=>{if(!raceOn)return;const k=Math.max(1,Math.round(+$('raceSize').value/25));race.forEach(r=>{if(!r.done)r.step(k)});race.forEach((r,i)=>{$(i?'lsB':'lsA').innerHTML=`<span>steps <b>${fmt(r.X.cmp+r.X.swp+r.X.wr)}</b></span><span>cmp <b>${fmt(r.X.cmp)}</b></span><span>swaps <b>${fmt(r.X.swp)}</b></span><span>writes <b>${fmt(r.X.wr)}</b></span>`});
+  if(race.every(r=>r.done)){raceOn=false;const s=race.map(r=>r.X.cmp+r.X.swp+r.X.wr);const w=s[0]===s[1]?-1:s[0]<s[1]?0:1;$('laneA').classList.toggle('win',w===0);$('laneB').classList.toggle('win',w===1);$('raceGo').querySelector('span').textContent='Race again'}};
+function raceSetup(fresh){
+  let n=+$('raceSize').value;$('raceSizeV').textContent=n;const ids=[$('raceA').value,$('raceB').value];
+  const caps=ids.map(id=>BY[id].max||1e9);n=Math.min(n,...caps);
+  if(fresh||raceBase.length!==n)raceBase=makeArray(n,$('racePat').value);
+  if(!race.length)race=[new Player($('cvA')),new Player($('cvB'))];
+  race.forEach((r,i)=>{r.view=main.view;r.reset(raceBase,ids[i])});['laneA','laneB'].forEach(l=>$(l).classList.remove('win'));
+  ['lsA','lsB'].forEach(l=>$(l).innerHTML='<span>ready</span>');raceOn=false;$('raceGo').querySelector('span').textContent='Race';
+}
+$('raceA').innerHTML=opts;$('raceB').innerHTML=opts;$('raceA').value='quick';$('raceB').value='bubble';
+['raceA','raceB'].forEach(id=>$(id).addEventListener('change',()=>raceSetup(false)));
+$('racePat').addEventListener('change',()=>raceSetup(true));
+$('raceSize').addEventListener('input',()=>{setLabels();raceSetup(true)});
+$('raceNew').addEventListener('click',()=>raceSetup(true));
+$('raceGo').addEventListener('click',()=>{if(race.some(r=>r.done))raceSetup(false);raceOn=!raceOn});
+
+/* ===================== library + table ===================== */
+let catF='All';
+function mini(id){const seed=[...id].reduce((u,c)=>u*31+c.charCodeAt(0)>>>0,7);let x=seed;const r=()=>(x=(x*1103515245+12345)>>>0)/4294967296;return Array.from({length:14},(_,i)=>`<i style="height:${Math.round((i<5?(i+1)/14:r())*100)}%"></i>`).join('')}
+function blurb(d){const s=d.match(/[^.!?]+[.!?]+(\s|$)/g)||[d];let o=s[0];if(o.length<70&&s[1])o+=s[1];return o.trim()}
+function drawLib(){
+  const q=$('q').value.trim().toLowerCase();
+  const list=ALGOS.filter(x=>(catF==='All'||x.cat===catF)&&(!q||(x.name+' '+x.cat+' '+x.d+' '+x.by).toLowerCase().includes(q)));
+  $('grid').innerHTML=list.map((x,i)=>`<button class="ac${x.id===cur?' cur':''}" data-id="${x.id}" style="--i:${i}"><span class="ct">${x.cat}</span><h3>${x.name}</h3><p>${blurb(x.d)}</p><div class="mini">${mini(x.id)}</div><div class="ft"><span>avg <b>${x.a}</b></span><span>${x.st?'stable':'unstable'}</span><span>${x.ip?'in-place':'extra mem'}</span></div></button>`).join('');
+  $('empty').classList.toggle('show',!list.length);
+}
+$('chips').innerHTML=['All',...CATS].map(c=>`<button class="chip${c==='All'?' on':''}" data-c="${c}">${c}<span>${c==='All'?ALGOS.length:ALGOS.filter(x=>x.cat===c).length}</span></button>`).join('');
+$('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;catF=b.dataset.c;[...$('chips').children].forEach(x=>x.classList.toggle('on',x===b));drawLib()});
+$('q').addEventListener('input',drawLib);
+$('grid').addEventListener('click',e=>{const b=e.target.closest('.ac');if(b)select(b.dataset.id,true)});
+
+const RANK=v=>{const s=v.replace(/\s/g,'');const t={'1':0,'logn':1,'n':2,'n+k':2.2,'n·d':2.4,'nlogn':3,'n+n²/k+k':3.2,'≈n^1.25':3.4,'n^1.5':3.6,'nlog²n':3.8,'n²/2ᵖ':3.9,'n²':4,'S':4.1,'n^2.71':5,'n^(logn)':6,'n·n!':7,'∞':8,'n+max':2.3,'n+b':2.1,'n²':4};return s in t?t[s]:4.5};
+const cg=v=>{const r=RANK(v);return r<=2.5?'g':r<=3.5?'m':r<=4.5?'b':'x'};
+const COLS=[['name','Algorithm'],['cat','Family'],['b','Best'],['a','Average'],['w','Worst'],['s','Memory'],['st','Stable'],['ip','In-place'],['yr','Year']];
+let sortK='a',sortR=false;
+function drawTable(){
+  const rows=ALGOS.slice().sort((p,q)=>{let A=p[sortK],B=q[sortK];if(['b','a','w','s'].includes(sortK)){A=RANK(A);B=RANK(B)}if(sortK==='yr'){A=parseInt(A)||9999;B=parseInt(B)||9999}const r=A<B?-1:A>B?1:p.name.localeCompare(q.name);return sortR?-r:r});
+  $('tbl').tHead.rows[0].innerHTML=COLS.map(([k,l])=>`<th data-k="${k}" class="${k===sortK?'s'+(sortR?' r':''):''}">${l}</th>`).join('');
+  $('tbl').tBodies[0].innerHTML=rows.map(x=>`<tr data-id="${x.id}"><td>${x.name}</td><td>${x.cat}</td>${['b','a','w','s'].map(k=>`<td class="cg ${cg(x[k])}">${x[k]}</td>`).join('')}<td class="${x.st?'ok':'no'}">${x.st?'yes':'no'}</td><td class="${x.ip?'ok':'no'}">${x.ip?'yes':'no'}</td><td>${x.yr}</td></tr>`).join('');
+}
+$('tbl').addEventListener('click',e=>{const th=e.target.closest('th');if(th){const k=th.dataset.k;sortR=sortK===k?!sortR:false;sortK=k;drawTable();return}const tr=e.target.closest('tbody tr');if(tr)select(tr.dataset.id,true)});
+
+/* ===================== hero animation: a little merge sort on loop ===================== */
+const hero=new Player($('heroCv'));hero.view='bars';let heroNext=0;
+const heroIds=['merge','quick','heap','shell','radixlsd','bitonic','insertion','dualpivot'];let hi=0;
+function heroTick(t){if(RM||!$('heroCv').clientWidth)return;if(hero.done){if(!heroNext)heroNext=t+1400;if(t>heroNext){heroNext=0;hero.reset(makeArray(48,'random'),heroIds[hi++%heroIds.length])}}else if(hero.gen)hero.step(2);hero.draw()}
+hero.reset(makeArray(48,'random'),heroIds[hi++]);
+
+/* ===================== chrome ===================== */
+function tick(){try{$('clk').textContent=new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'}).format(new Date())}catch(_){}}
+tick();setInterval(tick,15000);
+$('menu').addEventListener('click',()=>{const o=$('hdr').classList.toggle('open');$('menu').setAttribute('aria-expanded',o)});
+addEventListener('pointermove',e=>{document.body.style.setProperty('--mx',e.clientX+'px');document.body.style.setProperty('--my',e.clientY+'px')},{passive:true});
+const io='IntersectionObserver'in window?new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target)}}),{threshold:.08}):null;
+document.querySelectorAll('.rv').forEach(el=>io?io.observe(el):el.classList.add('in'));
+document.querySelectorAll('[data-count]').forEach(()=>{});
+const countUp=(el,n)=>{const t0=performance.now();(function f(t){const k=Math.min(1,(t-t0)/1100);el.textContent=Math.round(n*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(f)})(t0)};
+countUp($('hN'),ALGOS.length);countUp($('hC'),CATS.length);
+
+setLabels();drawLib();drawTable();select('bubble');raceSetup(true);requestAnimationFrame(frame);
+</script>
+</body>
+</html>
