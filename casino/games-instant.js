@@ -4,7 +4,7 @@
 /* =============================================================== CRASH */
 reg((()=>{
   const G={id:'crash',name:'Rocket Crash',cat:'Instant Games',featured:true,desc:'The multiplier climbs until the rocket blows. Cash out before it does.',edge:'99% RTP',tc:'rgba(40,20,90,.95)',
-    art:`<svg class="a-chart" viewBox="0 0 160 90"><path d="M4 86 Q70 84 110 50 T156 6" fill="none" stroke="#5cff9d" stroke-width="4" stroke-linecap="round"/></svg><span class="a-rocket" style="position:absolute;right:22%;top:18%;font-size:34px">🚀</span>`};
+    art:`<div class="a-fly"><svg class="a-chart" viewBox="0 0 160 90"><path pathLength="100" d="M4 86 Q70 84 110 50 T156 6" fill="none" stroke="#5cff9d" stroke-width="4" stroke-linecap="round"/></svg><span class="rk">🚀</span><span class="bm">💥</span></div>`};
   const NAMES=['ace_high','lucky_lou','vegasvic','nightowl','queenbee','dicey','high_roller','moonboy','sevens','jackpot_jo','rivergirl','tilt'];
   let R,cv,cx,state='idle',bet=0,cp=1,m=1,t0=0,raf=0,cashed=false,hist=store.get('backroom-chist',[]),lastStep=0,crashT=0,bots=[],trail=[];
   const growth=t=>Math.exp(t*.14); // t seconds
@@ -13,7 +13,7 @@ reg((()=>{
   function paintBots(){$('#crBots').innerHTML=bots.map(b=>`<div class="bot ${b.out?'out':''} ${b.bust?'bust':''}"><span>${b.n}</span><b>${b.out?b.at.toFixed(2)+'×':b.bust?'—':fmt(b.bet)}</b></div>`).join('')}
   function btn(){const b=$('#crGo');if(state==='run'&&!cashed){b.textContent=`Cash out ${fmt(bet*m)}`;b.className='btn big grn';}else if(state==='run'){b.textContent='Waiting…';b.className='btn big ghost'}else{b.textContent='Launch';b.className='btn big pulse'}b.disabled=state==='run'&&cashed}
   function launch(){if(state==='run')return;bet=Bet.take();if(!bet)return;
-    const U=Math.random();cp=Math.max(1,Math.floor(99/(1-U))/100);
+    const crashPt=()=>Math.max(1,Math.floor(99/(1-Math.random()))/100);cp=lucky()?Math.max(crashPt(),crashPt(),crashPt()):crashPt();
     state='run';cashed=false;m=1;t0=performance.now();lastStep=0;trail=[];banner($('#crM'),'');
     bots=shuffle(NAMES.slice()).slice(0,7).map(n=>({n,bet:[10,25,50,100,250,500,1000][rnd(7)],at:Math.max(1.05,Math.min(25,.99/(1-Math.random()*.95))),out:false,bust:false}));paintBots();
     $('.crwrap',R).classList.remove('boom');SFX.whoosh();btn();if(!raf)raf=requestAnimationFrame(frame)}
@@ -117,7 +117,7 @@ reg((()=>{
   const G={id:'coin',name:'Coin Flip',cat:'Instant Games',desc:'Heads or tails, 1.96×. Ride the streak.',edge:'98% RTP',tc:'rgba(130,90,20,.95)',art:`<div class="a-coin">JK</div>`};
   let R,busy=false,rot=0,streak=0,best=0,hist=[];
   async function flip(side){if(busy)return;const bet=Bet.take();if(!bet)return;busy=true;$$('.cfb',R).forEach(b=>b.disabled=true);banner($('#cfM'),'');
-    const res=Math.random()<.5?'H':'T',coin=$('#cfCoin'),turns=6+rnd(3);
+    const res=lucky()?side:Math.random()<.5?'H':'T',coin=$('#cfCoin'),turns=6+rnd(3);
     const target=rot+turns*360+((res==='H'?0:180)-(((rot%360)+360)%360)+360)%360;SFX.whoosh();
     const D=RM?50:1700;
     coin.animate([{transform:`translateY(0) rotateX(${rot}deg) scale(1)`},{transform:`translateY(-180px) rotateX(${(rot+target)/2}deg) scale(1.25)`,offset:.45},{transform:`translateY(0) rotateX(${target}deg) scale(1)`}],{duration:D,easing:'cubic-bezier(.3,.6,.4,1)',fill:'forwards'});
@@ -150,7 +150,7 @@ reg((()=>{
   function layout(){const S=cv.clientWidth,H=cv.clientHeight,gap=Math.min((S-20)/(rows+2),(H-60)/(rows+1.2)),top=24;L={S,H,gap,top,cx0:S/2,binY:top+gap*(rows)+gap*.35,bw:gap*.92}}
   const pegX=(r,i)=>L.cx0+(i-(r+2)/2)*L.gap,pegY=r=>L.top+r*L.gap;
   function drop(){const bet=Bet.take();if(!bet){auto=0;paintAuto();return false}
-    const path=[];let k=0;for(let r=0;r<rows;r++){const d=Math.random()<.5?0:1;path.push(d);k+=d}
+    const genPath=()=>Array.from({length:rows},()=>Math.random()<.5?0:1),path=lucky()?bestOf(4,genPath,p=>table()[p.reduce((a,b)=>a+b,0)]):genPath(),k=path.reduce((a,b)=>a+b,0);
     balls.push({bet,path,bin:k,r:0,u:0,x:L.cx0,y:L.top-L.gap*.7,c:`hsl(${330+rnd(40)},100%,${60+rnd(10)}%)`,tr:[],rows,risk});SFX.pop(900);if(!raf)raf=requestAnimationFrame(frame);return true}
   function land(b){const m=T[b.rows][b.risk][b.bin],pay=b.bet*m;binHit.set(b.bin,1);const r=cv.getBoundingClientRect();const x=r.left+L.cx0+(b.bin-b.rows/2)*L.gap,y=r.top+L.binY+L.gap*.3;
     SFX.pop(m>=1?500+Math.min(900,m*40):260);settle(b.bet,pay,{x,y},{big:50,silent:true});if(m>=10)FX.sparks(x,y,binCol(m),30);
@@ -212,6 +212,7 @@ reg((()=>{
     $$('.tileb',R).forEach((t,i)=>{t.className='tileb';t.innerHTML='';t.disabled=false;t.animate([{transform:'scale(.8)',opacity:.4},{transform:'none',opacity:1}],{duration:300,delay:i*14,easing:'cubic-bezier(.3,1.6,.5,1)',fill:'backwards'})});banner($('#mnM'),'Find the gems.');SFX.chip();paint()}
   function reveal(lost){$$('.tileb',R).forEach((t,i)=>{if(t.classList.contains('gem')||t.classList.contains('boom'))return;t.disabled=true;setTimeout(()=>{t.classList.add(bombs.has(i)?'boom':'gem','ghost');t.innerHTML=bombs.has(i)?'💣':'💎'},RM?0:120+i*18)})}
   function hit(i,t){if(!live||t.disabled)return;t.disabled=true;
+    if(bombs.has(i)&&lucky()){const free=$$('.tileb',R).map((x,j)=>j).filter(j=>j!==i&&!bombs.has(j)&&!$$('.tileb',R)[j].disabled);if(free.length){bombs.delete(i);bombs.add(pick(free))}}
     if(bombs.has(i)){live=false;t.classList.add('boom');t.innerHTML='💥';SFX.boom();const c=center(t);FX.burst(c.x,c.y,{n:50,type:'spark',colors:['#ff4f6d','#ff9f43','#fff'],speed:10,g:.1,life:40,size:4,lift:0});
       const f=$('.felt',R);f.classList.remove('shakeA');void f.offsetWidth;f.classList.add('shakeA');Stats.record(bet,0);banner($('#mnM'),`Boom! −${fmt(bet)}`,'lose');reveal(true);paint();return}
     open++;t.classList.add('gem');t.innerHTML='💎';SFX.gem();const c=center(t);FX.burst(c.x,c.y,{n:18,type:'gem',colors:['#5cff9d','#b9ffd6','#57c7ff'],speed:6,life:40});
@@ -243,6 +244,7 @@ reg((()=>{
   function start(){if(live)return cash();bet=Bet.take();if(!bet)return;live=true;floor=0;const L=LV[lv];bombs=Array.from({length:FL},()=>new Set(shuffle([...Array(L.c).keys()]).slice(0,L.b)));build();live=true;paint();banner($('#twM'),'Pick a door on the bottom floor.');SFX.chip()}
   function showRow(f){const r=$(`.twrow[data-f="${f}"]`,R);$$('.twc',r).forEach((c,i)=>{if(c.classList.contains('s')||c.classList.contains('x'))return;c.disabled=true;c.classList.add(bombs[f].has(i)?'x':'s','ghost');c.textContent=bombs[f].has(i)?'💀':'💎'})}
   function pickDoor(f,i,c){if(!live||f!==floor)return;
+    if(bombs[f].has(i)&&lucky()){const safe=[...Array(LV[lv].c).keys()].filter(j=>!bombs[f].has(j));if(safe.length){bombs[f].delete(i);bombs[f].add(pick(safe))}}
     if(bombs[f].has(i)){live=false;c.classList.add('x');c.textContent='💀';SFX.boom();const k=center(c);FX.burst(k.x,k.y,{n:40,type:'spark',colors:['#ff4f6d','#b47cff','#fff'],speed:9,g:.1,life:40,size:4,lift:0});
       for(let x=f;x<FL;x++)setTimeout(()=>showRow(x),RM?0:(x-f)*90);Stats.record(bet,0);banner($('#twM'),`You fell from floor ${f+1}! −${fmt(bet)}`,'lose');paint();return}
     c.classList.add('s');c.textContent='💎';SFX.gem();SFX.pop(500+f*90);const k=center(c);FX.burst(k.x,k.y,{n:20,type:'gem',colors:['#b47cff','#e7d2ff','#5cff9d'],speed:6,life:40});showRow(f);
@@ -276,7 +278,7 @@ reg((()=>{
   function say(t){const c=$('#dbCom');c.textContent=t;c.classList.remove('in');void c.offsetWidth;c.classList.add('in')}
   async function race(){if(busy||pickI<0)return;const bet=Bet.take();if(!bet)return;busy=true;paintCard();banner($('#dbM'),'');$$('.dbh',R).forEach(b=>b.disabled=true);
     // choose the winner by probability, then script a race that ends that way
-    let r=Math.random(),win=0;for(let i=0;i<6;i++){if((r-=field[i].pw)<0){win=i;break}win=i}
+    let r=Math.random(),win=0;for(let i=0;i<6;i++){if((r-=field[i].pw)<0){win=i;break}win=i}if(lucky())win=pickI;
     const rest=shuffle([...Array(6).keys()].filter(i=>i!==win)),order=[win,...rest],T=[];order.forEach((h,k)=>T[h]=1+(k===0?0:(k===1?.004+Math.random()*.03:.03+k*.02+Math.random()*.03)));
     const prof=field.map((_,i)=>{const K=10,v=Array.from({length:K},()=>.75+Math.random()*.5);if(i===win&&Math.random()<.6){for(let k=0;k<5;k++)v[k]*=.85;for(let k=7;k<K;k++)v[k]*=1.25}
       const cum=[0];v.forEach(x=>cum.push(cum[cum.length-1]+x));return cum.map(x=>x/cum[K])});

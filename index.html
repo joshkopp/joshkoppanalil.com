@@ -626,7 +626,7 @@ tick();setInterval(tick,1000);
 $('year').textContent=new Date().getFullYear();
 
 // ----- Secret access code: type "gam" to enter the back room -----
-$('acc').addEventListener('input',e=>{if(e.target.value.trim().toLowerCase()==='gam')location.href='/casino/'});
+$('acc').addEventListener('input',e=>{const v=e.target.value.trim().toLowerCase();if(v==='gam')location.href='/casino/';else if(v==='dam')location.href='/casino/?luck=1'});
 
 // ----- View counter -----
 const OFFSET=359;

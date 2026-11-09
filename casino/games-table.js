@@ -9,7 +9,9 @@ reg((()=>{
   const G={id:'bj',name:'Blackjack',cat:'Table Games',desc:'Beat the dealer to 21. Blackjack pays 3 to 2.',edge:'99.5% RTP',tc:'rgba(13,90,60,.95)',
     art:`<div class="a-cards"><div class="mc">A</div><div class="mc">K</div><div class="mc">♥</div></div>`};
   let R,shoe=[],dealer=[],hands=[],act=0,phase='bet',dEl,dTot,pBox,msg,btn={};
-  const draw=()=>{if(shoe.length<60){shoe=deck(6);toast('Fresh 6-deck shoe shuffled')}return shoe.pop()};
+  const draw=(...want)=>{if(shoe.length<60){shoe=deck(6);toast('Fresh 6-deck shoe shuffled')}
+    if(want.length&&lucky())for(const f of want){const i=shoe.findLastIndex((c,k)=>k>shoe.length-40&&f(c));if(i>=0){[shoe[i],shoe[shoe.length-1]]=[shoe[shoe.length-1],shoe[i]];break}}
+    return shoe.pop()};
   const cv=c=>c.r==='A'?11:['K','Q','J','10'].includes(c.r)?10:+c.r;
   function val(cs){let t=0,a=0;for(const c of cs){t+=cv(c);if(c.r==='A')a++}while(t>21&&a){t-=10;a--}return{t,soft:a>0}}
   const isBJ=cs=>cs.length===2&&val(cs).t===21;
@@ -23,26 +25,26 @@ reg((()=>{
     if(phase==='busy')return;const bet=Bet.take();if(!bet)return;phase='busy';ui();banner(msg,'');
     dealer=[];hands=[];act=0;$('#bjD').innerHTML='';pBox.innerHTML='';paintTot(dTot,[]);
     const h=newHand(bet);hands.push(h);const shoeEl=$('.shoe',R);
-    for(let i=0;i<2;i++){const c=draw();h.cards.push(c);await dealCard(h.hand,c,{from:shoeEl});paintTot(h.tot,h.cards);
-      const d=draw();dealer.push(d);await dealCard($('#bjD'),d,{from:shoeEl,up:i===0});paintTot(dTot,dealer,true)}
+    for(let i=0;i<2;i++){const c=draw(c=>cv(c)>=10||(i===1&&val([...h.cards,c]).t>=19));h.cards.push(c);await dealCard(h.hand,c,{from:shoeEl});paintTot(h.tot,h.cards);
+      const d=draw(c=>cv(c)>=2&&cv(c)<=6);dealer.push(d);await dealCard($('#bjD'),d,{from:shoeEl,up:i===0});paintTot(dTot,dealer,true)}
     const up=cv(dealer[0]);
     if(isBJ(dealer)&&(up>=10)){await sleep(300);await reveal();return finish()}
     if(isBJ(h.cards)){h.done=true;await reveal();return finish()}
     phase='play';ui();
   }
   async function reveal(){const e=$('#bjD').children[1];if(e&&!e.classList.contains('up')){flipCard(e);await sleep(450)}paintTot(dTot,dealer)}
-  async function hit(){if(phase!=='play')return;phase='busy';const h=hands[act],c=draw();h.cards.push(c);await dealCard(h.hand,c,{from:$('.shoe',R)});paintTot(h.tot,h.cards);
+  async function hit(){if(phase!=='play')return;phase='busy';const h=hands[act],c=draw(c=>{const t=val([...h.cards,c]).t;return t>=19&&t<=21},c=>val([...h.cards,c]).t<=21);h.cards.push(c);await dealCard(h.hand,c,{from:$('.shoe',R)});paintTot(h.tot,h.cards);
     const t=val(h.cards).t;if(t>21){h.done=true;h.box.classList.add('bust');SFX.lose();$('.hand',h.box).classList.add('shake');return next()}if(t===21||h.split&&h.cards[0].r==='A'){h.done=true;return next()}phase='play';ui()}
   function stand(){if(phase!=='play')return;hands[act].done=true;next()}
   async function dbl(){if(phase!=='play')return;const h=hands[act];if(h.cards.length!==2||!Bet.take(h.bet))return;h.bet*=2;h.dbl=true;$('.bspot',h.box).innerHTML=chipStack(h.bet);SFX.chip();phase='busy';
-    const c=draw();h.cards.push(c);const e=await dealCard(h.hand,c,{from:$('.shoe',R)});e.style.transform='rotate(90deg)';paintTot(h.tot,h.cards);h.done=true;if(val(h.cards).t>21){h.box.classList.add('bust');SFX.lose()}next()}
+    const c=draw(c=>{const t=val([...h.cards,c]).t;return t>=19&&t<=21},c=>val([...h.cards,c]).t<=21);h.cards.push(c);const e=await dealCard(h.hand,c,{from:$('.shoe',R)});e.style.transform='rotate(90deg)';paintTot(h.tot,h.cards);h.done=true;if(val(h.cards).t>21){h.box.classList.add('bust');SFX.lose()}next()}
   async function split(){if(phase!=='play')return;const h=hands[0];if(!Bet.take(h.bet))return;phase='busy';SFX.chip();
     const c2=h.cards.pop();h.hand.lastChild.remove();const h2=newHand(h.bet,[c2]);h.split=h2.split=true;hands.push(h2);h2.hand.appendChild(cardEl(c2));paintTot(h.tot,h.cards);paintTot(h2.tot,h2.cards);
     for(const x of hands){const c=draw();x.cards.push(c);await dealCard(x.hand,c,{from:$('.shoe',R)});paintTot(x.tot,x.cards);if(x.cards[0].r==='A'||val(x.cards).t===21)x.done=true}
     act=hands.findIndex(x=>!x.done);if(act<0){act=0;return next()}phase='play';ui()}
   async function next(){while(act<hands.length&&hands[act].done)act++;if(act<hands.length){phase='play';ui();return}
     phase='busy';ui();await reveal();
-    if(hands.some(x=>val(x.cards).t<=21)){while(val(dealer).t<17){await sleep(350);const c=draw();dealer.push(c);await dealCard($('#bjD'),c,{from:$('.shoe',R)});paintTot(dTot,dealer)}}
+    if(hands.some(x=>val(x.cards).t<=21)){while(val(dealer).t<17){await sleep(350);const c=draw(c=>val([...dealer,c]).t>21);dealer.push(c);await dealCard($('#bjD'),c,{from:$('.shoe',R)});paintTot(dTot,dealer)}}
     finish()}
   function finish(){
     const d=val(dealer).t,dBJ=isBJ(dealer);let tb=0,pay=0;const parts=[];
@@ -76,7 +78,12 @@ reg((()=>{
   let R,shoe=[],side='P',busy=false,road=[];
   const bv=c=>['10','J','Q','K'].includes(c.r)?0:c.r==='A'?1:+c.r,tot=cs=>cs.reduce((a,c)=>a+bv(c),0)%10;
   const draw=()=>{if(shoe.length<20)shoe=deck(8);return shoe.pop()};
+  function sim(sh){const s=sh.slice(),d=()=>s.pop(),P=[d()],B=[d()];P.push(d());B.push(d());const pt=tot(P),bt=tot(B);
+    if(!(pt>=8||bt>=8)){let p3=null;if(pt<=5){p3=d();P.push(p3)}const b=tot(B),v=p3?bv(p3):null;
+      if(p3===null?b<=5:(b<=2||(b===3&&v!==8)||(b===4&&v>=2&&v<=7)||(b===5&&v>=4&&v<=7)||(b===6&&(v===6||v===7))))B.push(d())}
+    const fp=tot(P),fb=tot(B);return fp>fb?'P':fb>fp?'B':'T'}
   async function play(){if(busy)return;const bet=Bet.take();if(!bet)return;busy=true;$('#bcGo').disabled=true;banner($('#bcM'),'');
+    if(shoe.length<20)shoe=deck(8);if(lucky())for(let k=0;k<80&&sim(shoe)!==side;k++)shuffle(shoe);
     const P=[],B=[],pb=$('#bcP'),bb=$('#bcB'),sh=$('.shoe',R);pb.innerHTML=bb.innerHTML='';$$('.bcz',R).forEach(z=>z.classList.remove('wz'));
     const t=(id,cs)=>{$(id).textContent=tot(cs)};
     for(let i=0;i<2;i++){P.push(draw());await dealCard(pb,P[i],{from:sh});t('#bcPT',P);B.push(draw());await dealCard(bb,B[i],{from:sh});t('#bcBT',B)}
@@ -122,11 +129,12 @@ reg((()=>{
   function paintPT(hit){$('#vpPT').innerHTML=PT.map(([n,m],i)=>`<div class="ptr${i===hit?' hit':''}"><span>${n}</span><b>${m}×</b><em>${fmt(m*Math.max(1,bet||Bet.v))}</em></div>`).join('')}
   async function go(){
     const slots=$$('.vps',R);
-    if(phase==='deal'){bet=Bet.take();if(!bet)return;phase='busy';banner($('#vpM'),'Hold the cards you want to keep, then draw.');paintPT(-1);dk=deck(1);held=[false,false,false,false,false];cards=[];
+    if(phase==='deal'){bet=Bet.take();if(!bet)return;phase='busy';banner($('#vpM'),'Hold the cards you want to keep, then draw.');paintPT(-1);dk=lucky()?bestOf(14,()=>deck(1),d=>{const h=evalHand(d.slice(-5));return h<0?0:PT[h][1]+Math.random()*.5}):deck(1);held=[false,false,false,false,false];cards=[];
       slots.forEach(s=>{s.querySelector('.cslot').innerHTML='';s.classList.remove('held')});
       for(let i=0;i<5;i++){cards.push(dk.pop());await dealCard($('.cslot',slots[i]),cards[i],{from:$('#vpGo'),delay:0})}
       const h=evalHand(cards);paintPT(h);phase='hold';$('#vpGo').textContent='Draw';return}
     if(phase==='hold'){phase='busy';
+      if(lucky()){const fin=d=>{const s=d.slice(),f=cards.map((c,i)=>held[i]?c:s.pop()),h=evalHand(f);return h<0?0:PT[h][1]+Math.random()*.5};dk=bestOf(30,()=>shuffle(dk.slice()),fin)}
       for(let i=0;i<5;i++)if(!held[i]){const s=$('.cslot',slots[i]);const old=s.firstChild;old.classList.remove('up');SFX.flip();await sleep(160);s.innerHTML='';cards[i]=dk.pop();await dealCard(s,cards[i],{from:$('#vpGo')})}
       const h=evalHand(cards);paintPT(h);const pay=h>=0?bet*PT[h][1]:0;
       if(h>=0)slots.forEach(s=>s.querySelector('.cardz').classList.add('hl'));
@@ -142,38 +150,6 @@ reg((()=>{
     paintPT(-1);$('#vpGo').onclick=go;
     $('#vpHand').onclick=e=>{const s=e.target.closest('.vps');if(!s||phase!=='hold')return;const i=+s.dataset.i;held[i]=!held[i];s.classList.toggle('held',held[i]);SFX.click()};};
   G.enter=()=>paintPT(-1);
-  return G})());
-
-/* =============================================================== HI-LO */
-reg((()=>{
-  const G={id:'hilo',name:'Hi-Lo',cat:'Table Games',newb:true,desc:'Higher or lower? Ride the streak, cash out anytime.',edge:'99% RTP',tc:'rgba(40,40,110,.95)',
-    art:`<div style="display:flex;align-items:center;gap:14px"><div class="a-cards" style="width:70px"><div class="mc" style="left:6px;transform:none">7</div></div><div style="display:flex;flex-direction:column;gap:6px;font:900 26px Cinzel;color:#5cff9d"><span>▲</span><span style="color:#ff4f6d">▼</span></div></div>`};
-  let R,cur=null,bet=0,mult=1,on=false,chain=[];
-  const draw=()=>({r:pick(RANKS),s:pick(SUITS)});
-  const pHi=r=>(14-rankVal(r))/13,pLo=r=>rankVal(r)/13;
-  function paint(){const c=cur;if(!c){$('#hlHi').innerHTML='Higher or same';$('#hlLo').innerHTML='Lower or same';return}
-    const ph=pHi(c),pl=pLo(c);$('#hlHi').innerHTML=`▲ Higher or same <small>${(ph*100).toFixed(0)}% · ${fmtx(.99/ph)}</small>`;$('#hlLo').innerHTML=`▼ Lower or same <small>${(pl*100).toFixed(0)}% · ${fmtx(.99/pl)}</small>`;
-    $('#hlMult').textContent=fmtx(mult);$('#hlPay').textContent=on?fmt(bet*mult):fmt(0);
-    ['#hlHi','#hlLo','#hlSkip','#hlCash'].forEach(s=>$(s).disabled=!on);$('#hlStart').hidden=on;$('#hlCash').hidden=!on;
-    $('#hlCash').disabled=!on||mult<=1}
-  async function show(c){const box=$('#hlCard');const old=box.firstChild;if(old){old.animate([{transform:'none'},{transform:'translateX(-140px) rotate(-12deg) scale(.6)',opacity:0}],{duration:350,easing:'ease-in'});await sleep(300)}box.innerHTML='';await dealCard(box,c,{from:$('#hlDeck')});cur=c}
-  async function start(){if(on)return;bet=Bet.take();if(!bet)return;on=true;mult=1;chain=[];$('#hlChain').innerHTML='';banner($('#hlM'),'');await show(draw());paint()}
-  async function guess(hi){if(!on)return;const prev=cur,p=hi?pHi(prev):pLo(prev);['#hlHi','#hlLo','#hlSkip','#hlCash'].forEach(s=>$(s).disabled=true);
-    const c=draw();await show(c);const a=rankVal(prev),b=rankVal(c),ok=hi?b>=a:b<=a;
-    addChain(prev);
-    if(ok){mult*=.99/p;SFX.pop(500+chain.length*60);const m=$('#hlMult');m.classList.remove('bump');void m.offsetWidth;m.classList.add('bump');paint()}
-    else{on=false;$('#hlCard').firstChild.classList.add('dimc');settle(bet,0,null);banner($('#hlM'),`${c.r}${c.s} — wrong call. Lost ${fmt(bet)}.`,'lose');$('#hlCard').classList.add('shake');setTimeout(()=>$('#hlCard').classList.remove('shake'),500);mult=1;paint()}}
-  function addChain(c){chain.push(c);const e=cardEl(c);e.style.setProperty('--cw','40px');e.style.setProperty('--ch','56px');$('#hlChain').appendChild(e);$('#hlChain').scrollLeft=1e6}
-  function cash(){if(!on||mult<=1)return;on=false;const pay=bet*mult,net=settle(bet,pay,$('#hlCard'),{big:10});banner($('#hlM'),`Cashed out at ${fmtx(mult)} · +${fmt(net)}`,'win');mult=1;paint()}
-  G.init=root=>{R=root;root.innerHTML=`<div class="ghead"><div><h2 class="gtxt">Hi-Lo</h2><p>Guess whether the next card is higher or lower (aces low). Every right call multiplies your win. Cash out whenever you like, or skip a card you don't like.</p></div></div>
-    <div class="felt dark"><div class="hlg"><div class="hldeck" id="hlDeck"></div><div class="hlcard" id="hlCard"></div>
-      <div class="hlside"><div class="lbl">Multiplier</div><div class="mult gtxt" id="hlMult">1.00×</div><div class="lbl" style="margin-top:8px">Payout</div><div class="cz" style="font-size:24px;color:var(--win)" id="hlPay">$0</div></div></div>
-      <div class="hlchain" id="hlChain"></div>
-      <div class="banner" id="hlM"></div>
-      <div class="row ctr"><button class="btn grn" id="hlHi" disabled>Higher</button><button class="btn red" id="hlLo" disabled>Lower</button><button class="btn ghost" id="hlSkip" disabled>Skip</button></div>
-      <div class="row ctr" style="margin-top:12px"><button class="btn big pulse" id="hlStart">Start</button><button class="btn big" id="hlCash" hidden>Cash out</button></div></div>`;
-    $('#hlStart').onclick=start;$('#hlHi').onclick=()=>guess(true);$('#hlLo').onclick=()=>guess(false);$('#hlCash').onclick=cash;
-    $('#hlSkip').onclick=async()=>{if(!on)return;['#hlHi','#hlLo','#hlSkip'].forEach(s=>$(s).disabled=true);await show(draw());paint()};paint()};
   return G})());
 
 /* =============================================================== ROULETTE */
@@ -206,7 +182,9 @@ reg((()=>{
     hot('t:023',[0,2,3],12,CW,RHT,'Trio 0-2-3');hot('t:012',[0,1,2],12,CW,2*RHT,'Trio 0-1-2')}
   function spin(){if(busy)return;if(!Object.keys(RB).length){banner($('#rM'),'Place a chip on the table first.','push');return}
     busy=true;banner($('#rM'),'No more bets…','push');$('#rSpin').disabled=true;SFX.whoosh();
-    const n=rnd(37);RL=JSON.parse(JSON.stringify(RB));W.rest=-1;W.sp={t0:performance.now(),D:RM?400:6200,a0:W.a,n,idx:ORD.indexOf(n),bets:RB}}
+    let n=rnd(37);
+    if(lucky()){const bs=Object.values(RB),t=bs.reduce((a,b)=>a+b.stake,0),ret=x=>bs.reduce((a,b)=>a+(b.nums.includes(x)?b.stake*b.pay:0),0),good=[...Array(37).keys()].filter(x=>ret(x)>t);n=good.length?pick(good):[...Array(37).keys()].sort((a,b)=>ret(b)-ret(a))[0]}
+    RL=JSON.parse(JSON.stringify(RB));W.rest=-1;W.sp={t0:performance.now(),D:RM?400:6200,a0:W.a,n,idx:ORD.indexOf(n),bets:RB}}
   function done(sp){const n=sp.n,bets=Object.values(sp.bets);let tot=0,ret=0;bets.forEach(b=>{tot+=b.stake;b.win=b.nums.includes(n);if(b.win)ret+=b.stake*b.pay});render();
     hist.unshift(n);hist=hist.slice(0,14);store.set('backroom-rhist',hist);paintHist();
     const big=$('#rNum');big.textContent=n;big.className='rnum '+col(n);void big.offsetWidth;big.classList.add('show');

@@ -3,6 +3,9 @@
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const LUCKY=new URLSearchParams(location.search).get('luck')==='1',KEY=LUCKY?'backroom-lucky':'backroom';
+/* lucky mode (?luck=1, the "dam" code): most rounds get quietly tilted your way */
+const LUCK=LUCKY?.7:0,lucky=()=>Math.random()<LUCK;
+function bestOf(n,gen,score){let b=gen(),bs=score(b);for(let i=1;i<n;i++){const x=gen(),s=score(x);if(s>bs){b=x;bs=s}}return b}
 const fmt=n=>(n<0?'-$':'$')+Math.round(Math.abs(n)).toLocaleString('en-US');
 const fmtx=m=>(m>=100?m.toFixed(0):m>=10?m.toFixed(1):m.toFixed(2))+'×';
 const rnd=n=>Math.floor(Math.random()*n);
@@ -162,7 +165,7 @@ function paintStats(){const s=Stats.s;const set=(id,v)=>{const e=$(id);if(e)e.te
 function buildLobby(){
   const CATS=[['Featured','Hot right now'],['Table Games','Cards and wheels'],['Slots & Wheels','Spin to win'],['Instant Games','One click, instant result']];
   const box=$('#cats');box.innerHTML='';let k=0;
-  for(const[c,sub]of CATS){const list=GAMES.filter(g=>(g.cat===c)||(c==='Featured'&&g.featured));if(!list.length)continue;
+  for(const[c,sub]of CATS){const list=GAMES.filter(g=>c==='Featured'?g.featured:(g.cat===c&&!g.featured));if(!list.length)continue;
     box.appendChild(el('div','cat',`<h2>${c}</h2><span class="n">${sub}</span>`));const t=el('div','tiles');
     list.forEach(g=>{const b=el('button','tile'+(c==='Featured'?' feat':''),`<div class="tin"><div class="art" style="--tc:${g.tc||'rgba(13,74,53,.9)'}">${g.newb?'<span class="ribbon">NEW</span>':''}<span class="rtp">${g.edge||''}</span>${g.art}</div><div class="meta"><h3>${g.name}</h3><p>${g.desc}</p></div></div>`);
       b.style.setProperty('--i',k++);b.onclick=()=>openGame(g.id);
@@ -175,11 +178,10 @@ function bulbs(){const m=$('.marquee');if(!m)return;const s=$('.bulbs',m),w=m.cl
 function dust(){const cv=$('#dust');if(RM||!cv)return;const g=cv.getContext('2d');let W,H;const P=Array.from({length:46},()=>({x:Math.random(),y:Math.random(),r:.6+Math.random()*2.4,s:.0002+Math.random()*.0006,ph:Math.random()*6}));
   const fit=()=>{const d=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=W*d;cv.height=H*d;g.setTransform(d,0,0,d,0,0)};fit();addEventListener('resize',fit);
   (function f(t){g.clearRect(0,0,W,H);for(const p of P){p.y-=p.s;if(p.y<-.05){p.y=1.05;p.x=Math.random()}const a=.25+.25*Math.sin(t/900+p.ph);g.fillStyle=`rgba(255,220,140,${a})`;g.shadowColor='rgba(255,200,90,.9)';g.shadowBlur=8;g.beginPath();g.arc(p.x*W+Math.sin(t/2000+p.ph)*20,p.y*H,p.r,0,7);g.fill()}g.shadowBlur=0;requestAnimationFrame(f)})(0)}
-function jackpot(){let v=store.get('backroom-jp',1248000+Math.random()*50000);const e=$('#jp');setInterval(()=>{v+=Math.random()*7.3;e.textContent='$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})},90);setInterval(()=>store.set('backroom-jp',v),4000)}
 
 function boot(){
-  Bank.paint();paintStats();buildLobby();bulbs();addEventListener('resize',bulbs);dust();jackpot();
-  if(LUCKY)$('#lucky').hidden=false;
+  Bank.paint();paintStats();buildLobby();bulbs();addEventListener('resize',bulbs);dust();
+  if(LUCKY){$('#lucky').hidden=false;document.body.classList.add('luckym')}
   // bet bar
   $('#rack').innerHTML=[[1,'c1'],[5,'c5'],[25,'c25'],[100,'c100'],[500,'c500'],[1000,'c1k'],[5000,'c5k']].map(([v,c])=>`<button class="chip ${c}" data-v="${v}" aria-label="${v} chip">${v>=1000?v/1000+'K':v}</button>`).join('');
   $('#rack').onclick=e=>{const c=e.target.closest('.chip');if(c)Bet.chip(+c.dataset.v)};
