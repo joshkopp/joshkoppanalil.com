@@ -173,21 +173,6 @@ select option{background:#0f1112}
 .empty{display:none;padding:40px;text-align:center;color:var(--muted)}
 .empty.show{display:block}
 
-/* table */
-.tw{overflow-x:auto;border:1px solid var(--line);border-radius:18px;background:var(--panel)}
-table{width:100%;border-collapse:collapse;font-size:13px;min-width:760px}
-th,td{padding:10px 14px;text-align:left;border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap}
-th{position:sticky;top:0;background:#101114;color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;user-select:none}
-th:hover{color:var(--accent)}
-th.s::after{content:" ↓";color:var(--accent)}
-th.s.r::after{content:" ↑"}
-td{color:#d4d8d6;font-family:"JetBrains Mono",monospace;font-size:12px}
-td:first-child{font-family:"DM Sans",sans-serif;font-weight:700;font-size:13.5px;color:var(--text)}
-tr{cursor:pointer;transition:background .2s}
-tbody tr:hover{background:rgba(184,243,107,.05)}
-.ok{color:var(--accent)}.no{color:#fca5a5}
-.cg{font-weight:700}
-.cg.g{color:var(--accent)}.cg.m{color:#facc15}.cg.b{color:#fb923c}.cg.x{color:#f87171}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}html{scroll-behavior:auto}}
 </style>
 </head>
@@ -210,7 +195,7 @@ tbody tr:hover{background:rgba(184,243,107,.05)}
     <div>
       <span class="eyebrow"><span class="dot"></span>Math · Computer science <span class="new">library</span></span>
       <h1><span class="w" style="--d:.05">Every</span> <span class="w" style="--d:.14">way</span> <span class="w" style="--d:.23">to</span> <span class="w hl" style="--d:.34">sort.</span></h1>
-      <p class="lead">A visual library of sorting algorithms, from bubble sort to bitonic networks to the joke ones. Watch each one move, read its rules, compare their complexity, then race them.</p>
+      <p class="lead">A visual library of sorting algorithms, from bubble sort to bitonic networks to the joke ones. Watch each one move, read its rules and complexity, then race them.</p>
       <div class="hstats"><div><b id="hN">0</b><span>algorithms</span></div><div><b id="hC">0</b><span>families</span></div><div><b>1</b><span>array to rule them all</span></div></div>
     </div>
     <div class="art" aria-hidden="true"><canvas id="heroCv"></canvas></div>
@@ -270,8 +255,6 @@ tbody tr:hover{background:rgba(184,243,107,.05)}
     <div class="empty" id="empty">No algorithms match that.</div>
   </section>
 
-  <div class="sh rv"><div><div class="lab2">// Cheat sheet</div><h2>Complexity at a glance</h2><p>Big-O for time and extra memory. Click a column to sort the table (with a sort, naturally).</p></div></div>
-  <section class="tw rv"><table id="tbl"><thead><tr></tr></thead><tbody></tbody></table></section>
 </main>
 
 <footer><div class="nav"><span>© Josh Koppanalil</span><a href="#top" style="margin-left:auto">Back to top ↑</a></div></footer>
@@ -598,17 +581,6 @@ $('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)
 $('q').addEventListener('input',drawLib);
 $('grid').addEventListener('click',e=>{const b=e.target.closest('.ac');if(b)select(b.dataset.id,true)});
 
-const RANK=v=>{const s=v.replace(/\s/g,'');const t={'1':0,'logn':1,'n':2,'n+k':2.2,'n·d':2.4,'nlogn':3,'n+n²/k+k':3.2,'≈n^1.25':3.4,'n^1.5':3.6,'nlog²n':3.8,'n²/2ᵖ':3.9,'n²':4,'S':4.1,'n^2.71':5,'n^(logn)':6,'n·n!':7,'∞':8,'n+max':2.3,'n+b':2.1,'n²':4};return s in t?t[s]:4.5};
-const cg=v=>{const r=RANK(v);return r<=2.5?'g':r<=3.5?'m':r<=4.5?'b':'x'};
-const COLS=[['name','Algorithm'],['cat','Family'],['b','Best'],['a','Average'],['w','Worst'],['s','Memory'],['st','Stable'],['ip','In-place'],['yr','Year']];
-let sortK='a',sortR=false;
-function drawTable(){
-  const rows=ALGOS.slice().sort((p,q)=>{let A=p[sortK],B=q[sortK];if(['b','a','w','s'].includes(sortK)){A=RANK(A);B=RANK(B)}if(sortK==='yr'){A=parseInt(A)||9999;B=parseInt(B)||9999}const r=A<B?-1:A>B?1:p.name.localeCompare(q.name);return sortR?-r:r});
-  $('tbl').tHead.rows[0].innerHTML=COLS.map(([k,l])=>`<th data-k="${k}" class="${k===sortK?'s'+(sortR?' r':''):''}">${l}</th>`).join('');
-  $('tbl').tBodies[0].innerHTML=rows.map(x=>`<tr data-id="${x.id}"><td>${x.name}</td><td>${x.cat}</td>${['b','a','w','s'].map(k=>`<td class="cg ${cg(x[k])}">${x[k]}</td>`).join('')}<td class="${x.st?'ok':'no'}">${x.st?'yes':'no'}</td><td class="${x.ip?'ok':'no'}">${x.ip?'yes':'no'}</td><td>${x.yr}</td></tr>`).join('');
-}
-$('tbl').addEventListener('click',e=>{const th=e.target.closest('th');if(th){const k=th.dataset.k;sortR=sortK===k?!sortR:false;sortK=k;drawTable();return}const tr=e.target.closest('tbody tr');if(tr)select(tr.dataset.id,true)});
-
 /* ===================== hero animation: a little merge sort on loop ===================== */
 const hero=new Player($('heroCv'));hero.view='bars';let heroNext=0;
 const heroIds=['merge','quick','heap','shell','radixlsd','bitonic','insertion','dualpivot'];let hi=0;
@@ -626,7 +598,7 @@ document.querySelectorAll('[data-count]').forEach(()=>{});
 const countUp=(el,n)=>{const t0=performance.now();(function f(t){const k=Math.min(1,(t-t0)/1100);el.textContent=Math.round(n*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(f)})(t0)};
 countUp($('hN'),ALGOS.length);countUp($('hC'),CATS.length);
 
-setLabels();drawLib();drawTable();select('bubble');raceSetup(true);requestAnimationFrame(frame);
+setLabels();drawLib();select('bubble');raceSetup(true);requestAnimationFrame(frame);
 </script>
 </body>
 </html>
