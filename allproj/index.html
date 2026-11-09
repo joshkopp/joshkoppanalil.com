@@ -86,6 +86,7 @@ nav{height:56px;display:flex;align-items:center;gap:14px;padding:0 20px;border-r
 .feat .body{display:flex;flex-direction:column;justify-content:center;flex:1}
 .feat h3{font-size:clamp(28px,4vw,40px)}
 .feat .desc{font-size:16px;max-width:30em}
+.card.glow{border-color:rgba(184,243,107,.5);background-image:linear-gradient(160deg,rgba(184,243,107,.14),rgba(255,255,255,.03) 45%),var(--glass);box-shadow:var(--lift),0 24px 90px -26px rgba(184,243,107,.5)}
 .cardtop{display:flex;justify-content:space-between;align-items:center;color:var(--accent);font-size:12px}
 .nb{display:inline-flex;align-items:center;gap:7px;margin-left:10px;padding:3px 10px 3px 8px;border-radius:99px;background:var(--accent);color:#10120b;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;box-shadow:0 0 18px rgba(184,243,107,.55)}
 .nb i{width:6px;height:6px;border-radius:50%;background:#10120b;animation:blink 1.2s ease-in-out infinite}
@@ -163,7 +164,6 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:15px;pa
   </div>
 
   <div class="grid" id="grid">
-
     <a class="card glass feat" data-c="ml" data-t="frc match predictor machine learning xgboost python robotics" style="--i:0" href="https://frc-predictor-c8bkzggpngxjfjmcdfntmr.streamlit.app/" target="_blank" rel="noopener">
       <span class="sheen" aria-hidden="true"></span>
       <div class="art"><div class="fr"><div class="ringx"><svg viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="88" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="12"/><circle class="rg" cx="100" cy="100" r="88" fill="none" stroke="#b8f36b" stroke-width="12" stroke-linecap="round" transform="rotate(-90 100 100)"/></svg><div class="rn"><span>77.3<small>%</small></span></div></div><div class="rl">Winner accuracy</div></div></div>
@@ -176,7 +176,8 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:15px;pa
       </div>
     </a>
 
-    <a class="card glass" data-c="ml" data-t="digit classifier neural network cnn mnist machine learning numpy javascript computer vision" style="--i:1" href="/digits/">
+    <a class="card glass glow" data-c="ml" data-t="digit classifier neural network cnn mnist machine learning numpy javascript computer vision" style="--i:1" href="/digits/">
+      <span class="sheen" aria-hidden="true"></span>
       <div class="cardtop"><span>Machine Learning<b class="nb"><i></i>New</b></span><span>↗</span></div>
       <div class="art"><svg viewBox="0 0 300 190" aria-hidden="true"><rect x="38" y="40" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="52" y="40" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="66" y="40" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="80" y="40" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="94" y="40" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="108" y="40" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="122" y="40" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="38" y="54" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="52" y="54" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="66" y="54" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="80" y="54" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="94" y="54" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="108" y="54" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="122" y="54" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="38" y="68" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="52" y="68" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="66" y="68" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="80" y="68" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="94" y="68" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="108" y="68" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="122" y="68" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="38" y="82" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="52" y="82" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="66" y="82" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="80" y="82" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="94" y="82" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="108" y="82" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="122" y="82" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="38" y="96" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="52" y="96" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="66" y="96" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="80" y="96" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="94" y="96" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="108" y="96" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="122" y="96" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="38" y="110" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="52" y="110" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="66" y="110" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="80" y="110" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="94" y="110" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="108" y="110" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="122" y="110" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="38" y="124" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><rect x="52" y="124" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="66" y="124" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="80" y="124" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="94" y="124" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="108" y="124" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.95"/><rect x="122" y="124" width="12" height="12" rx="2" fill="#f4f6f4" opacity="0.06"/><path d="M146 90h14m-5-5 5 5-5 5" fill="none" stroke="#b8f36b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="168" y="143.4" width="8" height="6.6000000000000005" rx="2" fill="rgba(255,255,255,.18)"/><rect x="179" y="145.6" width="8" height="4.4" rx="2" fill="rgba(255,255,255,.18)"/><rect x="190" y="139.0" width="8" height="11.0" rx="2" fill="rgba(255,255,255,.18)"/><rect x="201" y="48.8" width="8" height="101.2" rx="2" fill="#b8f36b"/><rect x="212" y="144.5" width="8" height="5.5" rx="2" fill="rgba(255,255,255,.18)"/><rect x="223" y="134.6" width="8" height="15.400000000000002" rx="2" fill="rgba(255,255,255,.18)"/><rect x="234" y="146.7" width="8" height="3.3000000000000003" rx="2" fill="rgba(255,255,255,.18)"/><rect x="245" y="141.2" width="8" height="8.8" rx="2" fill="rgba(255,255,255,.18)"/><rect x="256" y="130.2" width="8" height="19.8" rx="2" fill="rgba(255,255,255,.18)"/><rect x="267" y="142.3" width="8" height="7.700000000000001" rx="2" fill="rgba(255,255,255,.18)"/><text x="217" y="172" text-anchor="middle" font-family="Space Grotesk,sans-serif" font-weight="700" font-size="13" fill="#b8f36b">3 · 99%</text></svg></div>
       <h3>Digit Classifier</h3>
@@ -185,7 +186,7 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:15px;pa
       <span class="go">Open <span>↗</span></span>
     </a>
 
-    <a class="card glass" data-c="edu" data-t="chemistry lab v2 lewis dot structure visualizer education chemistry 3d vsepr" style="--i:1" href="/lds/">
+    <a class="card glass" data-c="edu" data-t="chemistry lab v2 lewis dot structure visualizer education chemistry 3d vsepr" style="--i:2" href="/lds/">
       <div class="cardtop"><span>Education<b class="nb"><i></i>Updated</b></span><span>↗</span></div>
       <div class="art"><svg viewBox="0 0 300 190" aria-hidden="true" font-family="Space Grotesk,sans-serif" font-weight="700" text-anchor="middle"><g stroke="#b8f36b" stroke-width="4" stroke-linecap="round"><path class="bd" d="M132 112L84 150"/><path class="bd" d="M168 112L216 150"/></g><g fill="#f4f6f4"><text x="150" y="112" font-size="68">O</text><text x="62" y="176" font-size="50">H</text><text x="238" y="176" font-size="50">H</text></g><g fill="#b8f36b"><circle class="e" style="--i:0" cx="130" cy="30" r="6"/><circle class="e" style="--i:1" cx="170" cy="30" r="6"/><circle class="e" style="--i:2" cx="100" cy="78" r="6"/><circle class="e" style="--i:3" cx="100" cy="100" r="6"/><circle class="e" style="--i:4" cx="200" cy="78" r="6"/><circle class="e" style="--i:5" cx="200" cy="100" r="6"/></g></svg></div>
       <h3>Chemistry Lab v2</h3>
@@ -194,7 +195,7 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:15px;pa
       <span class="go">Open <span>↗</span></span>
     </a>
 
-    <a class="card glass" data-c="sec" data-t="password strength checker cybersecurity javascript entropy" style="--i:2" href="https://joshkopp.github.io/passwordchecker/" target="_blank" rel="noopener">
+    <a class="card glass" data-c="sec" data-t="password strength checker cybersecurity javascript entropy" style="--i:3" href="https://joshkopp.github.io/passwordchecker/" target="_blank" rel="noopener">
       <div class="cardtop"><span>Cybersecurity</span><span>↗</span></div>
       <div class="art"><div class="pw" aria-hidden="true"><div class="field">••••••••••</div><div class="segs"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i></i></div><small>Strong. About 400 years to crack.</small></div></div>
       <h3>Password Strength Checker</h3>
@@ -203,7 +204,7 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:15px;pa
       <span class="go">Open <span>↗</span></span>
     </a>
 
-    <a class="card glass" data-c="edu" data-t="flashcard generator education javascript cloudflare study notes" style="--i:3" href="https://joshkopp.github.io/FlashcardGen/" target="_blank" rel="noopener">
+    <a class="card glass" data-c="edu" data-t="flashcard generator education javascript cloudflare study notes" style="--i:4" href="https://joshkopp.github.io/FlashcardGen/" target="_blank" rel="noopener">
       <div class="cardtop"><span>Education</span><span>↗</span></div>
       <div class="art"><div class="fc" aria-hidden="true"><div><b>Entropy</b><b>How unpredictable a password is.</b></div></div></div>
       <h3>Flashcard Generator</h3>
@@ -212,7 +213,7 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:15px;pa
       <span class="go">Open <span>↗</span></span>
     </a>
 
-    <a class="card glass" data-c="edu" data-t="mla format checker education essay python pyodide" style="--i:4" href="https://joshkopp.github.io/mlachecker/" target="_blank" rel="noopener">
+    <a class="card glass" data-c="edu" data-t="mla format checker education essay python pyodide" style="--i:5" href="https://joshkopp.github.io/mlachecker/" target="_blank" rel="noopener">
       <div class="cardtop"><span>Education</span><span>↗</span></div>
       <div class="art"><svg viewBox="0 0 220 170" aria-hidden="true"><rect x="40" y="4" width="140" height="162" rx="6" fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.4)" stroke-width="2"/><rect class="hl" style="--i:0" x="54" y="44" width="112" height="14" fill="rgba(184,243,107,.4)"/><rect class="hl" style="--i:1" x="54" y="92" width="112" height="14" fill="rgba(184,243,107,.4)"/><g stroke="rgba(255,255,255,.6)" stroke-width="4" stroke-linecap="round"><path d="M58 26h50M58 51h104M58 75h86M58 99h104M58 123h64M58 147h92"/></g><circle class="ck" style="--i:2" cx="176" cy="51" r="12" fill="#b8f36b"/><path class="ck" style="--i:2" d="M170 51l4 4 8-9" stroke="#10120b" stroke-width="3" fill="none"/></svg></div>
       <h3>MLA Format Checker</h3>
@@ -220,7 +221,7 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:15px;pa
       <div class="tags"><span>Python</span><span>Pyodide</span></div>
       <span class="go">Open <span>↗</span></span>
     </a>
-  </div>
+
   <div class="empty" id="empty">No projects match that. Try another word.</div>
 </main>
 
