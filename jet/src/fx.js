@@ -7,9 +7,9 @@ export function softTex() { if (soft) return soft; const c = document.createElem
 
 export class Particles {
   constructor(max, additive) {
-    this.max = max; this.n = 0; this.i = 0;
+    this.max = max; this.n = 0; this.i = 0; this.density = 1; this.hi = 0;
     this.pos = new Float32Array(max * 3); this.vel = new Float32Array(max * 3); this.col = new Float32Array(max * 3); this.size = new Float32Array(max); this.alpha = new Float32Array(max);
-    this.life = new Float32Array(max); this.maxL = new Float32Array(max); this.grow = new Float32Array(max); this.a0 = new Float32Array(max); this.drag = new Float32Array(max); this.rise = new Float32Array(max); this.fade = new Float32Array(max);
+    this.life = new Float32Array(max); this.maxL = new Float32Array(max); this.grow = new Float32Array(max); this.s0 = new Float32Array(max); this.a0 = new Float32Array(max); this.drag = new Float32Array(max); this.rise = new Float32Array(max); this.fade = new Float32Array(max);
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage));
     g.setAttribute('color', new THREE.BufferAttribute(this.col, 3).setUsage(THREE.DynamicDrawUsage));
@@ -18,28 +18,32 @@ export class Particles {
     const m = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
       uniforms: { map: { value: softTex() }, scale: { value: 800 }, fogColor: { value: new THREE.Color() }, fogNear: { value: 1 }, fogFar: { value: 1 } },
       vertexShader: `attribute float size; attribute float alpha; attribute vec3 color; varying float vA; varying vec3 vC; varying float vD; uniform float scale;
-        void main(){ vA=alpha; vC=color; vec4 mv=modelViewMatrix*vec4(position,1.); vD=-mv.z; gl_PointSize=min(900., size*scale/max(1.,-mv.z)); gl_Position=projectionMatrix*mv; }`,
+        void main(){ vA=alpha; vC=color; vec4 mv=modelViewMatrix*vec4(position,1.); vD=-mv.z; gl_PointSize=min(520., size*scale/max(1.,-mv.z)); gl_Position=projectionMatrix*mv; }`,
       fragmentShader: `uniform sampler2D map; uniform vec3 fogColor; uniform float fogNear, fogFar; varying float vA; varying vec3 vC; varying float vD;
-        void main(){ vec4 t=texture2D(map,gl_PointCoord); float f=smoothstep(fogNear,fogFar,vD); vec3 c=mix(vC,fogColor,${additive ? '0.' : 'f'}); gl_FragColor=vec4(c,t.a*vA*${additive ? '(1.-f)' : '1.'}); }` });
+        void main(){ if(vA<.004) discard; vec4 t=texture2D(map,gl_PointCoord); float f=smoothstep(fogNear,fogFar,vD); vec3 c=mix(vC,fogColor,${additive ? '0.' : 'f'}); gl_FragColor=vec4(c,t.a*vA*${additive ? '(1.-f)' : '1.'}); }` });
     this.points = new THREE.Points(g, m); this.points.frustumCulled = false; this.g = g; this.mat = m;
   }
   emit(x, y, z, o = {}) {
-    const k = this.i; this.i = (this.i + 1) % this.max; if (this.n < this.max) this.n++;
+    if (this.density < 1 && !o.must && Math.random() > this.density) return;
+    const k = this.i; if (k + 1 > this.hi) this.hi = k + 1; this.i = (this.i + 1) % this.max; if (this.n < this.max) this.n++;
     this.pos[k * 3] = x; this.pos[k * 3 + 1] = y; this.pos[k * 3 + 2] = z;
     const sp = o.spread || 0; this.vel[k * 3] = (o.vx || 0) + (Math.random() - .5) * sp; this.vel[k * 3 + 1] = (o.vy || 0) + (Math.random() - .5) * sp; this.vel[k * 3 + 2] = (o.vz || 0) + (Math.random() - .5) * sp;
     const c = o.color || [1, 1, 1]; this.col[k * 3] = c[0]; this.col[k * 3 + 1] = c[1]; this.col[k * 3 + 2] = c[2];
-    this.size[k] = o.size || 4; this.grow[k] = o.grow ?? 1.5; this.a0[k] = o.alpha ?? .6; this.alpha[k] = this.a0[k];
+    this.size[k] = this.s0[k] = o.size || 4; this.grow[k] = o.grow ?? 1.5; this.a0[k] = o.alpha ?? .6; this.alpha[k] = this.a0[k];
     this.life[k] = this.maxL[k] = o.life || 2; this.drag[k] = o.drag ?? .5; this.rise[k] = o.rise ?? 0; this.fade[k] = o.fadeIn ? 1 : 0;
   }
   update(dt, fog, camH) {
-    for (let k = 0; k < this.max; k++) {
-      if (this.life[k] <= 0) { this.alpha[k] = 0; continue; }
+    let live = 0;
+    for (let k = 0; k < this.hi; k++) {
+      if (this.life[k] <= 0) { this.alpha[k] = 0; continue; } live++;
       this.life[k] -= dt; const t = 1 - this.life[k] / this.maxL[k], d = Math.exp(-this.drag[k] * dt);
       this.vel[k * 3] *= d; this.vel[k * 3 + 1] = this.vel[k * 3 + 1] * d + this.rise[k] * dt; this.vel[k * 3 + 2] *= d;
       this.pos[k * 3] += this.vel[k * 3] * dt; this.pos[k * 3 + 1] += this.vel[k * 3 + 1] * dt; this.pos[k * 3 + 2] += this.vel[k * 3 + 2] * dt;
-      this.size[k] *= 1 + this.grow[k] * dt; this.alpha[k] = this.a0[k] * (1 - t) * (this.fade[k] ? Math.min(1, t * 8) : 1);
+      this.size[k] = this.s0[k] * Math.max(.05, 1 + this.grow[k] * (this.maxL[k] - this.life[k])); this.alpha[k] = this.a0[k] * (1 - t) * (this.fade[k] ? Math.min(1, t * 8) : 1);
     }
-    const a = this.g.attributes; a.position.needsUpdate = a.size.needsUpdate = a.alpha.needsUpdate = a.color.needsUpdate = true;
+    const a = this.g.attributes, n = this.hi; this.g.setDrawRange(0, n);
+    for (const at of [a.position, a.size, a.alpha, a.color]) { at.clearUpdateRanges(); at.addUpdateRange(0, n * at.itemSize); at.needsUpdate = true; }
+    if (!live) { this.hi = 0; this.i = 0; }
     if (fog) { this.mat.uniforms.fogColor.value.copy(fog.color); this.mat.uniforms.fogNear.value = fog.near; this.mat.uniforms.fogFar.value = fog.far; }
     this.mat.uniforms.scale.value = camH * .5;
   }

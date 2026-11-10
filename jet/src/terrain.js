@@ -32,6 +32,8 @@ export class Terrain {
     const p = g.attributes.position, n = SEG + 1;
     for (let k = 0; k < p.count; k++) { const i = k % n, j = Math.floor(k / n); p.setY(k, this.h[j * n + i]); }
     g.computeVertexNormals();
+    // cheap ambient occlusion: darken hollows, brighten ridges
+    const H = this.h, ao = k => { const i = k % n, j = Math.floor(k / n); let s = 0, c = 0; for (const [a, b] of [[-4, 0], [4, 0], [0, -4], [0, 4], [-3, -3], [3, 3], [-3, 3], [3, -3]]) { const ii = i + a, jj = j + b; if (ii < 0 || jj < 0 || ii >= n || jj >= n) continue; s += H[jj * n + ii]; c++; } return Math.min(1.1, Math.max(.62, 1 - (s / c - H[k]) / 110)); };
     const nor = g.attributes.normal, col = new Float32Array(p.count * 3), c = new THREE.Color();
     const sand = new THREE.Color('#e3b97f'), sand2 = new THREE.Color('#d39c62'), rock = new THREE.Color('#a4583a'), rock2 = new THREE.Color('#7a3f2c'), top = new THREE.Color('#c98a58'), snow = new THREE.Color('#b7896b');
     for (let k = 0; k < p.count; k++) {
@@ -41,7 +43,7 @@ export class Terrain {
       if (y > 180 && ny > .95) c.lerp(top, .55);
       if (y > 500) c.lerp(snow, ss(500, 900, y) * .6);
       const band = Math.sin(y * .12) * .5 + .5; if (steep > .4) c.multiplyScalar(.88 + band * .2);
-      col[k * 3] = c.r; col[k * 3 + 1] = c.g; col[k * 3 + 2] = c.b;
+      c.multiplyScalar(ao(k)); col[k * 3] = c.r; col[k * 3 + 1] = c.g; col[k * 3 + 2] = c.b;
     }
     g.setAttribute('color', new THREE.BufferAttribute(col, 3));
     const cv = document.createElement('canvas'); cv.width = cv.height = 256; const gg = cv.getContext('2d'); gg.fillStyle = '#808080'; gg.fillRect(0, 0, 256, 256);
@@ -56,7 +58,7 @@ export class Terrain {
     const N = 700, im = new THREE.InstancedMesh(geo, mat, N), o = new THREE.Object3D();
     for (let k = 0; k < N; k++) { const r = Math.sqrt(Math.random()) * 4200, a = Math.random() * 7, x = Math.cos(a) * r, z = Math.sin(a) * r, s = 4 + Math.random() ** 3 * 30;
       o.position.set(x, this.height(x, z) + s * .2, z); o.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3); o.scale.set(s, s * (.5 + Math.random() * .5), s); o.updateMatrix(); im.setMatrixAt(k, o.matrix); }
-    im.castShadow = true; im.receiveShadow = true; return im;
+    im.castShadow = false; im.receiveShadow = true; return im;
   }
 }
 export function sky(sunDir) {
@@ -70,10 +72,15 @@ export function sky(sunDir) {
   const mesh = new THREE.Mesh(new THREE.SphereGeometry(20000, 32, 16), m); mesh.renderOrder = -2; return mesh;
 }
 export function clouds() {
+  // one draw call: soft billboards with per-cloud size and opacity
   const cv = document.createElement('canvas'); cv.width = cv.height = 128; const g = cv.getContext('2d');
-  for (let k = 0; k < 26; k++) { const x = 30 + Math.random() * 68, y = 45 + Math.random() * 38, r = 12 + Math.random() * 22; const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); }
-  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; const grp = new THREE.Group();
-  for (let k = 0; k < 46; k++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: '#fffaf0', transparent: true, opacity: .55 + Math.random() * .3, depthWrite: false, fog: true }));
-    const r = 800 + Math.random() * 5200, a = Math.random() * 7; s.position.set(Math.cos(a) * r, 1500 + Math.random() * 1400, Math.sin(a) * r); const w = 600 + Math.random() * 900; s.scale.set(w, w * .45, 1); grp.add(s); }
-  return grp;
+  for (let k = 0; k < 30; k++) { const x = 28 + Math.random() * 72, y = 40 + Math.random() * 46, r = 12 + Math.random() * 24; const gr = g.createRadialGradient(x, y - r * .3, 0, x, y, r); gr.addColorStop(0, 'rgba(255,255,255,.6)'); gr.addColorStop(.6, 'rgba(244,240,232,.35)'); gr.addColorStop(1, 'rgba(230,224,214,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); }
+  const tex = new THREE.CanvasTexture(cv), N = 170, pos = new Float32Array(N * 3), size = new Float32Array(N), alpha = new Float32Array(N);
+  for (let c = 0, k = 0; c < 34; c++) { const r = 600 + Math.random() * 5600, a = Math.random() * 7, cx = Math.cos(a) * r, cz = Math.sin(a) * r, cy = 2700 + Math.random() * 1500, big = 450 + Math.random() * 650;
+    for (let q = 0; q < 5 && k < N; q++, k++) { pos.set([cx + (Math.random() - .5) * big * 1.4, cy + (Math.random() - .5) * big * .18, cz + (Math.random() - .5) * big * .8], k * 3); size[k] = big * (.6 + Math.random() * .6); alpha[k] = .45 + Math.random() * .35; } }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('size', new THREE.BufferAttribute(size, 1)); geo.setAttribute('alpha', new THREE.BufferAttribute(alpha, 1));
+  const mat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { map: { value: tex }, scale: { value: 800 }, fogColor: { value: new THREE.Color('#dcc8a6') } },
+    vertexShader: 'attribute float size; attribute float alpha; varying float vA; varying float vD; uniform float scale; void main(){ vA=alpha; vec4 mv=modelViewMatrix*vec4(position,1.); vD=-mv.z; gl_PointSize=min(900.,size*scale/max(1.,-mv.z)); gl_Position=projectionMatrix*mv; }',
+    fragmentShader: 'uniform sampler2D map; uniform vec3 fogColor; varying float vA; varying float vD; void main(){ vec4 t=texture2D(map,gl_PointCoord); float f=smoothstep(3000.,14000.,vD); float near=smoothstep(60.,420.,vD); gl_FragColor=vec4(mix(vec3(1.,.985,.96),fogColor,f*.7),t.a*vA*near); }' });
+  const pts = new THREE.Points(geo, mat); pts.frustumCulled = false; pts.renderOrder = 1; return pts;
 }
