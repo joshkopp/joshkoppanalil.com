@@ -89,7 +89,7 @@ const Bank=(()=>{
   function set(v){const up=v>bal;bal=Math.max(0,Math.round(v*100)/100);store.set(KEY,bal);to(bal);const p=$('#purse');p.classList.remove('up','dn','spin');void p.offsetWidth;p.classList.add(up?'up':'dn','spin')}
   return{get bal(){return bal},set,paint,
     take(x){if(x<=0||x>bal+1e-9)return false;set(bal-x);return true},
-    give(x,src){if(x<=0)return;set(bal+x);const p=center($('#purse'));floater('+'+fmt(x),p.x,p.y+22);if(src)flyChips(src,Math.min(14,4+Math.round(Math.log2(1+x/50))))},
+    give(x,src,quiet){if(x<=0)return;set(bal+x);const p=center($('#purse'));if(!quiet)floater('+'+fmt(x),p.x,p.y+22);if(src)flyChips(src,Math.min(14,4+Math.round(Math.log2(1+x/50))))},
     refill(){set(1000);toast('Topped up to $1,000. Good luck!');FX.rain(60)}};
 })();
 
@@ -112,8 +112,8 @@ function banner(e,text,kind=''){e.className='banner '+kind;e.innerHTML=text}
 /** pays out and runs the matching celebration. Returns net. */
 function settle(bet,payout,src,opts={}){
   payout=Math.round(payout*100)/100;Stats.record(bet,payout);const net=payout-bet,m=bet?payout/bet:0;
-  if(payout>0)Bank.give(payout,src);
-  if(net>0){SFX.win(m);if(src){const c=src.getBoundingClientRect?center(src):src;FX.burst(c.x,c.y,{n:Math.min(90,20+m*8),up:true,speed:10})}
+  if(payout>0)Bank.give(payout,opts.fx===false?null:src,opts.fx===false);
+  if(net>0){if(!opts.mute)SFX.win(m);if(src&&opts.fx!==false){const c=src.getBoundingClientRect?center(src):src;FX.burst(c.x,c.y,{n:Math.min(90,20+m*8),up:true,speed:10})}
     if(m>=(opts.big||10)&&!opts.quiet)bigWin(payout,m)}
   else if(net<0&&!opts.silent){SFX.lose()}
   return net;

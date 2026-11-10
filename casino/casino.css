@@ -614,3 +614,21 @@ footer a{color:var(--gold)}
 @keyframes pball2{0%{transform:translate(0,-10px);opacity:0}8%{opacity:1}20%{transform:translate(-10px,24px)}40%{transform:translate(0,48px)}60%{transform:translate(10px,72px)}80%{transform:translate(0,96px);opacity:1}100%{transform:translate(0,96px);opacity:0}}
 .backb{white-space:nowrap;flex:none}
 @media(max-width:640px){.backb{padding:0 10px;height:34px}.top .wrap{gap:8px}}
+/* plinko v2 */
+.plg{display:grid;grid-template-columns:270px 1fr;gap:22px;align-items:start}
+.plpanel{display:flex;flex-direction:column;gap:14px;padding:16px;border-radius:20px;background:rgba(0,0,0,.35);border:1px solid var(--line)}
+.plpanel .lbl{margin-bottom:6px}
+.seg.wide{display:flex;width:100%}.seg.wide button{flex:1;padding:0 6px}
+.plauto{display:flex;flex-direction:column;gap:14px}
+.plauto[hidden]{display:none}
+.plstops{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.plstops label{display:flex;flex-direction:column}.plstops .num{width:100%}
+.plpanel .btn{width:100%}
+.plkeys{font-size:11px;color:var(--dim);text-align:center}
+.plg.autoing .plboard{animation:autoglow 1.6s ease-in-out infinite}
+@keyframes autoglow{50%{filter:drop-shadow(0 0 18px rgba(255,95,134,.35))}}
+.plboard{min-width:0}
+.plwrap{height:clamp(380px,52vw,600px);max-width:780px;margin:0 auto}
+.plstats{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;align-items:center;margin-top:10px;color:var(--muted);font-size:13px}
+.plstats b{color:var(--gold);font-variant-numeric:tabular-nums}
+@media(max-width:860px){.plg{grid-template-columns:1fr}.plpanel{order:2}.plwrap{height:clamp(330px,95vw,520px)}}

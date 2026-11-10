@@ -142,62 +142,110 @@ reg((()=>{
   const T={8:{low:[5.6,2.1,1.1,1,.5,1,1.1,2.1,5.6],med:[13,3,1.3,.7,.4,.7,1.3,3,13],high:[29,4,1.5,.3,.2,.3,1.5,4,29]},
     12:{low:[10,3,1.6,1.4,1.1,1,.5,1,1.1,1.4,1.6,3,10],med:[33,11,4,2,1.1,.6,.3,.6,1.1,2,4,11,33],high:[170,24,8.1,2,.7,.2,.2,.2,.7,2,8.1,24,170]},
     16:{low:[16,9,2,1.4,1.4,1.2,1.1,1,.5,1,1.1,1.2,1.4,1.4,2,9,16],med:[110,41,10,5,3,1.5,1,.5,.3,.5,1,1.5,3,5,10,41,110],high:[1000,130,26,9,4,2,.2,.2,.2,.2,.2,2,4,9,26,130,1000]}};
-  const G={id:'plinko',name:'Plinko',cat:'Instant Games',featured:true,desc:'Drop the ball through the pegs. Edges pay up to 1,000×.',edge:'99% RTP',tc:'rgba(150,30,90,.95)',
+  const SPEED={normal:{sp:.075,gap:300,n:'Normal'},fast:{sp:.11,gap:150,n:'Fast'},turbo:{sp:.16,gap:70,n:'Turbo'}};
+  const BALLC={low:[150,190],med:[330,30],high:[0,20]};
+  const G={id:'plinko',name:'Plinko',cat:'Instant Games',featured:true,desc:'Drop balls by hand or let auto rain them down. Edges pay up to 1,000×.',edge:'99% RTP',tc:'rgba(150,30,90,.95)',
     art:`<div class="a-plinko">${[[0,57],[1,45],[1,69],[2,33],[2,57],[2,81],[3,21],[3,45],[3,69],[3,93]].map(([r,x])=>`<i style="left:${x}px;top:${22+r*22}px"></i>`).join('')}<b></b></div>`};
-  let R,cv,cx,rows=12,risk='med',balls=[],pegHit=new Map(),binHit=new Map(),raf=0,auto=0,autoT=0,L={};
+  let R,cv,cx,rows=12,risk='med',speed='normal',mode='manual',balls=[],pegHit=new Map(),binHit=new Map(),ripples=[],floats=[],raf=0,L={};
+  let counts=[],stat={n:0,net:0,best:0},auto={on:false,left:0,base:0,t:0},autoN=25;
   const table=()=>T[rows][risk];
   const binCol=m=>m>=100?'#ff3b5c':m>=10?'#ff7a2f':m>=3?'#ffb23f':m>=1.5?'#ffd76a':m>=1?'#c9e66b':'#7fd1a8';
-  function layout(){const S=cv.clientWidth,H=cv.clientHeight,gap=Math.min((S-20)/(rows+2),(H-60)/(rows+1.2)),top=24;L={S,H,gap,top,cx0:S/2,binY:top+gap*(rows)+gap*.35,bw:gap*.92}}
+  const resetCounts=()=>{counts=new Array(rows+1).fill(0)};
+  function layout(){const S=cv.clientWidth,H=cv.clientHeight,gap=Math.min((S-16)/(rows+2),(H-16)/(rows+4.3)),top=gap*1.5;
+    L={S,H,gap,top,cx0:S/2,binY:top+gap*rows+gap*.3,bw:gap*.9,bh:Math.max(20,gap*.78)};L.histY=L.binY+L.bh+8;L.histH=Math.max(16,H-L.histY-4)}
   const pegX=(r,i)=>L.cx0+(i-(r+2)/2)*L.gap,pegY=r=>L.top+r*L.gap;
-  function drop(){const bet=Bet.take();if(!bet){auto=0;paintAuto();return false}
+  const binX=i=>L.cx0+(i-rows/2)*L.gap;
+  function drop(){if(!L.gap)layout();const bet=Bet.take();if(!bet){if(auto.on)stopAuto('Out of chips');return false}
     const genPath=()=>Array.from({length:rows},()=>Math.random()<.5?0:1),path=lucky()?bestOf(4,genPath,p=>table()[p.reduce((a,b)=>a+b,0)]):genPath(),k=path.reduce((a,b)=>a+b,0);
-    balls.push({bet,path,bin:k,r:0,u:0,x:L.cx0,y:L.top-L.gap*.7,c:`hsl(${330+rnd(40)},100%,${60+rnd(10)}%)`,tr:[],rows,risk});SFX.pop(900);if(!raf)raf=requestAnimationFrame(frame);return true}
-  function land(b){const m=T[b.rows][b.risk][b.bin],pay=b.bet*m;binHit.set(b.bin,1);const r=cv.getBoundingClientRect();const x=r.left+L.cx0+(b.bin-b.rows/2)*L.gap,y=r.top+L.binY+L.gap*.3;
-    SFX.pop(m>=1?500+Math.min(900,m*40):260);settle(b.bet,pay,{x,y},{big:50,silent:true});if(m>=10)FX.sparks(x,y,binCol(m),30);
-    const h=$('#plH');const s=el('span','',fmtx(m));s.style.cssText=`background:${binCol(m)};color:#1a0d05`;h.prepend(s);while(h.children.length>14)h.lastChild.remove()}
+    const [h0,h1]=BALLC[risk],hue=h0+Math.random()*((h1-h0+360)%360);
+    balls.push({bet,path,bin:k,r:0,u:0,x:L.cx0,y:0,c:`hsl(${hue%360},100%,62%)`,hop:.36+Math.random()*.14,wob:(Math.random()-.5)*.18,tr:[],rows,risk,sp:SPEED[speed].sp*(.92+Math.random()*.16)});
+    SFX.pop(880+rnd(120));paintStats();kick();return true}
+  function land(b){const m=T[b.rows][b.risk][b.bin],pay=b.bet*m;binHit.set(b.bin,1);if(b.rows===rows)counts[b.bin]++;
+    const r=cv.getBoundingClientRect(),x=r.left+binX(b.bin),y=r.top+L.binY+L.bh/2;
+    stat.n++;stat.net+=pay-b.bet;if(m>stat.best)stat.best=m;
+    const busy=auto.on||balls.length>3,loud=m>=5||!busy;
+    SFX.pop(m>=1?480+Math.min(900,m*45):240);if(m>=10)SFX.big?.();
+    settle(b.bet,pay,{x,y},{big:50,silent:true,mute:!loud,fx:busy?m>=4:m>=1});if(m>=10)FX.sparks(x,y,binCol(m),40);
+    if(m>=2||!busy)floats.push({x:binX(b.bin),y:L.binY-4,t:1,txt:fmtx(m),c:binCol(m),big:m>=10});
+    const h=$('#plH');const s=el('span','',fmtx(m));s.style.cssText=`background:${binCol(m)};color:#1a0d05`;h.prepend(s);while(h.children.length>16)h.lastChild.remove();
+    paintStats();
+    if(auto.on){const sp=parseFloat($('#plSP').value),sl=parseFloat($('#plSL').value),n=stat.net-auto.base;
+      if(sp>0&&n>=sp)stopAuto(`Profit target hit: +${fmt(n)}`);else if(sl>0&&-n>=sl)stopAuto(`Loss limit hit: −${fmt(-n)}`)}}
+  function startAuto(){if(auto.on)return stopAuto();auto={on:true,left:autoN||Infinity,base:stat.net,t:0};SFX.chip();paintAuto();kick()}
+  function stopAuto(msg){auto.on=false;auto.left=0;paintAuto();if(msg)toast(msg)}
+  function paintAuto(){const b=$('#plAuto');if(!b)return;b.textContent=auto.on?(auto.left===Infinity?'Stop auto':`Stop · ${auto.left} left`):'Start auto';b.className='btn big '+(auto.on?'red':'pulse');
+    $('.plg',R).classList.toggle('autoing',auto.on)}
+  function paintStats(){$('#plN').textContent=stat.n;const n=$('#plNet');n.textContent=(stat.net>=0?'+':'−')+fmt(Math.abs(stat.net));n.style.color=stat.net>0?'var(--win)':stat.net<0?'var(--lose)':'';
+    $('#plBest').textContent=stat.best?fmtx(stat.best):'—';$('#plLive').textContent=balls.length}
+  function kick(){if(!raf)raf=requestAnimationFrame(frame)}
+  const kAt=(b,r)=>{let k=0;for(let i=0;i<r;i++)k+=b.path[i];return k};
   function frame(now){raf=requestAnimationFrame(frame);const S=cv.clientWidth,H=cv.clientHeight;if(!S)return;const d=Math.min(devicePixelRatio||1,2);
     if(cv.width!==Math.round(S*d)||cv.height!==Math.round(H*d)){cv.width=Math.round(S*d);cv.height=Math.round(H*d);cx.setTransform(d,0,0,d,0,0)}layout();
-    if(auto>0&&now-autoT>260){autoT=now;if(drop()){auto--;paintAuto()}}
-    const sp=RM?1:.075,br=Math.max(5,L.gap*.2),pr=Math.max(2.5,L.gap*.09);
-    const kAt=(b,r)=>{let k=0;for(let i=0;i<r;i++)k+=b.path[i];return k};
-    const P=(b,r)=>r<0?[L.cx0,L.top-L.gap*.8]:r>=b.rows?[L.cx0+(kAt(b,b.rows)-b.rows/2)*L.gap,L.binY+L.gap*.2]:[L.cx0+(kAt(b,r)-r/2)*L.gap,pegY(r)-br-pr];
-    for(const b of balls){if(b.done)continue;b.u+=sp;const u=Math.min(1,b.u),s=b.r,[x0,y0]=P(b,s-1),[x1,y1]=P(b,s);
-      b.x=x0+(x1-x0)*u;b.y=s===0?y0+(y1-y0)*u*u:y0+(y1-y0)*u-Math.sin(Math.PI*u)*L.gap*.42;
-      b.tr.push([b.x,b.y]);if(b.tr.length>8)b.tr.shift();
-      if(b.u>=1){b.u=0;if(s<b.rows){pegHit.set(s+','+(kAt(b,s)+1),1);SFX.tick(1.4+Math.random()*.4)}b.r++;if(b.r>b.rows){b.done=true;land(b)}}}
-    balls=balls.filter(b=>!b.done);
+    if(auto.on&&now-auto.t>SPEED[speed].gap){auto.t=now;if(drop()){auto.left--;paintAuto();if(auto.left<=0)stopAuto()}}
+    const br=Math.max(4.5,L.gap*.19),pr=Math.max(2.5,L.gap*.085);
+    const P=(b,r)=>r<0?[L.cx0+b.wob*L.gap,L.top-L.gap*1.1]:r>=b.rows?[binX(kAt(b,b.rows)),L.binY+L.bh*.35]:[L.cx0+(kAt(b,r)-r/2)*L.gap,pegY(r)-br-pr];
+    for(const b of balls){if(b.done)continue;b.u+=RM?1:b.sp;const u=Math.min(1,b.u),s=b.r,[x0,y0]=P(b,s-1),[x1,y1]=P(b,s);
+      const e=s===0?u*u:u;b.x=x0+(x1-x0)*(s===0?u:e);b.y=s===0?y0+(y1-y0)*e:y0+(y1-y0)*u-Math.sin(Math.PI*u)*L.gap*b.hop;
+      b.tr.push([b.x,b.y]);if(b.tr.length>10)b.tr.shift();
+      if(b.u>=1){b.u-=1;if(s<b.rows){const k=kAt(b,s)+1;pegHit.set(s+','+k,1);ripples.push({x:pegX(s,k),y:pegY(s),t:1,c:b.c});if(balls.length<12||Math.random()<.3)SFX.tick(1.3+s/rows*.8+Math.random()*.2)}
+        b.r++;if(b.r>b.rows){b.done=true;land(b)}}}
+    if(balls.some(b=>b.done)){balls=balls.filter(b=>!b.done);paintStats()}
     cx.clearRect(0,0,S,H);
+    // histogram of where this session's balls landed
+    const mx=Math.max(1,...counts);counts.forEach((c,i)=>{if(!c)return;const h=L.histH*c/mx,x=binX(i);cx.fillStyle=binCol(table()[i]);cx.globalAlpha=.32;roundRect(x-L.bw/2,L.histY,L.bw,h,4);cx.fill();cx.globalAlpha=.9;cx.fillRect(x-L.bw/2,L.histY+h-2,L.bw,2);cx.globalAlpha=.75;cx.font=`700 ${Math.max(8,Math.min(11,L.bw*.26))}px DM Sans`;cx.textAlign='center';cx.textBaseline='top';if(h>14)cx.fillText(c,x,L.histY+3);cx.globalAlpha=1});
+    // ripples
+    ripples=ripples.filter(p=>(p.t-=.05)>0);ripples.forEach(p=>{cx.strokeStyle=p.c;cx.globalAlpha=p.t*.7;cx.lineWidth=2;cx.beginPath();cx.arc(p.x,p.y,pr+(1-p.t)*L.gap*.45,0,7);cx.stroke()});cx.globalAlpha=1;
     // pegs
     for(let r=0;r<rows;r++)for(let i=0;i<r+3;i++){const x=pegX(r,i),y=pegY(r),key=r+','+i,h=pegHit.get(key)||0;
-      cx.fillStyle=h?`rgba(255,${200+55*h|0},${140+115*h|0},1)`:'#f1d488';cx.shadowColor=h?'#fff3c4':'rgba(232,196,106,.6)';cx.shadowBlur=h?16*h+4:6;cx.beginPath();cx.arc(x,y,pr+h*2,0,7);cx.fill();
-      if(h){const v=h-.06;v>0?pegHit.set(key,v):pegHit.delete(key)}}
+      cx.fillStyle=h?'#fff7dc':'#f1d488';cx.shadowColor=h?'#fff3c4':'rgba(232,196,106,.55)';cx.shadowBlur=h?18*h+4:5;cx.beginPath();cx.arc(x,y,pr+h*2.2,0,7);cx.fill();
+      if(h){const v=h-.07;v>0?pegHit.set(key,v):pegHit.delete(key)}}
     cx.shadowBlur=0;
-    // bins
-    const tb=table();tb.forEach((m,i)=>{const x=L.cx0+(i-rows/2)*L.gap,h=binHit.get(i)||0,y=L.binY+h*-6+(h?Math.sin(h*12)*2:0),w=L.bw,hh=Math.max(20,L.gap*.75);
-      cx.fillStyle=binCol(m);cx.shadowColor=binCol(m);cx.shadowBlur=h?24:6;roundRect(x-w/2,y,w,hh,6);cx.fill();cx.shadowBlur=0;
-      cx.fillStyle='rgba(0,0,0,.25)';roundRect(x-w/2,y+hh-4,w,4,2);cx.fill();
-      cx.fillStyle='#1a0d05';cx.font=`800 ${Math.max(8,Math.min(13,w*.3))}px DM Sans`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText(m>=100?m.toFixed(0):m+'',x,y+hh/2);
-      if(h){const v=h-.04;v>0?binHit.set(i,v):binHit.delete(i)}});
+    // buckets
+    const tb=table();tb.forEach((m,i)=>{const x=binX(i),h=binHit.get(i)||0,y=L.binY+h*7,w=L.bw,hh=L.bh,col=binCol(m);
+      cx.fillStyle=col;cx.shadowColor=col;cx.shadowBlur=h?28:6;roundRect(x-w/2,y,w,hh,6);cx.fill();cx.shadowBlur=0;
+      const g=cx.createLinearGradient(0,y,0,y+hh);g.addColorStop(0,'rgba(255,255,255,.35)');g.addColorStop(.5,'rgba(255,255,255,0)');g.addColorStop(1,'rgba(0,0,0,.28)');cx.fillStyle=g;roundRect(x-w/2,y,w,hh,6);cx.fill();
+      cx.fillStyle='#1a0d05';cx.font=`800 ${Math.max(8,Math.min(13,w*.3))}px DM Sans`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText(m>=100?m.toFixed(0):m+(m>=10?'':'×'),x,y+hh/2+.5);
+      if(h){const v=h-.06;v>0?binHit.set(i,v):binHit.delete(i)}});
     // balls
-    for(const b of balls){b.tr.forEach(([x,y],i)=>{cx.fillStyle=`rgba(255,120,170,${i/b.tr.length*.35})`;cx.beginPath();cx.arc(x,y,L.gap*.16*(i/b.tr.length),0,7);cx.fill()});
-      const g=cx.createRadialGradient(b.x-2,b.y-2,1,b.x,b.y,L.gap*.2);g.addColorStop(0,'#fff');g.addColorStop(.4,b.c);g.addColorStop(1,'#a0123f');cx.fillStyle=g;cx.shadowColor=b.c;cx.shadowBlur=14;cx.beginPath();cx.arc(b.x,b.y,br,0,7);cx.fill();cx.shadowBlur=0}
-    if(!balls.length&&!pegHit.size&&!binHit.size&&!auto){cancelAnimationFrame(raf);raf=0}}
-  function roundRect(x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath()}
-  function paintAuto(){$('#plAuto').textContent=auto?`Stop (${auto})`:'Drop ×10'}
-  function redraw(){if(!raf)raf=requestAnimationFrame(frame)}
-  G.init=root=>{R=root;root.innerHTML=`<div class="ghead"><div><h2 class="gtxt">Plinko</h2><p>Each ball bounces left or right off every peg and lands in a bucket at the bottom. Center buckets are common, the edges are rare and pay the most. Drop as many balls as you like.</p></div></div>
-    <div class="felt dark"><div class="plwrap"><canvas id="plC"></canvas></div>
-      <div class="ctl"><div class="ctlbox"><div class="lbl">Rows</div><div class="seg" id="plRows"><button data-v="8">8</button><button data-v="12">12</button><button data-v="16">16</button></div></div>
-        <div class="ctlbox"><div class="lbl">Risk</div><div class="seg" id="plRisk"><button data-v="low">Low</button><button data-v="med">Medium</button><button data-v="high">High</button></div></div></div>
-      <div class="row ctr" style="margin-top:14px"><button class="btn big pulse" id="plGo">Drop ball</button><button class="btn ghost" id="plAuto">Drop ×10</button></div>
-      <div class="hist" id="plH"></div></div>`;
+    for(const b of balls){b.tr.forEach(([x,y],i)=>{cx.fillStyle=b.c;cx.globalAlpha=i/b.tr.length*.28;cx.beginPath();cx.arc(x,y,br*(i/b.tr.length),0,7);cx.fill()});cx.globalAlpha=1;
+      const g=cx.createRadialGradient(b.x-br*.35,b.y-br*.35,1,b.x,b.y,br);g.addColorStop(0,'#fff');g.addColorStop(.45,b.c);g.addColorStop(1,'rgba(0,0,0,.55)');cx.fillStyle=g;cx.shadowColor=b.c;cx.shadowBlur=14;cx.beginPath();cx.arc(b.x,b.y,br,0,7);cx.fill();cx.shadowBlur=0}
+    // floating multipliers
+    floats=floats.filter(f=>(f.t-=.018)>0);floats.forEach(f=>{const k=1-f.t;cx.globalAlpha=Math.min(1,f.t*2);cx.fillStyle=f.c;cx.font=`900 ${f.big?22:14}px Cinzel,serif`;cx.textAlign='center';cx.shadowColor=f.c;cx.shadowBlur=f.big?18:8;cx.fillText(f.txt,f.x,f.y-k*L.gap*1.6);cx.shadowBlur=0});cx.globalAlpha=1;
+    if(!balls.length&&!pegHit.size&&!binHit.size&&!ripples.length&&!floats.length&&!auto.on){cancelAnimationFrame(raf);raf=0}}
+  function roundRect(x,y,w,h,r){r=Math.min(r,h/2,w/2);cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath()}
+  function segs(){[['#plRows',rows],['#plRisk',risk],['#plSpd',speed],['#plMode',mode],['#plCnt',autoN]].forEach(([id,v])=>$$(id+' button',R).forEach(b=>b.classList.toggle('on',b.dataset.v==String(v))));
+    $('.plauto',R).hidden=mode!=='auto';$('#plGo').hidden=mode!=='manual';$('#plAuto').hidden=mode!=='auto'}
+  const segClick=(id,fn,lock)=>{$(id).onclick=e=>{const b=e.target.closest('button');if(!b)return;if(lock&&(balls.length||auto.on))return toast('Wait for the balls to land');fn(b.dataset.v);SFX.click();segs();kick()}};
+  G.init=root=>{R=root;resetCounts();root.innerHTML=`<div class="ghead"><div><h2 class="gtxt">Plinko</h2><p>Each ball bounces left or right off every peg and lands in a bucket. The middle is common, the edges are rare and pay the most. Drop by hand, or switch to Auto and let it rain.</p></div></div>
+    <div class="felt dark"><div class="plg">
+      <aside class="plpanel">
+        <div class="seg wide" id="plMode"><button data-v="manual">Manual</button><button data-v="auto">Auto</button></div>
+        <div><div class="lbl">Rows</div><div class="seg wide" id="plRows"><button data-v="8">8</button><button data-v="12">12</button><button data-v="16">16</button></div></div>
+        <div><div class="lbl">Risk</div><div class="seg wide" id="plRisk"><button data-v="low">Low</button><button data-v="med">Medium</button><button data-v="high">High</button></div></div>
+        <div><div class="lbl">Ball speed</div><div class="seg wide" id="plSpd">${Object.entries(SPEED).map(([k,v])=>`<button data-v="${k}">${v.n}</button>`).join('')}</div></div>
+        <div class="plauto" hidden>
+          <div><div class="lbl">Number of balls</div><div class="seg wide" id="plCnt">${[10,25,50,100,0].map(n=>`<button data-v="${n}">${n||'∞'}</button>`).join('')}</div></div>
+          <div class="plstops"><label><span class="lbl">Take profit</span><input class="num" id="plSP" type="number" min="0" step="10" placeholder="off"></label>
+            <label><span class="lbl">Stop loss</span><input class="num" id="plSL" type="number" min="0" step="10" placeholder="off"></label></div>
+        </div>
+        <button class="btn big pulse" id="plGo">Drop ball</button><button class="btn big pulse" id="plAuto" hidden>Start auto</button>
+        <div class="plkeys">Space drops a ball · A toggles auto</div>
+      </aside>
+      <div class="plboard"><div class="plwrap"><canvas id="plC"></canvas></div>
+        <div class="plstats"><span>Balls <b id="plN">0</b></span><span>In play <b id="plLive">0</b></span><span>Session <b id="plNet">+$0</b></span><span>Best <b id="plBest">—</b></span><button class="btn ghost sm" id="plReset">Reset</button></div>
+        <div class="hist" id="plH"></div></div></div></div>`;
     cv=$('#plC');cx=cv.getContext('2d');
-    const segs=()=>{$$('#plRows button').forEach(b=>b.classList.toggle('on',+b.dataset.v===rows));$$('#plRisk button').forEach(b=>b.classList.toggle('on',b.dataset.v===risk))};
-    $('#plRows').onclick=e=>{const b=e.target.closest('button');if(!b||balls.length)return toast('Wait for the balls to land');rows=+b.dataset.v;SFX.click();segs();redraw()};
-    $('#plRisk').onclick=e=>{const b=e.target.closest('button');if(!b||balls.length)return toast('Wait for the balls to land');risk=b.dataset.v;SFX.click();segs();redraw()};
-    $('#plGo').onclick=()=>{layout();drop()};$('#plAuto').onclick=()=>{auto=auto?0:10;paintAuto();redraw()};segs();
-    addEventListener('resize',()=>{if(current===G)redraw()})};
-  G.enter=()=>{setTimeout(()=>{layout();redraw()},20)};G.leave=()=>{auto=0;paintAuto()};
+    segClick('#plMode',v=>{mode=v;if(v==='manual'&&auto.on)stopAuto()});
+    segClick('#plRows',v=>{rows=+v;resetCounts()},true);segClick('#plRisk',v=>{risk=v},true);
+    segClick('#plSpd',v=>{speed=v});segClick('#plCnt',v=>{autoN=+v;if(auto.on){auto.left=autoN||Infinity;paintAuto()}});
+    $('#plGo').onclick=()=>drop();$('#plAuto').onclick=startAuto;
+    $('#plReset').onclick=()=>{stat={n:0,net:0,best:0};resetCounts();$('#plH').innerHTML='';paintStats();kick()};
+    segs();paintAuto();paintStats();addEventListener('resize',()=>{if(current===G)kick()})};
+  G.enter=()=>{setTimeout(()=>{layout();kick()},20);addEventListener('keydown',G.key)};
+  G.leave=()=>{removeEventListener('keydown',G.key);stopAuto();
+    // settle anything still bouncing so no bet is left hanging
+    balls.forEach(b=>{b.done=true;land(b)});balls=[]};
+  G.key=e=>{if(e.target.matches('input'))return;if(e.code==='Space'){e.preventDefault();drop()}else if(e.code==='KeyA'){if(mode!=='auto'){mode='auto';segs()}startAuto()}};
   return G})());
 
 /* =============================================================== MINES */
