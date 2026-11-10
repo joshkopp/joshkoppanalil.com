@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>JK Strike</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#07080a">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080a;--ink:#f1f3ee;--muted:#a6ab9f;--dim:#6c7168;--line:rgba(255,255,255,.1);--line2:rgba(255,255,255,.18);--acc:#b8f36b;--red:#ff4f5e;--glass:rgba(10,12,10,.62);--ease:cubic-bezier(.2,.8,.2,1);--pop:cubic-bezier(.34,1.56,.64,1)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font:500 14px/1.45 "DM Sans",system-ui,sans-serif;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+#gl,#hud{position:fixed;inset:0;width:100%;height:100%;display:block}
+#hud{pointer-events:none;z-index:5}
+body.playing,body.playing #gl{cursor:none}
+.top{position:fixed;top:0;left:0;right:0;z-index:30;display:flex;align-items:center;gap:12px;padding:14px 18px;padding-top:max(14px,env(safe-area-inset-top));pointer-events:none}
+.top>*{pointer-events:auto}
+.brand{font:700 18px "Space Grotesk";display:flex;align-items:center;gap:10px;letter-spacing:.02em;text-shadow:0 2px 10px rgba(0,0,0,.5)}
+.brand i{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--acc);color:#0b0d08;font-style:normal;box-shadow:0 0 22px rgba(184,243,107,.4)}
+.brand b{color:var(--acc)}
+.sp{flex:1}
+.ib{width:38px;height:38px;border-radius:12px;border:1px solid var(--line2);background:rgba(10,12,10,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:grid;place-items:center;cursor:pointer;text-decoration:none;color:var(--ink);font-size:15px}
+.screen{display:none}.screen.on{display:block}
+/* menu */
+#menu{position:fixed;inset:0;z-index:10;pointer-events:none}
+.mpanel{pointer-events:auto;position:absolute;left:22px;top:80px;bottom:22px;width:420px;border-radius:24px;background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);padding:22px;overflow-y:auto;scrollbar-width:thin;animation:slin .6s var(--ease)}
+@keyframes slin{from{opacity:0;transform:translateX(-30px)}}
+.mpanel h1{margin:0;font:700 46px/1 "Space Grotesk";letter-spacing:-.02em}
+.mpanel h1 b{color:var(--acc)}
+.mpanel p.sub{margin:6px 0 18px;color:var(--muted)}
+.lbl{font:700 10.5px "JetBrains Mono";letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:16px 0 8px}
+.jcard{display:block;width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;border-radius:14px;border:1px solid var(--line2);background:rgba(255,255,255,.03);cursor:pointer;transition:.2s}
+.jcard b{font:700 15px "Space Grotesk"}.jcard small{display:block;color:var(--dim);margin:2px 0 8px}
+.jcard.on{border-color:var(--acc);background:rgba(184,243,107,.08);box-shadow:inset 0 0 0 1px var(--acc)}
+.mini{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:4px 8px;align-items:center;font:700 9.5px "JetBrains Mono";color:var(--dim)}
+.mini i{display:block;height:5px;border-radius:4px;background:linear-gradient(90deg,var(--acc) var(--v),rgba(255,255,255,.08) var(--v))}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line2);background:rgba(255,255,255,.03);padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:600;font-size:12.5px;transition:.2s}
+.chip.on{background:var(--acc);color:#0b0d08;border-color:transparent}
+.sw{width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,.2);cursor:pointer;transition:transform .2s var(--pop)}
+.sw.on{box-shadow:0 0 0 3px #0b0d0b,0 0 0 5px var(--acc);transform:scale(1.08)}
+.go{width:100%;height:58px;margin-top:20px;border:0;border-radius:16px;background:var(--acc);color:#0b0d08;font:700 18px "Space Grotesk";letter-spacing:.06em;cursor:pointer;box-shadow:0 14px 40px -12px rgba(184,243,107,.8);transition:transform .15s}
+.go:hover{transform:translateY(-2px)}.go:active{transform:scale(.98)}
+.keys{margin-top:16px;font:500 11.5px/1.9 "JetBrains Mono";color:var(--muted)}
+.keys b{color:#fff;background:rgba(255,255,255,.1);padding:1px 6px;border-radius:5px;margin-right:4px}
+.best{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.04);font:700 13px "JetBrains Mono"}
+.best b{color:var(--acc)}
+/* play hud (DOM parts) */
+#play{position:fixed;inset:0;z-index:6;pointer-events:none}
+.stl{position:absolute;left:18px;top:70px;display:flex;flex-direction:column;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:10px;padding:7px 12px;border-radius:12px;background:rgba(8,10,8,.55);border:1px solid var(--line);font:700 14px "JetBrains Mono"}
+.pill small{font:700 9.5px "JetBrains Mono";letter-spacing:.14em;color:var(--dim)}
+#sCombo{color:var(--acc)}
+.bl{position:absolute;left:18px;bottom:18px;width:250px;padding:12px 14px;border-radius:16px;background:rgba(8,10,8,.55);border:1px solid var(--line);font:700 11px "JetBrains Mono";color:var(--dim)}
+.row{display:flex;justify-content:space-between;align-items:center;margin-top:8px}.row:first-child{margin-top:0}
+.bar{height:6px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:5px}.bar i{display:block;height:100%;width:100%;background:var(--acc);transition:width .2s}
+#msl{display:flex;gap:3px;flex-wrap:wrap}#msl i{width:7px;height:16px;border-radius:3px 3px 1px 1px;background:rgba(255,255,255,.12)}#msl i.on{background:#e8e8e8;box-shadow:0 0 6px rgba(255,255,255,.5)}
+.thr{position:absolute;right:-28px;bottom:0;width:10px;height:100%;border-radius:6px;background:rgba(8,10,8,.55);border:1px solid var(--line);overflow:hidden;display:flex;align-items:flex-end}
+#thr{width:100%;background:var(--acc);transition:height .2s}#thr.ab{background:linear-gradient(#ffd27a,#ff7a2f);box-shadow:0 0 10px #ff7a2f}
+#banner{position:absolute;left:50%;top:20%;transform:translateX(-50%);text-align:center;opacity:0;pointer-events:none}
+#banner.on{animation:ban 3.2s var(--ease) forwards}
+#banner b{display:block;font:700 clamp(30px,6vw,64px)/1 "Space Grotesk";letter-spacing:.08em;text-shadow:0 0 30px rgba(184,243,107,.6),0 4px 20px rgba(0,0,0,.5)}
+#banner span{font:700 13px "JetBrains Mono";letter-spacing:.14em;color:var(--acc);text-transform:uppercase}
+@keyframes ban{0%{opacity:0;transform:translateX(-50%) scale(1.4)}12%{opacity:1;transform:translateX(-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-20px)}}
+#help{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);font:500 11.5px/1.8 "JetBrains Mono";color:rgba(255,255,255,.7);background:rgba(8,10,8,.5);padding:8px 14px;border-radius:12px;transition:opacity 1s;text-align:center}
+#help b{color:#fff;background:rgba(255,255,255,.12);padding:1px 6px;border-radius:5px}
+/* touch */
+#touch{display:none;position:fixed;inset:auto 0 0 0;z-index:8;height:230px;padding:0 16px max(16px,env(safe-area-inset-bottom));justify-content:space-between;align-items:flex-end}
+body.touchui #touch{display:none}
+body.touchui.playing #touch{display:flex}
+body.touchui .bl{bottom:auto;top:126px;width:180px;transform:scale(.85);transform-origin:top left}
+body.touchui #help{display:none}
+#stick{width:150px;height:150px;border-radius:50%;background:rgba(10,12,10,.35);border:1px solid var(--line2);position:relative;touch-action:none}
+#knob{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px;border-radius:50%;background:rgba(184,243,107,.35);border:1px solid var(--acc);transition:transform .05s}
+.tbtns{display:grid;grid-template-columns:repeat(3,auto);gap:10px;align-items:end}
+.tb{width:66px;height:66px;border-radius:20px;border:1px solid var(--line2);background:rgba(10,12,10,.45);display:grid;place-items:center;font:700 12px "JetBrains Mono";color:#fff;touch-action:none}
+.tb.big{width:84px;height:84px;background:rgba(255,79,94,.25);border-color:rgba(255,79,94,.6)}
+.tb.down{background:rgba(255,255,255,.3);transform:scale(.95)}
+#tPause{position:fixed;top:max(14px,env(safe-area-inset-top));right:66px;z-index:31;display:none}
+body.touchui.playing #tPause{display:grid}
+/* modals */
+.modal{position:fixed;inset:0;z-index:40;display:none;place-items:center;background:rgba(5,6,5,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.modal.on{display:grid;animation:fade .3s}@keyframes fade{from{opacity:0}}
+.card{width:min(440px,calc(100% - 32px));border-radius:24px;background:rgba(12,14,12,.92);border:1px solid var(--line2);padding:26px;text-align:center;animation:pin .45s var(--pop)}
+@keyframes pin{from{transform:scale(.9);opacity:0}}
+.card h2{margin:0 0 6px;font:700 30px "Space Grotesk"}
+.card .score{font:700 54px/1 "JetBrains Mono";color:var(--acc);margin:12px 0}
+.ostats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0 18px}
+.ostats div{padding:10px 4px;border-radius:12px;background:rgba(255,255,255,.04)}.ostats b{display:block;font:700 18px "JetBrains Mono"}.ostats span{font-size:10.5px;color:var(--dim)}
+.btns{display:grid;gap:8px}
+.btn{height:48px;border-radius:14px;border:1px solid var(--line2);background:rgba(255,255,255,.05);font-weight:700;cursor:pointer}
+.btn.pri{background:var(--acc);color:#0b0d08;border-color:transparent}
+#loading{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:var(--bg);transition:opacity .6s}
+#loading b{font:700 22px "Space Grotesk"}#loading i{display:block;width:180px;height:3px;border-radius:3px;background:rgba(255,255,255,.08);margin:14px auto 0;overflow:hidden}
+#loading i:after{content:"";display:block;width:40%;height:100%;background:var(--acc);animation:ld 1s ease-in-out infinite}@keyframes ld{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
+@media(max-width:760px){
+  .mpanel{left:10px;right:10px;width:auto;top:auto;bottom:10px;max-height:62vh;padding:18px}
+  .mpanel h1{font-size:34px}
+  .stl{top:62px;left:10px;flex-direction:row;flex-wrap:wrap;max-width:calc(100% - 140px)}
+  .pill{font-size:12px;padding:5px 9px;gap:6px}
+  .keys{display:none}
+}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas><canvas id="hud"></canvas>
+<div id="loading"><div style="text-align:center"><b>JK Strike</b><i></i></div></div>
+<header class="top"><div class="brand"><i>✈</i><span>JK <b>Strike</b></span></div><div class="sp"></div><button class="ib" id="snd" title="Sound (M)">🔊</button><a class="ib" href="/" title="Back to joshkoppanalil.com">✕</a></header>
+<button class="ib" id="tPause" title="Pause">⏸</button>
+
+<section class="screen" id="menu">
+  <div class="mpanel">
+    <h1>JK <b>STRIKE</b></h1>
+    <p class="sub">Desert air combat. Lock on, fire, survive the waves.</p>
+    <div class="lbl">Choose your jet</div><div id="mJets"></div>
+    <div class="lbl">Paint</div><div class="chips" id="mPaint"></div>
+    <div class="lbl">Difficulty</div><div class="chips" id="mDiff"></div>
+    <div class="lbl">Starting view</div><div class="chips" id="mView"></div>
+    <div class="lbl">Options</div><div class="chips" id="mOpts"></div>
+    <button class="go" id="mGo">TAKE OFF ▶</button>
+    <div class="best"><span>HIGH SCORE</span><b id="mBest">0</b></div>
+    <div class="keys"><div><b>Mouse</b> steer · <b>Click</b> guns · <b>Right click</b>/<b>Space</b> missile</div><div><b>W S</b> pitch · <b>A D</b> roll · <b>Q E</b> rudder</div><div><b>Shift</b> afterburner · <b>B</b> airbrake · <b>F</b> flares</div><div><b>V</b> cockpit / chase · <b>T</b> next target · <b>Esc</b> pause</div></div>
+  </div>
+</section>
+
+<section class="screen" id="play">
+  <div class="stl"><div class="pill"><small>SCORE</small><span id="sScore">0</span><span id="sCombo"></span></div><div class="pill"><small>WAVE</small><span id="sWave">1</span></div><div class="pill"><small>BANDITS</small><span id="sLeft">0</span></div></div>
+  <div class="bl">
+    <div class="row"><span>HULL</span><span id="hpTxt">100%</span></div><div class="bar"><i id="hpBar"></i></div>
+    <div class="row"><span>GUN</span><span>HEAT</span></div><div class="bar"><i id="heat" style="width:0"></i></div>
+    <div class="row"><span>MSL</span><span>FLR <b id="flr" style="color:#fff">12</b></span></div><div id="msl" style="margin-top:6px"></div>
+    <div class="thr"><i id="thr"></i></div>
+  </div>
+  <div id="banner"></div>
+  <div id="help"><b>Mouse</b> steer · <b>Click</b> guns · <b>Space</b> missile when <span style="color:#ff4f5e">LOCKED</span> · <b>F</b> flares · <b>Shift</b> boost · <b>V</b> cockpit</div>
+</section>
+
+<div id="touch">
+  <div id="stick"><div id="knob"></div></div>
+  <div class="tbtns"><div class="tb" data-b="cam">VIEW</div><div class="tb" data-b="flr">FLR</div><div class="tb" data-b="msl">MSL</div><div class="tb" data-b="brake">BRK</div><div class="tb" data-b="ab">BOOST</div><div class="tb big" data-b="gun">GUN</div></div>
+</div>
+
+<div class="modal" id="pause"><div class="card"><h2>Paused</h2><div class="btns" style="margin-top:16px"><button class="btn pri" data-a="resume">Resume</button><button class="btn" data-a="view">View: <span id="pView">switch</span></button><button class="btn" data-a="restart">Restart</button><button class="btn" data-a="menu">Hangar</button></div></div></div>
+<div class="modal" id="over"><div class="card"><h2 id="oTitle">Shot down</h2><div class="score" id="oScore">0</div><div class="ostats" id="oStats"></div><div class="btns"><button class="btn pri" data-a="again">Fly again</button><button class="btn" data-a="menu">Hangar</button></div></div></div>
+<script type="module" src="game.js?v=1"></script>
+</body>
+</html>
