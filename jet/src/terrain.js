@@ -1,7 +1,7 @@
 // Desert terrain: dunes, layered mesas, mountain rim. Height samples are shared by the mesh, collisions and AI.
 import * as THREE from 'three';
 
-export const SIZE = 14000, SEG = 340, HALF = SIZE / 2, ARENA = 4600;
+export const SIZE = 14000, SEG = 340, HALF = SIZE / 2, ARENA = 4600, BASE_H = 55;
 function hash(x, y) { let h = x * 374761393 + y * 668265263; h = (h ^ (h >>> 13)) * 1274126177; return ((h ^ (h >>> 16)) >>> 0) / 4294967295; }
 function vnoise(x, y) { const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
   const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; }
@@ -13,7 +13,8 @@ function rawH(x, z) {
   const m = fbm(x * .00042 + 40, z * .00042 + 11, 3);
   h += ss(.6, .625, m) * 230 + ss(.68, .7, m) * 150 + ss(.75, .765, m) * 110; // stepped mesas
   h += ss(4300, 6400, r) * (700 + fbm(x * .0009, z * .0009, 3) * 900); // mountain rim
-  return h;
+  const dx = Math.max(0, Math.abs(x) - 1450), db = Math.hypot(dx, z), w = ss(560, 280, db); // flatten for the airbase
+  return h * (1 - w) + BASE_H * w;
 }
 export class Terrain {
   constructor() {

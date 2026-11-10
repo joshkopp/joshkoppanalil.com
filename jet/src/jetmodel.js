@@ -173,3 +173,41 @@ function missileMaterial() { if (MM) return MM; const c = document.createElement
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return (MM = new THREE.MeshStandardMaterial({ map: t, roughness: .4, metalness: .2 })); }
 export function missileMesh() { return new THREE.Mesh(missileGeometry(), missileMaterial()); }
 export function warmUp() { Object.keys(JETS).forEach(t => getBuilt(t, 'red', true)); }
+
+/* ---------------------------------------------------------------- bombers / boss gunship */
+const bomberCache = {};
+export function buildBomber(boss = false) {
+  const key = boss ? 'boss' : 'bomber';
+  if (!bomberCache[key]) {
+    const L = boss ? 58 : 44, k = L / 44, P = { paint: [], dark: [], metal: [], glass: [], light: [] }, z = t => -L / 2 + t * L;
+    P.paint.push(loft([[0, .05, .05, 0, 2], [.03, 1.2, 1.3, .1, 2], [.08, 2.1, 2.3, .3, 2.1], [.16, 2.5, 2.7, .3, 2.2], [.6, 2.5, 2.6, .3, 2.2], [.85, 1.8, 2.0, .8, 2.1], [1, .5, .6, 1.6, 2]].map(([t, w, h, y, n]) => [t, w * k, h * k, y * k, n]), L, 28));
+    P.glass.push(loft([[.03, .3, .3, .9, 2], [.06, 1.3, .8, 1.4, 2.2], [.1, 1.4, .7, 1.7, 2.2], [.13, .4, .2, 1.9, 2]].map(([t, w, h, y, n]) => [t, w * k, h * k, y * k, n]), L, 18));
+    const span = (boss ? 31 : 24) * k;
+    [-1, 1].forEach(s => {
+      const w = plate([[s * 2 * k, z(.33)], [s * span, z(.45)], [s * span, z(.5)], [s * 2 * k, z(.52)]], .5 * k, .15 * k); w.translate(0, 2.2 * k, 0); P.paint.push(w);
+      [.35, .7].forEach(f => { const x = s * span * f, zz = z(.38 + f * .1); P.paint.push(place(new THREE.CylinderGeometry(.85 * k, .7 * k, 6 * k, 14), x, 1.1 * k, zz, Math.PI / 2)); P.dark.push(place(new THREE.CircleGeometry(.8 * k, 14), x, 1.1 * k, zz - 3 * k - .02, 0, Math.PI, 0)); P.metal.push(place(new THREE.CylinderGeometry(.6 * k, .55 * k, 1 * k, 12, 1, true), x, 1.1 * k, zz + 3.3 * k, Math.PI / 2)); });
+      const hs = plate([[s * .3 * k, z(.88)], [s * 8 * k, z(.95)], [s * 8 * k, z(.98)], [s * .3 * k, z(1)]], .25 * k, .1 * k); hs.translate(0, 7.2 * k, 0); P.paint.push(hs);
+      P.light.push(place(new THREE.SphereGeometry(.25 * k, 6, 5), s * span, 2.2 * k, z(.5)));
+    });
+    P.paint.push(place(fin([[0, 0], [4 * k, 6.5 * k], [6.5 * k, 6.5 * k], [6.8 * k, 0]], .35 * k, .12 * k), 0, 1.4 * k, z(.83)));
+    // gun turrets
+    [[0, 2.9, .3], [0, -2.4, .55], [0, 1.6, .98]].forEach(([x, y, t]) => { P.dark.push(place(new THREE.SphereGeometry(.7 * k, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), x, y * k, z(t), y < 0 ? Math.PI : 0)); P.metal.push(place(new THREE.CylinderGeometry(.08 * k, .08 * k, 2 * k, 6), x + .3 * k, y * k + (y < 0 ? -.4 : .4) * k, z(t) - 1 * k, Math.PI / 2)); });
+    const mats = {
+      paint: new THREE.MeshStandardMaterial({ map: skinTex('red'), roughness: .55, metalness: .3 }), dark: new THREE.MeshStandardMaterial({ color: '#25282d', roughness: .55, metalness: .45 }),
+      metal: new THREE.MeshStandardMaterial({ color: '#6f7379', roughness: .32, metalness: .9 }), glass: new THREE.MeshPhysicalMaterial({ color: '#3a2a12', roughness: .05, metalness: .8, transparent: true, opacity: .85 }), light: new THREE.MeshBasicMaterial({ color: '#ff3a3a' }),
+    };
+    const geos = {}; for (const m in P) { const g = merge(P[m]); if (g) geos[m] = g; }
+    const engines = []; [-1, 1].forEach(s => [.35, .7].forEach(f => engines.push([s * span * f, 1.1 * k, z(.38 + f * .1) + 3.6 * k])));
+    bomberCache[key] = { geos, mats, L, k, engines };
+  }
+  const B = bomberCache[key], root = new THREE.Group(), body = new THREE.Group(); root.add(body);
+  for (const m in B.geos) { const mesh = new THREE.Mesh(B.geos[m], B.mats[m]); mesh.castShadow = m !== 'light' && m !== 'glass'; body.add(mesh); }
+  const fm = B.fm || (B.fm = new THREE.MeshBasicMaterial({ color: '#ffa04a', transparent: true, opacity: .5, blending: THREE.AdditiveBlending, depthWrite: false }));
+  const cm = B.cm || (B.cm = new THREE.MeshBasicMaterial({ color: '#a9e2ff', transparent: true, opacity: .7, blending: THREE.AdditiveBlending, depthWrite: false }));
+  const gm = B.gm || (B.gm = new THREE.SpriteMaterial({ map: glowTexture(), color: '#ffb066', opacity: .7, blending: THREE.AdditiveBlending, depthWrite: false }));
+  const flames = [], glows = [];
+  B.engines.forEach(([x, y, zz]) => { const f = new THREE.Mesh(flameGeo, fm), c = new THREE.Mesh(coreGeo, cm), s = new THREE.Sprite(gm), sc = 1.2 * B.k; f.scale.setScalar(sc); c.scale.setScalar(sc); f.position.set(x, y, zz); c.position.set(x, y, zz); s.position.set(x, y, zz - .3); s.scale.setScalar(4 * B.k); body.add(f, c, s); flames.push(f, c); glows.push(s); });
+  const strobe = new THREE.Sprite(B.sm || (B.sm = new THREE.SpriteMaterial({ map: glowTexture(), color: '#ff4040', blending: THREE.AdditiveBlending, depthWrite: false }))); strobe.scale.setScalar(5); strobe.position.set(0, 9 * B.k, -B.L * .5 + .9 * B.L); body.add(strobe);
+  root.userData = { def: { len: B.L, span: 24 }, body, flames, glows, msls: [], strobe, len: B.L, guns: [[0, 2.9 * B.k, -B.L / 2 + .3 * B.L], [0, -2.4 * B.k, -B.L / 2 + .55 * B.L], [0, 1.6 * B.k, -B.L / 2 + .98 * B.L]] };
+  return root;
+}
