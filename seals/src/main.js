@@ -7,6 +7,7 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { buildOcean, buildSky, buildIslands, waveHeight, ISLANDS } from './ocean.js';
 import { CLASSES, buildShip, insideHull, halfBeam } from './ships.js';
 import { Audio } from './audio.js';
+import { buildJet, glowTexture } from './jetmodel.js';
 
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + (b - a) * t, rnd = (a, b) => a + Math.random() * (b - a);
@@ -56,13 +57,13 @@ class Parts {
     this.sz[i] = this.s0[i] * (1 + this.gr[i] * a); this.al[i] = this.a0[i] * (1 - a / L) * Math.min(1, a * 10); }
     for (const n of ['position', 'color', 'size', 'alpha']) this.g.attributes[n].needsUpdate = true; }
 }
-const water = new Parts(Q === 'low' ? 2500 : 5000, false), smoke = new Parts(Q === 'low' ? 1500 : 3000, false), fire = new Parts(1500, true, false), trail = new Parts(1500, false);
+const water = new Parts(Q === 'low' ? 1500 : Q === 'medium' ? 2500 : 4000, false), smoke = new Parts(Q === 'low' ? 1200 : Q === 'medium' ? 2000 : 3000, false), fire = new Parts(1500, true, false), trail = new Parts(1500, false);
 const WHITE = [.93, .95, .97], MIST = [.8, .85, .88], BLACK = [.1, .1, .11], GRAYS = [.42, .43, .45], ORANGE = [1, .55, .15], FLASH = [1, .8, .45], TRAIL = [.75, .75, .76];
 
 /* ------------------------------------------------------------------ ballistics */
 const BAL = {}, EMAX = 18 * Math.PI / 180; // arcade ballistics: heavier gravity + faster shells keep real-looking arcs but sane flight times
 const TOFMAX = { dd: 9, ca: 12, bb: 15 };
-for (const C of Object.values(CLASSES)) { const y0 = C.F + 4, T = TOFMAX[C.id], k = 1.5e-5;
+for (const C of Object.values(CLASSES).filter(c => !c.modern)) { const y0 = C.F + 4, T = TOFMAX[C.id], k = 1.5e-5;
   const sim = (elev, g, v0) => { let x = 0, y = y0, vx = v0 * Math.cos(elev), vy = v0 * Math.sin(elev), t = 0; while (y > 0 && t < 60) { const v = Math.hypot(vx, vy); vx += -k * v * vx * .01; vy += (-k * v * vy - g) * .01; x += vx * .01; y += vy * .01; t += .01; } return [x, t]; };
   let g = C.range / (1.539 * T * T), v0 = g * T / .618; for (let it = 0; it < 25; it++) { const [r] = sim(EMAX, g, v0); g *= Math.sqrt(r / C.range) ** -1 * 1; v0 = g * T / .618; const [r2] = sim(EMAX, g, v0); if (Math.abs(r2 - C.range) < 5) break; }
   const tab = []; for (let e = 0; e <= 18.001; e += .1) { const [r, t] = sim(e * Math.PI / 180, g, v0); tab.push([e * Math.PI / 180, r, t]); } BAL[C.id] = { k, g, v0, tab, y0 }; }
@@ -143,7 +144,7 @@ function updateShells(dt, t) {
     if (!done && sl.t > 100) done = true;
     if (!done) { sl.mesh.position.set(sl.x, sl.y, sl.z); sl.mesh.lookAt(sl.x + sl.vx, sl.y + sl.vy, sl.z + sl.vz); if (Math.random() < .6) trail.emit(sl.x, sl.y, sl.z, 0, 0, 0, 1.4, 1.2 + sl.C.cal / 406 * 2, 2, TRAIL, .18, 1, 0);
       if (!sl.whistled && player && sl.team === 'enemy' && sl.vy < 0) { const d = Math.hypot(sl.x - player.x, sl.z - player.z); if (d < 600 && sl.y < 900) { sl.whistled = true; Audio.whistle(1 - d / 600); } } }
-    else { scene.remove(sl.mesh); shells.splice(i, 1); if (sl.cam) R.camImpact = { x: sl.x, y: Math.max(sl.y, 2), z: sl.z, t: 1.8 }; } }
+    else { scene.remove(sl.mesh); shells.splice(i, 1); if (sl.cam) { R.camImpact = { x: sl.x, y: Math.max(sl.y, 2), z: sl.z, t: 1.1 }; R.shellCam = null; R.slow = 1; } } }
 }
 function near(sl) { if (sl.player && R.target) { const d = Math.hypot(sl.x - R.target.x, sl.z - R.target.z); if (d < 120) R.straddle = (R.straddle || 0) + 1; } }
 function splashFX(x, z, cal, t) { const k = cal / 406, y = waveHeight(x, z, t), n = 30 + k * 90, H = 22 + k * 70;
@@ -273,7 +274,7 @@ addEventListener('mouseup', e => { if (e.button === 2) R.zoom = false; }); canva
 addEventListener('mousemove', e => { if (!document.pointerLockElement || R.phase !== 'battle') return; const k = .0024 * S.sens * (R.zoom ? .22 : 1); R.camYaw -= e.movementX * k; R.camPitch = clamp(R.camPitch + e.movementY * k, -.04, 1.25); });
 addEventListener('wheel', e => { if (R.phase === 'battle') R.camDist = clamp(R.camDist * (e.deltaY > 0 ? 1.1 : .9), .45, 2.4); }, { passive: true });
 document.addEventListener('pointerlockchange', () => { $('clickfly').classList.toggle('on', R.phase === 'battle' && !document.pointerLockElement && !isTouch && !R.paused); });
-addEventListener('keydown', e => { keys[e.code] = true; Audio.init(); if (R.phase !== 'battle') return; const p = player;
+addEventListener('keydown', e => { keys[e.code] = true; Audio.init(); if (R.phase === 'cine') { if (e.code === 'Escape') toMenu(); if (e.code === 'Space' || e.code === 'ArrowRight') { e.preventDefault(); nextShot(); } if (e.code === 'KeyM') $('snd').textContent = Audio.toggle() ? '🔊' : '🔇'; return; } if (R.phase !== 'battle') return; const p = player;
   if (p && p.alive) { if (e.code === 'KeyW' || e.code === 'ArrowUp') { p.tel = Math.min(4, p.tel + 1); toast(TELN[p.tel]); } if (e.code === 'KeyS' || e.code === 'ArrowDown') { p.tel = Math.max(0, p.tel - 1); toast(TELN[p.tel]); }
     if (e.code === 'KeyT') playerTorps(); if (e.code === 'KeyR') damageControl(); }
   if (e.code === 'KeyF' || e.code === 'KeyV') { if (R.shellCam || R.camImpact) { R.shellCam = null; R.camImpact = null; } else { S.shellCam = !S.shellCam; save(); toast(S.shellCam ? 'SHELL CAM ON' : 'SHELL CAM OFF'); } }
@@ -324,8 +325,9 @@ function computeAim() {
 }
 let camInit = false; const camLook = new THREE.Vector3(), camPos = new THREE.Vector3();
 function updateCamera(dt) {
-  const p = player; if (!p) return; let fov = 55; const T = R.t;
-  if (R.phase === 'menu') { R.camYaw += dt * .04; const d = p.C.L * 1.5; cam.position.set(p.x + Math.sin(R.camYaw) * d, p.C.L * .22 + 10, p.z + Math.cos(R.camYaw) * d); cam.lookAt(p.x, p.C.F * 2, p.z); fov = 40; }
+  const p = player; let fov = 55; const T = R.t; if (!p && R.phase !== 'cine') return;
+  if (R.phase === 'cine') fov = cineCamera(dt);
+  else if (R.phase === 'menu') { R.camYaw += dt * .04; const d = p.C.L * 1.5; cam.position.set(p.x + Math.sin(R.camYaw) * d, p.C.L * .22 + 10, p.z + Math.cos(R.camYaw) * d); cam.lookAt(p.x, p.C.F * 2, p.z); fov = 40; }
   else if (R.camMode === 'death') { R.camYaw += dt * .08; const d = p.C.L * 1.4; cam.position.set(p.x + Math.sin(R.camYaw) * d, 70, p.z + Math.cos(R.camYaw) * d); cam.lookAt(p.x, 0, p.z); fov = 50; }
   else if (R.shellCam) { const s = R.shellCam, v = Math.hypot(s.vx, s.vy, s.vz), ux = s.vx / v, uy = s.vy / v, uz = s.vz / v, back = 26 + s.C.cal / 406 * 30;
     const hl = Math.hypot(ux, uz) || 1; cam.position.set(s.x - ux * back - uz / hl * 4, s.y - uy * back + 6, s.z - uz * back + ux / hl * 4); camLook.set(s.x + ux * 220, s.y + uy * 220 - 10, s.z + uz * 220); if (!camInit) { R.camL = camLook.clone(); camInit = true; } R.camL.lerp(camLook, 1 - Math.exp(-dt * 6)); cam.lookAt(R.camL); fov = 46; s.mesh.scale.setScalar(3);
@@ -338,14 +340,14 @@ function updateCamera(dt) {
   if (R.shake > 0) { R.shake = Math.max(0, R.shake - dt * 2); const s = R.shake * .9; cam.position.x += (Math.random() - .5) * s; cam.position.y += (Math.random() - .5) * s; }
   cam.fov = R.zoom && !R.shellCam ? fov : clamp(lerp(cam.fov, fov, 1 - Math.exp(-dt * 6)), 8, 90); if (R.phase === 'menu' && innerWidth > 760) cam.setViewOffset(innerWidth, innerHeight, -innerWidth * .17, 0, innerWidth, innerHeight); else cam.clearViewOffset(); cam.updateProjectionMatrix();
   ocean.position.set(cam.position.x, 0, cam.position.z); sky.position.copy(cam.position);
-  const sp = R.shellCam ? new THREE.Vector3(R.shellCam.x, 0, R.shellCam.z) : new THREE.Vector3(p.x, 0, p.z); sunL.position.copy(sp).addScaledVector(sun, 1500); sunL.target.position.copy(sp);
+  const sp = R.phase === 'cine' || !p ? new THREE.Vector3(cam.position.x, 0, cam.position.z) : R.shellCam ? new THREE.Vector3(R.shellCam.x, 0, R.shellCam.z) : new THREE.Vector3(p.x, 0, p.z); sunL.position.copy(sp).addScaledVector(sun, 1500); sunL.target.position.copy(sp);
   for (const ps of [water, smoke, fire, trail]) ps.mat.uniforms.scale.value = renderer.domElement.height / (2 * Math.tan(cam.fov * Math.PI / 360));
 }
 
 /* ------------------------------------------------------------------ visuals + HUD */
 function updateVisuals(dt, t) {
   ocean.userData.uni.uT.value = t;
-  for (const s of ships) { const m = s.mesh, u = m.userData; m.position.set(s.x, s.heave, s.z); m.rotation.set(0, s.h, 0); u.body.rotation.set(-s.pitch, 0, s.roll); updateWake(s, dt, t);
+  for (const s of ships) { const m = s.mesh, u = m.userData; m.position.set(s.x, s.heave, s.z); m.rotation.set(0, s.h, 0); if (!s.broken) u.body.rotation.set(-s.pitch, 0, s.roll); updateWake(s, dt, t);
     const f = fwdOf(s), C = s.C;
     // bow spray, funnel smoke, fires
     if (s.v > 6 && Math.random() < s.v / 30) { const [bx, , bz] = toWorld(s, rnd(-1, 1) * 2, 0, C.L * .48); water.emit(bx, waveHeight(bx, bz, t) + 1, bz, f[1] * rnd(-3, 3) + f[0] * s.v * .5, rnd(2, 5), -f[0] * rnd(-3, 3) + f[1] * s.v * .5, 1.6, 3 + C.B * .2, 1.2, WHITE, .5, .7, G); }
@@ -392,22 +394,138 @@ function updateHUD(dt) {
   g.rotate(Math.PI - R.camYaw); g.strokeStyle = 'rgba(255,255,255,.25)'; g.beginPath(); g.arc(0, 0, C.range * sc, 0, 7); g.stroke();
   const P = (x, z) => [-(x - p.x) * sc, (z - p.z) * sc];
   g.fillStyle = 'rgba(190,170,120,.8)'; for (const [ix, iz, ir] of ISLANDS) { const [x, y] = P(ix, iz); g.beginPath(); g.arc(x, y, Math.max(2, ir * sc), 0, 7); g.fill(); }
-  for (const s of ships) { if (!s.alive) continue; const [x, y] = P(s.x, s.z); g.save(); g.translate(x, y); g.rotate(s.h); g.fillStyle = s === p ? '#b8f36b' : s.team === 'enemy' ? '#ff4d4d' : '#5fb3ff'; g.beginPath(); g.moveTo(0, 5); g.lineTo(3.5, -4); g.lineTo(-3.5, -4); g.closePath(); g.fill(); g.restore(); }
+  for (const s of ships) { if (!s.alive) continue; const [x, y] = P(s.x, s.z); g.save(); g.translate(x, y); g.rotate(s.h); g.fillStyle = s === p ? '#ffb547' : s.team === 'enemy' ? '#ff4d4d' : '#5fb3ff'; g.beginPath(); g.moveTo(0, 5); g.lineTo(3.5, -4); g.lineTo(-3.5, -4); g.closePath(); g.fill(); g.restore(); }
   g.fillStyle = 'rgba(255,255,255,.7)'; for (const sl of shells) { const [x, y] = P(sl.x, sl.z); g.fillRect(x - .8, y - .8, 1.6, 1.6); }
   g.restore(); g.strokeStyle = 'rgba(255,255,255,.5)'; g.beginPath(); g.moveTo(100, 100); g.lineTo(100 - 30, 30); g.moveTo(100, 100); g.lineTo(130, 30); g.stroke();
 }
 
+/* ------------------------------------------------------------------ cinematic: a scripted present-day battle */
+const CINE = { ships: {}, jets: [], missiles: [], parked: [], shots: [], shotI: -1, shotT: 0, hold: 0, ciws: null, flash: null };
+const UPV = new THREE.Vector3(0, 1, 0), ZV = new THREE.Vector3(), M4 = new THREE.Matrix4(), V1 = new THREE.Vector3(), V2 = new THREE.Vector3(), Q1 = new THREE.Quaternion();
+const flareMat = new THREE.SpriteMaterial({ map: glowTexture(), color: new THREE.Color(5, 3, 1.4), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false });
+const missileGeo = (() => { const g = [new THREE.CylinderGeometry(.22, .22, 5.2, 10).rotateX(Math.PI / 2), new THREE.ConeGeometry(.22, .9, 10).rotateX(-Math.PI / 2).translate(0, 0, -3.05)];
+  for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2; g.push(new THREE.BoxGeometry(.04, .7, .6).translate(0, .45, 2.2).rotateZ(a)); } return mergeG(g); })();
+function mergeG(arr) { const out = arr.map(x => { const y = x.index ? x.toNonIndexed() : x; for (const n of Object.keys(y.attributes)) if (n !== 'position' && n !== 'normal') y.deleteAttribute(n); return y; }); const pos = [], nor = []; out.forEach(o => { pos.push(...o.attributes.position.array); nor.push(...o.attributes.normal.array); }); const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); return g; }
+const missileMat = new THREE.MeshStandardMaterial({ color: '#e8e8e4', roughness: .45, metalness: .3 });
+const flash = new THREE.PointLight('#ffb070', 0, 3000, 1.2); scene.add(flash);
+function cineClear() { for (const s of ships.slice()) removeShip(s); for (const j of CINE.jets) scene.remove(j.mesh); for (const m of CINE.missiles) { scene.remove(m.mesh); } for (const p of CINE.parked) scene.remove(p.mesh); CINE.jets = []; CINE.missiles = []; CINE.parked = []; flash.intensity = 0; }
+function cineStart() { Audio.init(); R.phase = 'cine'; R.paused = false; renderer.localClippingEnabled = true; document.body.className = 'cine' + (isTouch ? ' touch' : ''); $('menu').classList.remove('on'); $('hud').classList.remove('on'); cineReset(); }
+function cineReset() {
+  cineClear(); player = null; R.t = 0;
+  const S1 = (cls, team, x, z, h, name, tel = 3) => { const s = spawnShip(cls, team, x, z, h); s.ai = null; s.tel = tel; s.name = name; s.v = s.C.speed * TEL[tel]; return s; };
+  const c = CINE.ships = { cv: S1('cv', 'ally', 0, -2600, 0, 'USS Koppanalil (CVN-77)'), d1: S1('ddg', 'ally', -700, -1900, 0, 'USS Resolute (DDG-118)'), d2: S1('ddg', 'ally', 760, -2050, 0, 'USS Valiant (DDG-121)'),
+    f1: S1('ffg', 'enemy', -500, 1900, Math.PI, 'Corvette Hydra'), f2: S1('ffg', 'enemy', 650, 2300, Math.PI, 'Frigate Basilisk'), e3: S1('ddg', 'enemy', 40, 3100, Math.PI, 'Destroyer Leviathan') };
+  for (let k = 0; k < 6; k++) { const m = buildJet(k % 3 ? 'viper' : 'raptor', 'gray'); scene.add(m); CINE.parked.push({ mesh: m, lx: 10 + (k % 2) * 13, lz: -40 - Math.floor(k / 2) * 24, rot: Math.PI * .75 }); }
+  CINE.shotI = -1; nextShot();
+}
+function cineJet(lx, lz, delay, type = 'viper') { const m = buildJet(type, 'gray'); scene.add(m); const j = { mesh: m, pos: new THREE.Vector3(), vel: new THREE.Vector3(), lx, lz, delay, phase: 'deck', dv: 0, goal: null, speed: 230, bank: 0, lastH: 0 }; CINE.jets.push(j); return j; }
+function updateJet(j, dt) {
+  const cv = CINE.ships.cv, f = fwdOf(cv);
+  if (j.phase === 'deck') { if (j.delay > 0) j.delay -= dt; else { j.dv += 19 * dt; j.lz += j.dv * dt; if (Math.random() < .9) fire.emit(j.pos.x - f[0] * 9, j.pos.y + .4, j.pos.z - f[1] * 9, -f[0] * 30, 1, -f[1] * 30, .25, 3, 1, ORANGE, .8, .2); if (j.dv > 0 && !j.sound) { j.sound = 1; Audio.jet(cam.position.distanceTo(j.pos)); } }
+    const [x, y, z] = toWorld(cv, j.lx, cv.C.deckY + 1.9, j.lz); j.pos.set(x, y, z); j.vel.set(f[0] * (j.dv + cv.v), 0, f[1] * (j.dv + cv.v)); if (j.lz > cv.C.L * .52) { j.phase = 'fly'; j.vel.y = 6; }
+    M4.lookAt(ZV, V1.set(f[0], 0, f[1]), UPV); j.mesh.quaternion.setFromRotationMatrix(M4); j.mesh.position.copy(j.pos); return; }
+  const goal = j.goal ? j.goal() : V2.copy(j.pos).addScaledVector(j.vel, 3); const want = V1.copy(goal).sub(j.pos); if (j.pos.y < 40) want.y = Math.max(want.y, want.length() * .2); want.normalize();
+  const sp = j.vel.length(), dir = j.vel.clone().normalize(), ang = dir.angleTo(want), turn = Math.min(1, (.75 * dt) / Math.max(ang, 1e-4)); dir.lerp(want, turn).normalize();
+  const ns = sp + clamp(j.speed - sp, -25 * dt, 22 * dt); j.vel.copy(dir).multiplyScalar(ns); j.pos.addScaledVector(j.vel, dt);
+  const h = Math.atan2(dir.x, dir.z), rate = angD(h, j.lastH) / Math.max(dt, 1e-3); j.lastH = h; j.bank = lerp(j.bank, clamp(rate * 1.8, -1.2, 1.2), 1 - Math.exp(-dt * 3));
+  M4.lookAt(ZV, dir, UPV); j.mesh.quaternion.setFromRotationMatrix(M4); j.mesh.rotateZ(j.bank); j.mesh.position.copy(j.pos);
+  if (Math.random() < .7) trail.emit(j.pos.x - dir.x * 9, j.pos.y - dir.y * 9, j.pos.z - dir.z * 9, 0, 0, 0, 1.2, 1.2, 2.5, [.85, .85, .87], .14, 1, 0);
+}
+function launchMissile(from, target, vertical) {
+  const m = new THREE.Mesh(missileGeo, missileMat); scene.add(m); const fl = new THREE.Sprite(flareMat); fl.scale.setScalar(2.2); m.add(fl); fl.position.z = 3.4; m.scale.setScalar(1.5);
+  const pos = from.pos ? from.pos.clone().add(new THREE.Vector3(0, -2, 0)) : new THREE.Vector3(...toWorld(from, 0, from.C.F + 1, from.C.L * .27));
+  const vel = from.vel ? from.vel.clone() : new THREE.Vector3(0, 40, 0);
+  const ms = { mesh: m, pos, vel, speed: vel.length(), target, vertical, t: 0, dead: false, from, intercept: 0 }; CINE.missiles.push(ms);
+  for (let k = 0; k < (vertical ? 60 : 16); k++) smoke.emit(pos.x + rnd(-3, 3), pos.y + rnd(0, 4), pos.z + rnd(-3, 3), rnd(-4, 4), rnd(2, 12), rnd(-4, 4), rnd(3, 6), 8, 1.6, [.85, .84, .82], .55, .7, -.3);
+  Audio.launch(cam.position.distanceTo(pos)); return ms;
+}
+function updateMissile(m, dt, t) {
+  if (m.dead) return; m.t += dt; const tg = m.target, tc = V2.set(tg.x, tg.C.F + 3 + tg.heave, tg.z);
+  const dh = Math.hypot(tc.x - m.pos.x, tc.z - m.pos.z), aimY = dh > 1500 ? 24 : dh > 650 ? 170 : tc.y;
+  let want; if (m.vertical && m.t < 1.1) want = V1.set(0, 1, 0); else { const step = Math.min(dh, dh > 650 ? 600 : dh); want = V1.set((tc.x - m.pos.x) / Math.max(dh, 1) * step, aimY - m.pos.y, (tc.z - m.pos.z) / Math.max(dh, 1) * step).normalize(); }
+  const dir = m.vel.clone().normalize(), rate = m.vertical && m.t < 2 ? 1.8 : dh < 650 ? 3.2 : 1.3, ang = dir.angleTo(want); dir.lerp(want, Math.min(1, rate * dt / Math.max(ang, 1e-4))).normalize();
+  m.speed = Math.min(330, m.speed + 160 * dt); m.vel.copy(dir).multiplyScalar(m.speed); m.pos.addScaledVector(m.vel, dt);
+  M4.lookAt(ZV, dir, UPV); m.mesh.quaternion.setFromRotationMatrix(M4); m.mesh.position.copy(m.pos);
+  smoke.emit(m.pos.x - dir.x * 4, m.pos.y - dir.y * 4, m.pos.z - dir.z * 4, rnd(-1, 1), rnd(0, 1.5), rnd(-1, 1), rnd(2.5, 4), 2.2, 2.4, [.86, .86, .85], .5, .9, -.2);
+  if (m.intercept && m.from && Math.hypot(m.pos.x - m.intercept.x, m.pos.z - m.intercept.z) < m.intercept.r) { m.dead = true; airBurst(m.pos); return; }
+  const [lx, ly, lz] = toLocal(tg, m.pos.x, m.pos.y, m.pos.z); if (insideHull(tg.C, lx, ly, lz) || (dh < tg.C.B && m.pos.y < tg.C.F * 2.5)) { m.dead = true; missileImpact(m); return; }
+  if (m.pos.y < waveHeight(m.pos.x, m.pos.z, t)) { m.dead = true; splashFX(m.pos.x, m.pos.z, 406, t); }
+}
+function airBurst(p) { for (let i = 0; i < 90; i++) fire.emit(p.x, p.y, p.z, rnd(-1, 1) * 40, rnd(-1, 1) * 40, rnd(-1, 1) * 40, rnd(.3, .8), 7, 2.5, ORANGE, 1, .2, 3); for (let i = 0; i < 50; i++) smoke.emit(p.x + rnd(-4, 4), p.y + rnd(-4, 4), p.z + rnd(-4, 4), rnd(-6, 6), rnd(-3, 5), rnd(-6, 6), rnd(5, 9), 12, 1.4, BLACK, .55, .7, -.2);
+  flash.position.copy(p); flash.intensity = 4e5; Audio.hit(406, cam.position.distanceTo(p)); R.shake = Math.min(1.5, R.shake + .6); }
+function missileImpact(m) {
+  const s = m.target, p = m.pos; for (let i = 0; i < 200; i++) fire.emit(p.x + rnd(-6, 6), p.y + rnd(0, 6), p.z + rnd(-6, 6), rnd(-1, 1) * 70, rnd(-.2, 1) * 90, rnd(-1, 1) * 70, rnd(.5, 1.6), rnd(8, 18), 2.2, Math.random() < .2 ? FLASH : [1, .42, .1], .55, .25, 5);
+  for (let i = 0; i < 220; i++) smoke.emit(p.x + rnd(-20, 20), p.y + rnd(0, 40), p.z + rnd(-20, 20), rnd(-12, 12), rnd(8, 45), rnd(-12, 12), rnd(9, 18), rnd(18, 34), 1.3, BLACK, .7, .65, -.25);
+  for (let i = 0; i < 160; i++) { const a = Math.random() * Math.PI * 2; water.emit(p.x + Math.cos(a) * 20, 0, p.z + Math.sin(a) * 20, Math.cos(a) * rnd(20, 60), rnd(10, 40), Math.sin(a) * rnd(20, 60), rnd(2, 4), 10, 1, WHITE, .8, .6, G); }
+  flash.position.copy(p).setY(p.y + 20); flash.intensity = 6e5; Audio.boom(cam.position.distanceTo(p)); R.shake = 1.6; breakShip(s);
+}
+function breakShip(s) {
+  if (s.broken) return; s.alive = false; s.sinking = .001; s.deto = false; s.v *= .3; const A = s.mesh.userData.body, B = A.clone(true); s.mesh.add(B);
+  const pA = new THREE.Plane(), pB = new THREE.Plane(); A.traverse(o => { if (o.isMesh) [].concat(o.material).forEach(mt => { mt.clippingPlanes = [pA]; mt.clipShadows = true; }); });
+  B.traverse(o => { if (o.isMesh) { o.material = Array.isArray(o.material) ? o.material.map(mt => { const c = mt.clone(); c.clippingPlanes = [pB]; return c; }) : Object.assign(o.material.clone(), { clippingPlanes: [pB] }); } });
+  s.broken = { t: 0, A, B, pA, pB };
+}
+function updateBroken(s, dt) { const b = s.broken; b.t += dt; const tilt = Math.min(.42, b.t * .05), sep = Math.min(7, b.t * 1.4);
+  b.A.rotation.set(-tilt, 0, s.roll * .5); b.A.position.set(0, 0, sep); b.B.rotation.set(tilt * .8, 0, -s.roll * .4); b.B.position.set(0, 0, -sep);
+  s.mesh.updateMatrixWorld(true); for (const [g, pl, sg] of [[b.A, b.pA, 1], [b.B, b.pB, -1]]) { V1.set(0, 0, sg).transformDirection(g.matrixWorld); V2.setFromMatrixPosition(g.matrixWorld); pl.setFromNormalAndCoplanarPoint(V1, V2); }
+  if (Math.random() < .8) { const [x, y, z] = toWorld(s, rnd(-4, 4), s.C.F, rnd(-8, 8)); fire.emit(x, y + 2, z, rnd(-2, 2), rnd(5, 12), rnd(-2, 2), rnd(.6, 1.2), 9, 1.3, ORANGE, .9, .7, -2); smoke.emit(x, y + 8, z, rnd(-2, 2) + 3, rnd(6, 12), rnd(-2, 2), rnd(10, 16), 14, 1.5, BLACK, .55, .85, -.4); } }
+function ciwsFire(from, m, dt) { if (!m || m.dead) return; const [x, y, z] = toWorld(from, 0, from.C.F + 11, from.C.L * .16); for (let k = 0; k < 3; k++) { const d = V1.set(m.pos.x - x + rnd(-8, 8), m.pos.y - y + rnd(-8, 8), m.pos.z - z + rnd(-8, 8)).normalize(); fire.emit(x, y, z, d.x * 1100, d.y * 1100, d.z * 1100, .7, 1.4, 0, FLASH, 1, 1, 0); }
+  CINE.ciwsT = (CINE.ciwsT || 0) - dt; if (CINE.ciwsT <= 0) { CINE.ciwsT = .35; Audio.ciws(cam.position.distanceTo(V2.set(x, y, z))); } }
+// camera helpers
+const cineCam = { pos: new THREE.Vector3(), look: new THREE.Vector3(), init: false };
+function camTo(px, py, pz, lx, ly, lz, dt, k = 3, kl = 4) { if (!cineCam.init) { cineCam.pos.set(px, py, pz); cineCam.look.set(lx, ly, lz); cineCam.init = true; }
+  cineCam.pos.lerp(V1.set(px, py, pz), k >= 99 ? 1 : 1 - Math.exp(-dt * k)); cineCam.look.lerp(V2.set(lx, ly, lz), kl >= 99 ? 1 : 1 - Math.exp(-dt * kl)); cam.position.copy(cineCam.pos); cam.position.y = Math.max(cam.position.y, waveHeight(cam.position.x, cam.position.z, R.t) + 2.5); cam.lookAt(cineCam.look); }
+function orbit(s, r, h, sp, dt) { const a = CINE.shotT * sp + (CINE.orbitA || 0); camTo(s.x + Math.sin(a) * r, h, s.z + Math.cos(a) * r, s.x, s.C.F * 2, s.z, dt, 2.5, 4); }
+function chase(o, back, up, dt, k = 99) { const d = o.vel.clone().normalize(); camTo(o.pos.x - d.x * back + d.z * back * .15, o.pos.y - d.y * back + up, o.pos.z - d.z * back - d.x * back * .15, o.pos.x + d.x * 80, o.pos.y + d.y * 80, o.pos.z + d.z * 80, dt, k, 6); }
+const missileShot = (key, title, sub) => ({ title, sub, start() { CINE.mf = null; }, until: () => CINE[key] && CINE[key].dead, hold: 2.6, cam(dt) { const m = CINE[key]; if (!m) return; if (!m.dead) { chase(m, 16, 3.5, dt); const d = Math.hypot(m.pos.x - m.target.x, m.pos.z - m.target.z); R.slow = d < 380 ? .3 : 1; setTxt('cineS', sub + ' · ' + (d / 1000).toFixed(1) + ' km'); } else { R.slow = CINE.hold > 1.6 ? .35 : 1; const t = m.target; cam.lookAt(cineCam.look.lerp(V2.set(t.x, t.C.F * 2, t.z), .05)); } } });
+CINE.shots = [
+  { title: 'IRON SEAS', sub: 'Present day · a carrier strike group on patrol', dur: 9, start() { CINE.orbitA = 2.2; }, cam(dt) { orbit(CINE.ships.cv, 640, 170, .07, dt); } },
+  { title: 'FLIGHT OPS', sub: 'Strike fighters launching from USS Koppanalil', start() { const cv = CINE.ships.cv; CINE.j1 = cineJet(-8, -110, .6); CINE.j2 = cineJet(8, -140, 3.2, 'raptor');
+      const ahead = (dz, alt) => () => { const f = fwdOf(cv); return V2.set(cv.x + f[0] * dz, alt, cv.z + f[1] * dz); }; CINE.j1.goal = ahead(2600, 260); CINE.j2.goal = () => { const a = R.t * .12; return V2.set(cv.x + Math.sin(a) * 1500, 520, cv.z + 1600 + Math.cos(a) * 1500); }; },
+    until: () => CINE.j1 && CINE.j1.phase === 'fly' && CINE.shotT > 6.2, hold: 1.4, cam(dt) { const cv = CINE.ships.cv, j = CINE.j1; const [px, py, pz] = toWorld(cv, -30, cv.C.deckY + 5, 95); camTo(px, py, pz, j.pos.x, j.pos.y + 1, j.pos.z, dt, 99, 7); } },
+  { title: 'WEAPONS FREE', sub: 'Viper 1 inbound on Corvette Hydra', dur: 7, start() { const f1 = CINE.ships.f1; CINE.j1.goal = () => V2.set(f1.x, 140, f1.z); CINE.j1.speed = 260; },
+    end() { CINE.m1 = launchMissile(CINE.j1, CINE.ships.f1, false); const cv = CINE.ships.cv; CINE.j1.goal = () => V2.set(cv.x - 1200, 400, cv.z); }, cam(dt) { chase(CINE.j1, 30, 7, dt, 6); } },
+  missileShot('m1', 'MISSILE AWAY', 'Anti-ship missile, sea-skimming'),
+  { title: 'DIRECT HIT', sub: 'Corvette Hydra breaks in two', dur: 7, start() { CINE.orbitA = 0; }, cam(dt) { orbit(CINE.ships.f1, 300, 70, .09, dt); } },
+  { title: 'VERTICAL LAUNCH', sub: 'USS Resolute fires on Frigate Basilisk', start() { CINE.m2 = null; }, until: () => CINE.m2 && CINE.m2.t > 3, cam(dt) { const d = CINE.ships.d1; if (!CINE.m2 && CINE.shotT > 1.4) CINE.m2 = launchMissile(d, CINE.ships.f2, true);
+      const [px, py, pz] = toWorld(d, 70, d.C.F + 22, d.C.L * .05), [lx, ly, lz] = toWorld(d, 0, d.C.F + 10, d.C.L * .27); if (CINE.m2) camTo(px, py, pz, CINE.m2.pos.x, CINE.m2.pos.y, CINE.m2.pos.z, dt, 99, 5); else camTo(px, py, pz, lx, ly, lz, dt, 99, 99); } },
+  missileShot('m2', 'TRACKING', 'Missile on Frigate Basilisk'),
+  { title: 'TARGET DESTROYED', sub: 'Frigate Basilisk is going down', dur: 6, start() { CINE.orbitA = 1.5; }, cam(dt) { orbit(CINE.ships.f2, 280, 60, -.1, dt); } },
+  { title: 'INCOMING', sub: 'Destroyer Leviathan returns fire', dur: 5.5, start() { const e = CINE.ships.e3, d2 = CINE.ships.d2; const icpt = r => ({ get x() { return d2.x; }, get z() { return d2.z; }, r }); CINE.e1 = launchMissile(e, d2, true); CINE.e1.intercept = icpt(950); CINE.e2 = null; CINE.icpt = icpt; },
+    cam(dt) { const e = CINE.ships.e3, d2 = CINE.ships.d2; if (!CINE.e2 && CINE.shotT > .9) { CINE.e2 = launchMissile(e, d2, true); CINE.e2.intercept = CINE.icpt(560); } if (CINE.e1 && !CINE.e1.dead) chase(CINE.e1, 18, 4, dt); } },
+  { title: 'CIWS ENGAGING', sub: 'USS Valiant defends the fleet', start() {},
+    until: () => (!CINE.e1 || CINE.e1.dead) && (!CINE.e2 || CINE.e2.dead), hold: 2.2, cam(dt) { const d = CINE.ships.d2, tg = [CINE.e1, CINE.e2].find(m => m && !m.dead) || CINE.e1, [px, py, pz] = toWorld(d, -12, d.C.F + 18, -10);
+      if (tg) { camTo(px, py, pz, tg.pos.x, tg.pos.y, tg.pos.z, dt, 99, 3); if (!tg.dead && Math.hypot(tg.pos.x - d.x, tg.pos.z - d.z) < 2200) ciwsFire(d, tg, dt); } } },
+  { title: 'FINAL STRIKE', sub: 'Raptor 2 on Destroyer Leviathan', dur: 7, start() { const e = CINE.ships.e3; CINE.j2.goal = () => V2.set(e.x, 160, e.z); CINE.j2.speed = 280; },
+    end() { CINE.m3 = launchMissile(CINE.j2, CINE.ships.e3, false); const cv = CINE.ships.cv; CINE.j2.goal = () => V2.set(cv.x + 1200, 450, cv.z - 500); }, cam(dt) { chase(CINE.j2, 32, 8, dt, 6); } },
+  missileShot('m3', 'IMPACT IMMINENT', 'Missile on Destroyer Leviathan'),
+  { title: 'ENEMY FLEET DESTROYED', sub: 'Destroyer Leviathan is sinking', dur: 7, start() { CINE.orbitA = .6; }, cam(dt) { orbit(CINE.ships.e3, 340, 85, .08, dt); } },
+  { title: 'THE SEA IS OURS', sub: 'Iron Seas · cinematic mode', dur: 9, start() { const cv = CINE.ships.cv; CINE.jets.forEach((j, k) => { j.speed = 210; j.goal = () => { const a = R.t * .25 + k * .6; return V2.set(cv.x + Math.sin(a) * 700, 220 + k * 30, cv.z + Math.cos(a) * 700); }; }); CINE.orbitA = 4; }, cam(dt) { orbit(CINE.ships.cv, 900, 120, .05, dt); } },
+];
+function nextShot() { const cur = CINE.shots[CINE.shotI]; if (cur && cur.end) cur.end(); CINE.shotI++; R.slow = 1; if (CINE.shotI >= CINE.shots.length) { cineReset(); return; } const sh = CINE.shots[CINE.shotI]; CINE.shotT = 0; CINE.hold = 0; cineCam.init = false; lastHud.cineS = null; sh.start && sh.start();
+  $('cineT').textContent = sh.title; $('cineS').textContent = sh.sub; const L = $('lower'); L.classList.remove('on'); void L.offsetWidth; L.classList.add('on'); }
+function cineUpdate(dt) {
+  const t = R.t; for (const j of CINE.jets) updateJet(j, dt); for (const m of CINE.missiles) { updateMissile(m, dt, t); if (m.dead && m.mesh.parent) scene.remove(m.mesh); }
+  const cv = CINE.ships.cv; for (const p of CINE.parked) { const [x, y, z] = toWorld(cv, p.lx, cv.C.deckY + 1.9, p.lz); p.mesh.position.set(x, y, z); p.mesh.rotation.set(0, cv.h + p.rot, 0); }
+  for (const s of ships) if (s.broken) updateBroken(s, dt);
+  flash.intensity *= Math.exp(-dt * 6);
+  const sh = CINE.shots[CINE.shotI]; if (!sh) return; CINE.shotT += dt;
+  if (sh.dur && CINE.shotT > sh.dur) nextShot(); else if (sh.until && sh.until()) { CINE.hold += dt / Math.max(R.slow, .3); if (CINE.hold > (sh.hold || 0)) nextShot(); }
+}
+function cineCamera(dt) { const sh = CINE.shots[CINE.shotI]; if (sh) sh.cam(dt); return 50; }
+
 /* ------------------------------------------------------------------ menu + loop */
 function paintMenu() {
-  $('mShips').innerHTML = Object.values(CLASSES).map(c => `<button class="scard${S.ship === c.id ? ' on' : ''}" data-id="${c.id}"><b>${c.name}</b><p>${c.desc}</p><div class="st"><span>SPEED <i style="--v:${c.speed / 20}"></i></span><span>GUNS <i style="--v:${c.cal / 406}"></i></span><span>HULL <i style="--v:${c.hp / 12500}"></i></span><span>RANGE <i style="--v:${c.range / 17500}"></i></span></div></button>`).join('');
+  $('mShips').innerHTML = Object.values(CLASSES).filter(c => !c.modern).map(c => `<button class="scard${S.ship === c.id ? ' on' : ''}" data-id="${c.id}"><b>${c.name}</b><p>${c.desc}</p><div class="st"><span>SPEED <i style="--v:${c.speed / 20}"></i></span><span>GUNS <i style="--v:${c.cal / 406}"></i></span><span>HULL <i style="--v:${c.hp / 12500}"></i></span><span>RANGE <i style="--v:${c.range / 17500}"></i></span></div></button>`).join('');
   document.querySelectorAll('.scard').forEach(b => b.onclick = () => { Audio.init(); Audio.click(); S.ship = b.dataset.id; save(); paintMenu(); menuShip(); });
   const ch = (id, opts, key, after) => { const el = $(id); el.innerHTML = ''; opts.forEach(([v, l]) => { const b = document.createElement('button'); b.className = 'chip' + (S[key] === v ? ' on' : ''); b.textContent = l; b.onclick = () => { Audio.click(); S[key] = v; save(); paintMenu(); after && after(); }; el.appendChild(b); }); };
   ch('mCam', [[true, 'Follow shells'], [false, 'Stay on ship']], 'shellCam'); ch('mSens', [[.6, 'Low'], [1, 'Medium'], [1.6, 'High']], 'sens'); ch('mQual', [['auto', 'Auto'], ['high', 'High'], ['medium', 'Medium'], ['low', 'Low']], 'quality', () => location.reload());
   $('best').textContent = best.toLocaleString();
 }
 function menuShip() { for (const s of ships.slice()) removeShip(s); player = spawnShip(S.ship, 'player', 0, 0, .6); player.tel = 3; spawnShip('dd', 'ally', -600, -900, .6).tel = 3; }
-function toMenu() { R.phase = 'menu'; R.paused = false; Audio.stopLoops(); shells.forEach(s => scene.remove(s.mesh)); shells.length = 0; torps.forEach(t => scene.remove(t.mesh)); torps.length = 0; R.score = 0; R.kills = 0; R.dealt = 0; R.wins = 0; R.shellCam = null; R.camImpact = null;
+function toMenu() { cineClear(); document.body.classList.remove('cine'); R.phase = 'menu'; R.paused = false; Audio.stopLoops(); shells.forEach(s => scene.remove(s.mesh)); shells.length = 0; torps.forEach(t => scene.remove(t.mesh)); torps.length = 0; R.score = 0; R.kills = 0; R.dealt = 0; R.wins = 0; R.shellCam = null; R.camImpact = null;
   document.body.className = isTouch ? 'touch' : ''; $('hud').classList.remove('on'); $('over').classList.remove('on'); $('pause').classList.remove('on'); $('menu').classList.add('on'); $('clickfly').classList.remove('on'); menuShip(); paintMenu(); if (document.pointerLockElement) document.exitPointerLock(); }
+$('cineGo').onclick = () => { Audio.click(); cineStart(); }; $('cineX').onclick = () => toMenu(); $('cineN').onclick = () => nextShot();
 $('go').onclick = () => { Audio.init(); Audio.click(); R.score = 0; R.kills = 0; R.dealt = 0; R.wins = 0; startBattle(1); lockPointer(); };
 $('snd').onclick = () => { Audio.init(); $('snd').textContent = Audio.toggle() ? '🔊' : '🔇'; }; $('snd').textContent = Audio.on ? '🔊' : '🔇';
 
@@ -415,7 +533,7 @@ let last = performance.now(), fpsT = 0, fpsN = 0;
 function frame(now) {
   requestAnimationFrame(frame); const dt = clamp((now - last) / 1000, 0, .05); last = Math.max(last, now);
   const sdt = dt * R.slow;
-  if (!R.paused) { if (R.phase === 'battle' || R.phase === 'over' || R.phase === 'menu') { let r = sdt; while (r > 0) { const h = Math.min(1 / 60, r); step(h); r -= h; } }
+  if (!R.paused) { if (R.phase === 'battle' || R.phase === 'over' || R.phase === 'menu' || R.phase === 'cine') { if (R.phase === 'cine') cineUpdate(sdt); let r = sdt; while (r > 0) { const h = Math.min(1 / 60, r); step(h); r -= h; } }
     updateVisuals(sdt, R.t); for (const ps of [water, smoke, fire, trail]) ps.update(sdt); }
   updateCamera(dt); if (R.phase === 'battle' && player) { computeAim(); updateHUD(dt); }
   if (player && !R.paused) Audio.ambient(Math.abs(player.v), R.phase === 'battle');
@@ -423,4 +541,4 @@ function frame(now) {
   fpsT += dt; fpsN++; if (fpsT > 2) { const fps = fpsN / fpsT; fpsT = 0; fpsN = 0; const ps = prScale; if (fps < 40 && prScale > .6) prScale = Math.max(.6, prScale - .1); else if (fps > 57 && prScale < 1) prScale = Math.min(1, prScale + .05); if (ps !== prScale) resize(); }
 }
 menuShip(); paintMenu(); renderer.compile(scene, cam); $('menu').classList.add('on'); $('loading').classList.remove('on'); requestAnimationFrame(frame);
-window.__nv = { S, R, get ships() { return ships; }, get player() { return player; }, shells, torps, step, startBattle, toMenu, cam, renderer, playerFire, computeAim, solve, BAL };
+window.__nv = { cineStep(h) { const sdt = h * R.slow; step(sdt); cineUpdate(sdt); updateVisuals(sdt, R.t); updateCamera(h); }, S, R, get ships() { return ships; }, get player() { return player; }, shells, torps, step, startBattle, toMenu, cam, renderer, playerFire, computeAim, solve, BAL };

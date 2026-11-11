@@ -8,18 +8,18 @@
 <meta name="theme-color" content="#07080a">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,400;0,600;0,700;0,900;1,700;1,900&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#07080a;--ink:#f1f3ee;--muted:#a6ab9f;--dim:#6c7168;--line:rgba(255,255,255,.1);--line2:rgba(255,255,255,.18);--acc:#b8f36b;--red:#ff3b4a;--purple:#b26bff;--glass:rgba(10,12,10,.62);--ease:cubic-bezier(.2,.8,.2,1);--pop:cubic-bezier(.34,1.56,.64,1)}
+:root{--head:"Titillium Web";--mono:"Titillium Web";--bg:#07080a;--ink:#f1f3ee;--muted:#a6ab9f;--dim:#6c7168;--line:rgba(255,255,255,.1);--line2:rgba(255,255,255,.18);--acc:#e10600;--red:#ff3b4a;--purple:#b26bff;--glass:rgba(10,12,10,.62);--ease:cubic-bezier(.2,.8,.2,1);--pop:cubic-bezier(.34,1.56,.64,1)}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font:500 14px/1.45 "DM Sans",system-ui,sans-serif;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font:500 14px/1.45 "Titillium Web",system-ui,sans-serif;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none}
 button{font:inherit;color:inherit}
 #gl{position:fixed;inset:0;width:100%;height:100%;display:block}
 #vig{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;background:radial-gradient(ellipse at 50% 55%,transparent 52%,rgba(0,0,0,.55) 100%);transition:opacity .3s}
 .top{position:fixed;top:0;left:0;right:0;z-index:30;display:flex;align-items:center;gap:10px;padding:14px 18px;padding-top:max(14px,env(safe-area-inset-top));pointer-events:none}
 .top>*{pointer-events:auto}
-.brand{font:700 18px "Space Grotesk";display:flex;align-items:center;gap:10px;letter-spacing:.02em;text-shadow:0 2px 10px rgba(0,0,0,.5);color:var(--ink);text-decoration:none}
-.brand i{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--acc);color:#0b0d08;font-style:normal;box-shadow:0 0 22px rgba(184,243,107,.4)}
+.brand{font:700 18px "Titillium Web";display:flex;align-items:center;gap:10px;letter-spacing:.02em;text-shadow:0 2px 10px rgba(0,0,0,.5);color:var(--ink);text-decoration:none}
+.brand i{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--acc);color:#ffffff;font-style:normal;box-shadow:0 0 22px rgba(225,6,0,.4)}
 .brand b{color:var(--acc)}
 body.playing .brand{display:none}
 .sp{flex:1}
@@ -29,72 +29,72 @@ body.playing .brand{display:none}
 #menu{position:fixed;inset:0;z-index:10;pointer-events:none;display:none}#menu.on{display:block}
 .mpanel{pointer-events:auto;position:absolute;left:22px;top:76px;bottom:22px;width:440px;border-radius:24px;background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);padding:22px;overflow-y:auto;scrollbar-width:thin;animation:slin .6s var(--ease)}
 @keyframes slin{from{opacity:0;transform:translateX(-30px)}}
-.mpanel h1{margin:0;font:700 44px/1 "Space Grotesk";letter-spacing:-.02em;font-style:italic}
+.mpanel h1{margin:0;font:700 44px/1 "Titillium Web";letter-spacing:-.02em;font-style:italic}
 .mpanel h1 b{color:var(--acc)}
 .mpanel p.sub{margin:6px 0 4px;color:var(--muted)}
-.lbl{font:700 10.5px "JetBrains Mono";letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:16px 0 8px}
+.lbl{font:700 10.5px "Titillium Web";letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:16px 0 8px}
 .tcard{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:8px 12px 8px 8px;margin-bottom:8px;border-radius:14px;border:1px solid var(--line2);background:rgba(255,255,255,.03);cursor:pointer;transition:.2s}
 .tcard canvas{width:64px;height:64px;border-radius:10px;background:rgba(0,0,0,.35);flex:none}
-.tcard b{font:700 15px "Space Grotesk";display:block}.tcard small{display:block;color:var(--muted);font-size:12px}.tcard span{display:block;font:700 10px "JetBrains Mono";color:var(--dim);margin-top:3px;letter-spacing:.04em}
-.tcard.on{border-color:var(--acc);background:rgba(184,243,107,.08);box-shadow:inset 0 0 0 1px var(--acc)}
+.tcard b{font:700 15px "Titillium Web";display:block}.tcard small{display:block;color:var(--muted);font-size:12px}.tcard span{display:block;font:700 10px "Titillium Web";color:var(--dim);margin-top:3px;letter-spacing:.04em}
+.tcard.on{border-color:var(--acc);background:rgba(225,6,0,.08);box-shadow:inset 0 0 0 1px var(--acc)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1px solid var(--line2);background:rgba(255,255,255,.03);padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:600;font-size:12.5px;transition:.2s}
-.chip.on{background:var(--acc);color:#0b0d08;border-color:transparent}
+.chip.on{background:var(--acc);color:#ffffff;border-color:transparent}
 #menu.tt .raceOnly{display:none}
 .teams{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
 .sw{aspect-ratio:1;border-radius:50%;border:2px solid rgba(255,255,255,.2);cursor:pointer;transition:transform .2s var(--pop);padding:0}
 .sw.on{box-shadow:0 0 0 3px #0b0d0b,0 0 0 5px var(--acc);transform:scale(1.08)}
 #mTeamName{margin-top:8px;color:var(--muted);font-size:12.5px}#mTeamName b{color:var(--ink)}
-.go{width:100%;height:58px;margin-top:20px;border:0;border-radius:16px;background:var(--acc);color:#0b0d08;font:700 18px "Space Grotesk";letter-spacing:.06em;cursor:pointer;box-shadow:0 14px 40px -12px rgba(184,243,107,.8);transition:transform .15s}
+.go{width:100%;height:58px;margin-top:20px;border:0;border-radius:16px;background:var(--acc);color:#ffffff;font:700 18px "Titillium Web";letter-spacing:.06em;cursor:pointer;box-shadow:0 14px 40px -12px rgba(225,6,0,.8);transition:transform .15s}
 .go:hover{transform:translateY(-2px)}.go:active{transform:scale(.98)}
-.keys{margin-top:16px;font:500 11.5px/1.9 "JetBrains Mono";color:var(--muted)}
+.keys{margin-top:16px;font:500 11.5px/1.9 "Titillium Web";color:var(--muted)}
 .keys b{color:#fff;background:rgba(255,255,255,.1);padding:1px 6px;border-radius:5px;margin-right:4px}
-#mStats{display:flex;gap:8px;margin-top:14px}#mStats span{flex:1;padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.04);font:700 10px "JetBrains Mono";color:var(--dim);letter-spacing:.08em;text-transform:uppercase}#mStats b{display:block;font-size:17px;color:var(--ink);letter-spacing:0}
+#mStats{display:flex;gap:8px;margin-top:14px}#mStats span{flex:1;padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.04);font:700 10px "Titillium Web";color:var(--dim);letter-spacing:.08em;text-transform:uppercase}#mStats b{display:block;font-size:17px;color:var(--ink);letter-spacing:0}
 .hero{position:absolute;right:34px;bottom:30px;text-align:right;pointer-events:none;animation:fin 1s var(--ease)}
-.hero div{font:800 12px "JetBrains Mono";letter-spacing:.3em;color:var(--acc)}
-.hero h2{margin:4px 0 0;font:700 clamp(40px,6vw,86px)/.9 "Space Grotesk";font-style:italic;letter-spacing:-.03em;text-shadow:0 6px 40px rgba(0,0,0,.5)}
+.hero div{font:800 12px "Titillium Web";letter-spacing:.3em;color:var(--acc)}
+.hero h2{margin:4px 0 0;font:700 clamp(40px,6vw,86px)/.9 "Titillium Web";font-style:italic;letter-spacing:-.03em;text-shadow:0 6px 40px rgba(0,0,0,.5)}
 @keyframes fin{from{opacity:0;transform:translateY(20px)}}
 /* hud */
 #hud{position:fixed;inset:0;z-index:6;pointer-events:none;display:none}#hud.on{display:block}
 .tl{position:absolute;left:18px;top:max(18px,env(safe-area-inset-top));width:210px}
 .posbox{display:flex;align-items:flex-end;gap:12px;margin-bottom:10px}
-#posW{font:800 italic 52px/.85 "Space Grotesk";letter-spacing:-.03em;text-shadow:0 4px 20px rgba(0,0,0,.5)}#posOf{font:700 18px "Space Grotesk";color:var(--muted);margin-left:2px}
-.lapw{font:800 11px "JetBrains Mono";letter-spacing:.14em;color:var(--dim);padding-bottom:4px}.lapw b{display:block;font-size:20px;color:var(--ink);letter-spacing:0}
-.thead{display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 10px;border-radius:12px 12px 0 0;background:linear-gradient(90deg,#e10600,#a30400);font:800 12px "JetBrains Mono";letter-spacing:.08em}
-.thead .lg{font:800 italic 15px "Space Grotesk"}.thead .lg b{color:#fff;margin-right:1px}
+#posW{font:800 italic 52px/.85 "Titillium Web";letter-spacing:-.03em;text-shadow:0 4px 20px rgba(0,0,0,.5)}#posOf{font:700 18px "Titillium Web";color:var(--muted);margin-left:2px}
+.lapw{font:800 11px "Titillium Web";letter-spacing:.14em;color:var(--dim);padding-bottom:4px}.lapw b{display:block;font-size:20px;color:var(--ink);letter-spacing:0}
+.thead{display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 10px;border-radius:12px 12px 0 0;background:linear-gradient(90deg,#e10600,#a30400);font:800 12px "Titillium Web";letter-spacing:.08em}
+.thead .lg{font:800 italic 15px "Titillium Web"}.thead .lg b{color:#fff;margin-right:1px}
 .thead+#tower{border-radius:0 0 12px 12px}
 #tower{position:relative;border-radius:12px;overflow:hidden;background:rgba(8,9,10,.7);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.tr{position:absolute;left:0;right:0;height:26px;display:flex;align-items:center;gap:8px;padding:0 10px 0 0;font:700 12.5px "JetBrains Mono";transition:transform .5s var(--ease)}
+.tr{position:absolute;left:0;right:0;height:26px;display:flex;align-items:center;gap:8px;padding:0 10px 0 0;font:700 12.5px "Titillium Web";transition:transform .5s var(--ease)}
 .tr b{width:26px;height:26px;display:grid;place-items:center;background:rgba(255,255,255,.06);font-size:11.5px}
 .tr i{width:5px;height:15px;border-radius:2px}
 .tr span{flex:1;letter-spacing:.06em}
 .tr em{font-style:normal;color:var(--muted);font-size:11px}
-.tr.me{background:rgba(184,243,107,.16)}.tr.me b{background:var(--acc);color:#0b0d08}.tr.me span{color:var(--acc)}
+.tr.me{background:rgba(225,6,0,.16)}.tr.me b{background:var(--acc);color:#ffffff}.tr.me span{color:var(--acc)}
 .tr.fl em{color:var(--purple)}
 body.tt .tl #tower,body.tt .lapw{display:none}
-.tright{position:absolute;right:18px;top:max(18px,env(safe-area-inset-top));padding:12px 16px;border-radius:14px;background:rgba(8,9,10,.62);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font:700 11px "JetBrains Mono";color:var(--dim);min-width:200px}
+.tright{position:absolute;right:18px;top:max(18px,env(safe-area-inset-top));padding:12px 16px;border-radius:14px;background:rgba(8,9,10,.62);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font:700 11px "Titillium Web";color:var(--dim);min-width:200px}
 .tright .r{display:flex;justify-content:space-between;gap:18px;margin-top:3px}.tright .r b{color:var(--ink);font-size:13px}
-#tCur{font:800 26px "JetBrains Mono";color:var(--ink);display:block;letter-spacing:-.02em}#tCur.inv{color:var(--red);text-decoration:line-through}
-.secs{display:flex;gap:4px;margin:8px 0 4px}.secs i{flex:1;font:800 10.5px "JetBrains Mono";font-style:normal;text-align:center;padding:4px 0;border-radius:5px;background:rgba(255,255,255,.08);color:var(--dim);transition:background .2s}
+#tCur{font:800 26px "Titillium Web";color:var(--ink);display:block;letter-spacing:-.02em}#tCur.inv{color:var(--red);text-decoration:line-through}
+.secs{display:flex;gap:4px;margin:8px 0 4px}.secs i{flex:1;font:800 10.5px "Titillium Web";font-style:normal;text-align:center;padding:4px 0;border-radius:5px;background:rgba(255,255,255,.08);color:var(--dim);transition:background .2s}
 .secs i.p{background:#a35bff;color:#fff}.secs i.g{background:#1fd760;color:#04140a}.secs i.y{background:#f2c200;color:#1a1400}
 .ped{display:flex;gap:4px;height:52px}.ped i{width:9px;height:100%;border-radius:4px;background:rgba(255,255,255,.1);overflow:hidden;display:flex;align-items:flex-end}.ped b{display:block;width:100%;height:100%;background:#1fd760;transform-origin:50% 100%;transform:scaleY(0);transition:transform .06s}.ped .br b{background:#ff3344}
-.tyre{display:flex;align-items:center;gap:6px;font:800 9.5px "JetBrains Mono";letter-spacing:.12em;color:var(--dim)}.tyre b{width:20px;height:20px;border-radius:50%;border:3px solid #e8202a;display:grid;place-items:center;font-size:10px;color:#fff;background:#111}
+.tyre{display:flex;align-items:center;gap:6px;font:800 9.5px "Titillium Web";letter-spacing:.12em;color:var(--dim)}.tyre b{width:20px;height:20px;border-radius:50%;border:3px solid #e8202a;display:grid;place-items:center;font-size:10px;color:#fff;background:#111}
 #posW.up{animation:pup .9s}#posW.dn{animation:pdn .9s}@keyframes pup{0%,60%{color:#1fd760}}@keyframes pdn{0%,60%{color:#ff3344}}
-#tDelta{display:block;font:800 14px "JetBrains Mono";min-height:0}#tDelta.up{color:var(--red)}#tDelta.dn{color:#38e07b}
+#tDelta{display:block;font:800 14px "Titillium Web";min-height:0}#tDelta.up{color:var(--red)}#tDelta.dn{color:#38e07b}
 .tright .ib{position:static}
 body.playing .top{justify-content:flex-end;padding-right:236px}
 .dash{position:absolute;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:7px}
 #rpm{display:flex;gap:4px}#rpm i{width:15px;height:8px;border-radius:3px;background:rgba(255,255,255,.12);transition:background .05s}
 #rpm i.g{background:#35e070;box-shadow:0 0 10px #35e070}#rpm i.r{background:#ff3344;box-shadow:0 0 10px #ff3344}#rpm i.p{background:#a35bff;box-shadow:0 0 10px #a35bff}#rpm i.b{background:#3a7bff;box-shadow:0 0 12px #3a7bff}
 .dmain{display:flex;align-items:center;gap:14px;padding:8px 18px;border-radius:18px;background:rgba(8,9,10,.66);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.spd{text-align:right;min-width:96px}#spd{font:800 italic 46px/.9 "Space Grotesk";letter-spacing:-.03em;display:block}.spd small{font:700 9.5px "JetBrains Mono";letter-spacing:.16em;color:var(--dim)}
-#gear{width:52px;height:56px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.07);font:800 34px "JetBrains Mono";color:var(--acc)}
+.spd{text-align:right;min-width:96px}#spd{font:800 italic 46px/.9 "Titillium Web";letter-spacing:-.03em;display:block}.spd small{font:700 9.5px "Titillium Web";letter-spacing:.16em;color:var(--dim)}
+#gear{width:52px;height:56px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.07);font:800 34px "Titillium Web";color:var(--acc)}
 .side{display:flex;flex-direction:column;gap:6px;min-width:84px}
-#drs{font:800 12px "JetBrains Mono";letter-spacing:.12em;text-align:center;padding:4px 8px;border-radius:7px;border:1.5px solid rgba(255,255,255,.14);color:var(--dim);transition:.15s}
+#drs{font:800 12px "Titillium Web";letter-spacing:.12em;text-align:center;padding:4px 8px;border-radius:7px;border:1.5px solid rgba(255,255,255,.14);color:var(--dim);transition:.15s}
 #drs.avail{border-color:#35e070;color:#35e070}#drs.open{background:#35e070;border-color:#35e070;color:#04140a;box-shadow:0 0 18px rgba(53,224,112,.6)}
-#ers{font:800 9.5px "JetBrains Mono";letter-spacing:.12em;color:var(--dim)}#ers .bar{height:6px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:3px}#ersBar{display:block;height:100%;background:#ffd21f;width:100%}
+#ers{font:800 9.5px "Titillium Web";letter-spacing:.12em;color:var(--dim)}#ers .bar{height:6px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:3px}#ersBar{display:block;height:100%;background:#ffd21f;width:100%}
 #ers.on{color:#ffd21f}#ers.on #ersBar{box-shadow:0 0 12px #ffd21f;background:#fff27a}
-#slip{font:800 9.5px "JetBrains Mono";letter-spacing:.12em;color:#5cc8ff;opacity:0;transition:.2s}#slip.on{opacity:1}
+#slip{font:800 9.5px "Titillium Web";letter-spacing:.12em;color:#5cc8ff;opacity:0;transition:.2s}#slip.on{opacity:1}
 .mm{position:absolute;left:18px;bottom:max(18px,env(safe-area-inset-bottom));width:200px;height:200px;border-radius:18px;background:rgba(8,9,10,.5);border:1px solid var(--line);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .mm canvas{position:absolute;inset:0;width:100%;height:100%}
 #lights{position:absolute;left:50%;top:max(40px,env(safe-area-inset-top));transform:translateX(-50%) translateY(-20px);display:flex;gap:10px;padding:10px 14px;border-radius:16px;background:rgba(6,6,8,.85);border:1px solid var(--line);opacity:0;transition:.3s var(--ease)}
@@ -103,17 +103,17 @@ body.playing .top{justify-content:flex-end;padding-right:236px}
 #lights i.on{background:radial-gradient(circle at 40% 35%,#ff8a8a,#ff1a1a 55%,#a00);box-shadow:0 0 26px #ff2a2a,0 0 60px rgba(255,40,40,.5)}
 #msg{position:absolute;left:0;right:0;top:24%;text-align:center;opacity:0;transition:opacity .3s}
 #msg.on{opacity:1}#msg.pop #msgT{animation:pop .5s var(--pop)}
-#msgT{font:800 italic clamp(34px,6vw,64px)/1 "Space Grotesk";letter-spacing:-.02em;text-shadow:0 6px 30px rgba(0,0,0,.6)}
-#msgS{font:700 13px "JetBrains Mono";letter-spacing:.14em;color:var(--muted);margin-top:8px;text-transform:uppercase}
+#msgT{font:800 italic clamp(34px,6vw,64px)/1 "Titillium Web";letter-spacing:-.02em;text-shadow:0 6px 30px rgba(0,0,0,.6)}
+#msgS{font:700 13px "Titillium Web";letter-spacing:.14em;color:var(--muted);margin-top:8px;text-transform:uppercase}
 #msg.m-go #msgT{color:var(--acc)}#msg.m-warn #msgT{color:var(--red)}#msg.m-purple #msgT{color:var(--purple)}#msg.m-final #msgT{color:#fff;background:linear-gradient(90deg,#fff 0,#fff 45%,var(--acc) 50%,#fff 55%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;background-size:300% 100%;animation:shine 1.4s linear infinite}
 @keyframes pop{from{transform:scale(.6);opacity:0}}@keyframes shine{from{background-position:100% 0}to{background-position:0 0}}
-#note{position:absolute;left:50%;top:max(18px,env(safe-area-inset-top));transform:translateX(-50%) translateY(-10px);padding:8px 14px;border-radius:12px;background:rgba(40,16,70,.8);border:1px solid rgba(178,107,255,.5);font:700 12px "JetBrains Mono";opacity:0;transition:.3s}
+#note{position:absolute;left:50%;top:max(18px,env(safe-area-inset-top));transform:translateX(-50%) translateY(-10px);padding:8px 14px;border-radius:12px;background:rgba(40,16,70,.8);border:1px solid rgba(178,107,255,.5);font:700 12px "Titillium Web";opacity:0;transition:.3s}
 #note.on{opacity:1;transform:translateX(-50%)}
 /* touch */
 .touchc{display:none}
 body.touch.playing .touchc{display:block}
-.tbtn{position:fixed;pointer-events:auto;z-index:20;border:1px solid var(--line2);background:rgba(10,12,10,.42);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:var(--ink);font:800 13px "JetBrains Mono";letter-spacing:.08em;display:grid;place-items:center;touch-action:none}
-.tbtn.on{background:rgba(184,243,107,.35);border-color:var(--acc)}
+.tbtn{position:fixed;pointer-events:auto;z-index:20;border:1px solid var(--line2);background:rgba(10,12,10,.42);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:var(--ink);font:800 13px "Titillium Web";letter-spacing:.08em;display:grid;place-items:center;touch-action:none}
+.tbtn.on{background:rgba(225,6,0,.35);border-color:var(--acc)}
 .tl1,.tl2{bottom:max(20px,env(safe-area-inset-bottom));width:84px;height:84px;border-radius:50%;font-size:28px}.tl1{left:18px}.tl2{left:116px}
 .tgas,.tbrk{bottom:max(20px,env(safe-area-inset-bottom));width:78px;height:118px;border-radius:22px}.tgas{right:18px}.tbrk{right:106px;height:96px}
 .tgas.on{background:rgba(53,224,112,.45)}.tbrk.on{background:rgba(255,59,74,.45)}
@@ -126,22 +126,22 @@ body.touch.playing .top{padding-right:150px}
 .ov{position:fixed;inset:0;z-index:40;display:none;place-items:center;background:rgba(4,5,6,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .ov.on{display:grid}
 .card{width:min(440px,92vw);border-radius:24px;background:rgba(12,14,12,.88);border:1px solid var(--line2);padding:24px;animation:fin .5s var(--ease)}
-.card h3{margin:0 0 14px;font:700 30px "Space Grotesk";font-style:italic}
-.btn{display:block;width:100%;height:48px;margin-top:8px;border-radius:14px;border:1px solid var(--line2);background:rgba(255,255,255,.05);font:700 15px "Space Grotesk";cursor:pointer}
-.btn.p{background:var(--acc);border-color:transparent;color:#0b0d08}
+.card h3{margin:0 0 14px;font:700 30px "Titillium Web";font-style:italic}
+.btn{display:block;width:100%;height:48px;margin-top:8px;border-radius:14px;border:1px solid var(--line2);background:rgba(255,255,255,.05);font:700 15px "Titillium Web";cursor:pointer}
+.btn.p{background:var(--acc);border-color:transparent;color:#ffffff}
 #results .card{width:min(640px,94vw);max-height:90vh;overflow-y:auto}
-#resTitle{font:800 italic 46px/1 "Space Grotesk";letter-spacing:-.02em;margin:0}#resSub{color:var(--muted);margin:6px 0 16px;font:700 11px "JetBrains Mono";letter-spacing:.1em;text-transform:uppercase}
-.rr{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;font:700 12.5px "JetBrains Mono";animation:fin .4s var(--ease) both}
-.rr:nth-child(odd){background:rgba(255,255,255,.03)}.rr.me{background:rgba(184,243,107,.14);box-shadow:inset 0 0 0 1px rgba(184,243,107,.5)}
+#resTitle{font:800 italic 46px/1 "Titillium Web";letter-spacing:-.02em;margin:0}#resSub{color:var(--muted);margin:6px 0 16px;font:700 11px "Titillium Web";letter-spacing:.1em;text-transform:uppercase}
+.rr{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;font:700 12.5px "Titillium Web";animation:fin .4s var(--ease) both}
+.rr:nth-child(odd){background:rgba(255,255,255,.03)}.rr.me{background:rgba(225,6,0,.14);box-shadow:inset 0 0 0 1px rgba(225,6,0,.5)}
 .rr b{width:22px;text-align:center;font-size:14px}.rr i{width:6px;height:26px;border-radius:2px;flex:none}
-.rr span{flex:1;min-width:0}.rr strong{display:block;font:700 14px "DM Sans";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rr small{display:block;color:var(--dim);font-size:10.5px}
+.rr span{flex:1;min-width:0}.rr strong{display:block;font:700 14px "Titillium Web";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rr small{display:block;color:var(--dim);font-size:10.5px}
 .rr em{font-style:normal;width:92px;text-align:right;color:var(--muted)}.rr em.fl{color:var(--purple)}.rr u{text-decoration:none;width:30px;text-align:right;color:var(--acc)}
-.rhead{display:flex;gap:10px;padding:0 10px 6px;font:700 9.5px "JetBrains Mono";color:var(--dim);letter-spacing:.12em}.rhead span{flex:1;padding-left:38px}.rhead em{font-style:normal;width:92px;text-align:right}.rhead u{text-decoration:none;width:30px;text-align:right}
+.rhead{display:flex;gap:10px;padding:0 10px 6px;font:700 9.5px "Titillium Web";color:var(--dim);letter-spacing:.12em}.rhead span{flex:1;padding-left:38px}.rhead em{font-style:normal;width:92px;text-align:right}.rhead u{text-decoration:none;width:30px;text-align:right}
 .rbtns{display:flex;gap:8px;margin-top:14px}.rbtns .btn{margin:0}
-#rot{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:25;padding:10px 16px;border-radius:12px;background:rgba(8,9,10,.8);border:1px solid var(--line2);font:700 12px "JetBrains Mono";letter-spacing:.1em;pointer-events:none;animation:rotf 5s forwards}
+#rot{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:25;padding:10px 16px;border-radius:12px;background:rgba(8,9,10,.8);border:1px solid var(--line2);font:700 12px "Titillium Web";letter-spacing:.1em;pointer-events:none;animation:rotf 5s forwards}
 @keyframes rotf{0%,80%{opacity:1}100%{opacity:0}}
 @media (orientation:portrait){body.touch.playing #rot{display:block}}
-#loading{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:var(--bg);font:700 13px "JetBrains Mono";letter-spacing:.2em;color:var(--muted)}#loading.on{display:grid}
+#loading{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:var(--bg);font:700 13px "Titillium Web";letter-spacing:.2em;color:var(--muted)}#loading.on{display:grid}
 #loading div{display:flex;flex-direction:column;align-items:center;gap:14px}#loading i{width:44px;height:44px;border-radius:50%;border:3px solid rgba(255,255,255,.1);border-top-color:var(--acc);animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (max-width:760px){
@@ -153,6 +153,12 @@ body.touch.playing .top{padding-right:150px}
   .rr em{width:70px;font-size:11px}.rhead em{width:70px}
 }
 @media (max-height:500px){ body.touch.playing .top{padding-right:196px} .tl{transform:scale(.68);transform-origin:0 0} body.touch .tl{transform:scale(.62)} .tright{transform:scale(.8);transform-origin:100% 0} body.touch .mm{top:auto;bottom:calc(max(20px,env(safe-area-inset-bottom)) + 180px);width:96px;height:96px} #lights i{width:24px;height:24px} }
+.mpanel,.card,.tcard,.chip,.go,.btn,.ib,.tright,.dmain,.mm,#tower,#mStats span,.rr{border-radius:3px!important}
+.mpanel{background:linear-gradient(180deg,rgba(21,21,30,.94),rgba(12,12,18,.9))!important;border:0!important;border-top:4px solid var(--acc)!important}
+.mpanel h1{font-style:italic;font-weight:900!important;text-transform:uppercase;letter-spacing:-.01em}.mpanel h1 b{color:var(--acc)}
+.go{clip-path:polygon(0 0,100% 0,96% 100%,0 100%);letter-spacing:.12em!important;font-style:italic;font-weight:900!important}.chip.on{color:#fff}
+.tcard.on{background:rgba(225,6,0,.1)!important}.tr span,.tr b,.tr em{font-weight:700}.tright,.dmain{background:rgba(21,21,30,.86)!important;border:0!important;border-left:3px solid var(--acc)!important}
+#gear{color:#fff!important;background:var(--acc)!important}#spd,#posW,#msgT,#resTitle,.hero h2{font-style:italic;font-weight:900!important}.lbl{color:#9a9aa8!important}.brand i{border-radius:3px;font-style:italic}.tr.me{background:rgba(225,6,0,.25)!important}.tr.me span{color:#fff!important}
 </style>
 </head>
 <body class="">
@@ -228,6 +234,6 @@ body.touch.playing .top{padding-right:150px}
   <div class="rbtns"><button class="btn p" id="resAgain">Race again</button><button class="btn" id="resMenu">Menu</button></div></div></div>
 <div id="rot">↻ ROTATE FOR THE BEST VIEW</div>
 <div id="loading" class="on"><div><i></i>LOADING CIRCUIT</div></div>
-<script type="module" src="game.js?v=2"></script>
+<script type="module" src="game.js?v=3"></script>
 </body>
 </html>

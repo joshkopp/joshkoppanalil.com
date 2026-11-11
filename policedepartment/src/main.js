@@ -406,7 +406,7 @@ function updateHUD() {
   const g = mmDots; g.clearRect(0, 0, 220, 220);
   for (const b of R.blocks) { const [x, y] = toMM(b.x, b.z); g.fillStyle = '#ffcc33'; g.fillRect(x - 4, y - 4, 8, 8); }
   for (const c of cars) { if (c === p) continue; const [x, y] = toMM(c.x, c.z); if (c === suspect) { g.fillStyle = (performance.now() / 250 | 0) % 2 ? '#ff3344' : '#fff'; g.beginPath(); g.arc(x, y, 5, 0, 7); g.fill(); } else if (c.police && c.siren) { g.fillStyle = '#3d7bff'; g.beginPath(); g.arc(x, y, 3.6, 0, 7); g.fill(); } else if (Math.hypot(c.x - p.x, c.z - p.z) < 150) { g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(x - 1.5, y - 1.5, 3, 3); } }
-  const [px, py] = toMM(p.x, p.z); g.save(); g.translate(px, py); g.rotate(-p.h + Math.PI); g.fillStyle = '#b8f36b'; g.strokeStyle = '#000'; g.lineWidth = 2; g.beginPath(); g.moveTo(0, -7); g.lineTo(5, 5); g.lineTo(-5, 5); g.closePath(); g.fill(); g.stroke(); g.restore();
+  const [px, py] = toMM(p.x, p.z); g.save(); g.translate(px, py); g.rotate(-p.h + Math.PI); g.fillStyle = '#f5c542'; g.strokeStyle = '#000'; g.lineWidth = 2; g.beginPath(); g.moveTo(0, -7); g.lineTo(5, 5); g.lineTo(-5, 5); g.closePath(); g.fill(); g.stroke(); g.restore();
 }
 
 /* ------------------------------------------------------------------ menu + loop */

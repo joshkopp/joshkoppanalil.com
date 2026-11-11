@@ -409,7 +409,7 @@ function updateHUD(dt) {
   const g = mmDots.getContext('2d'); g.clearRect(0, 0, 200, 200);
   for (const o of cars) { if (o === c) continue; const [x, y] = track.toMap(o.x, o.z); g.fillStyle = o.team.paint; g.strokeStyle = o.team.accent; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 4.2, 0, 7); g.fill(); g.stroke(); }
   if (ghost && ghost.mesh.visible) { const [x, y] = track.toMap(ghost.mesh.position.x, ghost.mesh.position.z); g.fillStyle = 'rgba(255,255,255,.45)'; g.beginPath(); g.arc(x, y, 4, 0, 7); g.fill(); }
-  const [px, py] = track.toMap(c.x, c.z); g.fillStyle = '#b8f36b'; g.strokeStyle = '#000'; g.lineWidth = 2.5; g.beginPath(); g.arc(px, py, 6, 0, 7); g.fill(); g.stroke();
+  const [px, py] = track.toMap(c.x, c.z); g.fillStyle = '#e10600'; g.strokeStyle = '#000'; g.lineWidth = 2.5; g.beginPath(); g.arc(px, py, 6, 0, 7); g.fill(); g.stroke();
   // sound
   if (!R.paused && !R.resultsShown) { Audio.engine(c.rpm, c.thr || 0, true); let nd = 1e9, nc = null; for (const o of cars) { if (o === c) continue; const d = Math.hypot(o.x - c.x, o.z - c.z); if (d < nd) { nd = d; nc = o; } }
     if (nc) { const dx = nc.x - c.x, dz = nc.z - c.z, rel = ((c.v * Math.sin(c.yaw) - nc.v * Math.sin(nc.yaw)) * dx + (c.v * Math.cos(c.yaw) - nc.v * Math.cos(nc.yaw)) * dz) / Math.max(nd, 1), side = -(dx * Math.cos(c.yaw) - dz * Math.sin(c.yaw)) / Math.max(nd, 1); Audio.rivals(nd, rel, nc.rpm, side); }

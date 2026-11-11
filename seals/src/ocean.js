@@ -15,7 +15,7 @@ vec3 gerstner(vec2 p, out vec3 nrm){ vec3 o = vec3(0.); vec3 n = vec3(0., 1., 0.
 
 export function buildOcean(Q) {
   // dense near the centre, coarse at the horizon; the mesh follows the camera
-  const seg = Q === 'low' ? 160 : 260, pos = [], idx = [], R = 6000, ex = 2.3;
+  const seg = Q === 'low' ? 80 : Q === 'medium' ? 110 : 150, pos = [], idx = [], R = 6000, ex = 2.3;
   for (let j = 0; j <= seg; j++) for (let i = 0; i <= seg; i++) { const u = i / seg * 2 - 1, v = j / seg * 2 - 1; pos.push(Math.sign(u) * Math.abs(u) ** ex * R, 0, Math.sign(v) * Math.abs(v) ** ex * R); }
   for (let j = 0; j < seg; j++) for (let i = 0; i < seg; i++) { const a = j * (seg + 1) + i, b = a + 1, c = a + seg + 1, d = c + 1; idx.push(a, c, b, b, c, d); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(new Array(pos.length).fill(0).map((_, k) => k % 3 === 1 ? 1 : 0), 3)); g.setIndex(idx);
@@ -33,14 +33,14 @@ export function buildOcean(Q) {
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
       { vec3 gn; gerstner(vWP.xz, gn); vec2 p = vWP.xz; float e = .35;
         vec2 q1 = p * .11 + vec2(uT * .35, uT * .2), q2 = p * .37 - vec2(uT * .5, -uT * .3), q3 = p * 1.3 + vec2(uT * .9, uT * .4);
-        float n0 = vn(q1) * .55 + vn(q2) * .3 + vn(q3) * .15;
-        float nx = (vn(q1 + vec2(e, 0.)) * .55 + vn(q2 + vec2(e, 0.)) * .3 + vn(q3 + vec2(e, 0.)) * .15) - n0;
-        float nz = (vn(q1 + vec2(0., e)) * .55 + vn(q2 + vec2(0., e)) * .3 + vn(q3 + vec2(0., e)) * .15) - n0;
+        float n0 = vn(q1) * .6 + vn(q2) * .4;
+        float nx = (vn(q1 + vec2(e, 0.)) * .6 + vn(q2 + vec2(e, 0.)) * .4) - n0;
+        float nz = (vn(q1 + vec2(0., e)) * .6 + vn(q2 + vec2(0., e)) * .4) - n0;
         float dist = length(vWP - cameraPosition), fade = 1. - smoothstep(150., 2500., dist);
         vec3 wn = normalize(gn + vec3(-nx, 0., -nz) * 1.6 * fade);
         normal = normalize((viewMatrix * vec4(wn, 0.)).xyz); }`)
       .replace('#include <color_fragment>', `#include <color_fragment>
-        float crest = smoothstep(.7, 1.6, vH); float fn = vn(vWP.xz * .25 + uT * .1) * vn(vWP.xz * 1.1 - uT * .2);
+        float crest = smoothstep(.7, 1.6, vH); float fn = vn(vWP.xz * .25 + uT * .1);
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.12, .32, .36), smoothstep(-.6, 1.2, vH) * .45);
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.85, .9, .92), clamp(crest * fn * 1.6, 0., .7));`);
   };
