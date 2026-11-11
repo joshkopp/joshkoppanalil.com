@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>JK Iron Seas</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0a1418">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#eef2f4;--muted:#a7b3b9;--dim:#6c7a82;--line:rgba(255,255,255,.12);--line2:rgba(255,255,255,.2);--acc:#b8f36b;--red:#ff4d4d;--blue:#5fb3ff;--glass:rgba(8,16,20,.62);--ease:cubic-bezier(.2,.8,.2,1);--pop:cubic-bezier(.34,1.56,.64,1)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#0a1418;color:var(--ink);font:500 14px/1.45 "DM Sans",system-ui,sans-serif;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none}
+button{font:inherit;color:inherit}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+.top{position:fixed;top:0;left:0;right:0;z-index:30;display:flex;align-items:center;gap:10px;padding:14px 18px;padding-top:max(14px,env(safe-area-inset-top));pointer-events:none}.top>*{pointer-events:auto}
+.brand{font:700 18px "Space Grotesk";display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;text-shadow:0 2px 10px rgba(0,0,0,.5)}.brand i{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--acc);color:#0b0d08;font-style:normal}.brand b{color:var(--acc)}body.playing .brand{display:none}
+.sp{flex:1}.ib{width:38px;height:38px;border-radius:12px;border:1px solid var(--line2);background:rgba(8,16,20,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:grid;place-items:center;cursor:pointer;text-decoration:none;color:var(--ink);font-size:15px}
+.ib.play{display:none}body.playing .ib.play{display:grid}body.playing .ib.home{display:none}
+#menu{position:fixed;inset:0;z-index:10;pointer-events:none;display:none}#menu.on{display:block}
+.mpanel{pointer-events:auto;position:absolute;left:22px;top:76px;bottom:22px;width:450px;border-radius:24px;background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);padding:22px;overflow-y:auto;scrollbar-width:thin;animation:slin .6s var(--ease)}
+@keyframes slin{from{opacity:0;transform:translateX(-30px)}}
+.mpanel h1{margin:0;font:700 44px/1 "Space Grotesk";letter-spacing:-.02em}.mpanel h1 b{color:var(--acc)}.sub{margin:8px 0 4px;color:var(--muted)}
+.lbl{font:700 10.5px "JetBrains Mono";letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:18px 0 8px}
+.scard{display:block;width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;border-radius:16px;border:1px solid var(--line2);background:rgba(255,255,255,.03);cursor:pointer}
+.scard b{font:700 17px "Space Grotesk"}.scard p{margin:2px 0 8px;color:var(--muted);font-size:12.5px}
+.scard.on{border-color:var(--acc);background:rgba(184,243,107,.08);box-shadow:inset 0 0 0 1px var(--acc)}
+.st{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}.st span{display:flex;align-items:center;gap:8px;font:800 9.5px "JetBrains Mono";letter-spacing:.1em;color:var(--dim)}.st i{flex:1;height:4px;border-radius:3px;background:rgba(255,255,255,.1);position:relative;overflow:hidden}.st i:after{content:"";position:absolute;inset:0;width:calc(var(--v)*100%);background:var(--acc)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chip{border:1px solid var(--line2);background:rgba(255,255,255,.03);padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:600;font-size:12.5px}.chip.on{background:var(--acc);color:#0b0d08;border-color:transparent}
+.go{width:100%;height:58px;margin-top:20px;border:0;border-radius:16px;background:var(--acc);color:#0b0d08;font:700 18px "Space Grotesk";letter-spacing:.06em;cursor:pointer;box-shadow:0 14px 40px -12px rgba(184,243,107,.8)}
+.keys{margin-top:16px;font:500 11.5px/1.95 "JetBrains Mono";color:var(--muted)}.keys b{color:#fff;background:rgba(255,255,255,.1);padding:1px 6px;border-radius:5px;margin-right:3px}
+.hero{position:absolute;right:34px;bottom:30px;text-align:right;pointer-events:none}.hero div{font:800 12px "JetBrains Mono";letter-spacing:.3em;color:var(--acc)}.hero h2{margin:4px 0 0;font:700 clamp(40px,6vw,86px)/.9 "Space Grotesk";letter-spacing:-.03em;text-shadow:0 6px 40px rgba(0,0,0,.4)}
+#hud{position:fixed;inset:0;z-index:6;pointer-events:none;display:none}#hud.on{display:block}
+#tags .tag{position:absolute;left:0;top:0;margin:-34px 0 0 -60px;width:120px;text-align:center;font:700 10.5px "JetBrains Mono";text-shadow:0 1px 4px rgba(0,0,0,.9);display:none}
+.tag b{display:block;font:700 11.5px "DM Sans";white-space:nowrap}.tag span{display:block;color:var(--muted);font-size:9.5px}.tag i{display:block;height:4px;margin:3px 18px;border-radius:3px;background:rgba(0,0,0,.45);overflow:hidden}.tag u{display:block;height:100%;text-decoration:none}.tag em{font-style:normal;color:var(--muted);font-size:9.5px}
+.tag.en b{color:#ff8080}.tag.en u{background:var(--red)}.tag.al b{color:#9fd2ff}.tag.al u{background:var(--blue)}.tag.tg b{color:#fff;background:rgba(255,77,77,.55);border-radius:4px;padding:0 4px}
+#xh{position:absolute;left:50%;top:50%;width:0;height:0}
+#xh:before{content:"";position:absolute;left:-22px;top:-22px;width:44px;height:44px;border:1.5px solid rgba(255,255,255,.85);border-radius:50%;box-shadow:0 0 6px rgba(0,0,0,.6)}
+#xh:after{content:"";position:absolute;left:-1.5px;top:-1.5px;width:3px;height:3px;background:#fff;border-radius:50%}
+#xh .l{position:absolute;background:rgba(255,255,255,.85);box-shadow:0 0 4px rgba(0,0,0,.6)}#xh .h1{left:-70px;top:-.75px;width:40px;height:1.5px}#xh .h2{left:30px;top:-.75px;width:40px;height:1.5px}#xh .v1{left:-.75px;top:30px;width:1.5px;height:26px}
+#xh .rd{position:absolute;left:34px;top:8px;font:800 12px "JetBrains Mono";white-space:nowrap;text-shadow:0 1px 4px #000}#xh .rd small{display:block;font-size:10.5px;color:var(--muted)}#xh.out .rd{color:var(--red)}
+#lead{position:absolute;left:0;top:0;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid var(--red);transform-origin:0 0;display:none}#lead:after{content:"";position:absolute;inset:3px;background:var(--red);transform:rotate(45deg);opacity:.0}
+#lead{border-radius:3px;transform:rotate(45deg)}
+#tbox{position:absolute;left:0;top:0;width:0;height:0;display:none}#tbox:before,#tbox:after{content:"";position:absolute;width:26px;height:26px;border:2px solid rgba(255,77,77,.9)}#tbox:before{left:-40px;top:-30px;border-right:0;border-bottom:0}#tbox:after{left:14px;top:4px;border-left:0;border-top:0}
+#tinfo{position:absolute;left:50%;top:max(16px,env(safe-area-inset-top));transform:translateX(-50%);min-width:260px;padding:9px 14px;border-radius:14px;background:var(--glass);border:1px solid var(--line);text-align:center;display:none}
+#tName{font:700 14px "Space Grotesk";color:#ffb3b3}#tCls{font:700 10.5px "JetBrains Mono";color:var(--muted);letter-spacing:.06em}.bar{height:6px;border-radius:5px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:5px}.bar span{display:block;height:100%;transition:width .2s}#tHp{background:var(--red)}
+#bInfo{position:absolute;left:18px;top:max(18px,env(safe-area-inset-top));font:800 11px "JetBrains Mono";letter-spacing:.12em;color:var(--muted);text-shadow:0 1px 6px #000}#score{display:block;font:800 30px "Space Grotesk";color:var(--ink);letter-spacing:-.02em;margin-top:2px}
+#feed{position:absolute;right:18px;top:calc(max(18px,env(safe-area-inset-top)) + 50px);display:flex;flex-direction:column;gap:5px;align-items:flex-end}#feed div{padding:6px 10px;border-radius:9px;background:var(--glass);font:600 12px "DM Sans";border-right:3px solid}#feed .g{border-color:var(--acc)}#feed .b{border-color:var(--red)}
+#ribbons{position:absolute;left:50%;top:calc(50% + 70px);transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px}
+.rb{padding:5px 12px;border-radius:8px;background:rgba(10,20,25,.75);font:800 13px "JetBrains Mono";letter-spacing:.08em;animation:rbi .35s var(--pop)}.rb.cit{color:#ffcf4d}.rb.kill{color:var(--acc);font-size:16px}.rb.fire{color:#ff9a4d}@keyframes rbi{from{transform:scale(.5);opacity:0}}
+#scam{position:absolute;left:50%;bottom:max(24px,env(safe-area-inset-bottom));transform:translateX(-50%);padding:8px 14px;border-radius:10px;background:var(--glass);font:800 11.5px "JetBrains Mono";letter-spacing:.1em;display:none}#scam small{color:var(--muted);margin-left:8px}
+#toast{position:absolute;left:50%;top:32%;transform:translateX(-50%);font:800 15px "JetBrains Mono";letter-spacing:.12em;opacity:0;text-shadow:0 2px 12px rgba(0,0,0,.9);white-space:nowrap}#toast.on{animation:tst 1.6s var(--ease)}@keyframes tst{0%{opacity:0}15%,70%{opacity:1}100%{opacity:0}}
+#big{position:absolute;left:0;right:0;top:20%;text-align:center;opacity:0;transition:opacity .4s}#big.on{opacity:1}#bigT{font:800 clamp(40px,7vw,78px)/1 "Space Grotesk";letter-spacing:-.02em;text-shadow:0 6px 30px rgba(0,0,0,.6)}#bigS{font:700 13px "JetBrains Mono";letter-spacing:.14em;color:var(--muted);margin-top:8px;text-transform:uppercase}
+#torpW{position:absolute;left:50%;top:22%;transform:translateX(-50%);padding:8px 16px;border-radius:10px;background:rgba(160,20,20,.75);font:800 16px "JetBrains Mono";letter-spacing:.2em;display:none}#torpW.on{display:block;animation:blink .5s infinite alternate}@keyframes blink{to{opacity:.4}}
+#radar{position:absolute;left:18px;bottom:max(18px,env(safe-area-inset-bottom));width:200px;height:200px}
+.stat{position:absolute;right:18px;bottom:max(18px,env(safe-area-inset-bottom));width:290px;padding:12px 14px;border-radius:16px;background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font:800 10.5px "JetBrains Mono";letter-spacing:.08em;color:var(--muted)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}#hpBar{background:linear-gradient(90deg,#ff4d4d,#b8f36b)}#hpT{color:var(--ink)}
+#spd{font:800 26px "Space Grotesk";color:var(--ink);letter-spacing:-.02em}#tel{color:var(--acc)}
+.rudder{position:relative;height:6px;border-radius:4px;background:rgba(255,255,255,.12);margin:6px 0 8px}#rud{position:absolute;top:-3px;width:4px;height:12px;margin-left:-2px;border-radius:2px;background:#fff;left:50%}
+#turrets{display:flex;gap:5px}#turrets i{--p:1;width:22px;height:22px;border-radius:50%;background:conic-gradient(var(--acc) calc(var(--p)*360deg),rgba(255,255,255,.12) 0);position:relative}#turrets i:after{content:"";position:absolute;inset:4px;border-radius:50%;background:#0d171b}
+#turrets i.r:after{background:var(--acc)}#turrets i.n{opacity:.35}#turrets i.x{background:var(--red)}#turrets i.l{}
+.mini{--p:1;padding:3px 7px;border-radius:7px;border:1px solid var(--line2);position:relative;overflow:hidden}.mini:before{content:"";position:absolute;left:0;bottom:0;height:2px;width:calc(var(--p)*100%);background:var(--blue)}.mini.ready{color:var(--acc);border-color:var(--acc)}
+#clickfly{position:fixed;left:50%;top:60%;transform:translateX(-50%);z-index:35;padding:12px 18px;border-radius:12px;background:rgba(8,16,20,.85);border:1px solid var(--acc);font:800 12px "JetBrains Mono";letter-spacing:.12em;color:var(--acc);cursor:pointer;display:none}#clickfly.on{display:block}
+#hitfx{position:fixed;inset:0;pointer-events:none;z-index:5;opacity:0;background:radial-gradient(ellipse at center,transparent 50%,rgba(255,40,20,.4))}#hitfx.on{animation:hf .6s}@keyframes hf{0%{opacity:1}100%{opacity:0}}
+.touchc{display:none}body.touch.playing .touchc{display:block}
+.tb{position:fixed;pointer-events:auto;z-index:20;border:1px solid var(--line2);background:rgba(8,16,20,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:var(--ink);font:800 11.5px "JetBrains Mono";letter-spacing:.06em;display:grid;place-items:center;touch-action:none}.tb.on{background:rgba(184,243,107,.35);border-color:var(--acc)}
+.tFire{right:18px;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 150px);width:92px;height:92px;border-radius:50%;background:rgba(200,40,40,.45);font-size:14px}
+.tZoom{right:120px;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 160px);width:58px;height:58px;border-radius:50%}.tTorp{right:120px;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 226px);width:58px;height:44px;border-radius:12px}.tDc{right:18px;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 252px);width:58px;height:40px;border-radius:12px}
+.tL,.tR{bottom:calc(max(18px,env(safe-area-inset-bottom)) + 216px);width:62px;height:62px;border-radius:50%;font-size:22px}.tL{left:18px}.tR{left:88px}
+.tUp,.tDn{left:158px;width:52px;height:40px;border-radius:12px}.tUp{bottom:calc(max(18px,env(safe-area-inset-bottom)) + 262px)}.tDn{bottom:calc(max(18px,env(safe-area-inset-bottom)) + 216px)}
+body.touch #radar{width:150px;height:150px;bottom:max(10px,env(safe-area-inset-bottom))}body.touch .stat{transform:scale(.8);transform-origin:100% 100%}body.touch #feed{display:none}
+.ov{position:fixed;inset:0;z-index:40;display:none;place-items:center;background:rgba(3,8,10,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}.ov.on{display:grid}
+.card{width:min(440px,92vw);border-radius:24px;background:rgba(10,18,22,.9);border:1px solid var(--line2);padding:24px;animation:fin .5s var(--ease)}@keyframes fin{from{opacity:0;transform:translateY(20px)}}
+.card h3,.card h2{margin:0 0 12px;font:700 32px "Space Grotesk"}#ovT.good{color:var(--acc)}#ovT.bad{color:var(--red)}#ovS{color:var(--muted);margin:-6px 0 14px}
+#ovStats div{display:flex;justify-content:space-between;padding:9px 12px;border-radius:10px;font:700 13px "JetBrains Mono"}#ovStats div:nth-child(odd){background:rgba(255,255,255,.04)}#ovStats span{color:var(--muted)}#ovStats p{text-align:center;color:var(--muted);font:700 12px "JetBrains Mono";letter-spacing:.1em;margin:12px 0 0}#ovStats .nb{color:var(--acc)}
+.btn{display:block;width:100%;height:48px;margin-top:8px;border-radius:14px;border:1px solid var(--line2);background:rgba(255,255,255,.05);font:700 15px "Space Grotesk";cursor:pointer}.btn.p{background:var(--acc);border-color:transparent;color:#0b0d08}
+#loading{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:#0a1418;font:700 13px "JetBrains Mono";letter-spacing:.2em;color:var(--muted)}#loading.on{display:grid}#loading div{display:flex;flex-direction:column;align-items:center;gap:14px}#loading i{width:44px;height:44px;border-radius:50%;border:3px solid rgba(255,255,255,.1);border-top-color:var(--acc);animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+@media (max-width:760px){.mpanel{left:10px;right:10px;width:auto;top:66px;bottom:10px;padding:18px}.mpanel h1{font-size:36px}.hero{display:none}#tinfo{top:calc(max(14px,env(safe-area-inset-top)) + 46px);min-width:200px}}
+@media (max-height:500px){.hero{display:none}#radar{width:120px;height:120px}.stat{transform:scale(.72);transform-origin:100% 100%}#bInfo{transform:scale(.8);transform-origin:0 0}}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="hitfx"></div>
+<div class="top">
+  <a class="brand" href="/" title="Back to joshkoppanalil.com"><i>JK</i><span>Iron <b>Seas</b></span></a>
+  <div class="sp"></div>
+  <button class="ib play" data-k="cam" title="Shell cam (F)">🎯</button>
+  <button class="ib play" data-k="pause" title="Pause (Esc)">❚❚</button>
+  <button class="ib" id="snd" title="Sound (M)">🔊</button>
+  <a class="ib home" href="/" title="Home">✕</a>
+</div>
+<div id="menu">
+  <div class="mpanel">
+    <h1>Iron <b>Seas</b></h1>
+    <p class="sub">Range the target, lead it, fire — and ride the shell all the way in.</p>
+    <div class="lbl">Choose your ship · best <span id="best">0</span></div><div id="mShips"></div>
+    <div class="lbl">After firing</div><div class="chips" id="mCam"></div>
+    <div class="lbl">Mouse sensitivity</div><div class="chips" id="mSens"></div>
+    <div class="lbl">Graphics</div><div class="chips" id="mQual"></div>
+    <button class="go" id="go">SET SAIL</button>
+    <div class="keys"><b>W</b><b>S</b> engine telegraph · <b>A</b><b>D</b> rudder<br><b>Mouse</b> aim · <b>Click</b> fire salvo · <b>Right-click</b> / <b>Shift</b> binoculars<br><b>Space</b> lock target / skip shell cam · <b>F</b> shell cam on/off<br><b>T</b> torpedoes · <b>R</b> damage control · <b>Wheel</b> zoom · <b>Esc</b> pause</div>
+  </div>
+  <div class="hero"><div>FIRE FOR EFFECT</div><h2>Iron Seas</h2></div>
+</div>
+<div id="hud">
+  <div id="tags"></div>
+  <div id="tbox"></div>
+  <div id="lead"></div>
+  <div id="xh"><i class="l h1"></i><i class="l h2"></i><i class="l v1"></i><div class="rd"><span id="rng">0 km</span><small id="tof"></small></div></div>
+  <div id="tinfo"><div id="tName"></div><div id="tCls"></div><div class="bar"><span id="tHp"></span></div></div>
+  <div id="bInfo"><span id="bInfoT"></span><span id="score"></span></div>
+  <div id="feed"></div>
+  <div id="ribbons"></div>
+  <div id="scam"><span id="scamT">SHELL CAM</span><small>SPACE TO SKIP</small></div>
+  <div id="torpW">⚠ TORPEDO</div>
+  <canvas id="radar" width="200" height="200"></canvas>
+  <div class="stat">
+    <div class="row"><span>HULL</span><span id="hpT"></span></div><div class="bar"><span id="hpBar"></span></div>
+    <div class="row" style="margin-top:8px"><span id="spd">0 kn</span><span id="tel"></span></div>
+    <div class="rudder"><i id="rud"></i></div>
+    <div class="row"><div id="turrets"></div><span class="mini" id="torpB">TORP</span><span class="mini" id="dcB">R · DC</span></div>
+    <div class="row" style="margin-top:6px"><span id="fires"></span><span id="flood"></span></div>
+  </div>
+  <div id="toast"></div>
+  <div id="big"><div id="bigT"></div><div id="bigS"></div></div>
+</div>
+<div id="clickfly">CLICK TO TAKE COMMAND</div>
+<div class="touchc">
+  <button class="tb tFire" data-k="fire">FIRE</button><button class="tb tZoom" data-k="zoom">🔭</button><button class="tb tTorp" data-k="torp">TORP</button><button class="tb tDc" data-k="dc">DC</button>
+  <button class="tb tL" data-k="left">◀</button><button class="tb tR" data-k="right">▶</button><button class="tb tUp" data-k="up">▲</button><button class="tb tDn" data-k="down">▼</button>
+</div>
+<div class="ov" id="pause"><div class="card"><h3>Paused</h3><button class="btn p" id="pResume">Resume</button><button class="btn" id="pRestart">Restart battle</button><button class="btn" id="pMenu">Back to port</button></div></div>
+<div class="ov" id="over"><div class="card"><h2 id="ovT"></h2><div id="ovS"></div><div id="ovStats"></div><button class="btn p" id="ovNext">Next battle</button><button class="btn" id="ovRetry">Try again</button><button class="btn" id="ovMenu">Back to port</button></div></div>
+<div id="loading" class="on"><div><i></i>FITTING OUT THE FLEET</div></div>
+<script type="module" src="game.js?v=1"></script>
+</body>
+</html>
