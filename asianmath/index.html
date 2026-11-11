@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#060504">
+<title>The Back Room · Casino</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="casino.css?v=5">
+</head>
+<body>
+<canvas id="dust" aria-hidden="true"></canvas>
+
+<header class="top">
+  <div class="wrap">
+    <button class="backb" id="back">‹ Lobby</button>
+    <a class="brand" href="/asianmath/"><i>♠</i><span>The Back Room</span></a>
+    <div id="gtitle"></div>
+    <div class="sp"></div>
+    <button class="iconb" id="snd" aria-label="Toggle sound">🔊</button>
+    <div class="purse" id="purse"><div class="coin">JK</div><div><small>Chips</small><b id="bal">$0</b></div></div>
+    <button class="btn sm grn" id="refill" hidden>Free $1,000</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="lobby">
+    <div class="marquee">
+      <svg class="bulbs" aria-hidden="true"></svg>
+      <div class="kick">Members only · Fake money, real thrills</div>
+      <h1>The <span class="flick">Back</span> Room</h1>
+      <p><span id="ngames">15</span> games, one bankroll. Everything here is play money, so bet big and enjoy the show.</p>
+      <div class="suits" aria-hidden="true"><span class="k" style="--i:0">♠</span><span class="r" style="--i:1">♥</span><span class="k" style="--i:2">♣</span><span class="r" style="--i:3">♦</span></div>
+    </div>
+    <div class="pstats">
+      <div class="pstat"><b id="lbal">$0</b><span>Bankroll</span></div>
+      <div class="pstat"><b id="st-played">0</b><span>Rounds played</span></div>
+      <div class="pstat"><b id="st-big">$0</b><span>Biggest win</span></div>
+      <div class="pstat"><b id="st-best">—</b><span>Best multiplier</span></div>
+    </div>
+    <div id="cats"></div>
+  </section>
+
+  <section id="stage" hidden></section>
+</main>
+
+<div class="betbar" hidden>
+  <div class="in">
+    <div class="betbox"><span class="lbl">Bet</span><input class="num" id="bet" type="number" min="1" inputmode="numeric" aria-label="Bet amount"></div>
+    <div class="rack" id="rack"></div>
+    <div class="minis"><button id="half">½</button><button id="dbl">2×</button><button id="max">Max</button><button id="clr">Min</button></div>
+    <div class="betnote" id="betnote"></div>
+  </div>
+</div>
+
+<footer>Play money only. Nothing here can be bought, cashed out or won for real. · <a href="/">joshkoppanalil.com</a></footer>
+<canvas id="fx" aria-hidden="true"></canvas>
+<div class="toast" id="toast"></div>
+
+<script src="core.js?v=6"></script>
+<script src="games-table.js?v=3"></script>
+<script src="games-slots.js?v=3"></script>
+<script src="games-instant.js?v=7"></script>
+<script>
+  // every game gets its own section in the stage
+  for(const g of GAMES){const s=document.createElement('section');s.className='game';s.id='g-'+g.id;document.getElementById('stage').appendChild(s)}
+  boot();
+</script>
+</body>
+</html>
