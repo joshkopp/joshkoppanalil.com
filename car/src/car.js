@@ -14,6 +14,8 @@ export const TEAMS = [
   { id: 'oxford', name: 'Oxford Racing', driver: 'A. Albion', code: 'ALB', num: 23, paint: '#0a1e6e', accent: '#e8e8e8', helmet: '#00a0de' },
   { id: 'neon', name: 'Neon Bulls', driver: 'Y. Tanaka', code: 'TAN', num: 22, paint: '#e8e8f8', accent: '#2b4bff', helmet: '#ff2740' },
 ];
+const LIV = { jk: [0, '#ffffff', 'KOPPA ENERGY'], rossa: [2, '#ffffff', 'APEX OIL'], silver: [3, '#111111', 'HELIX'], bull: [1, '#ffd21f', 'ORBIT'], papaya: [1, '#00a0de', 'ZEPHYR'], verde: [0, '#ffffff', 'QUANTA'], azure: [1, '#ffffff', 'SUMMIT AIR'], steel: [3, '#111111', 'VELOCITY'], oxford: [2, '#d4141f', 'LIME TELECOM'], neon: [0, '#ff2740', 'NOVA'] };
+TEAMS.forEach((t, k) => { const l = LIV[t.id]; t.pat = l[0]; t.third = l[1]; t.sponsor = l[2]; t.tcam = k % 2 ? '#ffe600' : '#0b0b0b'; });
 export const COMPOUND = { soft: '#e8202a', medium: '#f3d11a', hard: '#f2f2f2' };
 
 function loft(secs, M = 18, n = 2.5) {
@@ -123,6 +125,40 @@ function sharedMats() {
   shared.blobGeo = new THREE.PlaneGeometry(2.6, 6.4).rotateX(-Math.PI / 2);
   return shared;
 }
+function livery(team) {
+  const m = new THREE.MeshPhysicalMaterial({ color: team.paint, roughness: .32, metalness: .12, clearcoat: 1, clearcoatRoughness: .06, envMapIntensity: .8 });
+  const u = { uB: { value: new THREE.Color(team.accent) }, uC: { value: new THREE.Color(team.third) }, uPat: { value: team.pat } };
+  m.onBeforeCompile = sh => { Object.assign(sh.uniforms, u);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vLP;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvLP = position;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vLP; uniform vec3 uB; uniform vec3 uC; uniform float uPat;').replace('#include <color_fragment>', `#include <color_fragment>
+      { float y = vLP.y, z = vLP.z, x = abs(vLP.x), m = 0.;
+        if (uPat < .5) m = 1. - smoothstep(.43 + z * .035, .45 + z * .035, y);
+        else if (uPat < 1.5) m = 1. - smoothstep(.05, .065, abs(y - (.56 + z * .085)));
+        else if (uPat < 2.5) m = smoothstep(1.5, 1.9, z) + (1. - smoothstep(-1.6, -1.15, z)) * step(.6, y);
+        else m = 1. - smoothstep(.08, .095, x);
+        float pin = (1. - smoothstep(.008, .014, abs(y - (.6 + z * .03)))) * step(-1.7, z) * step(z, 1.1) * step(.3, x);
+        diffuseColor.rgb = mix(mix(diffuseColor.rgb, uB, clamp(m, 0., 1.)), uC, pin); }`); };
+  m.customProgramCacheKey = () => 'livery'; return m;
+}
+function lum(hex) { const c = new THREE.Color(hex); return .3 * c.r + .59 * c.g + .11 * c.b; }
+function sponsorTex(t) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 96; const x = c.getContext('2d'), light = lum(t.paint) > .45;
+  x.font = '900 italic 64px Arial'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineWidth = 6; x.strokeStyle = light ? 'rgba(255,255,255,.6)' : 'rgba(0,0,0,.5)'; x.strokeText(t.sponsor, 256, 50);
+  x.fillStyle = light ? '#111' : '#fff'; x.fillText(t.sponsor, 256, 50);
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4; return tex;
+}
+const sideCache = {};
+function sidewall(compound) {
+  if (sideCache[compound]) return sideCache[compound];
+  const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d'), sc = 128 / .335;
+  x.strokeStyle = COMPOUND[compound]; x.lineWidth = 7; [0, Math.PI].forEach(a => { x.beginPath(); x.arc(128, 128, .301 * sc, a + .55, a + 2.6); x.stroke(); });
+  x.fillStyle = '#f2f2f2'; x.font = 'bold 19px Arial'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  [0, Math.PI].forEach(a0 => { const word = 'NOVA', r = .262 * sc; [...word].forEach((ch, k) => { const a = a0 - .32 + k * .21; x.save(); x.translate(128 + Math.cos(a - Math.PI / 2) * r, 128 + Math.sin(a - Math.PI / 2) * r); x.rotate(a); x.fillText(ch, 0, 0); x.restore(); }); });
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  return sideCache[compound] = new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: .3, roughness: .7, polygonOffset: true, polygonOffsetFactor: -1 });
+}
+const ringCache = {};
+function ringGeo(w) { if (ringCache[w]) return ringCache[w]; const h = w / 2 + .003; return ringCache[w] = mergeGeometries([new THREE.RingGeometry(.23, .335, 40).rotateY(Math.PI / 2).translate(h, 0, 0), new THREE.RingGeometry(.23, .335, 40).rotateY(-Math.PI / 2).translate(-h, 0, 0)]); }
 function decalTex(t) {
   const c = document.createElement('canvas'); c.width = 256; c.height = 64; const x = c.getContext('2d');
   x.fillStyle = t.paint; x.fillRect(0, 0, 256, 64); x.fillStyle = t.accent; x.fillRect(0, 50, 256, 14);
@@ -134,19 +170,24 @@ function decalTex(t) {
 export function buildCar(team, compound = 'soft', opts = {}) {
   const G = bodyGeo(), S = sharedMats(), root = new THREE.Group(), body = new THREE.Group(); root.add(body);
   const phys = (c, r = .32) => new THREE.MeshPhysicalMaterial({ color: c, roughness: r, metalness: .12, clearcoat: 1, clearcoatRoughness: .06, envMapIntensity: .8 });
-  const mats = { paint: phys(team.paint), accent: phys(team.accent, .32), helmet: phys(team.helmet, .25), glow: new THREE.MeshStandardMaterial({ color: '#400', emissive: '#ff2020', emissiveIntensity: 1 }) };
+  const mats = { paint: livery(team), accent: phys(team.accent, .32), helmet: phys(team.helmet, .25), glow: new THREE.MeshStandardMaterial({ color: '#400', emissive: '#ff2020', emissiveIntensity: 1 }) };
   const add = (geo, mat) => { const m = new THREE.Mesh(geo, mat); m.castShadow = true; m.receiveShadow = true; body.add(m); return m; };
   add(G.paint, mats.paint); add(G.accent, mats.accent); add(G.carbon, S.carbon); add(G.black, S.black); const helm = add(G.helmet, mats.helmet); add(G.glow, mats.glow); add(G.chrome, S.chrome);
   // number decals on the fin and the nose
   const dm = new THREE.MeshStandardMaterial({ map: decalTex(team), roughness: .4, metalness: .2, polygonOffset: true, polygonOffsetFactor: -1 });
   [1, -1].forEach(s => { const p = new THREE.Mesh(new THREE.PlaneGeometry(.8, .1), dm); p.position.set(s * .008, 1.01, -1.6); p.rotation.y = s * Math.PI / 2; body.add(p); });
   const nose = new THREE.Mesh(new THREE.PlaneGeometry(.3, .075).rotateZ(Math.PI / 2).rotateX(-Math.PI / 2).rotateX(.16), dm); nose.position.set(0, .588, 1.6); body.add(nose);
+  // sponsor decals: sidepods and rear wing
+  const spm = new THREE.MeshStandardMaterial({ map: sponsorTex(team), alphaTest: .45, roughness: .35, metalness: .1, polygonOffset: true, polygonOffsetFactor: -2 });
+  [1, -1].forEach(s => { const p = new THREE.Mesh(new THREE.PlaneGeometry(.95, .18), spm); p.position.set(s * .768, .47, -.22); p.rotation.y = s * (Math.PI / 2 + .08); body.add(p); });
+  const rw = new THREE.Mesh(new THREE.PlaneGeometry(.94, .2).rotateZ(Math.PI).rotateX(-Math.PI / 2).rotateX(.18).translate(0, .914, -2.398), spm); body.add(rw);
+  const tcam = new THREE.Mesh(new THREE.BoxGeometry(.1, .055, .15), new THREE.MeshStandardMaterial({ color: team.tcam, roughness: .4 })); tcam.position.set(0, 1.065, -.47); tcam.castShadow = true; body.add(tcam);
   // DRS flap
   const flap = new THREE.Group(); flap.position.set(0, 1.02, -2.28); const fm = new THREE.Mesh(new THREE.BoxGeometry(1.0, .022, .22).translate(0, 0, -.11), mats.accent); fm.castShadow = true; flap.add(fm); flap.rotation.x = .55; body.add(flap);
   // wheels
   const wheels = [], steer = [];
   [[AX.front, .82, .3], [AX.rear, .78, .4]].forEach(([z, x, w], ax) => [1, -1].forEach(s => {
-    const piv = new THREE.Group(); piv.position.set(s * x, AX.r, z); const wm = new THREE.Mesh(wheelGeo(w, compound), S.wheel); wm.castShadow = true; piv.add(wm); root.add(piv); wheels.push(wm); if (!ax) steer.push(piv); }));
+    const piv = new THREE.Group(); piv.position.set(s * x, AX.r, z); const wm = new THREE.Mesh(wheelGeo(w, compound), S.wheel); wm.castShadow = true; wm.add(new THREE.Mesh(ringGeo(w), sidewall(compound))); piv.add(wm); root.add(piv); wheels.push(wm); if (!ax) steer.push(piv); }));
   // steering wheel (only shown in cockpit view)
   const sw = new THREE.Group(); sw.position.set(0, .7, .34); sw.rotation.x = -.5;
   const swb = new THREE.Mesh(new THREE.BoxGeometry(.3, .13, .04), S.carbon); sw.add(swb);

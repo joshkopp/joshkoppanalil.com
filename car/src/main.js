@@ -1,11 +1,10 @@
 // JK Grand Prix — race nine rivals around procedurally built circuits.
 import * as THREE from 'three';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
-import { Track, TRACKS, TIMES } from './track.js';
+import { Track, TRACKS, TIMES, skyMesh } from './track.js';
 import { TEAMS, buildCar, setLeds, AX } from './car.js';
 import { Audio } from './audio.js';
 
@@ -35,7 +34,10 @@ renderer.setPixelRatio(basePR); renderer.setSize(innerWidth, innerHeight, false)
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = Q !== 'low'; renderer.shadowMap.type = THREE.PCFShadowMap;
 const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, .1, 7000);
-const pmrem = new THREE.PMREMGenerator(renderer); scene.environment = pmrem.fromScene(new RoomEnvironment(), .04).texture;
+const pmrem = new THREE.PMREMGenerator(renderer); const ENV = {}; // reflections come from each time-of-day's own sky over a dim ground; all baked up front
+for (const [k, T] of Object.entries(TIMES)) { const es = new THREE.Scene(), sky = skyMesh(T, k === 'night'); sky.scale.setScalar(.01); es.add(sky);
+  const gnd = new THREE.Mesh(new THREE.CircleGeometry(40, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: new THREE.Color(T.grass).multiplyScalar(.35) })); gnd.position.y = -2; es.add(gnd);
+  ENV[k] = pmrem.fromScene(es, .02, .1, 200).texture; es.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); }
 const hemi = new THREE.HemisphereLight('#fff', '#444', 1); scene.add(hemi);
 const sun = new THREE.DirectionalLight('#fff', 3); sun.castShadow = Q !== 'low'; const SH = Q === 'high' ? 2048 : 1024; sun.shadow.mapSize.set(SH, SH);
 Object.assign(sun.shadow.camera, { left: -45, right: 45, top: 45, bottom: -45, near: 1, far: 500 }); sun.shadow.bias = -.0004; sun.shadow.normalBias = .03; scene.add(sun, sun.target);
@@ -52,7 +54,7 @@ function applyTime(T) {
   scene.fog = new THREE.Fog(T.fog, 450, 3400); scene.background = new THREE.Color(T.fog);
   hemi.color.set(T.hemi[0]); hemi.groundColor.set(T.hemi[1]); hemi.intensity = T.hemi[2];
   sun.color.set(T.sun); sun.intensity = T.sunI; sunDir.set(...T.dir).normalize(); renderer.toneMappingExposure = T.exp;
-  scene.environmentIntensity = T.lamps >= 1 ? .3 : .75; if (bloom) { bloom.strength = T.lamps >= 1 ? .7 : T.lamps ? .3 : .22; bloom.threshold = T.lamps >= 1 ? .85 : 1.35; }
+  scene.environmentIntensity = T.lamps >= 1 ? .9 : 1; if (bloom) { bloom.strength = T.lamps >= 1 ? .7 : T.lamps ? .3 : .22; bloom.threshold = T.lamps >= 1 ? .85 : 1.35; }
 }
 function disposeTree(o) { o.traverse(m => { if (m.geometry) m.geometry.dispose(); if (m.material) [].concat(m.material).forEach(mt => { if (mt.map) mt.map.dispose(); mt.dispose(); }); }); }
 
@@ -94,6 +96,7 @@ function loadTrack(id) {
   if (track && track.id === id) return;
   if (trackGroup) { scene.remove(trackGroup); disposeTree(trackGroup); }
   track = trackCache[id] || (trackCache[id] = new Track(id)); trackGroup = track.build(renderer); scene.add(trackGroup); applyTime(TIMES[track.def.time]);
+  scene.environment = ENV[track.def.time];
   lineMesh = buildLine(); trackGroup.add(lineMesh);
   const mm = track.minimap(200), x = mmBase.getContext('2d'); mmBase.width = mmBase.height = mmDots.width = mmDots.height = 200; x.clearRect(0, 0, 200, 200); x.drawImage(mm, 0, 0);
 }
@@ -266,8 +269,17 @@ function lapLogic(c) {
     if (S.mode !== 'tt' && c.lap > R.laps && !c.done) { c.done = true; c.finishT = R.t; if (c.isPlayer) playerFinish(); }
     else if (c.isPlayer && S.mode !== 'tt' && c.lap === R.laps && R.laps > 1) setTimeout(() => showMsg('FINAL LAP', 'final', 2), 1700);
   }
+  if (c.lap >= 1) { const L3 = track.L / 3, sk = c.s < L3 ? 0 : c.s < 2 * L3 ? 1 : 2;
+    if (c.sk === undefined) { c.sk = sk; c.secStart = R.t; } else if (sk !== c.sk) { if (sk === (c.sk + 1) % 3) sector(c, c.sk, R.t - c.secStart); c.sk = sk; c.secStart = R.t; } }
   if (c.lap >= 1) { const k = Math.floor(c.s / 100); if (k !== c.cpK) { c.cpK = k; c.cp.set(c.lap * 1000 + k, R.t); c.lastKey = c.lap * 1000 + k; } }
 }
+function sector(c, k, t) {
+  c.bestSec = c.bestSec || []; let col = 'y';
+  if (!R.bestSec[k] || t < R.bestSec[k]) { R.bestSec[k] = t; col = 'p'; } else if (!c.bestSec[k] || t < c.bestSec[k]) col = 'g';
+  if (!c.bestSec[k] || t < c.bestSec[k]) c.bestSec[k] = t;
+  if (c.isPlayer) { if (k === 0) R.sec = [null, null, null]; R.sec[k] = [col, t]; paintSectors(); }
+}
+function paintSectors() { for (let k = 0; k < 3; k++) { const e = $('s' + (k + 1)), v = R.sec[k]; e.className = v ? v[0] : ''; e.textContent = v ? v[1].toFixed(3) : 'S' + (k + 1); } }
 function ttLap(lt) { const prev = bestOf(track.id); if (!prev || lt < prev) { try { localStorage.setItem('jkgp-best-' + track.id, lt.toFixed(3)); } catch (e) {} showMsg('NEW RECORD', 'purple', 2.2, fmt(lt)); Audio.purple();
   if (ghost && ghost.rec.length) { ghost.best = ghost.rec.slice(); try { localStorage.setItem('jkgp-ghost-' + track.id, JSON.stringify(ghost.best.map(v => Math.round(v * 100) / 100))); } catch (e) {} } } }
 
@@ -285,13 +297,13 @@ function step(h) {
 /* ------------------------------------------------------------------ flow */
 function startRace() {
   Audio.init(); save(); loadTrack(S.track); R.laps = S.mode === 'tt' ? 999 : S.laps;
-  setupGrid(false); Object.assign(R, { phase: S.mode === 'tt' ? 'race' : 'lights', paused: false, t: 0, lt: 0, lights: 0, hold: .4 + Math.random() * 1.6, fast: { t: 0, c: null }, finishAt: 0, resultsShown: false, camMode: S.cam, shake: 0 });
+  setupGrid(false); Object.assign(R, { phase: S.mode === 'tt' ? 'race' : 'lights', paused: false, t: 0, lt: 0, lights: 0, hold: .4 + Math.random() * 1.6, bestSec: [], sec: [null, null, null], lastPos: 0, fast: { t: 0, c: null }, finishAt: 0, resultsShown: false, camMode: S.cam, shake: 0 });
   cars.forEach(c => { c.lap = 0; c.lapStart = 0; }); if (S.mode === 'tt') { player.lap = 0; }
   lineMesh.visible = S.line; buildTower(); document.body.className = 'playing' + (isTouch ? ' touch' : '') + (S.mode === 'tt' ? ' tt' : '');
   $('menu').classList.remove('on'); $('results').classList.remove('on'); $('pause').classList.remove('on'); $('hud').classList.add('on');
   $('lapsTot').textContent = S.mode === 'tt' ? '' : '/' + R.laps; camInit = false; setCockpit();
   if (S.mode === 'tt') showMsg('TIME TRIAL', '', 2, bestOf(track.id) ? 'Record ' + fmt(bestOf(track.id)) : 'Set a lap time'); else showMsg(track.def.name.toUpperCase(), '', 2.4, `${R.laps} lap${R.laps > 1 ? 's' : ''} · ${S.diff.toUpperCase()}`);
-  paintLights(); last = performance.now();
+  paintLights(); paintSectors(); last = performance.now();
 }
 function playerFinish() {
   player.auto = true; const pos = order().indexOf(player) + 1; R.finishAt = R.t; stats.races++; if (pos === 1) stats.wins++; if (pos <= 3) stats.podiums++; try { localStorage.setItem('jkgp-stats', JSON.stringify(stats)); } catch (e) {}
@@ -340,7 +352,7 @@ function updateCamera(dt) {
   if (R.camMode === 'orbit') { R.orbitT += dt * .12; const r = R.phase === 'menu' ? 7.4 : 11, a = R.orbitT + (R.phase === 'menu' ? 2.4 : 0);
     const tx = c.x + Math.sin(a) * r, tz = c.z + Math.cos(a) * r; if (R.phase === 'menu') { cam.position.set(tx, 1.55 + Math.sin(R.orbitT * .7) * .3, tz); cam.lookAt(c.x, .55, c.z); } else { camPos.lerp(v3.set(tx, 3.2, tz), 1 - Math.exp(-dt * 2)); cam.position.copy(camPos); cam.lookAt(c.x, .6, c.z); } fov = R.phase === 'menu' ? 40 : 50; }
   else if (R.camMode === 'chase' || R.camMode === 'far') {
-    const far = R.camMode === 'far', dist = (far ? 9.6 : 6.4) + c.v * .012, hgt = far ? 3.1 : 1.95;
+    const far = R.camMode === 'far', dist = (far ? 9.6 : 6.0) + c.v * .012, hgt = far ? 3.1 : 1.8;
     if (!camInit) { camYaw = c.yaw; camInit = true; } camYaw += angD(c.yaw, camYaw) * (1 - Math.exp(-dt * (far ? 5 : 7)));
     const fx = Math.sin(camYaw), fz = Math.cos(camYaw); cam.position.set(c.x - fx * dist, hgt, c.z - fz * dist); cam.lookAt(c.x + Math.sin(c.yaw) * 5, far ? 1 : .95, c.z + Math.cos(c.yaw) * 5);
     fov = 60 + Math.max(0, c.v) * .16 + (c.ersOn ? 2 : 0);
@@ -349,7 +361,7 @@ function updateCamera(dt) {
     fov = (ck ? 70 : 66) + Math.max(0, c.v) * .1; }
   if (R.shake > 0) { R.shake = Math.max(0, R.shake - dt * 2); const s = R.shake * .12; cam.position.x += (Math.random() - .5) * s; cam.position.y += (Math.random() - .5) * s; }
   if (R.camMode !== 'orbit' && (c.surface === 'kerb' || c.surface === 'gravel') && c.v > 5) { cam.position.y += (Math.random() - .5) * .025; }
-  cam.fov = lerp(cam.fov, fov, 1 - Math.exp(-dt * 4)); cam.updateProjectionMatrix();
+  cam.fov = clamp(lerp(cam.fov, fov, 1 - Math.exp(-dt * 4)), 30, 100); cam.updateProjectionMatrix();
   sun.position.set(c.x + sunDir.x * 200, sunDir.y * 200, c.z + sunDir.z * 200); sun.target.position.set(c.x, 0, c.z);
   if (trackGroup) trackGroup.userData.sky.position.set(cam.position.x, 0, cam.position.z);
   const sc = renderer.domElement.height / (2 * Math.tan(cam.fov * Math.PI / 360)); smoke.mat.uniforms.scale.value = sparks.mat.uniforms.scale.value = sc;
@@ -362,6 +374,7 @@ function buildTower() { const el = $('tower'); el.innerHTML = ''; towerRows.leng
   el.style.height = cars.length * 26 + 'px'; }
 function updateTower() {
   const o = order(); R.order = o; const lead = o[0];
+  if (player && S.mode !== 'tt' && R.phase === 'race' && R.t > 4 && !player.done) { const p = o.indexOf(player) + 1; if (R.lastPos && p !== R.lastPos) { const up = p < R.lastPos, pw = $('posW'); pw.classList.remove('up', 'dn'); void pw.offsetWidth; pw.classList.add(up ? 'up' : 'dn'); if (up) note('▲ Overtake · P' + p); } R.lastPos = p; }
   o.forEach((c, k) => { c.pos = k + 1; });
   towerRows.forEach(r => { const c = r.c, k = c.pos - 1; r.d.style.transform = `translateY(${k * 26}px)`; r.b.textContent = c.pos;
     let gap = ''; if (S.mode === 'tt') gap = c.best ? fmt(c.best) : '';
@@ -382,6 +395,7 @@ function updateHUD(dt) {
   setLeds(c.mesh, f, lim);
   const pos = c.pos || 1; setTxt('pos', S.mode === 'tt' ? 'TT' : 'P' + pos); setTxt('posOf', S.mode === 'tt' ? '' : '/' + cars.length);
   setTxt('lapN', Math.max(1, Math.min(c.lap, R.laps)));
+  $('thrB').style.transform = `scaleY(${(c.thr || 0).toFixed(2)})`; $('brkB').style.transform = `scaleY(${(c.brk || 0).toFixed(2)})`; setTxt('tLap', 'LAP ' + Math.max(1, Math.min(c.lap, R.laps)) + (S.mode === 'tt' ? '' : ' / ' + R.laps));
   setTxt('tCur', c.lap >= 1 && R.phase !== 'lights' ? fmt(R.t - c.lapStart) : fmt(0)); setTxt('tLast', fmt(c.last)); setTxt('tBest', fmt(S.mode === 'tt' ? (bestOf(track.id) || c.best) : c.best));
   $('tCur').classList.toggle('inv', !!c.inval);
   // delta vs ghost (TT)
@@ -444,7 +458,7 @@ $('go').onclick = () => { Audio.init(); Audio.click(); startRace(); };
 /* ------------------------------------------------------------------ loop */
 let last = performance.now(), acc = 0, fpsT = 0, fpsN = 0;
 function frame(now) {
-  requestAnimationFrame(frame); const dt = Math.min(.05, (now - last) / 1000); last = now;
+  requestAnimationFrame(frame); const dt = clamp((now - last) / 1000, 0, .05); last = Math.max(last, now);
   pollPad(); R.inp = readInput();
   if (R.phase !== 'menu' && !R.paused) { acc += dt; let n = 0; while (acc >= H && n < 12) { step(H); acc -= H; n++; } if (n >= 12) acc = 0; }
   if (R.phase === 'menu') { player && (player.v = 0); }
