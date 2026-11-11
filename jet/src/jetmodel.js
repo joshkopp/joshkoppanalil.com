@@ -5,12 +5,12 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 export const JETS = {
-  viper: { name: 'F-16 Viper', blurb: 'Light and twitchy. Turns on a dime.', len: 15, span: 4.7, twinTail: false, twinEngine: false, canard: false, hp: 90, agility: 1.22, speed: 1.0, missiles: 6, gun: 1, style: 'viper' },
-  raptor: { name: 'F-22 Raptor', blurb: 'Stealthy all-rounder with thrust vectoring.', len: 18.5, span: 6.8, twinTail: true, twinEngine: true, canard: false, hp: 110, agility: 1.08, speed: 1.12, missiles: 8, gun: 1.1, style: 'raptor' },
-  striker: { name: 'Su-35 Striker', blurb: 'Heavy hitter. Tough, loads of missiles.', len: 21, span: 7.4, twinTail: true, twinEngine: true, canard: true, hp: 150, agility: .9, speed: 1.0, missiles: 12, gun: 1.25, style: 'striker' },
+  raptor: { name: 'F-22 Raptor', blurb: 'Stealthy all-rounder with thrust vectoring.', len: 18.9, span: 6.78, twinTail: true, twinEngine: true, canard: false, hp: 110, agility: 1.08, speed: 1.12, missiles: 8, gun: 1.1, style: 'raptor' },
+  viper: { name: 'F-35 Lightning II', blurb: 'Light and twitchy single-engine stealth jet.', len: 15.7, span: 5.35, twinTail: true, twinEngine: false, canard: false, hp: 90, agility: 1.22, speed: 1.0, missiles: 6, gun: 1, style: 'viper' },
+  striker: { name: 'Su-57 Felon', blurb: 'Heavy hitter. Tough, loads of missiles.', len: 20.1, span: 7.0, twinTail: true, twinEngine: true, canard: false, hp: 150, agility: .9, speed: 1.0, missiles: 12, gun: 1.25, style: 'striker' },
 };
 export const PAINTS = {
-  gray: ['#8d969e', '#6d7680', 'Air superiority', 'two'], desert: ['#b38f62', '#7a5c3b', 'Desert camo', 'camo'], black: ['#2b2e33', '#1c1e21', 'Night ops', 'two'],
+  gray: ['#9ea5ad', '#737b84', 'Stealth gray', 'blob'], desert: ['#b38f62', '#7a5c3b', 'Desert camo', 'camo'], black: ['#2b2e33', '#1c1e21', 'Night ops', 'two'],
   navy: ['#4a6687', '#30455f', 'Navy blue', 'two'], red: ['#3a3d42', '#8f2a2f', 'Aggressor', 'splinter'],
 };
 
@@ -23,6 +23,7 @@ function skinTex(paint) {
   g.fillStyle = a; g.fillRect(0, 0, S, S);
   if (pat === 'camo') for (let k = 0; k < 40; k++) { g.fillStyle = k % 3 ? b : '#9a7b50'; g.beginPath(); const x = r() * S, y = r() * S; g.moveTo(x, y); for (let q = 0; q < 9; q++) g.quadraticCurveTo(x + (r() - .5) * 260, y + (r() - .5) * 260, x + (r() - .5) * 220, y + (r() - .5) * 220); g.closePath(); g.fill(); }
   if (pat === 'splinter') for (let k = 0; k < 34; k++) { g.fillStyle = k % 2 ? b : '#24262a'; g.beginPath(); const x = r() * S, y = r() * S; g.moveTo(x, y); g.lineTo(x + (r() - .3) * 300, y + (r() - .5) * 120); g.lineTo(x + (r() - .5) * 200, y + (r() - .2) * 260); g.closePath(); g.fill(); }
+  if (pat === 'blob') { g.filter = 'blur(10px)'; for (let k = 0; k < 26; k++) { g.fillStyle = b; g.globalAlpha = .55 + r() * .3; g.beginPath(); const x = r() * S, y = r() * S, R = 50 + r() * 120; for (let q = 0; q <= 10; q++) { const an = q / 10 * Math.PI * 2, rr = R * (.6 + r() * .6); g.lineTo(x + Math.cos(an) * rr * 1.4, y + Math.sin(an) * rr); } g.closePath(); g.fill(); } g.filter = 'none'; g.globalAlpha = 1; }
   if (pat === 'two') { const gr = g.createLinearGradient(0, 0, 0, S); gr.addColorStop(0, b); gr.addColorStop(.5, a); gr.addColorStop(1, b); g.globalAlpha = .55; g.fillStyle = gr; g.fillRect(0, 0, S, S); g.globalAlpha = 1; }
   for (let k = 0; k < 2200; k++) { g.fillStyle = `rgba(${r() < .5 ? '255,255,255' : '0,0,0'},${.015 + r() * .03})`; g.fillRect(r() * S, r() * S, 2 + r() * 14, 1 + r() * 3); }
   g.strokeStyle = 'rgba(0,0,0,.28)'; g.lineWidth = 2;
@@ -47,7 +48,7 @@ function decal(enemy) {
   const key = enemy ? 'e' : 'p'; if (decalTex[key]) return decalTex[key];
   const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); g.translate(64, 64);
   if (enemy) { g.fillStyle = '#c0262e'; g.beginPath(); for (let k = 0; k < 3; k++) { const a = k * 2.094 - 1.57; g.moveTo(0, 0); g.lineTo(Math.cos(a - .35) * 58, Math.sin(a - .35) * 58); g.lineTo(Math.cos(a + .35) * 58, Math.sin(a + .35) * 58); } g.fill(); g.fillStyle = '#16171a'; g.beginPath(); g.arc(0, 0, 18, 0, 7); g.fill(); }
-  else { g.fillStyle = 'rgba(40,44,48,.85)'; g.beginPath(); g.arc(0, 0, 58, 0, 7); g.fill(); g.fillStyle = '#b8f36b'; g.beginPath(); g.arc(0, 0, 44, 0, 7); g.fill(); g.fillStyle = 'rgba(40,44,48,.95)'; g.font = '900 48px Arial'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('JK', 0, 3); }
+  else { g.strokeStyle = 'rgba(70,76,84,.8)'; g.lineWidth = 6; g.beginPath(); g.arc(0, 0, 50, 0, 7); g.stroke(); g.fillStyle = 'rgba(70,76,84,.75)'; g.font = '900 46px Arial'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('JK', 0, 3); g.fillRect(-62, -5, 10, 10); g.fillRect(52, -5, 10, 10); }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return (decalTex[key] = t);
 }
 
@@ -91,8 +92,8 @@ function interp(tab, t, c) {
   const h = tab[i + 1][0] - tab[i][0], s = (t - tab[i][0]) / h, s2 = s * s, s3 = s2 * s;
   return (2 * s3 - 3 * s2 + 1) * tab[i][c] + (s3 - 2 * s2 + s) * h * sl(i) + (-2 * s3 + 3 * s2) * tab[i + 1][c] + (s3 - s2) * h * sl(i + 1);
 }
-// Smooth body of revolution-ish lofts. rows: [t, halfWidth, top, bottom, yChine, topExp, botExp] in metres (already scaled).
-function body(tab, L, { rings = 64, seg = 40, x = 0, t0 = tab[0][0], t1 = tab[tab.length - 1][0], cap = false, bias = 1.2 } = {}) {
+// Smooth superellipse loft. rows: [t, halfWidth, top, bottom, yCentre, topExp, botExp] in metres.
+function body(tab, L, { rings = 64, seg = 40, x = 0, t0 = tab[0][0], t1 = tab[tab.length - 1][0], bias = 1.2 } = {}) {
   const pos = [], uv = [];
   for (let r = 0; r <= rings; r++) {
     const t = t0 + (t1 - t0) * Math.pow(r / rings, bias), w = interp(tab, t, 1), tp = interp(tab, t, 2), bt = interp(tab, t, 3), yc = interp(tab, t, 4), nT = interp(tab, t, 5), nB = interp(tab, t, 6), zz = -L / 2 + t * L;
@@ -100,9 +101,40 @@ function body(tab, L, { rings = 64, seg = 40, x = 0, t0 = tab[0][0], t1 = tab[ta
       pos.push(x + Math.sign(ca) * Math.pow(Math.abs(ca), e) * w, yc + Math.sign(sa) * Math.pow(Math.abs(sa), e) * (up ? tp : bt), zz); uv.push(i / seg * 3, zz / 8); }
   }
   const idx = []; for (let r = 0; r < rings; r++) for (let i = 0; i < seg; i++) { const a = r * (seg + 1) + i, b = a + seg + 1; idx.push(a, a + 1, b, b, a + 1, b + 1); }
-  if (cap) { const c = pos.length / 3, zz = -L / 2 + t1 * L; pos.push(x, interp(tab, t1, 4), zz); uv.push(0, 0); const base = rings * (seg + 1); for (let i = 0; i < seg; i++) idx.push(base + i, base + i + 1, c); }
   return finish(pos, uv, idx);
 }
+// Faceted stealth loft: every station is a polygon of control points (half-section from top centre to bottom centre when mirrored).
+// Control points flagged sharp stay hard creases (chines, intake lips); the rest are rounded with Chaikin subdivision.
+function chaikin(P, F) { const o = [], f = [], m = P.length; for (let i = 0; i < m; i++) { const p = P[i], a = P[(i + m - 1) % m], b = P[(i + 1) % m];
+  if (F[i]) { o.push(p); f.push(true); } else { o.push([.75 * p[0] + .25 * a[0], .75 * p[1] + .25 * a[1]], [.75 * p[0] + .25 * b[0], .75 * p[1] + .25 * b[1]]); f.push(false, false); } } return [o, f]; }
+function shell(st, L, { rings = 70, iters = 2, sharp = [], mirror = true, bias = 1.15 } = {}) {
+  const n = st[0][1].length, cols = []; for (let j = 0; j < n; j++) cols.push(st.map(([t, p]) => [t, p[j][0], p[j][1]]));
+  const loopOf = p => mirror ? [...p, ...p.slice(1, -1).reverse().map(([x, y]) => [-x, y])] : p;
+  const flags0 = mirror ? [...Array(n).keys()].map(j => sharp.includes(j)).concat([...Array(n - 2).keys()].map(q => sharp.includes(n - 2 - q))) : [...Array(n).keys()].map(j => sharp.includes(j));
+  const pos = [], uv = [], idx = [], rIn = [], rOut = [], seams = [], t0 = st[0][0], t1 = st[st.length - 1][0];
+  for (let r = 0; r <= rings; r++) {
+    const t = t0 + (t1 - t0) * Math.pow(r / rings, bias), zz = -L / 2 + t * L; let P = loopOf(cols.map(c => [interp(c, t, 1), interp(c, t, 2)])), F = flags0;
+    for (let k = 0; k < iters; k++) [P, F] = chaikin(P, F);
+    const m = P.length, I = [], O = []; let u = 0;
+    for (let j = 0; j <= m; j++) { const p = P[j % m]; if (j) u += Math.hypot(p[0] - P[j - 1][0], p[1] - P[(j - 1) % m][1]);
+      const v = () => { pos.push(p[0], p[1], zz); uv.push(u / 8, zz / 8); return pos.length / 3 - 1; };
+      const a = v(), b = (F[j % m] && j > 0 && j < m) ? v() : a; I.push(a); O.push(b); }
+    if (!F[0]) seams.push([O[0], I[m]]); rIn.push(I); rOut.push(O);
+  }
+  for (let r = 0; r < rings; r++) for (let j = 0; j < rIn[r].length - 1; j++) { const a = rOut[r][j], b = rIn[r][j + 1], c = rOut[r + 1][j], d = rIn[r + 1][j + 1]; idx.push(a, b, c, c, b, d); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+  // outward check on a mid ring, then weld the uv seam normals
+  const mr = rOut[rings >> 1], p = g.attributes.position, nn = g.attributes.normal; let cx = 0, cy = 0; mr.forEach(i => { cx += p.getX(i); cy += p.getY(i); }); cx /= mr.length; cy /= mr.length;
+  const q = mr[Math.floor(mr.length / 4)]; if ((p.getX(q) - cx) * nn.getX(q) + (p.getY(q) - cy) * nn.getY(q) < 0) { const ix = g.index.array; for (let i = 0; i < ix.length; i += 3) { const s = ix[i + 1]; ix[i + 1] = ix[i + 2]; ix[i + 2] = s; } g.computeVertexNormals(); }
+  seams.forEach(([a, b]) => { if (a === b) return; const x = nn.getX(a) + nn.getX(b), y = nn.getY(a) + nn.getY(b), z = nn.getZ(a) + nn.getZ(b), l = Math.hypot(x, y, z) || 1; nn.setXYZ(a, x / l, y / l, z / l); nn.setXYZ(b, x / l, y / l, z / l); });
+  return g;
+}
+// flat polygon facing -Z (into the airflow), e.g. a dark intake face
+function face(pts, zz, inset = .9) { let cx = 0, cy = 0; pts.forEach(([x, y]) => { cx += x; cy += y; }); cx /= pts.length; cy /= pts.length;
+  const pos = [cx, cy, zz], idx = []; pts.forEach(([x, y]) => pos.push(cx + (x - cx) * inset, cy + (y - cy) * inset, zz)); for (let i = 0; i < pts.length; i++) idx.push(0, 1 + i, 1 + (i + 1) % pts.length);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(new Array(pos.length / 3 * 2).fill(0), 2)); g.setIndex(idx); g.computeVertexNormals();
+  if (g.attributes.normal.getZ(0) > 0) { const ix = g.index.array; for (let i = 0; i < ix.length; i += 3) { const s = ix[i + 1]; ix[i + 1] = ix[i + 2]; ix[i + 2] = s; } g.computeVertexNormals(); } return g; }
+const oct = (x, y, w, h, c) => [[x + w - c, y + h], [x + w, y + h - c], [x + w, y - h + c], [x + w - c, y - h], [x - w + c, y - h], [x - w, y - h + c], [x - w, y + h - c], [x - w + c, y + h]];
 // Lifting surface with a real airfoil: secs = [[spanX, y, zLE, zTE, thicknessRatio], ...] from root to tip.
 function aero(secs, { nC = 14, sub = 1 } = {}) {
   const S = []; for (let i = 0; i < secs.length - 1; i++) for (let j = 0; j < sub; j++) { const a = j / sub; S.push(secs[i].map((v, q) => v * (1 - a) + secs[i + 1][q] * a)); } S.push(secs[secs.length - 1]);
@@ -117,118 +149,141 @@ function aero(secs, { nC = 14, sub = 1 } = {}) {
   return finish(pos, uv, idx);
 }
 function finish(pos, uv, idx) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); return orient(g); }
-// make every triangle face outward (signed volume test), then smooth normals
+// make every triangle face outward (signed volume test, closed meshes), then smooth normals
 function orient(g) { const p = g.attributes.position, ix = g.index.array, A = new THREE.Vector3(), B = new THREE.Vector3(), C = new THREE.Vector3(); let vol = 0;
   for (let i = 0; i < ix.length; i += 3) { A.fromBufferAttribute(p, ix[i]); B.fromBufferAttribute(p, ix[i + 1]); C.fromBufferAttribute(p, ix[i + 2]); vol += A.dot(B.cross(C)); }
   if (vol < 0) for (let i = 0; i < ix.length; i += 3) { const t = ix[i + 1]; ix[i + 1] = ix[i + 2]; ix[i + 2] = t; }
   g.computeVertexNormals(); return g; }
 function mirrorX(g) { const m = g.clone(); m.scale(-1, 1, 1); const ix = m.index.array; for (let i = 0; i < ix.length; i += 3) { const t = ix[i + 1]; ix[i + 1] = ix[i + 2]; ix[i + 2] = t; } m.computeVertexNormals(); return m; }
 const both = (g, list) => { list.push(g, mirrorX(g)); };
-// a fin built span-wise along +X, stood up; cant tilts its top outward (radians); positioned at (x,y)
+// a fin built span-wise along +X, stood up; cant tilts its top outward (radians)
 function finGeo(secs, cant, x, y, opt) { const g = aero(secs, opt); g.rotateZ(Math.PI / 2 - cant); g.translate(x, y, 0); return g; }
 function wingAt(W, f) { const [r, t] = [W[0], W[W.length - 1]], x = r[0] + (t[0] - r[0]) * f; let i = 0; while (i < W.length - 2 && x > W[i + 1][0]) i++; const a = (x - W[i][0]) / (W[i + 1][0] - W[i][0]);
   const s = W[i].map((v, q) => v * (1 - a) + W[i + 1][q] * a); return { x, y: s[1], le: s[2], te: s[3], tr: s[4], c: s[3] - s[2] }; }
 
+// ------------------------------------------------ the three stealth fighters
+// Half-sections: top centre → upper (hump) → upper side → CHINE (sharp, idx 3) → lower side → lower corner → bottom → bottom centre.
+const DESIGNS = {
+  raptor: { L0: 18.9, // F-22: diamond chined nose, twin engine humps with a valley between, caret intakes, 2D nozzles
+    body: [[0, [[0, .006], [.003, .005], [.006, .002], [.008, 0], [.006, -.002], [.003, -.004], [.001, -.005], [0, -.005]]],
+      [.04, [[0, .14], [.07, .12], [.14, .06], [.2, 0], [.15, -.06], [.08, -.11], [.03, -.13], [0, -.13]]],
+      [.1, [[0, .36], [.18, .33], [.36, .17], [.48, 0], [.38, -.14], [.22, -.25], [.08, -.28], [0, -.29]]],
+      [.18, [[0, .55], [.27, .5], [.52, .26], [.66, .02], [.55, -.2], [.36, -.36], [.12, -.41], [0, -.41]]],
+      [.27, [[0, .64], [.32, .6], [.6, .34], [.76, .05], [.68, -.2], [.5, -.4], [.16, -.46], [0, -.46]]],
+      [.36, [[0, .66], [.42, .64], [.86, .42], [1.2, .08], [1.12, -.14], [.95, -.4], [.3, -.48], [0, -.48]]],
+      [.45, [[0, .6], [.56, .67], [1.08, .44], [1.66, .04], [1.52, -.14], [1.2, -.42], [.4, -.5], [0, -.5]]],
+      [.58, [[0, .52], [.62, .66], [1.16, .44], [1.76, .03], [1.6, -.14], [1.25, -.42], [.4, -.48], [0, -.48]]],
+      [.72, [[0, .46], [.6, .6], [1.1, .4], [1.6, .02], [1.48, -.13], [1.18, -.38], [.4, -.44], [0, -.44]]],
+      [.85, [[0, .36], [.6, .52], [1.0, .34], [1.3, 0], [1.22, -.12], [1.0, -.32], [.4, -.38], [0, -.38]]],
+      [.95, [[0, .26], [.56, .42], [.92, .28], [1.08, 0], [1.02, -.1], [.9, -.26], [.4, -.32], [0, -.32]]],
+      [1, [[0, .24], [.55, .38], [.88, .26], [1.0, 0], [.95, -.1], [.85, -.24], [.4, -.3], [0, -.3]]]],
+    intake: [[.25, [[.6, .32], [1.2, .06], [1.1, -.48], [.58, -.5]]], [.32, [[.62, .34], [1.27, .08], [1.15, -.5], [.58, -.52]]], [.42, [[.7, .38], [1.4, .1], [1.24, -.5], [.6, -.52]]], [.52, [[.82, .42], [1.5, .07], [1.3, -.46], [.7, -.5]]]],
+    W: [[1.5, .03, z => z(.405), z => z(.79), .035], [6.78, -.22, z => z(.66), z => z(.752), .03]],
+    HS: [[1.0, 0, z => z(.8), z => z(1.0), .035], [4.4, -.04, z => z(.955), z => z(1.02), .03]],
+    VT: { x: 1.25, y: .26, cant: .49, secs: [[0, 0, z => z(.615), z => z(.865), .04], [2.65, 0, z => z(.755), z => z(.84), .035]] },
+    ex: [-.55, .55], ey: 0, nr: .38, nozzle: '2d', canopy: [.09, .35], cw: 1.2, ch: 1.05, frame: false,
+    pyl: [.78, .56, .34, .14],
+  },
+  viper: { L0: 15.7, // F-35: chunkier humped single-engine body, trapezoid wing, round sawtooth nozzle
+    body: [[0, [[0, .006], [.003, .005], [.006, .002], [.008, 0], [.006, -.002], [.003, -.004], [.001, -.005], [0, -.005]]],
+      [.04, [[0, .14], [.07, .12], [.15, .05], [.2, 0], [.15, -.06], [.08, -.11], [.03, -.13], [0, -.13]]],
+      [.1, [[0, .38], [.2, .34], [.38, .18], [.5, 0], [.4, -.15], [.24, -.27], [.08, -.3], [0, -.31]]],
+      [.19, [[0, .6], [.28, .55], [.55, .3], [.7, .02], [.6, -.22], [.4, -.4], [.14, -.46], [0, -.46]]],
+      [.28, [[0, .74], [.36, .68], [.68, .4], [.86, .05], [.78, -.24], [.58, -.46], [.18, -.52], [0, -.52]]],
+      [.38, [[0, .82], [.45, .76], [.9, .46], [1.3, .08], [1.22, -.2], [1.0, -.48], [.3, -.56], [0, -.56]]],
+      [.5, [[0, .84], [.55, .78], [1.05, .48], [1.5, .06], [1.4, -.18], [1.1, -.48], [.35, -.58], [0, -.58]]],
+      [.64, [[0, .78], [.55, .74], [1.0, .46], [1.45, .04], [1.35, -.16], [1.05, -.44], [.35, -.54], [0, -.54]]],
+      [.78, [[0, .68], [.5, .64], [.88, .4], [1.2, .02], [1.12, -.14], [.9, -.38], [.35, -.48], [0, -.48]]],
+      [.9, [[0, .58], [.42, .54], [.72, .34], [.92, 0], [.86, -.12], [.72, -.32], [.3, -.42], [0, -.42]]],
+      [.97, [[0, .52], [.38, .48], [.62, .3], [.74, 0], [.7, -.12], [.6, -.28], [.3, -.38], [0, -.4]]],
+      [1, [[0, .5], [.35, .46], [.58, .28], [.68, 0], [.65, -.12], [.56, -.26], [.28, -.36], [0, -.38]]]],
+    intake: [[.26, [[.58, .42], [1.1, .2], [1.02, -.4], [.55, -.42]]], [.33, [[.6, .44], [1.16, .2], [1.06, -.42], [.55, -.44]]], [.43, [[.7, .46], [1.3, .18], [1.16, -.42], [.6, -.44]]], [.52, [[.82, .5], [1.4, .12], [1.22, -.42], [.7, -.46]]]],
+    W: [[1.4, .04, z => z(.47), z => z(.83), .04], [5.35, -.1, z => z(.64), z => z(.73), .035]],
+    HS: [[.7, .02, z => z(.84), z => z(1.03), .035], [3.45, 0, z => z(.99), z => z(1.045), .03]],
+    VT: { x: .9, y: .46, cant: .44, secs: [[0, 0, z => z(.65), z => z(.865), .045], [2.15, 0, z => z(.79), z => z(.86), .04]] },
+    ex: [0], ey: .05, nr: .52, nozzle: 'round', canopy: [.1, .34], cw: 1.05, ch: 1.0, frame: true,
+    pyl: [.8, .55, .3],
+  },
+  striker: { L0: 20.1, // Su-57: long flat lifting body, LEVCONs, widely spaced underslung nacelles with a tunnel between, long stinger
+    body: [[0, [[0, .006], [.003, .005], [.006, .002], [.008, 0], [.006, -.002], [.003, -.004], [.001, -.005], [0, -.005]]],
+      [.03, [[0, .12], [.06, .1], [.12, .04], [.16, 0], [.12, -.05], [.06, -.1], [.02, -.11], [0, -.11]]],
+      [.09, [[0, .36], [.18, .32], [.34, .16], [.44, 0], [.36, -.14], [.2, -.25], [.07, -.28], [0, -.29]]],
+      [.18, [[0, .58], [.26, .52], [.5, .28], [.64, .02], [.54, -.18], [.36, -.34], [.12, -.4], [0, -.4]]],
+      [.28, [[0, .64], [.3, .6], [.62, .34], [1.0, .06], [.86, -.12], [.5, -.3], [.15, -.36], [0, -.36]]],
+      [.38, [[0, .6], [.4, .57], [1.1, .3], [1.95, .05], [1.75, -.08], [1.0, -.2], [.3, -.28], [0, -.28]]],
+      [.5, [[0, .52], [.5, .5], [1.3, .27], [2.2, .04], [2.0, -.06], [1.2, -.15], [.3, -.21], [0, -.21]]],
+      [.65, [[0, .46], [.5, .45], [1.3, .25], [2.05, .03], [1.85, -.05], [1.1, -.13], [.3, -.19], [0, -.19]]],
+      [.8, [[0, .36], [.42, .34], [1.0, .2], [1.45, .02], [1.32, -.04], [.9, -.11], [.25, -.15], [0, -.15]]],
+      [.92, [[0, .24], [.25, .22], [.45, .12], [.56, 0], [.5, -.06], [.4, -.1], [.15, -.12], [0, -.12]]],
+      [1.06, [[0, .06], [.05, .05], [.1, .02], [.12, 0], [.1, -.02], [.06, -.04], [.02, -.05], [0, -.05]]]],
+    nacelle: [[.3, .46, .3, .04], [.42, .47, .34, .1], [.62, .47, .42, .24], [.85, .46, .45, .28], [1.0, .44, .44, .27]], nx: 1.12, ny: -.4,
+    W: [[1.9, .05, z => z(.47), z => z(.8), .035], [7.0, -.05, z => z(.745), z => z(.81), .03]],
+    HS: [[1.55, -.12, z => z(.82), z => z(.995), .035], [4.0, -.14, z => z(.95), z => z(1.0), .03]],
+    VT: { x: 1.4, y: .14, cant: .45, secs: [[0, 0, z => z(.7), z => z(.9), .04], [2.1, 0, z => z(.82), z => z(.905), .035]] },
+    ex: [-1.12, 1.12], ey: -.4, nr: .42, nozzle: 'round', canopy: [.1, .31], cw: 1.0, ch: .95, frame: true, irst: true,
+    pyl: [.84, .64, .44, .24],
+  },
+};
+
 function airframe(J) {
-  const L = J.len, k = L / 15, P = { paint: [], dark: [], metal: [], glass: [], light: [], decal: [], pilot: [], sill: [], helm: [] }, sp = J.span, st = J.style, z = t => -L / 2 + t * L;
-  const K = rows => rows.map(([t, w, a, b, y, n1, n2]) => [t, w * k, a * k, b * k, y * k, n1, n2]);
-  let fus, W, HS, VT, ex, ey, nr, canopy;
-  if (st === 'viper') {
-    fus = K([[0, .004, .004, .004, -.06, 2, 2], [.015, .07, .07, .07, -.055, 2, 2], [.045, .17, .17, .17, -.04, 2, 2], [.09, .29, .29, .3, -.02, 2, 2], [.15, .4, .38, .4, 0, 2.1, 2.2], [.22, .5, .44, .46, 0, 2.2, 2.4], [.29, .58, .48, .5, -.02, 2.2, 2.6], [.36, .74, .54, .52, -.05, 2.2, 2.8],
-      [.44, .92, .6, .52, -.06, 2.2, 3], [.55, .96, .62, .52, -.06, 2.2, 3], [.66, .88, .6, .52, -.05, 2.2, 2.9], [.76, .72, .55, .52, -.03, 2.2, 2.6], [.86, .58, .5, .5, 0, 2.1, 2.2], [.95, .51, .48, .48, 0, 2, 2], [1, .5, .47, .47, 0, 2, 2]]);
-    W = [[.7, -.06 * k, z(.425), z(.765), .05], [2.4, -.06 * k, z(.53), z(.762), .045], [4.7, -.06 * k, z(.668), z(.755), .04]];
-    HS = [[.4, -.05, z(.835), z(.995), .05], [2.75, -.32, z(.935), z(.99), .04]];
-    VT = [{ secs: [[0, 0, z(.64), z(.935), .05], [.6 * k, 0, z(.7), z(.935), .05], [2.75 * k, 0, z(.85), z(.94), .045]], x: 0, y: .38 * k, cant: 0 }];
-    ex = [0]; ey = 0; nr = .5 * k; canopy = [.085, .355];
-  } else if (st === 'raptor') {
-    fus = K([[0, .004, .004, .004, -.02, 1.6, 1.6], [.02, .09, .05, .05, -.02, 1.6, 1.6], [.06, .24, .14, .13, 0, 1.7, 1.7], [.11, .38, .25, .21, .02, 1.8, 1.8], [.17, .5, .36, .27, .04, 1.9, 1.9], [.23, .6, .44, .31, .05, 2, 2], [.29, .74, .48, .35, .05, 2.1, 2.2], [.36, 1.08, .5, .42, .02, 2.3, 2.6],
-      [.44, 1.34, .5, .46, 0, 2.5, 3], [.56, 1.48, .5, .46, 0, 2.6, 3.2], [.68, 1.46, .48, .44, 0, 2.6, 3.2], [.8, 1.38, .44, .42, 0, 2.5, 3], [.9, 1.22, .4, .38, 0, 2.4, 2.8], [.97, 1.08, .36, .34, 0, 2.4, 2.6], [1, 1.04, .34, .33, 0, 2.4, 2.6]]);
-    W = [[1.3 * k, 0, z(.38), z(.81), .045], [6.8, 0, z(.705), z(.772), .035]];
-    HS = [[1.05 * k, 0, z(.8), z(1.0), .04], [3.7 * k * .8, 0, z(.935), z(.985), .035]];
-    VT = [-1, 1].map(s => ({ secs: [[0, 0, z(.62), z(.86), .045], [2.35 * k, 0, z(.775), z(.885), .04]], x: s * 1.15 * k, y: .3 * k, cant: s * .47 }));
-    ex = [-.56 * k, .56 * k]; ey = 0; nr = .44 * k; canopy = [.11, .33];
-  } else {
-    fus = K([[0, .004, .004, .004, -.14, 2, 2], [.018, .07, .07, .07, -.13, 2, 2], [.05, .18, .18, .18, -.09, 2, 2], [.1, .3, .3, .3, -.02, 2, 2], [.16, .38, .4, .38, .06, 2, 2.1], [.22, .44, .48, .4, .11, 2.1, 2.2], [.29, .52, .52, .38, .14, 2.2, 2.4], [.36, .66, .54, .34, .14, 2.3, 2.8],
-      [.44, .94, .5, .28, .12, 2.5, 3.2], [.54, 1.16, .44, .24, .1, 2.8, 3.6], [.66, 1.14, .42, .22, .1, 2.8, 3.6], [.78, .92, .38, .2, .1, 2.6, 3.2], [.88, .5, .3, .18, .08, 2.3, 2.4], [.97, .24, .2, .15, .05, 2, 2], [1.05, .1, .1, .1, .02, 2, 2]]);
-    W = [[1.0 * k, .08 * k, z(.445), z(.79), .045], [7.4, .02 * k, z(.715), z(.795), .035]];
-    HS = [[1.2 * k, -.18 * k, z(.85), z(1.01), .04], [3.4 * k, -.2 * k, z(.955), z(1.005), .035]];
-    VT = [-1, 1].map(s => ({ secs: [[0, 0, z(.655), z(.905), .045], [2.45 * k, 0, z(.85), z(.93), .04]], x: s * 1.18 * k, y: .1 * k, cant: s * .06 }));
-    ex = [-.7 * k, .7 * k]; ey = -.25 * k; nr = .44 * k; canopy = [.11, .33];
-  }
-  const T = t => interp(fus, t, 4) + interp(fus, t, 2), top = t => T(t);
-  P.paint.push(body(fus, L, { rings: 90, seg: 44 }));
-  // radome tip, pitot, IRST / sensor ball
-  P.metal.push(place(new THREE.CylinderGeometry(.01 * k, .018 * k, .6 * k, 8), 0, fus[0][4], z(0) - .27 * k, Math.PI / 2));
-  if (st === 'striker') P.glass.push(place(new THREE.SphereGeometry(.12 * k, 14, 10), .18 * k, T(.1) + .02 * k, z(.1)));
-  // ---- canopy (bubble), sills, seat, pilot
-  const [c0, c1] = canopy;
-  const cs = [[c0, .02, .02], [c0 + .03, .17, .16], [c0 + .08, .3, .34], [(c0 + c1) / 2 + .02, .35, .42], [c1 - .07, .3, .32], [c1 - .02, .16, .14], [c1, .04, .03]].map(([t, w, h]) => [t, w * k, h * k, top(t) - .08 * k, 2]);
+  const L = J.len, P = { paint: [], dark: [], metal: [], glass: [], light: [], decal: [], pilot: [], sill: [], helm: [] }, st = J.style, D = DESIGNS[st], z = t => -L / 2 + t * L;
+  const S = L / D.L0, k = L / 15; // design tables are drawn for the real jet's length L0 and scaled to the game length
+  const sc = rows => rows.map(([t, pts]) => [t, pts.map(([x, y]) => [x * S, y * S])]);
+  const fus = sc(D.body), topT = fus.map(([t, p]) => [t, p[0][1]]), botT = fus.map(([t, p]) => [t, p[p.length - 1][1]]);
+  const top = t => interp(topT, t, 1), bot = t => interp(botT, t, 1);
+  P.paint.push(shell(fus, L, { rings: 80, iters: 2, sharp: [3] }));
+  { const [tl, pl] = fus[fus.length - 1]; P.dark.push(face([...pl, ...pl.slice(1, -1).reverse().map(([x, y]) => [-x, y])], z(tl) - .03, .99)); }
+  // intakes / nacelles
+  if (D.intake) { const it = sc(D.intake), g = shell(it, L, { rings: 16, iters: 1, mirror: false, sharp: [0, 1, 2, 3], bias: 1 }); both(g, P.paint); both(face(it[0][1], z(it[0][0]) + .08, .94), P.dark);
+    // boundary-layer diverter slot between intake and forebody
+    both(face([[it[0][1][0][0] - .05, it[0][1][0][1]], [it[0][1][0][0], it[0][1][0][1]], [it[0][1][3][0], it[0][1][3][1]], [it[0][1][3][0] - .05, it[0][1][3][1]]], z(it[0][0]) + .25, 1), P.dark); }
+  if (D.nacelle) { const nx = D.nx * S, ny = D.ny * S; const nc = D.nacelle.map(([t, w, h, c]) => [t, oct(nx, ny, w * S, h * S, c * S)]); const g = shell(nc, L, { rings: 44, iters: 2, mirror: false, sharp: [], bias: 1 }); both(g, P.paint);
+    both(face(oct(nx, ny, D.nacelle[0][1] * S, D.nacelle[0][2] * S, D.nacelle[0][3] * S), z(D.nacelle[0][0]) + .05, .92), P.dark); }
+  // radome pitot (F-35/F-22 have none on the nose; Su-57 gets the IRST ball)
+  if (D.irst) P.glass.push(place(new THREE.SphereGeometry(.13 * S, 14, 10), .2 * S, top(.1) + .03, z(.1)));
+  // ---- canopy: one-piece bubble, gold-tinted
+  const [c0, c1] = D.canopy;
+  const cs = [[c0, .02, .02], [c0 + .03, .17, .16], [c0 + .08, .3, .34], [(c0 + c1) / 2 + .02, .35, .42], [c1 - .07, .3, .32], [c1 - .02, .16, .14], [c1, .04, .03]].map(([t, w, h]) => [t, w * k * D.cw, h * k * D.ch, top(t) - .08 * k, 2]);
   P.glass.push(body(cs.map(([t, w, h, y]) => [t, w, h, h * .3, y, 2.1, 2]), L, { rings: 40, seg: 36, bias: 1 }));
   const sill = t => top(t) - .07 * k, cw = t => interp(cs, t, 1);
   [-1, 1].forEach(sd => { const pts = []; for (let i = 0; i <= 14; i++) { const t = c0 + .03 + (c1 - c0 - .06) * i / 14; pts.push(new THREE.Vector3(sd * cw(t) * .97, sill(t) + .02 * k, z(t))); } P.sill.push(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, .035 * k, 6)); });
   P.dark.push(place(new THREE.CapsuleGeometry(.15 * k, .2 * k, 4, 10), 0, top(c0 + .2) + .02 * k, z(c0 + .2), 0, 0, 0, 1, 1, .45));
   P.helm.push(place(new THREE.SphereGeometry(.165 * k, 14, 8, Math.PI * .25, Math.PI * .5, Math.PI * .3, Math.PI * .32), 0, top(c0 + .14) + .14 * k, z(c0 + .14), 0, Math.PI, 0));
   { const tE = c0 + .15, ys = []; for (let t = c0 + .02; t <= c1 - .02; t += .01) ys.push(top(t)); P.cock = { eyeY: top(tE) + .13 * k, eyeZ: z(tE), z0: z(c0 + .025), z1: z(c1 - .025), w: Math.max(...cs.map(c => c[1])) * .9, y0: Math.min(...ys) - .8 * k, y1: Math.max(...ys) + .2 * k, k }; }
-  if (st === 'striker') { const bowT = c0 + .075; P.dark.push(place(new THREE.TorusGeometry(.3 * k, .022 * k, 6, 24, Math.PI), 0, top(bowT) - .06 * k, z(bowT), -.5, 0, 0, 1, .9, 1)); }
+  if (D.frame) { const bowT = c0 + .2; P.dark.push(place(new THREE.TorusGeometry(1, .045, 6, 28, Math.PI), 0, top(bowT) - .08 * k, z(bowT), .25, 0, 0, cw(bowT) * 1.02, interp(cs, bowT, 2) * 1.02, .3 * k)); }
   P.pilot.push(place(new THREE.SphereGeometry(.16 * k, 12, 10), 0, top(c0 + .14) + .14 * k, z(c0 + .14)));
-  // ---- intakes
-  const mouth = (x, y, w, h, t, n = 2.6) => { P.dark.push(place(new THREE.CircleGeometry(1, 28), x, y, z(t) + .18 * k, Math.PI, 0, 0, w * .9, h * .9, 1)); };
-  if (st === 'viper') {
-    const it = K([[.27, .5, .3, .36, -.68, 2.4, 2.4], [.3, .5, .32, .36, -.68, 2.4, 2.5], [.42, .5, .34, .34, -.62, 2.4, 2.6], [.56, .44, .32, .3, -.5, 2.4, 2.6], [.66, .2, .2, .18, -.38, 2.2, 2.2]]);
-    P.paint.push(body(it, L, { rings: 24, seg: 36, bias: 1 })); mouth(0, -.68 * k, .48 * k, .32 * k, .27);
-    P.paint.push(place(new THREE.TorusGeometry(1, .04, 6, 32), 0, -.68 * k, z(.27) + .02, 0, 0, 0, .49 * k, .33 * k, k));
-  } else if (st === 'raptor') [-1, 1].forEach(s => {
-    const it = K([[.26, .34, .44, .44, -.08, 1.7, 1.7], [.3, .38, .46, .46, -.08, 1.8, 1.8], [.4, .38, .46, .46, -.06, 2, 2], [.52, .3, .4, .4, -.04, 2.2, 2.2], [.6, .16, .3, .3, 0, 2.2, 2.2]]);
-    const g = body(it, L, { rings: 22, seg: 32, bias: 1 }); g.translate(s * .98 * k, 0, 0); g.rotateZ(0); P.paint.push(g); mouth(s * .98 * k, -.08 * k, .32 * k, .42 * k, .26);
-  });
-  else [-1, 1].forEach(s => { // Su-style nacelles with square intakes under the LERX
-    const nc = K([[.3, .4, .34, .42, -.48, 3.4, 3.6], [.34, .42, .36, .44, -.48, 3.4, 3.6], [.46, .44, .4, .44, -.42, 3, 3], [.6, .46, .42, .45, -.34, 2.6, 2.6], [.76, .46, .44, .45, -.27, 2.3, 2.3], [.9, .46, .46, .46, -.25, 2, 2], [1, .44, .44, .44, -.25, 2, 2]]);
-    P.paint.push(body(nc, L, { rings: 50, seg: 36, x: s * .7 * k, bias: 1 })); mouth(s * .7 * k, -.52 * k, .38 * k, .36 * k, .3);
-    // ventral fin under each nacelle
-    P.paint.push(finGeo([[0, 0, z(.79), z(.88), .06], [.55 * k, 0, z(.84), z(.885), .05]], 0, 0, 0, { nC: 8 }).rotateZ(Math.PI).translate(s * .82 * k, -.62 * k, 0));
-  });
-  // ---- LERX / strakes blending into the wing root
-  if (st === 'viper') both(aero([[.35, -.06 * k, z(.17), z(.47), .06], [.95, -.06 * k, z(.36), z(.48), .05], [1.2, -.06 * k, z(.425), z(.47), .05]], { nC: 12 }), P.paint);
-  if (st === 'striker') both(aero([[.3 * k, .1 * k, z(.18), z(.48), .06], [.8 * k, .1 * k, z(.34), z(.5), .05], [1.3 * k, .08 * k, z(.44), z(.5), .05]], { nC: 12 }), P.paint);
-  if (st === 'raptor') both(aero([[.5 * k, .02 * k, z(.12), z(.4), .05], [1.1 * k, .02 * k, z(.25), z(.42), .05], [1.4 * k, 0, z(.36), z(.42), .05]], { nC: 12 }), P.paint);
-  // ---- wings, flaps hinge lines, tip rails, nav lights
-  both(aero(W, { nC: 16, sub: 3 }), P.paint);
-  const tip = W[W.length - 1], tipC = tip[3] - tip[2];
+  // ---- wings, stabilators, canted twin tails (all clipped-tip, airfoil-section)
+  const W = D.W.map(([x, y, le, te, tr]) => [x * S, y * S, le(z), te(z), tr]), HS = D.HS.map(([x, y, le, te, tr]) => [x * S, y * S, le(z), te(z), tr]);
+  both(aero(W, { nC: 16, sub: 3 }), P.paint); both(aero(HS, { nC: 12, sub: 2 }), P.paint);
+  { const v = D.VT, g = finGeo(v.secs.map(([x, y, le, te, tr]) => [x * S, y, le(z), te(z), tr]), v.cant, 0, 0, { nC: 14, sub: 2 }); g.translate(v.x * S, v.y * S, 0); both(g, P.paint); }
+  const tip = W[W.length - 1];
   [-1, 1].forEach(s => {
-    P.metal.push(place(new THREE.CylinderGeometry(.07, .07, tipC * 1.05, 10), s * (tip[0] + .05), tip[1], (tip[2] + tip[3]) / 2, Math.PI / 2));
-    P.light.push(place(new THREE.SphereGeometry(.07 * k, 8, 6), s * (tip[0] + .06), tip[1] + .06, tip[3] - .1));
-    // control-surface hinge lines on top of the wing
-    const hl = []; for (let f = .05; f <= .96; f += .9 / 12) { const a = wingAt(W, f); hl.push(new THREE.Vector3(s * a.x, a.y + .25 * a.tr * a.c + .004, a.te - a.c * .22)); }
-    P.dark.push(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(hl), 16, .008, 3));
-    const d = wingAt(W, .58); P.decal.push(place(new THREE.PlaneGeometry(1.1 * k, 1.1 * k), s * d.x, d.y + .4 * d.tr * d.c + .01, (d.le + d.te) / 2 + .1 * d.c, -Math.PI / 2, 0, 0));
+    P.light.push(place(new THREE.SphereGeometry(.05 * k, 8, 6), s * (tip[0] - .05), tip[1] + .03, tip[3] - .15));
+    const hl = []; for (let f = .04; f <= .97; f += .93 / 12) { const a = wingAt(W, f); hl.push(new THREE.Vector3(s * a.x, a.y + .25 * a.tr * a.c + .004, a.te - a.c * .2)); }
+    P.dark.push(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(hl), 16, .007, 3));
+    const d = wingAt(W, .62); P.decal.push(place(new THREE.PlaneGeometry(1.0 * k, 1.0 * k), s * d.x, d.y + .4 * d.tr * d.c + .01, (d.le + d.te) / 2 + .1 * d.c, -Math.PI / 2, 0, 0));
   });
-  // ---- tails
-  both(aero(HS, { nC: 12, sub: 2 }), P.paint);
-  VT.forEach(v => { const g = finGeo(v.secs, Math.abs(v.cant), 0, 0, { nC: 14, sub: 2 }); if (v.x < 0) { g.rotateZ(0); P.paint.push(mirrorX(g).translate(v.x, v.y, 0)); } else P.paint.push(g.translate(v.x, v.y, 0)); });
-  if (st === 'viper') { // ventral fins + dorsal antenna + tail fin cap
-    [-1, 1].forEach(s => P.paint.push(finGeo([[0, 0, z(.79), z(.87), .06], [.55, 0, z(.83), z(.875), .05]], 0, 0, 0, { nC: 8 }).rotateZ(Math.PI + s * .5).translate(s * .45, -.38, 0)));
-  }
-  // ---- engines: afterburner cans with nozzle "turkey feathers"
-  const tailZ = L / 2;
+  // ---- engines
+  const ex = D.ex.map(x => x * S), ey = D.ey * S, nr = D.nr * S, tailZ = z(1);
   ex.forEach(x => {
-    if (st === 'raptor') { const nz = body([[.94, .5 * k, .34 * k, .34 * k, 0, 5, 5], [1, .46 * k, .3 * k, .3 * k, 0, 5, 5], [1.035, .4 * k, .2 * k, .2 * k, 0, 5, 5]], L, { rings: 8, seg: 32, x, bias: 1 }); P.metal.push(nz); P.dark.push(place(new THREE.PlaneGeometry(.7 * k, .32 * k), x, 0, z(1.03) + .02)); return; }
+    if (D.nozzle === '2d') { // F-22 thrust-vectoring nozzle: rectangular can + upper/lower paddles
+      P.metal.push(shell([[.955, oct(x, ey, .46 * S, .3 * S, .08 * S)], [1, oct(x, ey, .42 * S, .25 * S, .06 * S)]], L, { rings: 4, iters: 1, mirror: false, bias: 1 }));
+      [1, -1].forEach(u => P.metal.push(aero([[x - .4 * S, ey + u * .23 * S, z(.998), z(1.045), .05], [x + .4 * S, ey + u * .2 * S, z(.998), z(1.035), .05]], { nC: 6 })));
+      P.dark.push(face(oct(x, ey, .4 * S, .22 * S, .05 * S), z(1) - .05, 1)); return; }
     const noz = new THREE.LatheGeometry([[nr * .98, 0], [nr * 1.02, .2], [nr * .97, .7 * k], [nr * .86, 1.15 * k], [nr * .82, 1.22 * k], [nr * .74, 1.18 * k], [nr * .76, .3]].map(([a, b]) => new THREE.Vector2(a, b)), 40);
-    const pp = noz.attributes.position; for (let i = 0; i < pp.count; i++) { if (pp.getY(i) < .6 * k) continue; const a = Math.atan2(pp.getZ(i), pp.getX(i)), f = 1 + .035 * Math.max(0, Math.cos(a * 14)); pp.setX(i, pp.getX(i) * f); pp.setZ(i, pp.getZ(i) * f); } noz.computeVertexNormals();
-    P.metal.push(place(noz, x, ey, tailZ - .25 * k, Math.PI / 2));
-    P.dark.push(place(new THREE.CircleGeometry(nr * .74, 28), x, ey, tailZ + .2 * k));
-    P.dark.push(place(new THREE.TorusGeometry(nr * .5, nr * .06, 6, 24), x, ey, tailZ + .15 * k)); // flame holder ring
+    const pp = noz.attributes.position; for (let i = 0; i < pp.count; i++) { if (pp.getY(i) < .6 * k) continue; const a = Math.atan2(pp.getZ(i), pp.getX(i)), f = 1 + .045 * Math.max(0, Math.cos(a * 14)); pp.setX(i, pp.getX(i) * f); pp.setZ(i, pp.getZ(i) * f); } noz.computeVertexNormals();
+    P.metal.push(place(noz, x, ey, tailZ - .4 * k, Math.PI / 2));
+    P.dark.push(place(new THREE.CircleGeometry(nr * .74, 28), x, ey, tailZ + .05 * k));
+    P.dark.push(place(new THREE.TorusGeometry(nr * .5, nr * .06, 6, 24), x, ey, tailZ));
   });
-  // ---- antennas / small blades
-  const blade = (x, y, t, h, down = false) => { const g = finGeo([[0, 0, z(t), z(t) + .4 * k, .1], [h, 0, z(t) + .16 * k, z(t) + .36 * k, .1]], 0, 0, 0, { nC: 6 }); if (down) g.rotateZ(Math.PI); P.dark.push(g.translate(x, y, 0)); };
-  blade(0, T(.5) - .02, .5, .22 * k); blade(0, interp(fus, .22, 4) - interp(fus, .22, 3) + .02, .22, .2 * k, true);
-  P.light.push(place(new THREE.BoxGeometry(.035 * k, .03 * k, .5 * k), 0, T(.62) + .005, z(.62)));
-  // ---- pylons & missile stations: wingtip first, then outboard → inboard
-  const py = [], drop = .32 * k;
-  py.push([tip[0] + .05, tip[1] - .17, (tip[2] + tip[3]) / 2]);
-  (st === 'striker' ? [.82, .62, .42, .22] : st === 'raptor' ? [.68, .4, .16] : [.72, .45, .2]).forEach(f => { const a = wingAt(W, f), zc = a.le + a.c * .48, by = a.y - .35 * a.tr * a.c;
-    [-1, 1].forEach(s => P.paint.push(finGeo([[0, 0, zc - .8, zc + .8, .12], [drop, 0, zc - .6, zc + .7, .12]], 0, 0, 0, { nC: 8 }).rotateZ(Math.PI).translate(s * a.x, by + .02, 0)));
-    py.push([a.x, by - drop - .1, zc]); });
-  if (st === 'striker') py.push([.7 * k, -.9 * k, z(.55)]);
+  // ---- small details: blade antennas, formation light strips, refuelling door
+  const blade = (x, y, t, h, down = false) => { const g = finGeo([[0, 0, z(t), z(t) + .35 * k, .1], [h, 0, z(t) + .14 * k, z(t) + .32 * k, .1]], 0, 0, 0, { nC: 6 }); if (down) g.rotateZ(Math.PI); P.dark.push(g.translate(x, y, 0)); };
+  blade(0, top(.52) - .02, .52, .18 * k); blade(0, bot(.3) + .02, .3, .18 * k, true);
+  P.light.push(place(new THREE.BoxGeometry(.03 * k, .02 * k, .45 * k), 0, top(.62) + .004, z(.62)));
+  [-1, 1].forEach(s => P.light.push(place(new THREE.BoxGeometry(.02 * k, .02 * k, .5 * k), s * fus[4][1][2][0] * .9, interp(fus.map(([t, p]) => [t, p[2][1]]), .27, 1) + .01, z(.27), 0, s * .3, 0)));
+  // ---- internal weapons bays: missiles ride inside the fuselage (stealth), staggered across the bay
+  const py = [], bayY = (bot(.5) + .2 * k) * .5;
+  for (let i = 0; i < 6; i++) py.push([(.28 + .19 * i) * k, bayY, z(.47 + (i % 2) * .05)]);
   while (py.length < 6) py.push(py[py.length - 1]);
   const cock = P.cock; delete P.cock;
   return { P, ex, ey, nr, tailZ, sp: tip[0] - W[0][0], rx: W[0][0], wy: W[0][1], L, k, cock, pylons: py };

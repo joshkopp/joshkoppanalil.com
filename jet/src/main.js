@@ -35,8 +35,8 @@ const flashes = Array.from({ length: 3 }, () => { const l = new THREE.PointLight
 const tracers = new Tracers(600); scene.add(tracers.mesh);
 
 /* ======================================================= settings & state */
-const S = { jet: 'viper', paint: 'gray', diff: 'normal', view: 'third', control: TOUCH ? 'stick' : 'aim', sens: 'mid', invert: false, assist: true, quality: 'auto', ...S0 };
-if (!JETS[S.jet]) S.jet = 'viper'; if (TOUCH) S.control = 'stick';
+const S = { jet: 'raptor', paint: 'gray', diff: 'normal', view: 'third', control: TOUCH ? 'stick' : 'aim', sens: 'mid', invert: false, assist: true, quality: 'auto', ...S0 };
+if (!JETS[S.jet]) S.jet = 'raptor'; if (TOUCH) S.control = 'stick';
 const saveS = () => store.set('jkstrike-set', S);
 const DIFF = { easy: { turn: .7, acc: .4, msl: 28, dmg: .55, name: 'Rookie' }, normal: { turn: .92, acc: .58, msl: 19, dmg: .9, name: 'Pilot' }, ace: { turn: 1.15, acc: .9, msl: 12, dmg: 1.3, name: 'Ace' } };
 const KIND = {
