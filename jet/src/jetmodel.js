@@ -33,6 +33,15 @@ function skinTex(paint) {
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
   return (texCache[paint] = t);
 }
+let bumpT = null;
+function panelBump() { if (bumpT) return bumpT; const S = 1024, c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d'); let seed = 4242; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  g.fillStyle = '#808080'; g.fillRect(0, 0, S, S); g.strokeStyle = '#3c3c3c'; g.lineWidth = 2.5;
+  for (let k = 0; k <= 8; k++) { g.beginPath(); g.moveTo(0, k * S / 8 + (k % 2) * 9); g.lineTo(S, k * S / 8 + (k % 2) * 9); g.stroke(); }
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 6; x++) { if (r() < .2) continue; const xx = (x + (y % 2) * .5) * S / 6; g.beginPath(); g.moveTo(xx, y * S / 8); g.lineTo(xx, (y + 1) * S / 8); g.stroke(); }
+  g.lineWidth = 2; for (let k = 0; k < 22; k++) { const x = r() * S, y = r() * S, w = 30 + r() * 110, h = 24 + r() * 70; g.strokeStyle = '#4a4a4a'; g.strokeRect(x, y, w, h); g.fillStyle = '#5a5a5a'; for (let q = 0; q < w; q += 9) { g.fillRect(x + q, y - 4, 2, 2); g.fillRect(x + q, y + h + 3, 2, 2); } }
+  g.fillStyle = '#5c5c5c'; for (let y = 0; y < 8; y++) for (let x = 0; x < S; x += 10) g.fillRect(x, y * S / 8 + 6 + (y % 2) * 9, 2, 2);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; return (bumpT = t); }
+export function cockpitInfo(type, paint) { return getBuilt(JETS[type] ? type : 'viper', PAINTS[paint] ? paint : 'gray', false).A.cock; }
 const decalTex = {};
 function decal(enemy) {
   const key = enemy ? 'e' : 'p'; if (decalTex[key]) return decalTex[key];
@@ -74,12 +83,12 @@ const scale5 = (arr, k) => arr.map(([t, w, h, y, n]) => [t, w * k, h * k, y * k,
 
 /* ---------------------------------------------------------------- airframes */
 function airframe(J) {
-  const L = J.len, k = L / 15, P = { paint: [], dark: [], metal: [], glass: [], light: [], decal: [], pilot: [] }, sp = J.span, st = J.style, z = t => -L / 2 + t * L;
+  const L = J.len, k = L / 15, P = { paint: [], dark: [], metal: [], glass: [], light: [], decal: [], pilot: [], sill: [], helm: [] }, sp = J.span, st = J.style, z = t => -L / 2 + t * L;
   let fus;
   if (st === 'viper') fus = [[0, .01, .01, .05, 2], [.025, .12, .12, .05, 2], [.07, .3, .27, .08, 2.1], [.15, .5, .45, .15, 2.3], [.25, .62, .58, .2, 2.4], [.36, .72, .64, .18, 2.6], [.5, .78, .62, .12, 2.8], [.66, .76, .6, .1, 2.8], [.8, .66, .56, .08, 2.6], [.92, .58, .52, .05, 2.4], [1, .55, .5, .05, 2.2]];
   else if (st === 'raptor') fus = [[0, .01, .01, 0, 2], [.03, .16, .1, 0, 2.2], [.09, .42, .24, .05, 2.6], [.18, .68, .4, .12, 3.2], [.28, .82, .52, .16, 3.4], [.4, 1.25, .54, .1, 3.6], [.55, 1.45, .52, .05, 3.6], [.7, 1.4, .5, .05, 3.4], [.84, 1.3, .44, .02, 3.2], [.94, 1.1, .4, 0, 3], [1, 1.02, .38, 0, 3]];
   else fus = [[0, .01, .01, .1, 2], [.03, .16, .15, .1, 2], [.09, .42, .4, .18, 2.1], [.18, .62, .58, .25, 2.3], [.28, .74, .66, .3, 2.4], [.4, 1.0, .6, .25, 2.8], [.55, 1.35, .55, .15, 3.2], [.7, 1.35, .52, .1, 3.2], [.84, 1.25, .48, .05, 3], [.95, 1.15, .45, 0, 2.8], [1, 1.1, .44, 0, 2.8]];
-  P.paint.push(loft(scale5(fus, k), L, 32));
+  P.paint.push(loft(scale5(fus, k), L, 48));
   const noseY = fus[1][3] * k;
   P.dark.push(place(new THREE.ConeGeometry(.12 * k, .5 * k, 12), 0, noseY, z(0) - .05, -Math.PI / 2));
   P.metal.push(place(new THREE.CylinderGeometry(.015, .015, 1.1 * k, 6), 0, noseY, z(0) - .6 * k, Math.PI / 2));
@@ -87,7 +96,15 @@ function airframe(J) {
   const top = t => { for (let i = 0; i < fus.length - 1; i++) if (t >= fus[i][0] && t <= fus[i + 1][0]) { const a = (t - fus[i][0]) / (fus[i + 1][0] - fus[i][0]); return ((fus[i][3] + fus[i][2]) * (1 - a) + (fus[i + 1][3] + fus[i + 1][2]) * a) * k; } return 0; };
   const c0 = st === 'viper' ? .09 : .11, c1 = st === 'viper' ? .36 : .33;
   const cs = [[c0, .02, .02], [c0 + .04, .2, .16], [c0 + .1, .32, .3], [(c0 + c1) / 2 + .03, .34, .34], [c1 - .05, .28, .24], [c1, .1, .06]].map(([t, w, h]) => [t, w * k, h * k, top(t) - .06 * k, 2]);
-  P.glass.push(loft(cs, L, 24));
+  P.glass.push(loft(cs, L, 32));
+  // canopy sill rails, ejection-seat headrest, helmet visor, spine antennas
+  const sill = t => top(t) - .07 * k, cw = t => { for (let i = 0; i < cs.length - 1; i++) if (t >= cs[i][0] && t <= cs[i + 1][0]) { const a = (t - cs[i][0]) / (cs[i + 1][0] - cs[i][0]); return cs[i][1] * (1 - a) + cs[i + 1][1] * a; } return 0; };
+  [-1, 1].forEach(sd => { const pts = []; for (let i = 0; i <= 14; i++) { const t = c0 + .03 + (c1 - c0 - .06) * i / 14; pts.push(new THREE.Vector3(sd * cw(t) * .97, sill(t) + .02 * k, z(t))); } P.sill.push(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, .035 * k, 6)); });
+  P.dark.push(place(new THREE.BoxGeometry(.36 * k, .5 * k, .14 * k), 0, top(c0 + .2) + .1 * k, z(c0 + .2)));
+  P.helm.push(place(new THREE.SphereGeometry(.165 * k, 14, 8, Math.PI * .25, Math.PI * .5, Math.PI * .3, Math.PI * .32), 0, top(c0 + .14) + .14 * k, z(c0 + .14), 0, Math.PI, 0));
+  P.dark.push(place(new THREE.BoxGeometry(.03 * k, .26 * k, .32 * k), 0, top(.48) + .12 * k, z(.48), -.3), place(new THREE.BoxGeometry(.03 * k, .2 * k, .26 * k), 0, -.55 * k, z(.2), .3));
+  P.light.push(place(new THREE.BoxGeometry(.04 * k, .5 * k, .05 * k), 0, top(.6) - .02 * k, z(.6)));
+  { const tE = c0 + .15, ys = []; for (let t = c0 + .02; t <= c1 - .02; t += .01) ys.push(top(t)); P.cock = { eyeY: top(tE) + .13 * k, eyeZ: z(tE), z0: z(c0 + .025), z1: z(c1 - .025), w: Math.max(...cs.map(c => c[1])) * .9, y0: Math.min(...ys) - .8 * k, y1: Math.max(...ys) + .2 * k, k }; }
   const bowT = c0 + .15; P.paint.push(place(new THREE.TorusGeometry(.33 * k, .028 * k, 6, 20, Math.PI), 0, top(bowT) - .06 * k, z(bowT), 0, 0, 0, 1, 1.02, 1));
   P.pilot.push(place(new THREE.SphereGeometry(.16 * k, 12, 10), 0, top(c0 + .14) + .14 * k, z(c0 + .14)));
   // intakes
@@ -122,7 +139,7 @@ function airframe(J) {
   if (st === 'viper') { P.paint.push(place(new THREE.CapsuleGeometry(.32 * k, 2.4 * k, 6, 12), 0, -1.05 * k, z(.55), Math.PI / 2)); P.dark.push(place(new THREE.BoxGeometry(.08 * k, .3 * k, .8 * k), 0, -.78 * k, z(.55))); }
   P.dark.push(place(new THREE.BoxGeometry(.06 * k, .1 * k, .5 * k), .55 * k, .3 * k, z(.28)));
   P.dark.push(place(new THREE.BoxGeometry(.04 * k, .3 * k, .2 * k), 0, (st === 'raptor' ? .6 : .9) * k, z(.55)));
-  return { P, ex, nr, tailZ, sp, rx, wy, L, k };
+  const cock = P.cock; delete P.cock; return { P, ex, nr, tailZ, sp, rx, wy, L, k, cock };
 }
 
 /* ---------------------------------------------------------------- assembly + caching */
@@ -135,7 +152,7 @@ function getBuilt(type, paint, enemy) {
   const key = type + '|' + paint + '|' + (enemy ? 1 : 0); if (built[key]) return built[key];
   const J = JETS[type], A = airframe(J);
   const mats = {
-    paint: new THREE.MeshStandardMaterial({ map: skinTex(enemy ? 'red' : paint), roughness: .5, metalness: .3, envMapIntensity: .9 }),
+    paint: new THREE.MeshPhysicalMaterial({ map: skinTex(enemy ? 'red' : paint), bumpMap: panelBump(), bumpScale: 1.2, roughness: .46, metalness: .32, clearcoat: .3, clearcoatRoughness: .45, envMapIntensity: .9 }),
     dark: new THREE.MeshStandardMaterial({ color: '#25282d', roughness: .55, metalness: .45 }),
     metal: new THREE.MeshStandardMaterial({ color: '#6f7379', roughness: .32, metalness: .9, envMapIntensity: 1.2 }),
     glass: new THREE.MeshPhysicalMaterial({ color: enemy ? '#5a3a10' : '#c9a24a', roughness: .04, metalness: .85, envMapIntensity: 2.2, clearcoat: 1, transparent: true, opacity: .82 }),
@@ -143,6 +160,7 @@ function getBuilt(type, paint, enemy) {
     decal: new THREE.MeshStandardMaterial({ map: decal(enemy), transparent: true, roughness: .5, polygonOffset: true, polygonOffsetFactor: -2, depthWrite: false }),
     pilot: new THREE.MeshStandardMaterial({ color: '#e6e6e0', roughness: .4 }),
   };
+  mats.sill = mats.dark; mats.helm = mats.dark;
   const geos = {}; for (const m in A.P) { const g = merge(A.P[m]); if (g) { g.computeBoundingSphere(); geos[m] = g; } }
   const pylons = [[A.rx + A.sp + .05 * A.k, A.wy - .2 * A.k, -A.L / 2 + .72 * A.L], [A.rx + A.sp * .55, A.wy - .4 * A.k, -A.L / 2 + .64 * A.L], [A.rx + A.sp * .3, A.wy - .4 * A.k, -A.L / 2 + .6 * A.L], [A.rx * .9, -.7 * A.k, -A.L / 2 + .52 * A.L], [A.rx + A.sp * .78, A.wy - .32 * A.k, -A.L / 2 + .68 * A.L], [.5 * A.k, -.75 * A.k, -A.L / 2 + .42 * A.L]];
   return (built[key] = { J, A, mats, geos, pylons });
@@ -150,7 +168,7 @@ function getBuilt(type, paint, enemy) {
 export function buildJet(type = 'viper', paint = 'gray', enemy = false) {
   if (!JETS[type]) type = 'viper'; if (!PAINTS[paint]) paint = 'gray';
   const B = getBuilt(type, paint, enemy), { J, A } = B, root = new THREE.Group(), body = new THREE.Group(); root.add(body);
-  for (const m in B.geos) { const mesh = new THREE.Mesh(B.geos[m], B.mats[m]); mesh.castShadow = m === 'paint' || m === 'dark' || m === 'metal'; mesh.receiveShadow = m === 'paint'; body.add(mesh); }
+  for (const m in B.geos) { const mesh = new THREE.Mesh(B.geos[m], B.mats[m]); mesh.name = m; mesh.castShadow = m === 'paint' || m === 'dark' || m === 'metal'; mesh.receiveShadow = m === 'paint'; body.add(mesh); }
   const msls = []; for (let i = 0; i < Math.ceil(J.missiles / 2); i++) { const p = B.pylons[i % B.pylons.length]; [-1, 1].forEach(s => { const m = missileMesh(); m.position.set(s * p[0], p[1], p[2] + (i >= B.pylons.length ? 1.2 : 0)); m.castShadow = true; body.add(m); msls.push(m); }); }
   const mk = (c, o) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, blending: THREE.AdditiveBlending, depthWrite: false });
   const fm = enemy ? (B.fm || (B.fm = mk('#ffa04a', .55))) : mk('#ffa04a', .6), cm = enemy ? (B.cm || (B.cm = mk('#a9e2ff', .8))) : mk('#a9e2ff', .85);

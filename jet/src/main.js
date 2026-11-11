@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { buildCockpit } from './cockpit.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { Terrain, sky, clouds, ARENA } from './terrain.js';
 import { JETS, PAINTS, buildJet, buildBomber, missileMesh, warmUp } from './jetmodel.js';
@@ -105,17 +106,7 @@ function readInput() {
 
 /* ======================================================= cockpit */
 const cockpit = new THREE.Group(); cam.add(cockpit); cockpit.visible = false;
-{
-  const frame = new THREE.MeshStandardMaterial({ color: '#202327', roughness: .6, metalness: .4 });
-  const dash = new THREE.Mesh(new THREE.BoxGeometry(2.6, .62, .9), new THREE.MeshStandardMaterial({ color: '#1a1c1f', roughness: .85 })); dash.position.set(0, -.92, -1.25); cockpit.add(dash);
-  const lip = new THREE.Mesh(new THREE.BoxGeometry(2.6, .05, .2), frame); lip.position.set(0, -.56, -.82); cockpit.add(lip);
-  const mfd = x => { const c = document.createElement('canvas'); c.width = 128; c.height = 96; const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; const m = new THREE.Mesh(new THREE.PlaneGeometry(.42, .31), new THREE.MeshBasicMaterial({ map: t, toneMapped: false })); m.position.set(x, -.66, -.77); m.rotation.x = -.15; cockpit.add(m); return { c, g: c.getContext('2d'), t }; };
-  cockpit.userData.mfds = [mfd(-.55), mfd(.55)];
-  const comb = new THREE.Mesh(new THREE.PlaneGeometry(.5, .36), new THREE.MeshBasicMaterial({ color: '#3dff8f', transparent: true, opacity: .06, depthWrite: false })); comb.position.set(0, -.3, -.9); comb.rotation.x = -.2; cockpit.add(comb);
-  const combF = new THREE.Mesh(new THREE.BoxGeometry(.52, .025, .025), frame); combF.position.set(0, -.49, -.88); cockpit.add(combF);
-  [[-1.35, .1, -1.1, .08, 2.2, .1, .42], [1.35, .1, -1.1, .08, 2.2, .1, -.42]].forEach(([x, y, z, w, h, d, rz]) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), frame); b.position.set(x, y, z); b.rotation.z = rz; cockpit.add(b); });
-  const stickM = new THREE.Mesh(new THREE.CylinderGeometry(.04, .05, .5, 8), frame); stickM.position.set(.32, -.98, -.55); stickM.rotation.x = .3; cockpit.add(stickM); cockpit.userData.stick = stickM;
-}
+function rebuildCockpit() { cockpit.clear(); const c = buildCockpit(S.jet, S.paint); cockpit.add(c); cockpit.userData = c.userData; }
 
 /* ======================================================= player */
 let menuJet = null;
@@ -420,7 +411,7 @@ function updateCamera(dt) { if (window.__camFreeze) return;
   if (!P.alive) { const t = P.deadT * .4; cam.position.lerp(P.pos.clone().add(new THREE.Vector3(Math.sin(t) * 160, 70, Math.cos(t) * 160)), dt * 2); cam.up.set(0, 1, 0); cam.lookAt(P.pos); return; }
   const shake = P.shake * (G.view === 'first' ? .25 : .9); P.shake *= Math.exp(-dt * 4);
   const kd = clamp(1.1 / cam.aspect, 1, 1.7);
-  if (G.view === 'first') { cam.position.copy(P.pos).add(new THREE.Vector3(0, 1.25, -P.J.len * .26).applyQuaternion(P.q)); cam.quaternion.copy(P.q); cam.fov = lerp(cam.fov, 74 + (P.ab ? 6 : 0), dt * 3); }
+  if (G.view === 'first') { cam.position.copy(P.pos).add(new THREE.Vector3(0, cockpit.userData.eyeY ?? 1.25, cockpit.userData.eyeZ ?? -P.J.len * .26).applyQuaternion(P.q)); cam.quaternion.copy(P.q); cam.fov = lerp(cam.fov, 74 + (P.ab ? 6 : 0), dt * 3); }
   else if (S.control === 'aim' && !TOUCH) { // camera rig follows your aim, horizon stays level
     const d = aimDir(); P.camQ.setFromRotationMatrix(tm.lookAt(ZERO, d, UP)); const off = new THREE.Vector3(0, (4.5 + P.J.len * .12) * kd, (19 + P.J.len * .6) * kd).applyQuaternion(P.camQ);
     cam.position.copy(P.pos).add(off); cam.quaternion.copy(P.camQ); cam.rotateX(-.05); cam.fov = lerp(cam.fov, 64 + clamp((P.speed - 250) * .05, 0, 12) + (P.ab ? 4 : 0), dt * 3); }
@@ -516,7 +507,7 @@ function paintStatus() {
   $('#flr').textContent = P.flares; $('#thr').style.height = P.thr * 100 + '%'; $('#thr').classList.toggle('ab', !!P.ab);
   $('#baseBar').style.width = G.baseHp + '%'; $('#baseBar').style.background = G.baseHp > 50 ? '#7fd0ff' : G.baseHp > 25 ? '#ffcf4a' : '#ff4f5e'; $('#baseTxt').textContent = Math.round(G.baseHp) + '%';
 }
-function paintMsl() { $('#msl').innerHTML = Array.from({ length: P.mslMax }, (_, i) => `<i class="${i < P.msl ? 'on' : ''}"></i>`).join(''); P.obj.userData.msls.forEach((m, i) => m.visible = i < Math.min(P.msl, P.obj.userData.msls.length)); }
+function paintMsl() { $('#msl').innerHTML = Array.from({ length: P.mslMax }, (_, i) => `<i class="${i < P.msl ? 'on' : ''}"></i>`).join(''); P.obj.userData.msls.forEach((m, i) => m.visible = i < Math.min(P.msl, P.obj.userData.msls.length)); (cockpit.userData.msls || []).forEach((m, i) => m.visible = i < Math.min(P.msl, cockpit.userData.msls.length)); }
 function flashBase() { const b = $('#baseWrap'); b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit'); }
 function updateMFD(time) {
   if (!cockpit.visible || (time * 10 | 0) % 2) return; const [a, b] = cockpit.userData.mfds;
@@ -535,6 +526,7 @@ function updateTips(dt) { if (!G.tips) return; tipT -= dt; if (tipT > 0) return;
 
 /* ======================================================= game flow */
 function startGame() {
+  rebuildCockpit();
   Sound.init(); if (menuJet) { scene.remove(menuJet); menuJet = null; }
   enemies.forEach(e => scene.remove(e.obj)); missiles.forEach(m => scene.remove(m.mesh)); enemies = []; missiles = []; flares = []; tracers.list = []; smoke.clear(); fire.clear(); trails.clear(); kills = []; events = [];
   P = makePlayer(); P.q.setFromRotationMatrix(tm.lookAt(P.pos, new THREE.Vector3(0, 800, 0), UP)); P.camQ.copy(P.q); syncAim();
