@@ -86,7 +86,7 @@ const Bank=(()=>{
   let bal=Number(store.get(KEY,1000));if(!isFinite(bal)||bal<0)bal=1000;let shown=bal,anim=0;
   function paint(){$('#bal').textContent=fmt(shown);$('#refill').hidden=bal>=1;const l=$('#lbal');if(l)l.textContent=fmt(bal)}
   function to(v){const from=shown,t0=performance.now(),D=RM?1:700;cancelAnimationFrame(anim);(function f(t){const k=Math.min(1,(t-t0)/D),e=1-Math.pow(1-k,3);shown=from+(v-from)*e;paint();if(k<1)anim=requestAnimationFrame(f)})(t0)}
-  function set(v){const up=v>bal;bal=Math.max(0,Math.round(v*100)/100);store.set(KEY,bal);to(bal);const p=$('#purse');p.classList.remove('up','dn','spin');void p.offsetWidth;p.classList.add(up?'up':'dn','spin')}
+  function set(v){const up=v>bal;bal=Math.max(0,Math.round(v*100)/100);store.set(KEY,bal);window.Acct&&Acct.sync(bal);to(bal);const p=$('#purse');p.classList.remove('up','dn','spin');void p.offsetWidth;p.classList.add(up?'up':'dn','spin')}
   return{get bal(){return bal},set,paint,
     take(x){if(x<=0||x>bal+1e-9)return false;set(bal-x);return true},
     give(x,src,quiet){if(x<=0)return;set(bal+x);const p=center($('#purse'));if(!quiet)floater('+'+fmt(x),p.x,p.y+22);if(src)flyChips(src,Math.min(14,4+Math.round(Math.log2(1+x/50))))},
