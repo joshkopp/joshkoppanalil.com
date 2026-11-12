@@ -140,5 +140,5 @@ window.Acct = (() => {
   paint(); board(); if (S) pull();
   setInterval(() => { if (!document.hidden && !q('#lobby').hidden) board(); }, 30000);
   q('#back').addEventListener('click', () => board());
-  return { sync, board, token: tok, open, get user() { return S && S.name; }, get admin() { return !!(S && S.admin); } };
+  return { sync, board, token: tok, open, get user() { return S && S.name; }, get id() { return S && S.id; }, get admin() { return !!(S && S.admin); } };
 })();

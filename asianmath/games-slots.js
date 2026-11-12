@@ -18,7 +18,7 @@ reg((()=>{
     if(busy)return;const bet=Bet.take();if(!bet){auto=0;paintAuto();return}busy=true;$('#slSpin').disabled=true;
     $('#slLines').innerHTML='';$$('.sym.win',R).forEach(s=>s.classList.remove('win'));$('#slWin').textContent='GOOD LUCK';$('#slWin').className='sldisp';
     const lv=$('#slLever');lv.classList.add('pull');setTimeout(()=>lv.classList.remove('pull'),380);SFX.whoosh();
-    const gen=()=>Array.from({length:5},()=>[rs(),rs(),rs()]);grid=lucky()?bestOf(6,gen,g=>evalGrid(g).reduce((a,w)=>a+w.p,0)):gen();
+    const gen=()=>Array.from({length:5},()=>[rs(),rs(),rs()]);grid=tilt(6,gen,g=>evalGrid(g).reduce((a,w)=>a+w.p,0));
     const hot=grid.slice(0,3).flat().filter(s=>s===WILD||s==='7️⃣').length>=3;
     const reels=$$('.reel',R),jobs=[];let ticking=setInterval(()=>SFX.reel(),70);
     reels.forEach((r,i)=>{const st=$('.strip',r),extra=i>=3&&hot?14:0,n=fillStrip(st,grid[i],18+i*5+extra);
@@ -69,6 +69,7 @@ reg((()=>{
   function spin(){if(busy)return;const t=Object.values(bets).reduce((a,b)=>a+b,0);if(!t){banner($('#mwM'),'Place a bet on a box first.','push');return}
     busy=true;$('#mwSpin').disabled=true;banner($('#mwM'),'');let idx=rnd(N);
     if(lucky()){const ks=Object.keys(bets),k=ks.sort((a,b)=>bets[b]*KINDS[b].pay-bets[a]*KINDS[a].pay)[Math.random()<.35?0:rnd(ks.length)],ids=SEG.map((s,i)=>s===k?i:-1).filter(i=>i>=0);idx=pick(ids)}
+    else if(unlucky()){const ids=SEG.map((s,i)=>bets[s]?-1:i).filter(i=>i>=0);if(ids.length)idx=pick(ids)}
     const target=-Math.PI/2-(idx*STEP+STEP/2)+(Math.random()-.5)*STEP*.6,turns=Math.PI*2*(5+rnd(2));let end=target;while(end<ang+turns)end+=Math.PI*2;
     sp={t0:performance.now(),D:RM?400:7000,a0:ang,a1:end,idx}}
   function done(idx){const k=SEG[idx];let tot=0,ret=0;for(const[b,v]of Object.entries(bets)){tot+=v;if(b===k)ret+=v*(KINDS[k].pay+1)}
@@ -113,7 +114,7 @@ reg((()=>{
     $('#knCount').textContent=`${k}/10 picked`;$$('.kc',R).forEach(c=>c.classList.toggle('pk',picks.has(+c.dataset.n)))}
   async function play(){if(busy)return;if(!picks.size){banner($('#knM'),'Pick at least one number.','push');return}const bet=Bet.take();if(!bet)return;busy=true;$('#knGo').disabled=true;banner($('#knM'),'');
     $$('.kc',R).forEach(c=>c.classList.remove('hit','miss','drawn'));$('#knBalls').innerHTML='';$$('.kp',R).forEach(x=>x.classList.remove('on'));
-    const genP=()=>shuffle(Array.from({length:40},(_,i)=>i+1)).slice(0,10),pool=lucky()?bestOf(5,genP,p=>p.filter(n=>picks.has(n)).length+Math.random()*.5):genP();let hits=0;
+    const genP=()=>shuffle(Array.from({length:40},(_,i)=>i+1)).slice(0,10),pool=tilt(5,genP,p=>p.filter(n=>picks.has(n)).length+Math.random()*.5);let hits=0;
     for(const n of pool){const hit=picks.has(n);if(hit)hits++;
       const b=el('i','kb'+(hit?' h':''),n);$('#knBalls').appendChild(b);const c=$(`.kc[data-n="${n}"]`,R);c.classList.add(hit?'hit':'drawn');
       if(hit){SFX.gem();const p=center(c);FX.burst(p.x,p.y,{n:14,type:'gem',colors:['#5cff9d','#fff3c4','#57c7ff'],speed:6,life:40})}else SFX.pop(380+n*6);
@@ -150,7 +151,7 @@ reg((()=>{
     cx.fillStyle='rgba(40,40,40,.7)';cx.font=`900 ${Math.max(14,W*.045)}px Cinzel,serif`;cx.fillText('SCRATCH HERE',W/2,H/2)}
   function scratch(x,y){const w=Math.max(16,cv.clientWidth*.045);cx.globalCompositeOperation='destination-out';cx.lineCap='round';cx.lineWidth=w*2;cx.beginPath();if(lp){cx.moveTo(lp[0],lp[1]);cx.lineTo(x,y);cx.stroke()}else{cx.arc(x,y,w,0,7);cx.fill()}lp=[x,y];const n=performance.now();if(n-last>45){last=n;SFX.card()}}
   function cleared(){const W=cv.width,H=cv.height,d=cx.getImageData(0,0,W,H).data;let c=0,t=0;for(let i=3;i<d.length;i+=4*37){t++;if(d[i]<40)c++}return c/t}
-  function buy(){if(!done)return;bet=Bet.take();if(!bet)return;done=false;ticket=lucky()?bestOf(5,makeTicket,t=>t.win?t.win[1]:0):makeTicket();$('#scCells').innerHTML=ticket.cells.map(s=>`<div class="scc">${s}</div>`).join('');
+  function buy(){if(!done)return;bet=Bet.take();if(!bet)return;done=false;ticket=tilt(5,makeTicket,t=>t.win?t.win[1]:0);$('#scCells').innerHTML=ticket.cells.map(s=>`<div class="scc">${s}</div>`).join('');
     paintFoil();cv.style.opacity=1;cv.style.pointerEvents='auto';$('#scBuy').hidden=true;$('#scAll').hidden=false;banner($('#scM'),'Scratch all nine squares. Three of a kind wins.');SFX.chip();
     const t=$('.sct',R);t.classList.remove('dealt');void t.offsetWidth;t.classList.add('dealt')}
   function reveal(){if(done)return;done=true;cv.style.transition='opacity .6s';cv.style.opacity=0;cv.style.pointerEvents='none';setTimeout(()=>cv.style.transition='',700);

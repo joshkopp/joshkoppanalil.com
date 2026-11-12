@@ -11,6 +11,7 @@ reg((()=>{
   let R,shoe=[],dealer=[],hands=[],act=0,phase='bet',dEl,dTot,pBox,msg,btn={};
   const draw=(...want)=>{if(shoe.length<60){shoe=deck(6);toast('Fresh 6-deck shoe shuffled')}
     if(want.length&&lucky())for(const f of want){const i=shoe.findLastIndex((c,k)=>k>shoe.length-40&&f(c));if(i>=0){[shoe[i],shoe[shoe.length-1]]=[shoe[shoe.length-1],shoe[i]];break}}
+    else if(want.length&&unlucky()){const i=shoe.findLastIndex((c,k)=>k>shoe.length-40&&!want.some(f=>f(c)));if(i>=0)[shoe[i],shoe[shoe.length-1]]=[shoe[shoe.length-1],shoe[i]]}
     return shoe.pop()};
   const cv=c=>c.r==='A'?11:['K','Q','J','10'].includes(c.r)?10:+c.r;
   function val(cs){let t=0,a=0;for(const c of cs){t+=cv(c);if(c.r==='A')a++}while(t>21&&a){t-=10;a--}return{t,soft:a>0}}
@@ -83,7 +84,7 @@ reg((()=>{
       if(p3===null?b<=5:(b<=2||(b===3&&v!==8)||(b===4&&v>=2&&v<=7)||(b===5&&v>=4&&v<=7)||(b===6&&(v===6||v===7))))B.push(d())}
     const fp=tot(P),fb=tot(B);return fp>fb?'P':fb>fp?'B':'T'}
   async function play(){if(busy)return;const bet=Bet.take();if(!bet)return;busy=true;$('#bcGo').disabled=true;banner($('#bcM'),'');
-    if(shoe.length<20)shoe=deck(8);if(lucky())for(let k=0;k<80&&sim(shoe)!==side;k++)shuffle(shoe);
+    if(shoe.length<20)shoe=deck(8);if(lucky())for(let k=0;k<80&&sim(shoe)!==side;k++)shuffle(shoe);else if(unlucky())for(let k=0;k<80&&sim(shoe)===side;k++)shuffle(shoe);
     const P=[],B=[],pb=$('#bcP'),bb=$('#bcB'),sh=$('.shoe',R);pb.innerHTML=bb.innerHTML='';$$('.bcz',R).forEach(z=>z.classList.remove('wz'));
     const t=(id,cs)=>{$(id).textContent=tot(cs)};
     for(let i=0;i<2;i++){P.push(draw());await dealCard(pb,P[i],{from:sh});t('#bcPT',P);B.push(draw());await dealCard(bb,B[i],{from:sh});t('#bcBT',B)}
@@ -129,12 +130,12 @@ reg((()=>{
   function paintPT(hit){$('#vpPT').innerHTML=PT.map(([n,m],i)=>`<div class="ptr${i===hit?' hit':''}"><span>${n}</span><b>${m}×</b><em>${fmt(m*Math.max(1,bet||Bet.v))}</em></div>`).join('')}
   async function go(){
     const slots=$$('.vps',R);
-    if(phase==='deal'){bet=Bet.take();if(!bet)return;phase='busy';banner($('#vpM'),'Hold the cards you want to keep, then draw.');paintPT(-1);dk=lucky()?bestOf(14,()=>deck(1),d=>{const h=evalHand(d.slice(-5));return h<0?0:PT[h][1]+Math.random()*.5}):deck(1);held=[false,false,false,false,false];cards=[];
+    if(phase==='deal'){bet=Bet.take();if(!bet)return;phase='busy';banner($('#vpM'),'Hold the cards you want to keep, then draw.');paintPT(-1);dk=tilt(14,()=>deck(1),d=>{const h=evalHand(d.slice(-5));return h<0?0:PT[h][1]+Math.random()*.5});held=[false,false,false,false,false];cards=[];
       slots.forEach(s=>{s.querySelector('.cslot').innerHTML='';s.classList.remove('held')});
       for(let i=0;i<5;i++){cards.push(dk.pop());await dealCard($('.cslot',slots[i]),cards[i],{from:$('#vpGo'),delay:0})}
       const h=evalHand(cards);paintPT(h);phase='hold';$('#vpGo').textContent='Draw';return}
     if(phase==='hold'){phase='busy';
-      if(lucky()){const fin=d=>{const s=d.slice(),f=cards.map((c,i)=>held[i]?c:s.pop()),h=evalHand(f);return h<0?0:PT[h][1]+Math.random()*.5};dk=bestOf(30,()=>shuffle(dk.slice()),fin)}
+      {const fin=d=>{const s=d.slice(),f=cards.map((c,i)=>held[i]?c:s.pop()),h=evalHand(f);return h<0?0:PT[h][1]+Math.random()*.5};dk=tilt(30,()=>shuffle(dk.slice()),fin)}
       for(let i=0;i<5;i++)if(!held[i]){const s=$('.cslot',slots[i]);const old=s.firstChild;old.classList.remove('up');SFX.flip();await sleep(160);s.innerHTML='';cards[i]=dk.pop();await dealCard(s,cards[i],{from:$('#vpGo')})}
       const h=evalHand(cards);paintPT(h);const pay=h>=0?bet*PT[h][1]:0;
       if(h>=0)slots.forEach(s=>s.querySelector('.cardz').classList.add('hl'));
@@ -184,6 +185,7 @@ reg((()=>{
     busy=true;banner($('#rM'),'No more bets…','push');$('#rSpin').disabled=true;SFX.whoosh();
     let n=rnd(37);
     if(lucky()){const bs=Object.values(RB),t=bs.reduce((a,b)=>a+b.stake,0),ret=x=>bs.reduce((a,b)=>a+(b.nums.includes(x)?b.stake*b.pay:0),0),good=[...Array(37).keys()].filter(x=>ret(x)>t);n=good.length?pick(good):[...Array(37).keys()].sort((a,b)=>ret(b)-ret(a))[0]}
+    else if(unlucky()){const bs=Object.values(RB),t=bs.reduce((a,b)=>a+b.stake,0),bad=[...Array(37).keys()].filter(x=>bs.reduce((a,b)=>a+(b.nums.includes(x)?b.stake*b.pay:0),0)<t);if(bad.length)n=pick(bad)}
     RL=JSON.parse(JSON.stringify(RB));W.rest=-1;W.sp={t0:performance.now(),D:RM?400:6200,a0:W.a,n,idx:ORD.indexOf(n),bets:RB}}
   function done(sp){const n=sp.n,bets=Object.values(sp.bets);let tot=0,ret=0;bets.forEach(b=>{tot+=b.stake;b.win=b.nums.includes(n);if(b.win)ret+=b.stake*b.pay});render();
     hist.unshift(n);hist=hist.slice(0,14);store.set('backroom-rhist',hist);paintHist();

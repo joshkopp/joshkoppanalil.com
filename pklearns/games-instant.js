@@ -13,7 +13,7 @@ reg((()=>{
   function paintBots(){$('#crBots').innerHTML=bots.map(b=>`<div class="bot ${b.out?'out':''} ${b.bust?'bust':''}"><span>${b.n}</span><b>${b.out?b.at.toFixed(2)+'×':b.bust?'—':fmt(b.bet)}</b></div>`).join('')}
   function btn(){const b=$('#crGo');if(state==='run'&&!cashed){b.textContent=`Cash out ${fmt(bet*m)}`;b.className='btn big grn';}else if(state==='run'){b.textContent='Waiting…';b.className='btn big ghost'}else{b.textContent='Launch';b.className='btn big pulse'}b.disabled=state==='run'&&cashed}
   function launch(){if(state==='run')return;bet=Bet.take();if(!bet)return;
-    const crashPt=()=>Math.max(1,Math.floor(99/(1-Math.random()))/100);cp=lucky()?Math.max(crashPt(),crashPt(),crashPt()):crashPt();
+    const crashPt=()=>Math.max(1,Math.floor(99/(1-Math.random()))/100);cp=lucky()?Math.max(crashPt(),crashPt(),crashPt()):unlucky()?Math.min(crashPt(),crashPt(),1+Math.floor(Math.random()*45)/100):crashPt();
     state='run';cashed=false;m=1;t0=performance.now();lastStep=0;trail=[];banner($('#crM'),'');
     bots=shuffle(NAMES.slice()).slice(0,7).map(n=>({n,bet:[10,25,50,100,250,500,1000][rnd(7)],at:Math.max(1.05,Math.min(25,.99/(1-Math.random()*.95))),out:false,bust:false}));paintBots();
     $('.crwrap',R).classList.remove('boom');SFX.whoosh();btn();if(!raf)raf=requestAnimationFrame(frame)}
@@ -85,7 +85,8 @@ reg((()=>{
     $$('#dcMode button').forEach(b=>b.classList.toggle('on',b.dataset.m===mode))}
   async function roll(){if(busy)return;const bet=Bet.take();if(!bet)return;busy=true;$('#dcGo').disabled=true;const t=T();
     let r=rnd(10000)/100;
-    if(LUCKY&&Math.random()<.9)r=(mode==='under'?Math.floor(Math.random()*t*100):Math.floor(Math.random()*(9999-t*100))+t*100+1)/100;
+    if(LUCKY&&!BOOST?Math.random()<.9:lucky())r=(mode==='under'?Math.floor(Math.random()*t*100):Math.floor(Math.random()*(9999-t*100))+t*100+1)/100;
+    else if(unlucky())r=(mode==='under'?Math.floor(t*100+Math.random()*(10000-t*100)):Math.floor(Math.random()*(t*100+1)))/100;
     const win=mode==='under'?r<t:r>t;SFX.roll();
     const mk=$('#dcMk'),big=$('#dcBig'),D=RM?1:900,t0=performance.now(),from=last;
     mk.classList.remove('w','l');big.classList.remove('w','l');
@@ -117,7 +118,7 @@ reg((()=>{
   const G={id:'coin',name:'Coin Flip',cat:'Instant Games',desc:'Heads or tails, 1.96×. Ride the streak.',edge:'98% RTP',tc:'rgba(130,90,20,.95)',art:`<div class="a-coin">JK</div>`};
   let R,busy=false,rot=0,streak=0,best=0,hist=[];
   async function flip(side){if(busy)return;const bet=Bet.take();if(!bet)return;busy=true;$$('.cfb',R).forEach(b=>b.disabled=true);banner($('#cfM'),'');
-    const res=lucky()?side:Math.random()<.5?'H':'T',coin=$('#cfCoin'),turns=6+rnd(3);
+    const res=lucky()?side:unlucky()?(side==='H'?'T':'H'):Math.random()<.5?'H':'T',coin=$('#cfCoin'),turns=6+rnd(3);
     const target=rot+turns*360+((res==='H'?0:180)-(((rot%360)+360)%360)+360)%360;SFX.whoosh();
     const D=RM?50:1700;
     coin.animate([{transform:`translateY(0) rotateX(${rot}deg) scale(1)`},{transform:`translateY(-180px) rotateX(${(rot+target)/2}deg) scale(1.25)`,offset:.45},{transform:`translateY(0) rotateX(${target}deg) scale(1)`}],{duration:D,easing:'cubic-bezier(.3,.6,.4,1)',fill:'forwards'});
@@ -156,7 +157,7 @@ reg((()=>{
   const pegX=(r,i)=>L.cx0+(i-(r+2)/2)*L.gap,pegY=r=>L.top+r*L.gap;
   const binX=i=>L.cx0+(i-rows/2)*L.gap;
   function drop(){if(!L.gap)layout();const bet=Bet.take();if(!bet){if(auto.on)stopAuto('Out of chips');return false}
-    const genPath=()=>Array.from({length:rows},()=>Math.random()<.5?0:1),path=lucky()?bestOf(4,genPath,p=>table()[p.reduce((a,b)=>a+b,0)]):genPath(),k=path.reduce((a,b)=>a+b,0);
+    const genPath=()=>Array.from({length:rows},()=>Math.random()<.5?0:1),path=tilt(4,genPath,p=>table()[p.reduce((a,b)=>a+b,0)]),k=path.reduce((a,b)=>a+b,0);
     const [h0,h1]=BALLC[risk],hue=h0+Math.random()*((h1-h0+360)%360);
     balls.push({bet,path,bin:k,r:0,u:0,x:L.cx0,y:0,c:`hsl(${hue%360},100%,62%)`,hop:.36+Math.random()*.14,wob:(Math.random()-.5)*.18,tr:[],rows,risk,sp:SPEED[speed].sp*(.92+Math.random()*.16)});
     SFX.pop(880+rnd(120));paintStats();kick();return true}
@@ -261,6 +262,7 @@ reg((()=>{
   function reveal(lost){$$('.tileb',R).forEach((t,i)=>{if(t.classList.contains('gem')||t.classList.contains('boom'))return;t.disabled=true;setTimeout(()=>{t.classList.add(bombs.has(i)?'boom':'gem','ghost');t.innerHTML=bombs.has(i)?'💣':'💎'},RM?0:120+i*18)})}
   function hit(i,t){if(!live||t.disabled)return;t.disabled=true;
     if(bombs.has(i)&&lucky()){const free=$$('.tileb',R).map((x,j)=>j).filter(j=>j!==i&&!bombs.has(j)&&!$$('.tileb',R)[j].disabled);if(free.length){bombs.delete(i);bombs.add(pick(free))}}
+    else if(!bombs.has(i)&&unlucky()){const bs=[...bombs];bombs.delete(pick(bs));bombs.add(i)}
     if(bombs.has(i)){live=false;t.classList.add('boom');t.innerHTML='💥';SFX.boom();const c=center(t);FX.burst(c.x,c.y,{n:50,type:'spark',colors:['#ff4f6d','#ff9f43','#fff'],speed:10,g:.1,life:40,size:4,lift:0});
       const f=$('.felt',R);f.classList.remove('shakeA');void f.offsetWidth;f.classList.add('shakeA');Stats.record(bet,0);banner($('#mnM'),`Boom! −${fmt(bet)}`,'lose');reveal(true);paint();return}
     open++;t.classList.add('gem');t.innerHTML='💎';SFX.gem();const c=center(t);FX.burst(c.x,c.y,{n:18,type:'gem',colors:['#5cff9d','#b9ffd6','#57c7ff'],speed:6,life:40});
@@ -293,6 +295,7 @@ reg((()=>{
   function showRow(f){const r=$(`.twrow[data-f="${f}"]`,R);$$('.twc',r).forEach((c,i)=>{if(c.classList.contains('s')||c.classList.contains('x'))return;c.disabled=true;c.classList.add(bombs[f].has(i)?'x':'s','ghost');c.textContent=bombs[f].has(i)?'💀':'💎'})}
   function pickDoor(f,i,c){if(!live||f!==floor)return;
     if(bombs[f].has(i)&&lucky()){const safe=[...Array(LV[lv].c).keys()].filter(j=>!bombs[f].has(j));if(safe.length){bombs[f].delete(i);bombs[f].add(pick(safe))}}
+    else if(!bombs[f].has(i)&&unlucky()){const bs=[...bombs[f]];if(bs.length){bombs[f].delete(pick(bs));bombs[f].add(i)}}
     if(bombs[f].has(i)){live=false;c.classList.add('x');c.textContent='💀';SFX.boom();const k=center(c);FX.burst(k.x,k.y,{n:40,type:'spark',colors:['#ff4f6d','#b47cff','#fff'],speed:9,g:.1,life:40,size:4,lift:0});
       for(let x=f;x<FL;x++)setTimeout(()=>showRow(x),RM?0:(x-f)*90);Stats.record(bet,0);banner($('#twM'),`You fell from floor ${f+1}! −${fmt(bet)}`,'lose');paint();return}
     c.classList.add('s');c.textContent='💎';SFX.gem();SFX.pop(500+f*90);const k=center(c);FX.burst(k.x,k.y,{n:20,type:'gem',colors:['#b47cff','#e7d2ff','#5cff9d'],speed:6,life:40});showRow(f);
@@ -326,7 +329,7 @@ reg((()=>{
   function say(t){const c=$('#dbCom');c.textContent=t;c.classList.remove('in');void c.offsetWidth;c.classList.add('in')}
   async function race(){if(busy||pickI<0)return;const bet=Bet.take();if(!bet)return;busy=true;paintCard();banner($('#dbM'),'');$$('.dbh',R).forEach(b=>b.disabled=true);
     // choose the winner by probability, then script a race that ends that way
-    let r=Math.random(),win=0;for(let i=0;i<6;i++){if((r-=field[i].pw)<0){win=i;break}win=i}if(lucky())win=pickI;
+    let r=Math.random(),win=0;for(let i=0;i<6;i++){if((r-=field[i].pw)<0){win=i;break}win=i}if(lucky())win=pickI;else if(unlucky()&&win===pickI)win=pick([...Array(6).keys()].filter(i=>i!==pickI));
     const rest=shuffle([...Array(6).keys()].filter(i=>i!==win)),order=[win,...rest],T=[];order.forEach((h,k)=>T[h]=1+(k===0?0:(k===1?.004+Math.random()*.03:.03+k*.02+Math.random()*.03)));
     const prof=field.map((_,i)=>{const K=10,v=Array.from({length:K},()=>.75+Math.random()*.5);if(i===win&&Math.random()<.6){for(let k=0;k<5;k++)v[k]*=.85;for(let k=7;k<K;k++)v[k]*=1.25}
       const cum=[0];v.forEach(x=>cum.push(cum[cum.length-1]+x));return cum.map(x=>x/cum[K])});

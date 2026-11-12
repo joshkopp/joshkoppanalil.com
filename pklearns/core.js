@@ -4,8 +4,13 @@ const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelecto
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const LUCKY=new URLSearchParams(location.search).get('luck')==='1'||(()=>{try{return sessionStorage.getItem('br-x')==='1'}catch(e){return false}})(),KEY=LUCKY?'backroom-lucky':'backroom';
 /* lucky mode (?luck=1, the "dam" code): most rounds get quietly tilted your way */
-const LUCK=LUCKY?.7:0,lucky=()=>Math.random()<LUCK;
+const LUCK0=LUCKY?.7:0;
+/* admin luck boosts (see luck.js) override the base: +1 = blessed, -1 = cursed */
+let BOOST=null;
+const luckNow=()=>BOOST&&(BOOST.rounds!=null?BOOST.rounds>0:Date.now()<BOOST.until)?BOOST.luck:LUCK0;
+const lucky=()=>Math.random()<Math.max(0,luckNow()),unlucky=()=>Math.random()<Math.max(0,-luckNow());
 function bestOf(n,gen,score){let b=gen(),bs=score(b);for(let i=1;i<n;i++){const x=gen(),s=score(x);if(s>bs){b=x;bs=s}}return b}
+function tilt(n,gen,score){return lucky()?bestOf(n,gen,score):unlucky()?bestOf(n,gen,x=>-score(x)):gen()}
 const fmt=n=>(n<0?'-$':'$')+Math.round(Math.abs(n)).toLocaleString('en-US');
 const fmtx=m=>(m>=100?m.toFixed(0):m>=10?m.toFixed(1):m.toFixed(2))+'×';
 const rnd=n=>Math.floor(Math.random()*n);
@@ -81,7 +86,7 @@ function flyChips(from,n=8){if(RM)return;const a=from.getBoundingClientRect?cent
 
 /* ------------------------------------------------------------ bank + stats */
 const Stats=(()=>{const s=store.get(KEY+'-stats',{played:0,wagered:0,won:0,biggest:0,best:0});
-  return{s,record(bet,payout){Bank.settled(bet);s.played++;s.wagered+=bet;s.won+=payout;const net=payout-bet;if(net>s.biggest)s.biggest=net;if(bet>0&&payout/bet>s.best)s.best=payout/bet;store.set(KEY+'-stats',s);paintStats()}}})();
+  return{s,record(bet,payout){Bank.settled(bet);window.Luck&&Luck.round();s.played++;s.wagered+=bet;s.won+=payout;const net=payout-bet;if(net>s.biggest)s.biggest=net;if(bet>0&&payout/bet>s.best)s.best=payout/bet;store.set(KEY+'-stats',s);paintStats()}}})();
 const Bank=(()=>{
   let bal=Number(store.get(KEY,1000));if(!isFinite(bal)||bal<0)bal=1000;let shown=bal,anim=0,out=0,giving=false;
   /* out = chips on the table in an unfinished round; no free refill until they're settled */

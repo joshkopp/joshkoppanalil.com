@@ -86,11 +86,17 @@
     let j = null; try { j = await r.json(); } catch (e) {} if (!r.ok) throw new Error((j && j.message) || 'Failed'); return j; }
   async function del(id) { try { await rest('/rest/v1/rpc/admin_action', { method: 'POST', body: JSON.stringify({ action: 'delmsg', target: String(id) }) }); drop(id); } catch (e) { toast(e.message); } }
   window.ChatResync = () => resync();
-  const HELP = '/freeze · /unfreeze · /mute · /unmute · /give name amt · /reset · /purge · /clear · trolls: /fakewin /jumpscare /fakeban /fakebroke /flip /shake /spin /glitch /rain + name|random|all';
+  const HELP = '/freeze · /unfreeze · /mute · /unmute · /give name amt · /reset · /purge · /clear · luck: /luck name 80 30m · /bless name 5g · /curse name next · /unluck name · trolls: /fakewin /jumpscare /fakeban /fakebroke /flip /shake /spin /glitch /rain + name|random|all';
   async function command(v) {
     let [c, ...a] = v.slice(1).trim().split(/\s+/), target = a.join(' '), amount = null;
     if (c === 'give') { c = 'setbal'; amount = Number((a[1] || '').replace(/[$,]/g, '').replace(/k$/i, 'e3').replace(/m$/i, 'e6').replace(/b$/i, 'e9').replace(/t$/i, 'e12')); target = a[0]; if (!target || !isFinite(amount)) { toast('Use: /give name amount'); return; } }
     if (!c || c === 'help') { toast(HELP); return; }
+    if (c === 'luck' || c === 'unluck' || c === 'bless' || c === 'curse') {
+      const who = a[0]; if (!who) { toast('Use: /luck name 80 30m   ·   /curse name next   ·   /unluck name'); return; }
+      let pct = c === 'bless' ? 90 : c === 'curse' ? -90 : c === 'unluck' ? 0 : Number(a[1]), d = (c === 'luck' ? a[2] : a[1]) || 'next', mins = null, rounds = null;
+      if (!isFinite(pct)) { toast('Luck is -100 to 100'); return; }
+      const m = /^(\d+)\s*(m|min|h|g|games?)?$/i.exec(d); if (d === 'next' || !m) rounds = 1; else if (/^g/i.test(m[2] || '')) rounds = +m[1]; else mins = +m[1] * (/^h/i.test(m[2] || '') ? 60 : 1);
+      toast(String(await rest('/rest/v1/rpc/admin_luck', { method: 'POST', body: JSON.stringify({ target: who, luck: pct, minutes: mins, rounds, visible: false }) }))); return; }
     if (c === 'freeze' || c === 'unfreeze') { toast(String(await rest('/rest/v1/rpc/admin_freeze', { method: 'POST', body: JSON.stringify({ on_: c === 'freeze' }) }))); window.Fun && Fun.check(); return; }
     if (window.Fun && Fun.KINDS[c]) { if (!target) { toast(`Use: /${c} name  (or random / all)`); return; }
       const amt = c === 'fakewin' ? (Number((a[1] || '').replace(/[$,]/g, '').replace(/k$/i, 'e3').replace(/m$/i, 'e6').replace(/b$/i, 'e9').replace(/t$/i, 'e12')) || null) : null;
