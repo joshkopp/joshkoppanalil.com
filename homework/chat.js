@@ -30,7 +30,8 @@
   addEventListener('keydown', e => { if (e.key === 'Escape' && open && document.activeElement === q('#chi')) setOpen(false); });
   // keep game hotkeys (space, R…) from firing while typing
   q('#chi').addEventListener('keydown', e => e.stopPropagation());
-  function authUI() { const u = Acct.user; q('#chf').hidden = !u; q('#chout').hidden = !!u; q('#chi').placeholder = Acct.admin ? 'Message, or /help for admin commands' : 'Say something…'; paintAll(); }
+  let authKey = null;
+  function authUI() { const u = Acct.user, k = u + '|' + Acct.admin; if (k === authKey) return; authKey = k; q('#chf').hidden = !u; q('#chout').hidden = !!u; q('#chi').placeholder = Acct.admin ? 'Message, or /help for admin commands' : 'Say something…'; paintAll(); }
   addEventListener('acct', authUI);
 
   const time = d => new Date(d).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
@@ -39,7 +40,7 @@
     const n = document.createElement('b'); n.textContent = m.username; n.style.color = `hsl(${[...m.username].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7)},70%,72%)`;
     const t = document.createElement('span'); t.className = 'cht'; t.textContent = clean(m.body);
     const tm = document.createElement('time'); tm.textContent = time(m.created_at);
-    if (m.admin) { li.classList.add('adm'); const a = document.createElement('i'); a.className = 'chtag'; a.textContent = 'ADMIN'; n.prepend(a); }
+    if (m.admin) { li.classList.add('chadm'); const a = document.createElement('i'); a.className = 'chtag'; a.textContent = 'ADMIN'; n.prepend(a); }
     if (m.kind === 'win') { li.append('🏆 ', n, ' ', t, tm); } else li.append(n, t, tm);
     if (Acct.admin) { const x = document.createElement('button'); x.className = 'chdel'; x.title = 'Delete message'; x.textContent = '×'; x.onclick = () => del(m.id); li.append(x); }
     return li;
@@ -83,15 +84,17 @@
   /* ---------------- admin tools */
   async function rest(path, opt = {}) { const t = await Acct.token(); const r = await fetch(API + path, { ...opt, headers: { ...H, Authorization: 'Bearer ' + t, 'Content-Type': 'application/json', ...(opt.headers || {}) } });
     let j = null; try { j = await r.json(); } catch (e) {} if (!r.ok) throw new Error((j && j.message) || 'Failed'); return j; }
-  async function del(id) { try { await rest('/rest/v1/messages?id=eq.' + id, { method: 'DELETE' }); drop(id); } catch (e) { toast(e.message); } }
-  const HELP = '/mute name · /unmute name · /reset name (wipes score) · /purge name (delete their messages) · /clear (wipe chat)';
+  async function del(id) { try { await rest('/rest/v1/rpc/admin_action', { method: 'POST', body: JSON.stringify({ action: 'delmsg', target: String(id) }) }); drop(id); } catch (e) { toast(e.message); } }
+  window.ChatResync = () => resync();
+  const HELP = '/mute name · /unmute name · /give name amount · /reset name · /purge name · /clear  (or open ♛ Admin up top)';
   async function command(v) {
-    const [c, ...a] = v.slice(1).trim().split(/\s+/), target = a.join(' ');
+    let [c, ...a] = v.slice(1).trim().split(/\s+/), target = a.join(' '), amount = null;
+    if (c === 'give') { c = 'setbal'; amount = Number((a[1] || '').replace(/[$,]/g, '').replace(/k$/i, 'e3').replace(/m$/i, 'e6').replace(/b$/i, 'e9').replace(/t$/i, 'e12')); target = a[0]; if (!target || !isFinite(amount)) { toast('Use: /give name amount'); return; } }
     if (!c || c === 'help') { toast(HELP); return; }
-    if (!['mute', 'unmute', 'reset', 'purge', 'clear'].includes(c)) { toast('Unknown command. Try /help'); return; }
+    if (!['mute', 'unmute', 'reset', 'purge', 'clear', 'setbal'].includes(c)) { toast('Unknown command. Try /help'); return; }
     if (c === 'clear' && !confirm('Delete every chat message?')) return;
-    const r = await rest('/rest/v1/rpc/admin_action', { method: 'POST', body: JSON.stringify({ action: c, target: target || null }) });
-    toast(String(r)); if (c === 'clear' || c === 'purge') resync(); if (c === 'reset') Acct.board();
+    const r = await rest('/rest/v1/rpc/admin_action', { method: 'POST', body: JSON.stringify({ action: c, target: target || null, amount }) });
+    toast(String(r)); if (c === 'clear' || c === 'purge') resync(); if (c === 'reset' || c === 'setbal') Acct.board();
   }
 
   async function send(text) {
@@ -104,7 +107,8 @@
   q('#chf').onsubmit = async e => {
     e.preventDefault(); const i = q('#chi'), v = i.value.trim(); if (!v) return;
     q('#chs').disabled = true;
-    try { if (v[0] === '/' && Acct.admin) await command(v); else await send({ body: v.slice(0, 200) }); i.value = ''; } catch (err) { if (typeof toast === 'function') toast(err.message); }
+    try { if (v[0] === '/' && !Acct.admin) { toast('Commands are admin-only.'); return; }
+      if (v[0] === '/') await command(v); else await send({ body: v.slice(0, 200) }); i.value = ''; } catch (err) { if (typeof toast === 'function') toast(err.message); }
     finally { q('#chs').disabled = false; i.focus(); }
   };
 
