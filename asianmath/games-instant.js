@@ -253,13 +253,13 @@ reg((()=>{
 reg((()=>{
   const G={id:'mines',name:'Mines',cat:'Instant Games',desc:'Flip tiles for gems, dodge the mines, cash out any time.',edge:'99% RTP',tc:'rgba(20,100,70,.95)',
     art:`<div class="a-grid">${Array.from({length:16},(_,i)=>`<i style="--d:${(i*.37)%3}"></i>`).join('')}</div>`};
-  let R,mines=3,bombs=new Set(),open=0,bet=0,live=false;
+  let R,mines=3,bombs=new Set(),open=0,bet=0,live=false,rid=0,revealing=0;
   const mult=k=>{let m=.99;for(let i=0;i<k;i++)m*=(25-i)/(25-mines-i);return Math.min(m,MAXX)};
   function paint(){$('#mnN').textContent=mines;setRange($('#mnR'));$('#mnNow').textContent=live?fmtx(open?mult(open):1):'—';$('#mnNext').textContent=open<25-mines?fmtx(mult(open+1)):'—';
     $('#mnGo').textContent=live?(open?`Cash out ${fmt(bet*mult(open))}`:'Pick a tile…'):'Start round';$('#mnGo').className='btn big '+(live?(open?'grn':'ghost'):'pulse');$('#mnGo').disabled=live&&!open;$('#mnR').disabled=live}
-  function start(){if(live)return cash();bet=Bet.take();if(!bet)return;live=true;open=0;bombs=new Set(shuffle([...Array(25).keys()]).slice(0,mines));
+  function start(){if(live)return cash();if(Date.now()<revealing)return;bet=Bet.take();if(!bet)return;rid++;live=true;open=0;bombs=new Set(shuffle([...Array(25).keys()]).slice(0,mines));
     $$('.tileb',R).forEach((t,i)=>{t.className='tileb';t.innerHTML='';t.disabled=false;t.animate([{transform:'scale(.8)',opacity:.4},{transform:'none',opacity:1}],{duration:300,delay:i*14,easing:'cubic-bezier(.3,1.6,.5,1)',fill:'backwards'})});banner($('#mnM'),'Find the gems.');SFX.chip();paint()}
-  function reveal(lost){$$('.tileb',R).forEach((t,i)=>{if(t.classList.contains('gem')||t.classList.contains('boom'))return;t.disabled=true;setTimeout(()=>{t.classList.add(bombs.has(i)?'boom':'gem','ghost');t.innerHTML=bombs.has(i)?'💣':'💎'},RM?0:120+i*18)})}
+  function reveal(lost){const b=bombs,id=rid;revealing=Date.now()+(RM?0:700);$$('.tileb',R).forEach((t,i)=>{if(t.classList.contains('gem')||t.classList.contains('boom'))return;t.disabled=true;setTimeout(()=>{if(id!==rid)return;t.classList.add(b.has(i)?'boom':'gem','ghost');t.innerHTML=b.has(i)?'💣':'💎'},RM?0:120+i*18)})}
   function hit(i,t){if(!live||t.disabled)return;t.disabled=true;
     if(bombs.has(i)&&lucky()){const free=$$('.tileb',R).map((x,j)=>j).filter(j=>j!==i&&!bombs.has(j)&&!$$('.tileb',R)[j].disabled);if(free.length){bombs.delete(i);bombs.add(pick(free))}}
     else if(!bombs.has(i)&&unlucky()){const bs=[...bombs];bombs.delete(pick(bs));bombs.add(i)}
@@ -285,19 +285,19 @@ reg((()=>{
   const LV={easy:{c:4,b:1,n:'Easy'},med:{c:3,b:1,n:'Medium'},hard:{c:2,b:1,n:'Hard'},xp:{c:3,b:2,n:'Expert'}},FL=8;
   const G={id:'tower',name:'Tower',cat:'Instant Games',newb:true,desc:'Climb eight floors. Each step multiplies, one wrong door and you fall.',edge:'99% RTP',tc:'rgba(90,40,120,.95)',
     art:`<div class="a-tower">${Array.from({length:5},(_,r)=>`<div>${Array.from({length:3},(_,i)=>`<i style="--d:${(r*3+i)*.21%2.6}"></i>`).join('')}</div>`).join('')}</div>`};
-  let R,lv='med',floor=0,live=false,bet=0,bombs=[];
+  let R,lv='med',floor=0,live=false,bet=0,bombs=[],rid=0,revealing=0;
   const p=()=>(LV[lv].c-LV[lv].b)/LV[lv].c,mult=k=>k?.99/Math.pow(p(),k):1;
   function build(){const L=LV[lv];$('#twG').innerHTML=Array.from({length:FL},(_,r)=>{const f=FL-1-r;return`<div class="twrow" data-f="${f}"><span class="twm">${fmtx(mult(f+1))}</span><div class="twcells" style="--c:${L.c}">${Array.from({length:L.c},(_,i)=>`<button class="twc" data-i="${i}" disabled></button>`).join('')}</div></div>`}).join('');paint()}
   function paint(){$$('.twrow',R).forEach(r=>{const f=+r.dataset.f;r.classList.toggle('act',live&&f===floor);r.classList.toggle('done',f<floor);$$('.twc',r).forEach(c=>{if(!c.classList.contains('s')&&!c.classList.contains('x'))c.disabled=!(live&&f===floor)})});
     $('#twGo').textContent=live?(floor?`Cash out ${fmt(bet*mult(floor))}`:'Pick a door…'):'Start climb';$('#twGo').className='btn big '+(live?(floor?'grn':'ghost'):'pulse');$('#twGo').disabled=live&&!floor;
     $$('#twLv button').forEach(b=>b.classList.toggle('on',b.dataset.v===lv))}
-  function start(){if(live)return cash();bet=Bet.take();if(!bet)return;live=true;floor=0;const L=LV[lv];bombs=Array.from({length:FL},()=>new Set(shuffle([...Array(L.c).keys()]).slice(0,L.b)));build();live=true;paint();banner($('#twM'),'Pick a door on the bottom floor.');SFX.chip()}
-  function showRow(f){const r=$(`.twrow[data-f="${f}"]`,R);$$('.twc',r).forEach((c,i)=>{if(c.classList.contains('s')||c.classList.contains('x'))return;c.disabled=true;c.classList.add(bombs[f].has(i)?'x':'s','ghost');c.textContent=bombs[f].has(i)?'💀':'💎'})}
+  function start(){if(live)return cash();if(Date.now()<revealing)return;bet=Bet.take();if(!bet)return;rid++;live=true;floor=0;const L=LV[lv];bombs=Array.from({length:FL},()=>new Set(shuffle([...Array(L.c).keys()]).slice(0,L.b)));build();live=true;paint();banner($('#twM'),'Pick a door on the bottom floor.');SFX.chip()}
+  function showRow(f,id=rid,B=bombs){if(id!==rid)return;const bombs=B,r=$(`.twrow[data-f="${f}"]`,R);$$('.twc',r).forEach((c,i)=>{if(c.classList.contains('s')||c.classList.contains('x'))return;c.disabled=true;c.classList.add(bombs[f].has(i)?'x':'s','ghost');c.textContent=bombs[f].has(i)?'💀':'💎'})}
   function pickDoor(f,i,c){if(!live||f!==floor)return;
     if(bombs[f].has(i)&&lucky()){const safe=[...Array(LV[lv].c).keys()].filter(j=>!bombs[f].has(j));if(safe.length){bombs[f].delete(i);bombs[f].add(pick(safe))}}
     else if(!bombs[f].has(i)&&unlucky()){const bs=[...bombs[f]];if(bs.length){bombs[f].delete(pick(bs));bombs[f].add(i)}}
     if(bombs[f].has(i)){live=false;c.classList.add('x');c.textContent='💀';SFX.boom();const k=center(c);FX.burst(k.x,k.y,{n:40,type:'spark',colors:['#ff4f6d','#b47cff','#fff'],speed:9,g:.1,life:40,size:4,lift:0});
-      for(let x=f;x<FL;x++)setTimeout(()=>showRow(x),RM?0:(x-f)*90);Stats.record(bet,0);banner($('#twM'),`You fell from floor ${f+1}! −${fmt(bet)}`,'lose');paint();return}
+      {const id=rid,B=bombs;revealing=Date.now()+(RM?0:(FL-f)*90+100);for(let x=f;x<FL;x++)setTimeout(()=>showRow(x,id,B),RM?0:(x-f)*90)}Stats.record(bet,0);banner($('#twM'),`You fell from floor ${f+1}! −${fmt(bet)}`,'lose');paint();return}
     c.classList.add('s');c.textContent='💎';SFX.gem();SFX.pop(500+f*90);const k=center(c);FX.burst(k.x,k.y,{n:20,type:'gem',colors:['#b47cff','#e7d2ff','#5cff9d'],speed:6,life:40});showRow(f);
     floor++;if(floor===FL){paint();cash();return}paint()}
   function cash(){if(!live||!floor)return;live=false;const pay=bet*mult(floor);settle(bet,pay,$('#twG'),{big:10});banner($('#twM'),`Cashed on floor ${floor} · ${fmtx(mult(floor))} · +${fmt(pay-bet)}`,'win');for(let x=floor;x<FL;x++)showRow(x);paint()}

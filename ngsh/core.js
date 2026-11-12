@@ -141,17 +141,20 @@ function deck(n=1){const d=[];for(let k=0;k<n;k++)for(const s of SUITS)for(const
 const rankVal=c=>RANKS.indexOf(c.r)+1;               // A=1 .. K=13
 function cardHTML(c){const red=c.s==='♥'||c.s==='♦',face=['J','Q','K'].includes(c.r);
   return`<div class="ci"><div class="f"><div class="ix tl">${c.r}<small>${c.s}</small></div>${face?`<div class="face">${c.r}<small>${c.s}</small></div>`:`<div class="pip">${c.s}</div>`}<div class="ix br">${c.r}<small>${c.s}</small></div></div><div class="b"></div></div>`}
-function cardEl(c,up=true){const e=el('div','cardz'+((c.s==='♥'||c.s==='♦')?' red':'')+(up?' up':''),cardHTML(c));e.card=c;return e}
+/* face-down cards carry no face in the DOM (so Inspect Element can't peek); the real card lives in a private map */
+const HIDDEN=new WeakMap();
+function cardEl(c,up=true){if(up){const e=el('div','cardz'+((c.s==='♥'||c.s==='♦')?' red':'')+' up',cardHTML(c));e.card=c;return e}const e=el('div','cardz',cardHTML({r:'',s:''}));HIDDEN.set(e,c);return e}
+function showFace(e){const c=HIDDEN.get(e);if(!c)return;HIDDEN.delete(e);e.innerHTML=cardHTML(c);if(c.s==='♥'||c.s==='♦')e.classList.add('red');e.card=c;void e.offsetWidth}
 /** deals a card into container with a flight from the shoe (or top-right of the felt) */
 async function dealCard(box,c,{up=true,from,delay=0}={}){
   if(delay)await sleep(delay);
   const e=cardEl(c,false);box.appendChild(e);SFX.card();
   if(!RM){const src=from?center(from):{x:innerWidth-80,y:120},dst=center(e);
     await e.animate([{transform:`translate(${src.x-dst.x}px,${src.y-dst.y}px) rotate(-40deg) scale(.6)`,opacity:.2},{transform:'none',opacity:1}],{duration:420,easing:'cubic-bezier(.2,.8,.2,1)'}).finished.catch(()=>{})}
-  if(up){e.classList.add('up');SFX.flip();await sleep(RM?0:200)}
+  if(up){showFace(e);e.classList.add('up');SFX.flip();await sleep(RM?0:200)}
   return e;
 }
-function flipCard(e){e.classList.add('up');SFX.flip()}
+function flipCard(e){showFace(e);e.classList.add('up');SFX.flip()}
 
 /* ------------------------------------------------------------ games registry + router */
 const GAMES=[];function reg(g){GAMES.push(g)}
