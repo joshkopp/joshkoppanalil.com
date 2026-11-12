@@ -4,8 +4,7 @@
 window.Acct = (() => {
   const API = 'https://nvfxdzxdlizznrknmunl.supabase.co', PK = 'sb_publishable_exrSq3la18u98vwYxoddFQ_YDQoYBnC';
   const SKEY = 'br-acct', DOM = '@players.joshkoppanalil.com', CAP = 1e9;
-  const lucky = typeof LUCKY !== 'undefined' && LUCKY; // the boosted-luck code never touches the board
-  const q = s => document.querySelector(s), esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const q = s => document.querySelector(s), esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   let S = null; try { S = JSON.parse(localStorage.getItem(SKEY) || 'null'); } catch (e) {}
   const save = () => { try { S ? localStorage.setItem(SKEY, JSON.stringify(S)) : localStorage.removeItem(SKEY); } catch (e) {} };
 
@@ -30,7 +29,7 @@ window.Acct = (() => {
   /* ------------------------------------------------ syncing the bankroll */
   let last = null, timer = 0, applying = false;
   function sync(bal) {
-    if (!S || lucky || applying) return;
+    if (!S || applying) return;
     last = Math.max(0, Math.min(Math.floor(bal), CAP)); if (last > S.best) { S.best = last; save(); }
     clearTimeout(timer); timer = setTimeout(flush, 2000);
   }
@@ -80,7 +79,7 @@ window.Acct = (() => {
   function signOut(quiet) { flush(true); S = null; last = null; save(); paint(); board(); if (!quiet && typeof toast === 'function') toast('Signed out. Your chips stay on this device.'); }
 
   /* ------------------------------------------------ UI */
-  const btn = document.createElement('button'); btn.className = 'acctb'; btn.id = 'acct'; btn.hidden = lucky;
+  const btn = document.createElement('button'); btn.className = 'acctb'; btn.id = 'acct';
   q('#refill').after(btn);
   const lb = document.createElement('section'); lb.className = 'lb'; lb.id = 'lb';
   lb.innerHTML = `<div class="lbh"><div><div class="lbk">Leaderboard</div><h2>High Rollers</h2></div><button class="lbr" id="lbr" aria-label="Refresh">↻</button></div>
@@ -104,7 +103,7 @@ window.Acct = (() => {
   function setMode(v) { mode = v; m.querySelectorAll('.atabs button').forEach(b => b.classList.toggle('on', b.dataset.m === v));
     q('#amt').textContent = v === 'up' ? 'Create account' : 'Sign in'; q('#amg').textContent = v === 'up' ? 'Create account' : 'Sign in';
     q('#amp').autocomplete = v === 'up' ? 'new-password' : 'current-password'; q('#ame').textContent = ''; }
-  function open(v) { if (lucky) return; m.hidden = false; q('#amin').hidden = !!S; q('#amout').hidden = !S; if (!S) { setMode(v || 'in'); setTimeout(() => q('#amu').focus(), 50); } else paint(); }
+  function open(v) { m.hidden = false; q('#amin').hidden = !!S; q('#amout').hidden = !S; if (!S) { setMode(v || 'in'); setTimeout(() => q('#amu').focus(), 50); } else paint(); }
   const close = () => { m.hidden = true; };
   m.addEventListener('click', e => { if (e.target === m) close(); }); q('#amx').onclick = close;
   addEventListener('keydown', e => { if (e.key === 'Escape' && !m.hidden) close(); });
@@ -122,8 +121,7 @@ window.Acct = (() => {
     btn.innerHTML = S ? `<i>♠</i><span>${esc(S.name)}</span>` : '<span>Sign in</span>'; btn.classList.toggle('in', !!S);
     if (S) { q('#amn').textContent = S.name; q('#amb').textContent = fmt(S.best); const r = rows.findIndex(x => x.username === S.name); q('#amr').textContent = r >= 0 ? '#' + (r + 1) : 'Top 10?'; }
     const f = q('#lbf');
-    if (lucky) f.innerHTML = '<span class="lbnote">Lucky mode games don\'t count toward the board.</span>';
-    else if (S) f.innerHTML = `<span class="lbnote">You: <b>${esc(S.name)}</b> · best <b>${fmt(S.best)}</b></span>`;
+    if (S) f.innerHTML = `<span class="lbnote">You: <b>${esc(S.name)}</b> · best <b>${fmt(S.best)}</b></span>`;
     else { f.innerHTML = '<button class="btn sm" id="lbjoin">Sign in to join the board</button>'; q('#lbjoin').onclick = () => open('up'); }
   }
   async function board() {
@@ -135,7 +133,7 @@ window.Acct = (() => {
     } catch (e) { ol.innerHTML = '<li class="lbmsg">Leaderboard is offline right now.</li>'; }
     paint();
   }
-  paint(); board(); if (S && !lucky) pull();
+  paint(); board(); if (S) pull();
   setInterval(() => { if (!document.hidden && !q('#lobby').hidden) board(); }, 30000);
   q('#back').addEventListener('click', () => board());
   return { sync, board, get user() { return S && S.name; } };

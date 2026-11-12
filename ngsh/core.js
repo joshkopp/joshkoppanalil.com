@@ -81,16 +81,18 @@ function flyChips(from,n=8){if(RM)return;const a=from.getBoundingClientRect?cent
 
 /* ------------------------------------------------------------ bank + stats */
 const Stats=(()=>{const s=store.get(KEY+'-stats',{played:0,wagered:0,won:0,biggest:0,best:0});
-  return{s,record(bet,payout){s.played++;s.wagered+=bet;s.won+=payout;const net=payout-bet;if(net>s.biggest)s.biggest=net;if(bet>0&&payout/bet>s.best)s.best=payout/bet;store.set(KEY+'-stats',s);paintStats()}}})();
+  return{s,record(bet,payout){Bank.settled(bet);s.played++;s.wagered+=bet;s.won+=payout;const net=payout-bet;if(net>s.biggest)s.biggest=net;if(bet>0&&payout/bet>s.best)s.best=payout/bet;store.set(KEY+'-stats',s);paintStats()}}})();
 const Bank=(()=>{
-  let bal=Number(store.get(KEY,1000));if(!isFinite(bal)||bal<0)bal=1000;let shown=bal,anim=0;
-  function paint(){$('#bal').textContent=fmt(shown);$('#refill').hidden=bal>=1;const l=$('#lbal');if(l)l.textContent=fmt(bal)}
+  let bal=Number(store.get(KEY,1000));if(!isFinite(bal)||bal<0)bal=1000;let shown=bal,anim=0,out=0,giving=false;
+  /* out = chips on the table in an unfinished round; no free refill until they're settled */
+  function paint(){$('#bal').textContent=fmt(shown);$('#refill').hidden=bal>=1||out>0;const l=$('#lbal');if(l)l.textContent=fmt(bal)}
   function to(v){const from=shown,t0=performance.now(),D=RM?1:700;cancelAnimationFrame(anim);(function f(t){const k=Math.min(1,(t-t0)/D),e=1-Math.pow(1-k,3);shown=from+(v-from)*e;paint();if(k<1)anim=requestAnimationFrame(f)})(t0)}
-  function set(v){const up=v>bal;bal=Math.max(0,Math.round(v*100)/100);store.set(KEY,bal);window.Acct&&Acct.sync(bal);to(bal);const p=$('#purse');p.classList.remove('up','dn','spin');void p.offsetWidth;p.classList.add(up?'up':'dn','spin')}
+  function set(v){const up=v>bal;if(up&&!giving)out=Math.max(0,out-(v-bal));bal=Math.max(0,Math.round(v*100)/100);store.set(KEY,bal);window.Acct&&Acct.sync(bal);to(bal);const p=$('#purse');p.classList.remove('up','dn','spin');void p.offsetWidth;p.classList.add(up?'up':'dn','spin')}
   return{get bal(){return bal},set,paint,
-    take(x){if(x<=0||x>bal+1e-9)return false;set(bal-x);return true},
-    give(x,src,quiet){if(x<=0)return;set(bal+x);const p=center($('#purse'));if(!quiet)floater('+'+fmt(x),p.x,p.y+22);if(src)flyChips(src,Math.min(14,4+Math.round(Math.log2(1+x/50))))},
-    refill(){set(1000);toast('Topped up to $1,000. Good luck!');FX.rain(60)}};
+    take(x){if(x<=0||x>bal+1e-9)return false;out+=x;set(bal-x);return true},
+    settled(x){out=Math.max(0,out-x);paint()},get busy(){return out>0},
+    give(x,src,quiet){if(x<=0)return;giving=true;set(bal+x);giving=false;const p=center($('#purse'));if(!quiet)floater('+'+fmt(x),p.x,p.y+22);if(src)flyChips(src,Math.min(14,4+Math.round(Math.log2(1+x/50))))},
+    refill(){if(bal>=1)return;if(out>0){toast('Finish your current round first.');return}set(1000);toast('Topped up to $1,000. Good luck!');FX.rain(60)}};
 })();
 
 /* ------------------------------------------------------------ bet bar */
@@ -188,6 +190,7 @@ function boot(){
   $('#half').onclick=()=>{SFX.click();Bet.set(Bet.v/2)};$('#dbl').onclick=()=>{SFX.click();Bet.set(Bet.v*2)};$('#max').onclick=()=>{SFX.click();Bet.set(Math.max(1,Math.floor(Bank.bal)))};$('#clr').onclick=()=>{SFX.click();Bet.set(1)};
   Bet.show();
   $('#refill').onclick=()=>Bank.refill();
+  addEventListener('keydown',e=>{if((e.key==='r'||e.key==='R')&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName)&&!$('#refill').hidden){e.preventDefault();Bank.refill()}});
   $('#back').onclick=()=>{openLobby();SFX.click()};
   $('#snd').textContent=SFX.on?'🔊':'🔇';$('#snd').onclick=()=>{$('#snd').textContent=SFX.toggle()?'🔊':'🔇'};
   addEventListener('pointermove',e=>{document.body.style.setProperty('--mx',e.clientX+'px');document.body.style.setProperty('--my',e.clientY+'px')},{passive:true});
