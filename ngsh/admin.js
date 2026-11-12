@@ -20,8 +20,13 @@
   D.innerHTML = `<div class="admbox" role="dialog" aria-modal="true" aria-label="Admin console">
     <header><div><div class="admk">The Back Room</div><h2>♛ Admin Console</h2></div><div class="admhb"><button class="admr" id="admr" title="Refresh">↻</button><button class="admx" id="admx" aria-label="Close">×</button></div></header>
     <div class="admstats" id="admstats"></div>
-    <nav class="admtabs"><button data-t="players" class="on">Players</button><button data-t="chat">Chat</button></nav>
+    <nav class="admtabs"><button data-t="players" class="on">Players</button><button data-t="chat">Chat</button><button data-t="fun">Fun 😈</button></nav>
     <div class="admpane" id="admp-players"><div class="admbar"><input id="admq" placeholder="Search players…" autocomplete="off"><select id="adms"><option value="best">Top best</option><option value="balance">Top balance</option><option value="recent">Recently active</option><option value="muted">Muted first</option></select></div><div class="admtbl" id="admpl"></div></div>
+    <div class="admpane" id="admp-fun" hidden><div class="admfun">
+      <section class="frz"><div><h4>❄ Freeze chat</h4><p>Turns the chat into an ice cube for everyone. Only admins can talk while it's frozen.</p></div><button class="btn" id="admfrz">Freeze</button></section>
+      <section><h4>😈 Troll a player</h4><p>Only they see it. Nothing real changes — no chips are touched.</p>
+        <div class="admbar tgt"><label>Target <select id="admtg"></select></label><label class="amt">Fake win amount <input id="admamt" placeholder="auto"></label></div>
+        <div class="trgrid" id="admtr"></div></section></div></div>
     <div class="admpane" id="admp-chat" hidden><div class="admbar"><span class="admhint">Newest first · deletes are instant for everyone</span><button class="btn red sm" id="admclear">Clear all chat</button></div><ol class="admmsgs" id="admml"></ol></div>
   </div>`;
   document.body.appendChild(D);
@@ -32,7 +37,7 @@
   D.addEventListener('click', e => { if (e.target === D) close(); });
   addEventListener('keydown', e => { if (e.key === 'Escape' && !D.hidden) close(); });
   D.querySelectorAll('.admtabs button').forEach(b => b.onclick = () => { tab = b.dataset.t; D.querySelectorAll('.admtabs button').forEach(x => x.classList.toggle('on', x === b));
-    q('#admp-players').hidden = tab !== 'players'; q('#admp-chat').hidden = tab !== 'chat'; });
+    q('#admp-players').hidden = tab !== 'players'; q('#admp-chat').hidden = tab !== 'chat'; q('#admp-fun').hidden = tab !== 'fun'; paintFun(); });
   q('#admq').oninput = paintPlayers; q('#adms').onchange = paintPlayers;
   addEventListener('acct', () => { btn.hidden = !Acct.admin; if (!Acct.admin) close(); });
 
@@ -46,7 +51,7 @@
       players = pl; msgs = ms;
       q('#admstats').innerHTML = [['Players', st.players], ['Active (15m)', st.active], ['New today', st.today], ['Messages', st.messages], ['Muted', st.muted], ['Chips in play', money(st.chips)]]
         .map(([k, v]) => `<div><b>${typeof v === 'number' ? v.toLocaleString() : v}</b><span>${k}</span></div>`).join('');
-      paintPlayers(); paintMsgs();
+      paintPlayers(); paintMsgs(); paintFun();
     } catch (e) { toast(e.message); }
     q('#admr').classList.remove('spin');
   }
@@ -80,5 +85,17 @@
       else toast(await act('mute', b.dataset.u)); window.ChatResync && ChatResync(); } catch (err) { toast(err.message); b.disabled = false; }
   };
   q('#admclear').onclick = async () => { if (!confirm('Delete every chat message for everyone?')) return; try { toast(await act('clear')); msgs = []; paintMsgs(); window.ChatResync && ChatResync(); } catch (e) { toast(e.message); } };
+  function paintFun() {
+    const sel = q('#admtg'), cur = sel.value;
+    sel.innerHTML = '<option value="random">🎲 Random active player</option><option value="all">🌍 Everyone</option>' + players.filter(p => !p.is_admin).map(p => `<option value="${esc(p.username)}">${esc(p.username)}</option>`).join('');
+    if (cur) sel.value = cur;
+    q('#admtr').innerHTML = Object.entries(window.Fun ? Fun.KINDS : {}).map(([k, v]) => `<button data-k="${k}"><span>${v.split(' ')[0]}</span>${v.split(' ').slice(1).join(' ')}</button>`).join('');
+    const f = window.Fun && Fun.frozen; q('#admfrz').textContent = f ? 'Thaw chat ☀' : 'Freeze chat ❄'; q('#admfrz').className = 'btn ' + (f ? 'red' : '');
+  }
+  q('#admfrz').onclick = async () => { try { toast(await call('/rest/v1/rpc/admin_freeze', { method: 'POST', body: JSON.stringify({ on_: !(window.Fun && Fun.frozen) }) })); await Fun.check(); paintFun(); } catch (e) { toast(e.message); } };
+  q('#admtr').onclick = async e => { const b = e.target.closest('button[data-k]'); if (!b) return; const k = b.dataset.k, t = q('#admtg').value;
+    if (t === 'all' && !confirm(`Send ${Fun.KINDS[k]} to every player?`)) return;
+    let amt = null; if (k === 'fakewin' && q('#admamt').value.trim()) { amt = Number(q('#admamt').value.replace(/[$,\s]/g, '').replace(/k$/i, 'e3').replace(/m$/i, 'e6').replace(/b$/i, 'e9').replace(/t$/i, 'e12')); if (!isFinite(amt)) { toast('Bad amount'); return; } }
+    b.disabled = true; try { toast(await call('/rest/v1/rpc/admin_troll', { method: 'POST', body: JSON.stringify({ kind: k, target: t, amount: amt }) })); } catch (err) { toast(err.message); } setTimeout(() => b.disabled = false, 800); };
   btn.hidden = !Acct.admin;
 })();

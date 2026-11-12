@@ -69,7 +69,7 @@
   function status(s) { live = s === 'live'; q('#chdot').className = 'chdot ' + s; q('#chst').textContent = s === 'live' ? 'Live' : s === 'poll' ? 'Online' : 'Connecting…'; }
   function realtime() {
     const sb = window.supabase; if (!sb || !sb.createClient) { status('poll'); return; }
-    const c = sb.createClient(API, PK, { auth: { persistSession: false, autoRefreshToken: false } });
+    const c = window.ChatSB = sb.createClient(API, PK, { auth: { persistSession: false, autoRefreshToken: false } });
     c.channel('backroom-chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, p => add(p.new, true))
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, p => p.old && drop(p.old.id))
       .subscribe(st => { if (st === 'SUBSCRIBED') { status('live'); load(lastId); } else if (st !== 'JOINING') status('poll'); });
@@ -86,11 +86,15 @@
     let j = null; try { j = await r.json(); } catch (e) {} if (!r.ok) throw new Error((j && j.message) || 'Failed'); return j; }
   async function del(id) { try { await rest('/rest/v1/rpc/admin_action', { method: 'POST', body: JSON.stringify({ action: 'delmsg', target: String(id) }) }); drop(id); } catch (e) { toast(e.message); } }
   window.ChatResync = () => resync();
-  const HELP = '/mute name · /unmute name · /give name amount · /reset name · /purge name · /clear  (or open ♛ Admin up top)';
+  const HELP = '/freeze · /unfreeze · /mute · /unmute · /give name amt · /reset · /purge · /clear · trolls: /fakewin /jumpscare /fakeban /fakebroke /flip /shake /spin /glitch /rain + name|random|all';
   async function command(v) {
     let [c, ...a] = v.slice(1).trim().split(/\s+/), target = a.join(' '), amount = null;
     if (c === 'give') { c = 'setbal'; amount = Number((a[1] || '').replace(/[$,]/g, '').replace(/k$/i, 'e3').replace(/m$/i, 'e6').replace(/b$/i, 'e9').replace(/t$/i, 'e12')); target = a[0]; if (!target || !isFinite(amount)) { toast('Use: /give name amount'); return; } }
     if (!c || c === 'help') { toast(HELP); return; }
+    if (c === 'freeze' || c === 'unfreeze') { toast(String(await rest('/rest/v1/rpc/admin_freeze', { method: 'POST', body: JSON.stringify({ on_: c === 'freeze' }) }))); window.Fun && Fun.check(); return; }
+    if (window.Fun && Fun.KINDS[c]) { if (!target) { toast(`Use: /${c} name  (or random / all)`); return; }
+      const amt = c === 'fakewin' ? (Number((a[1] || '').replace(/[$,]/g, '').replace(/k$/i, 'e3').replace(/m$/i, 'e6').replace(/b$/i, 'e9').replace(/t$/i, 'e12')) || null) : null;
+      toast(String(await rest('/rest/v1/rpc/admin_troll', { method: 'POST', body: JSON.stringify({ kind: c, target: a[0], amount: amt }) }))); return; }
     if (!['mute', 'unmute', 'reset', 'purge', 'clear', 'setbal'].includes(c)) { toast('Unknown command. Try /help'); return; }
     if (c === 'clear' && !confirm('Delete every chat message?')) return;
     const r = await rest('/rest/v1/rpc/admin_action', { method: 'POST', body: JSON.stringify({ action: c, target: target || null, amount }) });
@@ -101,15 +105,15 @@
     const t = await Acct.token(); if (!t) { Acct.open('in'); throw new Error('Sign in to chat.'); }
     const r = await fetch(API + '/rest/v1/messages?select=id,username,body,kind,admin,created_at', { method: 'POST', headers: { ...H, Authorization: 'Bearer ' + t, 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(text) });
     let j = null; try { j = await r.json(); } catch (e) {}
-    if (!r.ok) { const m = (j && j.message) || ''; throw new Error(/slow down/.test(m) ? 'Slow down a little.' : /muted/.test(m) ? 'You are muted.' : 'Could not send. Try again.'); }
+    if (!r.ok) { const m = (j && j.message) || ''; throw new Error(/slow down/.test(m) ? 'Slow down a little.' : /muted/.test(m) ? 'You are muted.' : /frozen/.test(m) ? 'Chat is frozen ❄' : 'Could not send. Try again.'); }
     if (j && j[0]) add(j[0], false);
   }
   q('#chf').onsubmit = async e => {
     e.preventDefault(); const i = q('#chi'), v = i.value.trim(); if (!v) return;
     q('#chs').disabled = true;
     try { if (v[0] === '/' && !Acct.admin) { toast('Commands are admin-only.'); return; }
-      if (v[0] === '/') await command(v); else await send({ body: v.slice(0, 200) }); i.value = ''; } catch (err) { if (typeof toast === 'function') toast(err.message); }
-    finally { q('#chs').disabled = false; i.focus(); }
+      if (v[0] === '/') await command(v); else await send({ body: v.slice(0, 200) }); i.value = ''; } catch (err) { if (typeof toast === 'function') toast(/frozen/.test(err.message) ? 'Chat is frozen ❄' : err.message); }
+    finally { q('#chs').disabled = false; if (!pn.classList.contains('frozen') || Acct.admin) i.focus(); }
   };
 
   /* ---------------- big-win shout-outs (only for signed-in players) */

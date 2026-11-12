@@ -778,3 +778,71 @@ body.chopen .chfab{opacity:0;pointer-events:none}
 @media(max-width:760px){.admstats{grid-template-columns:repeat(3,1fr);padding:0 14px 12px}.admbox header,.admtabs,.admbar{padding-left:14px;padding-right:14px}.admtbl,.admmsgs{padding:0 14px 14px}
   .admrow{grid-template-columns:1fr auto auto;font-size:13px}.admrow>span:nth-child(4){display:none}.admhead>span:nth-child(5){display:none}.admacts{grid-column:1/-1;justify-content:flex-start}
   .adm{padding:0}.admbox{height:100%;border-radius:0}}
+
+/* ------------------------------------------------------------ frozen chat */
+.ice{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0;visibility:hidden;border-radius:inherit;overflow:hidden;
+  background:linear-gradient(160deg,rgba(220,245,255,.22),rgba(140,200,240,.12) 40%,rgba(200,235,255,.2)),radial-gradient(120% 60% at 50% 0%,rgba(255,255,255,.25),transparent 60%);
+  box-shadow:inset 0 0 0 2px rgba(200,240,255,.7),inset 0 0 40px 6px rgba(170,225,255,.55),inset 0 0 120px rgba(120,190,240,.35);backdrop-filter:blur(1.5px) saturate(.7) hue-rotate(160deg);-webkit-backdrop-filter:blur(1.5px) saturate(.7) hue-rotate(160deg)}
+.chp.frozen .ice{visibility:visible;animation:freezeIn 1.1s cubic-bezier(.2,.8,.2,1) forwards}
+.chp.thaw .ice{visibility:visible;animation:thawOut 1.3s ease-in forwards}
+@keyframes freezeIn{0%{opacity:0;clip-path:circle(0% at 50% 100%)}100%{opacity:1;clip-path:circle(150% at 50% 100%)}}
+@keyframes thawOut{0%{opacity:1;transform:none;filter:none}100%{opacity:0;transform:translateY(40px) scaleY(1.15);filter:blur(6px)}}
+.icefx{position:absolute;inset:0;width:100%;height:100%}
+.icefx .fl{stroke:rgba(255,255,255,.55);stroke-width:1.2;stroke-linecap:round;fill:none}
+.icefx .cr{stroke:rgba(255,255,255,.7);stroke-width:1.1;fill:none;stroke-dasharray:500;stroke-dashoffset:500}
+.chp.frozen .icefx .cr{animation:crack 1.2s .5s ease-out forwards}
+@keyframes crack{to{stroke-dashoffset:0}}
+.icicles{position:absolute;left:0;right:0;top:0;width:100%;height:46px;fill:rgba(225,248,255,.85);filter:drop-shadow(0 3px 4px rgba(120,200,255,.5))}
+.icesign{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) rotate(-4deg);display:grid;justify-items:center;gap:2px;padding:16px 26px;border-radius:18px;background:linear-gradient(180deg,rgba(230,248,255,.88),rgba(160,215,245,.82));color:#08324d;box-shadow:0 10px 30px -6px rgba(0,40,80,.6),inset 0 2px 0 #fff,inset 0 -6px 14px rgba(80,160,220,.45)}
+.icesign .cube{font-size:44px;line-height:1;filter:drop-shadow(0 4px 6px rgba(0,60,120,.4));animation:bob 2.4s ease-in-out infinite}
+.icesign b{font:900 18px "Cinzel",serif;letter-spacing:.14em}
+.icesign span{font:700 11px "DM Sans",sans-serif;letter-spacing:.12em;text-transform:uppercase;opacity:.7}
+.chp.frozen .icesign{animation:signIn .7s .6s var(--pop) both}
+@keyframes signIn{from{transform:translate(-50%,-50%) scale(.3) rotate(-20deg);opacity:0}}
+@keyframes bob{50%{transform:translateY(-5px) rotate(6deg)}}
+.chp.frozen{border-color:rgba(190,235,255,.8);box-shadow:0 0 0 1px rgba(190,235,255,.4),0 0 40px -6px rgba(140,210,255,.7),0 30px 70px -20px #000}
+.chp.frozen .chl{filter:saturate(.3) brightness(.85) hue-rotate(170deg)}
+.chp.frozen .chf input:disabled{background:rgba(180,230,255,.12);border-color:rgba(190,235,255,.5);color:#cfefff}
+.chp.frozen .chf .btn:disabled{filter:grayscale(1) brightness(.7)}
+.chp.frozen .chf{position:relative;z-index:4}
+.chfab.frozen{border-color:rgba(190,235,255,.9);background:linear-gradient(180deg,#bfe9ff,#5fa9d6);color:#06304a;box-shadow:0 0 22px -4px rgba(140,210,255,.9)}
+.chfab.frozen .chico::after{content:"❄";margin-left:2px}
+
+/* ------------------------------------------------------------ admin fun tab */
+.admfun{flex:1;overflow:auto;padding:16px 22px;display:grid;gap:16px;align-content:start}
+.admfun section{padding:16px 18px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
+.admfun h4{margin:0;font:900 17px "Cinzel",serif;color:var(--goldhi)}
+.admfun p{margin:4px 0 12px;font-size:13px;color:var(--muted)}
+.admfun .frz{display:flex;align-items:center;justify-content:space-between;gap:16px;border-color:rgba(160,220,255,.35);background:linear-gradient(90deg,rgba(140,210,255,.08),transparent)}
+.admfun .frz p{margin-bottom:0}
+.admbar.tgt{padding:0 0 12px;justify-content:flex-start;flex-wrap:wrap}
+.admbar.tgt label{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.admbar.tgt input{width:120px}
+.trgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.trgrid button{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;border:1px solid var(--line2);background:linear-gradient(180deg,rgba(232,196,106,.08),rgba(0,0,0,.2));color:var(--ink);font:800 13px "DM Sans",sans-serif;cursor:pointer;text-align:left;transition:transform .15s var(--pop),border-color .15s}
+.trgrid button span{font-size:22px}
+.trgrid button:hover{transform:translateY(-2px);border-color:var(--gold)}
+.trgrid button:disabled{opacity:.4;transform:none}
+
+/* ------------------------------------------------------------ troll effects */
+.trl{position:fixed;inset:0;z-index:200}
+.trl.scare{display:grid;place-items:center;background:#000;animation:scareBg 1.7s steps(1) forwards}
+.trl.scare svg{width:min(130vw,130vh);height:min(130vw,130vh);animation:scareIn 1.7s cubic-bezier(.1,1.6,.3,1) forwards}
+@keyframes scareIn{0%{transform:scale(.2)}8%{transform:scale(1.15)}12%{transform:scale(1) translate(-2%,1%)}16%{transform:scale(1.05) translate(2%,-1%)}20%,80%{transform:scale(1)}100%{transform:scale(1.4);opacity:0}}
+@keyframes scareBg{0%,6%,12%{background:#000}3%,9%{background:#5a0000}85%{opacity:1}100%{opacity:0}}
+.trl.ban{display:grid;place-items:center;background:rgba(10,0,0,.88);backdrop-filter:blur(4px)}
+.banbox{width:min(420px,90vw);padding:30px 26px;border-radius:18px;border:2px solid #ff3355;background:linear-gradient(180deg,#2a0508,#120203);text-align:center;color:#ffd9de;box-shadow:0 0 60px -10px #ff1a3d;animation:apop .35s var(--pop)}
+.banic{font-size:54px}.banbox h3{margin:6px 0;font:900 26px "Cinzel",serif;color:#ff4d6a;letter-spacing:.04em}
+.banbox p{margin:6px 0;font-size:14px}.banbox .bsm{font-size:12px;opacity:.7}
+.bbar{height:6px;margin-top:16px;border-radius:9px;background:rgba(255,255,255,.1);overflow:hidden}.bbar i{display:block;height:100%;width:100%;background:#ff3355;animation:bbar 6.5s linear forwards}
+@keyframes bbar{to{width:0}}
+.trl-red b{color:#ff3355!important}
+html.trl-flip body{transform:rotate(180deg);transition:transform 1s cubic-bezier(.6,-.3,.4,1.3)}
+html.trl-flip{overflow:hidden}
+html.trl-spin body{animation:trlspin 2.5s cubic-bezier(.6,0,.4,1)}
+@keyframes trlspin{to{transform:rotate(720deg) scale(1)}50%{transform:rotate(360deg) scale(.6)}}
+html.trl-quake body{animation:quake .12s linear infinite}
+@keyframes quake{0%{transform:translate(0,0) rotate(0)}25%{transform:translate(-9px,5px) rotate(-.6deg)}50%{transform:translate(7px,-6px) rotate(.5deg)}75%{transform:translate(-5px,-4px) rotate(-.3deg)}100%{transform:translate(8px,6px)}}
+html.trl-glitch body{animation:glitch .25s steps(2) infinite}
+@keyframes glitch{0%{filter:none;transform:none}20%{filter:hue-rotate(90deg) saturate(3);transform:translate(-6px,2px) skewX(4deg)}40%{filter:invert(1);transform:translate(5px,-3px)}60%{filter:hue-rotate(-120deg) contrast(2);transform:skewX(-6deg)}80%{filter:none;transform:translate(3px,4px)}}
+@media(max-width:640px){.admfun{padding:14px}.admfun .frz{flex-direction:column;align-items:stretch}}
