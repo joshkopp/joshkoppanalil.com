@@ -55,7 +55,7 @@
     q('#admr').classList.add('spin');
     try {
       const [st, pl, ms] = await Promise.all([call('/rest/v1/rpc/admin_stats', { method: 'POST', body: '{}' }),
-        call('/rest/v1/profiles?select=id,username,best,balance,muted,is_admin,updated_at,flagged&order=best.desc&limit=500'),
+        call('/rest/v1/profiles?select=id,username,best,balance,muted,is_admin,updated_at,flagged,suspended&order=best.desc&limit=500'),
         call('/rest/v1/messages?select=id,username,body,kind,admin,created_at&order=id.desc&limit=150')]);
       players = pl; msgs = ms; loadBoosts();
       q('#admstats').innerHTML = [['Players', st.players], ['Active (15m)', st.active], ['New today', st.today], ['Messages', st.messages], ['Muted', st.muted], ['Chips in play', money(st.chips)]]
@@ -71,9 +71,9 @@
     list = list.slice().sort((a, b) => key(a) - key(b));
     q('#admpl').innerHTML = list.length ? `<div class="admrow admhead"><span>Player</span><span>Best</span><span>Balance</span><span>Active</span><span></span></div>` + list.map(p => `
       <div class="admrow ${p.muted ? 'muted' : ''}" data-u="${esc(p.username)}">
-        <span class="admname">${p.is_admin ? '<i class="tg a">ADMIN</i>' : ''}${p.muted ? '<i class="tg m">MUTED</i>' : ''}${p.flagged ? `<i class="tg f" title="Tried to save impossible balances">⚠ ${p.flagged}</i>` : ''}${esc(p.username)}</span>
+        <span class="admname">${p.is_admin ? '<i class="tg a">ADMIN</i>' : ''}${p.muted ? '<i class="tg m">MUTED</i>' : ''}${p.suspended ? '<i class="tg s" title="Hidden from the board, can\'t win chips">SUSPENDED</i>' : ''}${p.flagged ? `<i class="tg f" title="Tried to save impossible balances">⚠ ${p.flagged}</i>` : ''}${esc(p.username)}</span>
         <span>${money(p.best)}</span><span>${p.balance == null ? '—' : money(p.balance)}</span><span>${ago(p.updated_at)}</span>
-        <span class="admacts">${p.is_admin ? '' : `<button data-a="${p.muted ? 'unmute' : 'mute'}">${p.muted ? 'Unmute' : 'Mute'}</button>`}<button data-a="setbal">Set chips</button><button data-a="reset" class="dng">Reset</button><button data-a="purge" class="dng">Wipe msgs</button></span>
+        <span class="admacts">${p.is_admin ? '' : `<button data-a="${p.muted ? 'unmute' : 'mute'}">${p.muted ? 'Unmute' : 'Mute'}</button>`}${p.is_admin ? '' : `<button data-a="${p.suspended ? 'unsuspend' : 'suspend'}" class="${p.suspended ? '' : 'dng'}">${p.suspended ? 'Unsuspend' : 'Suspend'}</button>`}<button data-a="setbal">Set chips</button><button data-a="reset" class="dng">Reset</button><button data-a="purge" class="dng">Wipe msgs</button></span>
       </div>`).join('') : '<p class="admempty">No players match.</p>';
   }
   function paintMsgs() {

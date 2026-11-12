@@ -85,7 +85,7 @@ reg((()=>{
     $$('#dcMode button').forEach(b=>b.classList.toggle('on',b.dataset.m===mode))}
   async function roll(){if(busy)return;const bet=Bet.take();if(!bet)return;busy=true;$('#dcGo').disabled=true;const t=T(),mm=mult();$('#dcT').disabled=true;
     let r=rnd(10000)/100;
-    if(LUCKY&&!BOOST?Math.random()<.9:lucky())r=(mode==='under'?Math.floor(Math.random()*t*100):Math.floor(Math.random()*(9999-t*100))+t*100+1)/100;
+    if(isLucky()&&!BoostBox.get()?Math.random()<.9:lucky())r=(mode==='under'?Math.floor(Math.random()*t*100):Math.floor(Math.random()*(9999-t*100))+t*100+1)/100;
     else if(unlucky())r=(mode==='under'?Math.floor(t*100+Math.random()*(10000-t*100)):Math.floor(Math.random()*(t*100+1)))/100;
     const win=mode==='under'?r<t:r>t;SFX.roll();
     const mk=$('#dcMk'),big=$('#dcBig'),D=RM?1:900,t0=performance.now(),from=last;

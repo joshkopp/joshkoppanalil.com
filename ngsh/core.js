@@ -4,10 +4,10 @@ const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelecto
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const LUCKY=new URLSearchParams(location.search).get('luck')==='1'||(()=>{try{return sessionStorage.getItem('br-x')==='1'}catch(e){return false}})(),KEY=LUCKY?'backroom-lucky':'backroom';
 /* lucky mode (?luck=1, the "dam" code): most rounds get quietly tilted your way */
-const LUCK0=LUCKY?.7:0;
-/* admin luck boosts (see luck.js) override the base: +1 = blessed, -1 = cursed */
-let BOOST=null;
-const luckNow=()=>BOOST&&(BOOST.rounds!=null?BOOST.rounds>0:Date.now()<BOOST.until)?BOOST.luck:LUCK0;
+/* lucky mode only works for admin accounts; admin boosts come in through a one-time hand-off to luck.js */
+const isLucky=()=>LUCKY&&!!(window.Acct&&Acct.admin);
+const BoostBox=(()=>{let B=null;window.__luckHook=f=>{delete window.__luckHook;f({get:()=>B,set:v=>{B=v}})};return{get:()=>B}})();
+const luckNow=()=>{const B=BoostBox.get();return B&&(B.rounds!=null?B.rounds>0:Date.now()<B.until)?B.luck:isLucky()?.7:0};
 const lucky=()=>Math.random()<Math.max(0,luckNow()),unlucky=()=>Math.random()<Math.max(0,-luckNow());
 function bestOf(n,gen,score){let b=gen(),bs=score(b);for(let i=1;i<n;i++){const x=gen(),s=score(x);if(s>bs){b=x;bs=s}}return b}
 function tilt(n,gen,score){return lucky()?bestOf(n,gen,score):unlucky()?bestOf(n,gen,x=>-score(x)):gen()}

@@ -136,7 +136,7 @@ window.Acct = (() => {
   async function board() {
     const ol = q('#lbl');
     try {
-      rows = await req('/rest/v1/profiles?select=username,best&best=gt.0&order=best.desc,updated_at.asc&limit=10');
+      rows = await req('/rest/v1/profiles?select=username,best&best=gt.0&suspended=is.false&order=best.desc,updated_at.asc&limit=10');
       ol.innerHTML = rows.length ? rows.map((r, i) => `<li class="${S && r.username === S.name ? 'me' : ''} ${i < 3 ? 'p' + (i + 1) : ''}"><span class="rk">${i + 1}</span><span class="nm">${esc(r.username)}</span><b title="${fmt(r.best)}">${big(r.best)}</b></li>`).join('')
         : '<li class="lbmsg">No high rollers yet. Be the first.</li>';
     } catch (e) { ol.innerHTML = '<li class="lbmsg">Leaderboard is offline right now.</li>'; }
