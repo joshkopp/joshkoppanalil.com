@@ -44,8 +44,8 @@ window.Acct = (() => {
   async function pull() {
     const t = await tok(); if (!t) return;
     try {
-      const p = (await req('/rest/v1/profiles?id=eq.' + S.id + '&select=username,best,balance', { tok: t }))[0]; if (!p) return;
-      S.name = p.username;
+      const p = (await req('/rest/v1/profiles?id=eq.' + S.id + '&select=username,best,balance,is_admin', { tok: t }))[0]; if (!p) return;
+      S.name = p.username; S.admin = !!p.is_admin;
       if (p.balance != null && Math.abs(p.balance - Bank.bal) >= 1) { applying = true; Bank.set(p.balance); applying = false; }
       S.best = Math.max(p.best || 0, Math.floor(Bank.bal)); save(); paint(); sync(Bank.bal);
     } catch (e) {}
@@ -140,5 +140,5 @@ window.Acct = (() => {
   paint(); board(); if (S) pull();
   setInterval(() => { if (!document.hidden && !q('#lobby').hidden) board(); }, 30000);
   q('#back').addEventListener('click', () => board());
-  return { sync, board, token: tok, open, get user() { return S && S.name; } };
+  return { sync, board, token: tok, open, get user() { return S && S.name; }, get admin() { return !!(S && S.admin); } };
 })();

@@ -30,7 +30,7 @@
   addEventListener('keydown', e => { if (e.key === 'Escape' && open && document.activeElement === q('#chi')) setOpen(false); });
   // keep game hotkeys (space, R…) from firing while typing
   q('#chi').addEventListener('keydown', e => e.stopPropagation());
-  function authUI() { const u = Acct.user; q('#chf').hidden = !u; q('#chout').hidden = !!u; paintAll(); }
+  function authUI() { const u = Acct.user; q('#chf').hidden = !u; q('#chout').hidden = !!u; q('#chi').placeholder = Acct.admin ? 'Message, or /help for admin commands' : 'Say something…'; paintAll(); }
   addEventListener('acct', authUI);
 
   const time = d => new Date(d).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
@@ -39,10 +39,13 @@
     const n = document.createElement('b'); n.textContent = m.username; n.style.color = `hsl(${[...m.username].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7)},70%,72%)`;
     const t = document.createElement('span'); t.className = 'cht'; t.textContent = clean(m.body);
     const tm = document.createElement('time'); tm.textContent = time(m.created_at);
+    if (m.admin) { li.classList.add('adm'); const a = document.createElement('i'); a.className = 'chtag'; a.textContent = 'ADMIN'; n.prepend(a); }
     if (m.kind === 'win') { li.append('🏆 ', n, ' ', t, tm); } else li.append(n, t, tm);
+    if (Acct.admin) { const x = document.createElement('button'); x.className = 'chdel'; x.title = 'Delete message'; x.textContent = '×'; x.onclick = () => del(m.id); li.append(x); }
     return li;
   }
   function paintAll() { if (!msgs.length) { list.innerHTML = '<li class="chsys">No messages yet. Say hi 👋</li>'; return; } list.replaceChildren(...msgs.map(row)); }
+  function drop(id) { const i = msgs.findIndex(m => m.id === id); if (i < 0) return; msgs.splice(i, 1); seen.delete(id); paintAll(); }
   function add(m, live) {
     if (seen.has(m.id)) return; seen.add(m.id); lastId = Math.max(lastId, m.id);
     const stick = atBottom(); msgs.push(m); msgs.sort((a, b) => a.id - b.id);
@@ -55,8 +58,8 @@
   /* ---------------- data */
   const H = { apikey: PK };
   async function load(since) {
-    const url = since ? `/rest/v1/messages?select=id,username,body,kind,created_at&id=gt.${since}&order=id.asc&limit=${MAX}`
-      : `/rest/v1/messages?select=id,username,body,kind,created_at&order=id.desc&limit=${MAX}`;
+    const url = since ? `/rest/v1/messages?select=id,username,body,kind,admin,created_at&id=gt.${since}&order=id.asc&limit=${MAX}`
+      : `/rest/v1/messages?select=id,username,body,kind,admin,created_at&order=id.desc&limit=${MAX}`;
     try { const r = await fetch(API + url, { headers: H }); if (!r.ok) throw 0; let rows = await r.json(); if (!since) rows.reverse();
       rows.forEach(m => add(m, !!since)); if (!since && !rows.length) paintAll(); return true; }
     catch (e) { if (!since) list.innerHTML = '<li class="chsys">Chat is offline right now.</li>'; return false; }
@@ -67,14 +70,33 @@
     const sb = window.supabase; if (!sb || !sb.createClient) { status('poll'); return; }
     const c = sb.createClient(API, PK, { auth: { persistSession: false, autoRefreshToken: false } });
     c.channel('backroom-chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, p => add(p.new, true))
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, p => p.old && drop(p.old.id))
       .subscribe(st => { if (st === 'SUBSCRIBED') { status('live'); load(lastId); } else if (st !== 'JOINING') status('poll'); });
   }
   // safety net: catch up every few seconds if realtime isn't connected, slowly otherwise
-  let tick = 0; setInterval(() => { tick++; if (document.hidden) return; if (!live || tick % 6 === 0) load(lastId); }, 5000);
+  let tick = 0; setInterval(() => { tick++; if (document.hidden) return; if (tick % 6 === 0) resync(); else if (!live) load(lastId); }, 5000);
+  // full refresh picks up messages an admin deleted
+  async function resync() { try { const r = await fetch(API + `/rest/v1/messages?select=id,username,body,kind,admin,created_at&order=id.desc&limit=${MAX}`, { headers: H }); if (!r.ok) return;
+    const rows = (await r.json()).reverse(), ids = new Set(rows.map(m => m.id)); let gone = false; msgs = msgs.filter(m => ids.has(m.id) || !(gone = true));
+    if (gone) { seen = new Set(msgs.map(m => m.id)); paintAll(); } rows.forEach(m => add(m, true)); } catch (e) {} }
+
+  /* ---------------- admin tools */
+  async function rest(path, opt = {}) { const t = await Acct.token(); const r = await fetch(API + path, { ...opt, headers: { ...H, Authorization: 'Bearer ' + t, 'Content-Type': 'application/json', ...(opt.headers || {}) } });
+    let j = null; try { j = await r.json(); } catch (e) {} if (!r.ok) throw new Error((j && j.message) || 'Failed'); return j; }
+  async function del(id) { try { await rest('/rest/v1/messages?id=eq.' + id, { method: 'DELETE' }); drop(id); } catch (e) { toast(e.message); } }
+  const HELP = '/mute name · /unmute name · /reset name (wipes score) · /purge name (delete their messages) · /clear (wipe chat)';
+  async function command(v) {
+    const [c, ...a] = v.slice(1).trim().split(/\s+/), target = a.join(' ');
+    if (!c || c === 'help') { toast(HELP); return; }
+    if (!['mute', 'unmute', 'reset', 'purge', 'clear'].includes(c)) { toast('Unknown command. Try /help'); return; }
+    if (c === 'clear' && !confirm('Delete every chat message?')) return;
+    const r = await rest('/rest/v1/rpc/admin_action', { method: 'POST', body: JSON.stringify({ action: c, target: target || null }) });
+    toast(String(r)); if (c === 'clear' || c === 'purge') resync(); if (c === 'reset') Acct.board();
+  }
 
   async function send(text) {
     const t = await Acct.token(); if (!t) { Acct.open('in'); throw new Error('Sign in to chat.'); }
-    const r = await fetch(API + '/rest/v1/messages?select=id,username,body,kind,created_at', { method: 'POST', headers: { ...H, Authorization: 'Bearer ' + t, 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(text) });
+    const r = await fetch(API + '/rest/v1/messages?select=id,username,body,kind,admin,created_at', { method: 'POST', headers: { ...H, Authorization: 'Bearer ' + t, 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(text) });
     let j = null; try { j = await r.json(); } catch (e) {}
     if (!r.ok) { const m = (j && j.message) || ''; throw new Error(/slow down/.test(m) ? 'Slow down a little.' : /muted/.test(m) ? 'You are muted.' : 'Could not send. Try again.'); }
     if (j && j[0]) add(j[0], false);
@@ -82,7 +104,7 @@
   q('#chf').onsubmit = async e => {
     e.preventDefault(); const i = q('#chi'), v = i.value.trim(); if (!v) return;
     q('#chs').disabled = true;
-    try { await send({ body: v.slice(0, 200) }); i.value = ''; } catch (err) { if (typeof toast === 'function') toast(err.message); }
+    try { if (v[0] === '/' && Acct.admin) await command(v); else await send({ body: v.slice(0, 200) }); i.value = ''; } catch (err) { if (typeof toast === 'function') toast(err.message); }
     finally { q('#chs').disabled = false; i.focus(); }
   };
 
