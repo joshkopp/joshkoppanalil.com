@@ -36,8 +36,13 @@ window.Acct = (() => {
   async function flush(now) {
     clearTimeout(timer); if (!S || last == null) return;
     const t = now ? (S.exp > Date.now() ? S.at : null) : await tok(); if (!t) return;
-    const body = { best: S.best, balance: last, updated_at: new Date().toISOString() };
-    try { await req('/rest/v1/profiles?id=eq.' + S.id, { method: 'PATCH', tok: t, body, extra: { Prefer: 'return=minimal' }, keep: true }); if (!now) board(); } catch (e) {}
+    const sent = last;
+    try {
+      const ok = Number(await req('/rest/v1/rpc/save_progress', { method: 'POST', tok: t, body: { new_balance: sent }, keep: true }));
+      // the server refused an impossible jump: snap back to what it accepted
+      if (!now && isFinite(ok) && Math.abs(ok - sent) >= 1 && last === sent) { applying = true; Bank.set(ok); applying = false; last = ok; S.best = Math.max(0, ok); save(); if (typeof toast === 'function') toast('That balance couldn\'t be verified, so it was rolled back.'); }
+      if (!now) board();
+    } catch (e) {}
   }
   addEventListener('pagehide', () => flush(true)); document.addEventListener('visibilitychange', () => { if (document.hidden) flush(true); });
 

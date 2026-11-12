@@ -13,7 +13,7 @@ reg((()=>{
   function paintBots(){$('#crBots').innerHTML=bots.map(b=>`<div class="bot ${b.out?'out':''} ${b.bust?'bust':''}"><span>${b.n}</span><b>${b.out?b.at.toFixed(2)+'×':b.bust?'—':fmt(b.bet)}</b></div>`).join('')}
   function btn(){const b=$('#crGo');if(state==='run'&&!cashed){b.textContent=`Cash out ${fmt(bet*m)}`;b.className='btn big grn';}else if(state==='run'){b.textContent='Waiting…';b.className='btn big ghost'}else{b.textContent='Launch';b.className='btn big pulse'}b.disabled=state==='run'&&cashed}
   function launch(){if(state==='run')return;bet=Bet.take();if(!bet)return;
-    const crashPt=()=>Math.max(1,Math.floor(99/(1-Math.random()))/100);cp=lucky()?Math.max(crashPt(),crashPt(),crashPt()):unlucky()?Math.min(crashPt(),crashPt(),1+Math.floor(Math.random()*45)/100):crashPt();
+    const crashPt=()=>Math.min(MAXX,Math.max(1,Math.floor(99/(1-Math.random()))/100));cp=lucky()?Math.max(crashPt(),crashPt(),crashPt()):unlucky()?Math.min(crashPt(),crashPt(),1+Math.floor(Math.random()*45)/100):crashPt();
     state='run';cashed=false;m=1;t0=performance.now();lastStep=0;trail=[];banner($('#crM'),'');
     bots=shuffle(NAMES.slice()).slice(0,7).map(n=>({n,bet:[10,25,50,100,250,500,1000][rnd(7)],at:Math.max(1.05,Math.min(25,.99/(1-Math.random()*.95))),out:false,bust:false}));paintBots();
     $('.crwrap',R).classList.remove('boom');SFX.whoosh();btn();if(!raf)raf=requestAnimationFrame(frame)}
@@ -83,7 +83,7 @@ reg((()=>{
   function paint(){const t=T(),r=$('#dcT');setRange(r);$('#dcTv').textContent=t.toFixed(0);$('#dcCh').textContent=chance().toFixed(0)+'%';$('#dcMu').textContent=mult().toFixed(4).replace(/0+$/,'').replace(/\.$/,'')+'×';
     $('#dcPay').textContent=fmt(Bet.v*mult());const tr=$('.dctrack',R);tr.style.setProperty('--t',t+'%');tr.classList.toggle('over',mode==='over');
     $$('#dcMode button').forEach(b=>b.classList.toggle('on',b.dataset.m===mode))}
-  async function roll(){if(busy)return;const bet=Bet.take();if(!bet)return;busy=true;$('#dcGo').disabled=true;const t=T();
+  async function roll(){if(busy)return;const bet=Bet.take();if(!bet)return;busy=true;$('#dcGo').disabled=true;const t=T(),mm=mult();$('#dcT').disabled=true;
     let r=rnd(10000)/100;
     if(LUCKY&&!BOOST?Math.random()<.9:lucky())r=(mode==='under'?Math.floor(Math.random()*t*100):Math.floor(Math.random()*(9999-t*100))+t*100+1)/100;
     else if(unlucky())r=(mode==='under'?Math.floor(t*100+Math.random()*(10000-t*100)):Math.floor(Math.random()*(t*100+1)))/100;
@@ -93,11 +93,11 @@ reg((()=>{
     await new Promise(res=>{(function f(n){const k=Math.min(1,(n-t0)/D),e=1-Math.pow(1-k,3);const v=k<1?(from+(r-from)*e+(1-k)*(Math.random()-.5)*30):r;
       const c=clamp(v,0,99.99);mk.style.left=c+'%';big.textContent=c.toFixed(2);if(k<1)requestAnimationFrame(f);else res()})(t0)});
     last=r;mk.classList.add(win?'w':'l');big.classList.add(win?'w':'l');
-    const pay=win?bet*mult():0;const net=settle(bet,pay,mk,{big:20});
+    const pay=win?bet*mm:0;const net=settle(bet,pay,mk,{big:20});
     hist.unshift([r,win]);hist=hist.slice(0,12);$('#dcH').innerHTML=hist.map(([v,w])=>`<span style="background:${w?'rgba(92,255,157,.16)':'rgba(255,79,109,.16)'};color:${w?'var(--win)':'var(--lose)'}">${v.toFixed(2)}</span>`).join('');
     banner($('#dcM'),win?`Rolled ${r.toFixed(2)} · +${fmt(net)}`:`Rolled ${r.toFixed(2)} · −${fmt(bet)}`,win?'win':'lose');
     if(!win){const tr=$('.dctrack',R);tr.classList.remove('shake');void tr.offsetWidth;tr.classList.add('shake')}
-    busy=false;$('#dcGo').disabled=false}
+    busy=false;$('#dcGo').disabled=false;$('#dcT').disabled=false}
   G.init=root=>{R=root;root.innerHTML=`<div class="ghead"><div><h2 class="gtxt">Dice</h2><p>A number from 0.00 to 99.99 is rolled. Drag the slider to set your target, then choose roll under or over it. Lower chance pays more: 99 ÷ win chance.</p></div></div>
     <div class="felt red"><div class="dcbig" id="dcBig">50.00</div>
       <div class="dctrack"><div class="dcz"></div><input type="range" id="dcT" min="2" max="98" value="50" aria-label="Target"><div class="dcmk" id="dcMk" style="left:50%"><span></span></div>
@@ -107,7 +107,7 @@ reg((()=>{
         <div class="ctlbox"><div class="lbl">Multiplier <b id="dcMu"></b></div><div class="lbl">Payout <b id="dcPay"></b></div></div></div>
       <div class="row ctr" style="margin-top:16px"><button class="btn big pulse" id="dcGo">Roll</button></div>
       <div class="banner" id="dcM"></div><div class="hist" id="dcH"></div></div>`;
-    $('#dcT').oninput=()=>{paint();SFX.tick(.5+T()/100)};$('#dcMode').onclick=e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;SFX.click();paint()};
+    $('#dcT').oninput=()=>{if(busy)return;paint();SFX.tick(.5+T()/100)};$('#dcMode').onclick=e=>{const b=e.target.closest('button');if(!b||busy)return;mode=b.dataset.m;SFX.click();paint()};
     $('#dcGo').onclick=roll;$('#bet').addEventListener('change',paint);$('#rack').addEventListener('click',()=>setTimeout(paint));paint()};
   G.enter=()=>{paint();addEventListener('keydown',G.key)};G.leave=()=>removeEventListener('keydown',G.key);
   G.key=e=>{if(e.code==='Space'&&!e.target.matches('input')){e.preventDefault();roll()}};
@@ -254,7 +254,7 @@ reg((()=>{
   const G={id:'mines',name:'Mines',cat:'Instant Games',desc:'Flip tiles for gems, dodge the mines, cash out any time.',edge:'99% RTP',tc:'rgba(20,100,70,.95)',
     art:`<div class="a-grid">${Array.from({length:16},(_,i)=>`<i style="--d:${(i*.37)%3}"></i>`).join('')}</div>`};
   let R,mines=3,bombs=new Set(),open=0,bet=0,live=false;
-  const mult=k=>{let m=.99;for(let i=0;i<k;i++)m*=(25-i)/(25-mines-i);return m};
+  const mult=k=>{let m=.99;for(let i=0;i<k;i++)m*=(25-i)/(25-mines-i);return Math.min(m,MAXX)};
   function paint(){$('#mnN').textContent=mines;setRange($('#mnR'));$('#mnNow').textContent=live?fmtx(open?mult(open):1):'—';$('#mnNext').textContent=open<25-mines?fmtx(mult(open+1)):'—';
     $('#mnGo').textContent=live?(open?`Cash out ${fmt(bet*mult(open))}`:'Pick a tile…'):'Start round';$('#mnGo').className='btn big '+(live?(open?'grn':'ghost'):'pulse');$('#mnGo').disabled=live&&!open;$('#mnR').disabled=live}
   function start(){if(live)return cash();bet=Bet.take();if(!bet)return;live=true;open=0;bombs=new Set(shuffle([...Array(25).keys()]).slice(0,mines));
@@ -276,7 +276,7 @@ reg((()=>{
         <button class="btn big pulse" id="mnGo">Start round</button></div></div>
       <div class="banner" id="mnM"></div></div>`;
     $('.mgrid',root).onclick=e=>{const t=e.target.closest('.tileb');if(t)hit(+t.dataset.i,t)};
-    $('#mnR').oninput=e=>{mines=+e.target.value;SFX.tick(.5+mines/24);paint()};$('#mnGo').onclick=start;paint()};
+    $('#mnR').oninput=e=>{if(live){e.target.value=mines;return}mines=+e.target.value;SFX.tick(.5+mines/24);paint()};$('#mnGo').onclick=start;paint()};
   G.leave=()=>{if(live&&open)cash()};
   return G})());
 

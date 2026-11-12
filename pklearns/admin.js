@@ -21,7 +21,7 @@
     <header><div><div class="admk">The Back Room</div><h2>♛ Admin Console</h2></div><div class="admhb"><button class="admr" id="admr" title="Refresh">↻</button><button class="admx" id="admx" aria-label="Close">×</button></div></header>
     <div class="admstats" id="admstats"></div>
     <nav class="admtabs"><button data-t="players" class="on">Players</button><button data-t="chat">Chat</button><button data-t="fun">Fun 😈</button><button data-t="luck">Luck 🍀</button></nav>
-    <div class="admpane" id="admp-players"><div class="admbar"><input id="admq" placeholder="Search players…" autocomplete="off"><select id="adms"><option value="best">Top best</option><option value="balance">Top balance</option><option value="recent">Recently active</option><option value="muted">Muted first</option></select></div><div class="admtbl" id="admpl"></div></div>
+    <div class="admpane" id="admp-players"><div class="admbar"><input id="admq" placeholder="Search players…" autocomplete="off"><select id="adms"><option value="best">Top best</option><option value="balance">Top balance</option><option value="recent">Recently active</option><option value="muted">Muted first</option><option value="flagged">⚠ Cheat flags</option></select></div><div class="admtbl" id="admpl"></div></div>
     <div class="admpane" id="admp-fun" hidden><div class="admfun">
       <section class="frz"><div><h4>❄ Freeze chat</h4><p>Turns the chat into an ice cube for everyone. Only admins can talk while it's frozen.</p></div><button class="btn" id="admfrz">Freeze</button></section>
       <section><h4>😈 Troll a player</h4><p>Only they see it. Nothing real changes — no chips are touched.</p>
@@ -55,7 +55,7 @@
     q('#admr').classList.add('spin');
     try {
       const [st, pl, ms] = await Promise.all([call('/rest/v1/rpc/admin_stats', { method: 'POST', body: '{}' }),
-        call('/rest/v1/profiles?select=id,username,best,balance,muted,is_admin,updated_at&order=best.desc&limit=500'),
+        call('/rest/v1/profiles?select=id,username,best,balance,muted,is_admin,updated_at,flagged&order=best.desc&limit=500'),
         call('/rest/v1/messages?select=id,username,body,kind,admin,created_at&order=id.desc&limit=150')]);
       players = pl; msgs = ms; loadBoosts();
       q('#admstats').innerHTML = [['Players', st.players], ['Active (15m)', st.active], ['New today', st.today], ['Messages', st.messages], ['Muted', st.muted], ['Chips in play', money(st.chips)]]
@@ -67,11 +67,11 @@
   function paintPlayers() {
     const f = q('#admq').value.trim().toLowerCase(), s = q('#adms').value;
     let list = players.filter(p => !f || p.username.toLowerCase().includes(f));
-    const key = { best: p => -Number(p.best), balance: p => -Number(p.balance || 0), recent: p => -new Date(p.updated_at || 0), muted: p => (p.muted ? 0 : 1) * 1e30 - Number(p.best) }[s];
+    const key = { best: p => -Number(p.best), balance: p => -Number(p.balance || 0), recent: p => -new Date(p.updated_at || 0), muted: p => (p.muted ? 0 : 1) * 1e30 - Number(p.best), flagged: p => -(p.flagged || 0) }[s];
     list = list.slice().sort((a, b) => key(a) - key(b));
     q('#admpl').innerHTML = list.length ? `<div class="admrow admhead"><span>Player</span><span>Best</span><span>Balance</span><span>Active</span><span></span></div>` + list.map(p => `
       <div class="admrow ${p.muted ? 'muted' : ''}" data-u="${esc(p.username)}">
-        <span class="admname">${p.is_admin ? '<i class="tg a">ADMIN</i>' : ''}${p.muted ? '<i class="tg m">MUTED</i>' : ''}${esc(p.username)}</span>
+        <span class="admname">${p.is_admin ? '<i class="tg a">ADMIN</i>' : ''}${p.muted ? '<i class="tg m">MUTED</i>' : ''}${p.flagged ? `<i class="tg f" title="Tried to save impossible balances">⚠ ${p.flagged}</i>` : ''}${esc(p.username)}</span>
         <span>${money(p.best)}</span><span>${p.balance == null ? '—' : money(p.balance)}</span><span>${ago(p.updated_at)}</span>
         <span class="admacts">${p.is_admin ? '' : `<button data-a="${p.muted ? 'unmute' : 'mute'}">${p.muted ? 'Unmute' : 'Mute'}</button>`}<button data-a="setbal">Set chips</button><button data-a="reset" class="dng">Reset</button><button data-a="purge" class="dng">Wipe msgs</button></span>
       </div>`).join('') : '<p class="admempty">No players match.</p>';

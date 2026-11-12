@@ -868,3 +868,4 @@ html.trl-glitch body{animation:glitch .25s steps(2) infinite}
 .lkrow .g{color:var(--win);font-weight:800}.lkrow .b{color:#ff5876;font-weight:800}
 .lkrow button{height:28px;padding:0 12px;border-radius:99px;border:1px solid rgba(255,88,118,.45);background:rgba(212,20,58,.08);color:#ff8da1;font:800 11px "DM Sans",sans-serif;cursor:pointer}
 @media(max-width:640px){.lkslide{grid-template-columns:1fr auto}.lkslide span{display:none}.lkrow{grid-template-columns:1fr auto auto}.lkrow span:nth-child(3),.lkrow span:nth-child(4){display:none}}
+.tg.f{background:#ffb020;color:#2a1a04}

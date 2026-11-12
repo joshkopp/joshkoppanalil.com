@@ -117,8 +117,10 @@ const Bet=(()=>{
 /* ------------------------------------------------------------ result helper */
 function banner(e,text,kind=''){e.className='banner '+kind;e.innerHTML=text}
 /** pays out and runs the matching celebration. Returns net. */
+/* no single round can pay more than 10,000x the bet */
+const MAXX=10000;
 function settle(bet,payout,src,opts={}){
-  payout=Math.round(payout*100)/100;Stats.record(bet,payout);const net=payout-bet,m=bet?payout/bet:0;
+  if(!(payout>=0))payout=0;payout=Math.min(payout,bet*MAXX);payout=Math.round(payout*100)/100;Stats.record(bet,payout);const net=payout-bet,m=bet?payout/bet:0;
   if(payout>0)Bank.give(payout,opts.fx===false?null:src,opts.fx===false);
   if(net>0){if(!opts.mute)SFX.win(m);if(src&&opts.fx!==false){const c=src.getBoundingClientRect?center(src):src;FX.burst(c.x,c.y,{n:Math.min(90,20+m*8),up:true,speed:10})}
     if(m>=(opts.big||10)&&!opts.quiet)bigWin(payout,m)}

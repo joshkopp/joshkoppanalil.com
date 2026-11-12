@@ -39,7 +39,7 @@ reg((()=>{
   function stand(){if(phase!=='play')return;hands[act].done=true;next()}
   async function dbl(){if(phase!=='play')return;const h=hands[act];if(h.cards.length!==2||!Bet.take(h.bet))return;h.bet*=2;h.dbl=true;$('.bspot',h.box).innerHTML=chipStack(h.bet);SFX.chip();phase='busy';
     const c=draw(c=>{const t=val([...h.cards,c]).t;return t>=19&&t<=21},c=>val([...h.cards,c]).t<=21);h.cards.push(c);const e=await dealCard(h.hand,c,{from:$('.shoe',R)});e.style.transform='rotate(90deg)';paintTot(h.tot,h.cards);h.done=true;if(val(h.cards).t>21){h.box.classList.add('bust');SFX.lose()}next()}
-  async function split(){if(phase!=='play')return;const h=hands[0];if(!Bet.take(h.bet))return;phase='busy';SFX.chip();
+  async function split(){if(phase!=='play'||hands.length>1)return;const h=hands[0];if(h.cards.length!==2||!Bet.take(h.bet))return;phase='busy';SFX.chip();
     const c2=h.cards.pop();h.hand.lastChild.remove();const h2=newHand(h.bet,[c2]);h.split=h2.split=true;hands.push(h2);h2.hand.appendChild(cardEl(c2));paintTot(h.tot,h.cards);paintTot(h2.tot,h2.cards);
     for(const x of hands){const c=draw();x.cards.push(c);await dealCard(x.hand,c,{from:$('.shoe',R)});paintTot(x.tot,x.cards);if(x.cards[0].r==='A'||val(x.cards).t===21)x.done=true}
     act=hands.findIndex(x=>!x.done);if(act<0){act=0;return next()}phase='play';ui()}
@@ -111,7 +111,7 @@ reg((()=>{
       <div class="row ctr"><div class="seg" id="bcSide"><button data-s="P" class="on">Player 1:1</button><button data-s="B">Banker 0.95:1</button><button data-s="T">Tie 8:1</button></div><button class="btn big pulse" id="bcGo">Deal</button></div>
       <div class="road" id="bcRoad"></div>
     </div>`;
-    $('#bcSide').onclick=e=>{const b=e.target.closest('button');if(!b)return;side=b.dataset.s;SFX.chip();$$('#bcSide button').forEach(x=>x.classList.toggle('on',x===b))};
+    $('#bcSide').onclick=e=>{const b=e.target.closest('button');if(!b||busy)return;side=b.dataset.s;SFX.chip();$$('#bcSide button').forEach(x=>x.classList.toggle('on',x===b))};
     $('#bcGo').onclick=play;shoe=deck(8)};
   return G})());
 
