@@ -121,6 +121,7 @@ window.Acct = (() => {
     return n >= 1000 ? '$' + (n * 1000 ** i).toExponential(2).replace('e+', 'e') : '$' + (n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2)) + UNITS[i]; };
   let rows = [];
   function paint() {
+    dispatchEvent(new Event('acct'));
     btn.innerHTML = S ? `<i>♠</i><span>${esc(S.name)}</span>` : '<span>Sign in</span>'; btn.classList.toggle('in', !!S);
     if (S) { q('#amn').textContent = S.name; q('#amb').textContent = big(S.best); const r = rows.findIndex(x => x.username === S.name); q('#amr').textContent = r >= 0 ? '#' + (r + 1) : 'Top 10?'; }
     const f = q('#lbf');
@@ -139,5 +140,5 @@ window.Acct = (() => {
   paint(); board(); if (S) pull();
   setInterval(() => { if (!document.hidden && !q('#lobby').hidden) board(); }, 30000);
   q('#back').addEventListener('click', () => board());
-  return { sync, board, get user() { return S && S.name; } };
+  return { sync, board, token: tok, open, get user() { return S && S.name; } };
 })();

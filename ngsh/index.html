@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="casino.css?v=7">
+<link rel="stylesheet" href="casino.css?v=8">
 </head>
 <body>
 <canvas id="dust" aria-hidden="true"></canvas>
@@ -65,7 +65,9 @@
 <script src="games-table.js?v=3"></script>
 <script src="games-slots.js?v=3"></script>
 <script src="games-instant.js?v=7"></script>
-<script src="account.js?v=3"></script>
+<script src="account.js?v=4"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+<script src="chat.js?v=1" defer></script>
 <script>
   // every game gets its own section in the stage
   for(const g of GAMES){const s=document.createElement('section');s.className='game';s.id='g-'+g.id;document.getElementById('stage').appendChild(s)}
