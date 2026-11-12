@@ -94,6 +94,7 @@ body.playing .top{justify-content:flex-end;padding-right:236px}
 #drs.avail{border-color:#35e070;color:#35e070}#drs.open{background:#35e070;border-color:#35e070;color:#04140a;box-shadow:0 0 18px rgba(53,224,112,.6)}
 #ers{font:800 9.5px "Titillium Web";letter-spacing:.12em;color:var(--dim)}#ers .bar{height:6px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:3px}#ersBar{display:block;height:100%;background:#ffd21f;width:100%}
 #ers.on{color:#ffd21f}#ers.on #ersBar{box-shadow:0 0 12px #ffd21f;background:#fff27a}
+#dmgHud{display:none;gap:3px;margin-top:4px}#dmgHud.on{display:flex}#dmgHud i{font:800 8.5px "Titillium Web";font-style:normal;letter-spacing:.08em;padding:2px 5px;border-radius:3px;background:rgba(255,255,255,.08);color:#9aa}#dmgHud i.y{background:#f5c400;color:#111}#dmgHud i.r{background:#ff6a00;color:#111}#dmgHud i.x{background:#e10600;color:#fff;animation:dmgb .6s infinite alternate}@keyframes dmgb{to{opacity:.45}}
 #slip{font:800 9.5px "Titillium Web";letter-spacing:.12em;color:#5cc8ff;opacity:0;transition:.2s}#slip.on{opacity:1}
 .mm{position:absolute;left:18px;bottom:max(18px,env(safe-area-inset-bottom));width:200px;height:200px;border-radius:18px;background:rgba(8,9,10,.5);border:1px solid var(--line);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .mm canvas{position:absolute;inset:0;width:100%;height:100%}
@@ -182,6 +183,7 @@ body.touch.playing .top{padding-right:150px}
     <div class="lbl">Mode</div><div class="chips" id="mMode"></div>
     <div class="raceOnly"><div class="lbl">Laps</div><div class="chips" id="mLaps"></div></div>
     <div class="raceOnly"><div class="lbl">Rivals</div><div class="chips" id="mDiff"></div></div>
+    <div class="raceOnly"><div class="lbl">Contact</div><div class="chips" id="mDmg"></div></div>
     <div class="raceOnly"><div class="lbl">Starting grid</div><div class="chips" id="mGrid"></div></div>
     <div class="lbl">Your team</div><div class="teams" id="mTeams"></div><div id="mTeamName"></div>
     <div class="lbl">Assists</div><div class="chips" id="mAssist"></div>
@@ -208,7 +210,7 @@ body.touch.playing .top{padding-right:150px}
   <div class="dash">
     <div id="rpm"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="dmain">
-      <div class="side"><div id="drs">DRS</div><div id="slip">SLIPSTREAM</div></div>
+      <div class="side"><div id="drs">DRS</div><div id="slip">SLIPSTREAM</div><div id="dmgHud"><i id="dFW">F.WING</i><i id="dSU">SUSP</i><i id="dRW">R.WING</i></div></div>
       <div class="ped"><i><b id="thrB"></b></i><i class="br"><b id="brkB"></b></i></div><div class="spd"><span id="spd">0</span><small>KM/H</small></div>
       <div id="gear">N</div>
       <div class="side"><div class="tyre"><b>S</b><span>SOFT</span></div><div id="ers">ERS<div class="bar"><span id="ersBar"></span></div></div></div>
