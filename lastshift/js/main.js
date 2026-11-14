@@ -870,8 +870,14 @@ function updatePrompt(dt) {
 let last = now(), sendAcc = 0;
 function frame() {
   requestAnimationFrame(frame);
-  const t = now(), dt = Math.min(0.05, (t - last) / 1000); last = t;
-  if (G.phase === 'menu' || G.phase === 'lobby' || G.phase === 'boot' || G.phase === 'loading') { menuFrame(dt); return; }
+  step(true);
+}
+// background tabs get no animation frames: keep simulating + syncing on a timer so an
+// alt-tabbed host doesn't freeze the monster for everyone
+setInterval(() => { if (document.hidden && (G.phase === 'play' || G.phase === 'end')) step(false); }, 100);
+function step(render) {
+  const t = now(), dt = Math.min(render ? 0.05 : 0.12, (t - last) / 1000); last = t;
+  if (G.phase === 'menu' || G.phase === 'lobby' || G.phase === 'boot' || G.phase === 'loading') { if (render) menuFrame(dt); return; }
   if (!G.world) return;
   G.t += dt;
   if (G.host) hostUpdate(dt);
@@ -902,7 +908,7 @@ function frame() {
   vhs.uniforms.time.value = G.t; vhs.uniforms.glitch.value = Math.min(1, G.glitch);
   const P = G.W.pl[myId] || {}; vhs.uniforms.red.value = P.dn && !P.tk ? 0.55 : 0;
   vhs.uniforms.grain.value = S.gfx === 'low' ? 0.04 : 0.07;
-  if (!NORENDER) composer.render(dt);
+  if (!NORENDER && render) composer.render(dt);
 }
 let menuT = 0;
 function menuFrame(dt) {
