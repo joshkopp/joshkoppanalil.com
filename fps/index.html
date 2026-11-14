@@ -147,6 +147,7 @@ a.back:hover{color:#f2c94c}
       <label>CS SENSITIVITY <input id="sens" type="range" min="0.3" max="6" step="0.05" value="2"> <span id="sensVal" class="mono">2.00</span></label>
       <span id="best" class="mono" style="color:#8a918c"></span>
     </div>
+    <p style="font-size:12px;color:#5d635f;margin-top:14px">Surface textures: Poly Haven (CC0)</p>
   </div>
 </div>
 
@@ -182,7 +183,7 @@ renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 renderer.setSize(innerWidth,innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.15;
+renderer.toneMappingExposure = 1.55;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.autoClear = false;
@@ -320,7 +321,7 @@ function wallGeo(w,h,d,y0){
 }
 
 // ================= LIGHTS =================
-scene.add(new THREE.HemisphereLight(0x8a98aa, 0x1e1c18, 0.45));
+scene.add(new THREE.HemisphereLight(0x8a98aa, 0x2a2620, 0.75));
 const LIGHT_POOL = 6;
 const pool = [];
 for(let i=0;i<LIGHT_POOL;i++){ const l=new THREE.PointLight(0xffffff, 0, 11, 2); scene.add(l); pool.push({l, base:0, flick:false, seed:Math.random()*100}); }
@@ -381,6 +382,44 @@ const eFlashes=[];
 for(let i=0;i<10;i++){ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:texFlash, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true})); s.visible=false; scene.add(s); eFlashes.push({s,life:0}); }
 let eFlashIdx=0;
 function enemyFlash(p){ const f=eFlashes[eFlashIdx]; eFlashIdx=(eFlashIdx+1)%eFlashes.length; f.s.position.copy(p); f.s.scale.setScalar(rand(.35,.55)); f.s.material.rotation=Math.random()*6; f.s.visible=true; f.life=.05; }
+
+
+// ================= PBR TEXTURES (Poly Haven, CC0) =================
+const texLoader=new THREE.TextureLoader();
+function loadTex(name,srgb){ return new Promise(res=>texLoader.load('tex/'+name+'.jpg',t=>{ t.wrapS=t.wrapT=THREE.RepeatWrapping; t.anisotropy=renderer.capabilities.getMaxAnisotropy(); if(srgb) t.colorSpace=THREE.SRGBColorSpace; res(t); },undefined,()=>res(null))); }
+function composite(tex,draw){
+  const c=document.createElement('canvas'); c.width=c.height=512; const g=c.getContext('2d'); g.drawImage(tex.image,0,0,512,512); draw(g,512);
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=renderer.capabilities.getMaxAnisotropy(); return t;
+}
+async function loadPBR(){
+  const T={};
+  await Promise.all(['floor','wall','ceil','crate','metal','door'].flatMap(n=>[['diff',true],['nor',false],['arm',false]].map(async([m,s])=>{ T[n+'_'+m]=await loadTex(n+'_'+m,s); })));
+  if(Object.values(T).some(v=>!v)) return; // keep procedural fallback textures
+  const apply=(mat,n,o={})=>{
+    mat.map=o.map||T[n+'_diff']; mat.normalMap=T[n+'_nor']; mat.normalScale.set(o.ns||1,o.ns||1);
+    mat.roughnessMap=T[n+'_arm']; mat.roughness=o.rough||1; mat.aoMap=T[n+'_arm']; mat.aoMapIntensity=.55;
+    if(o.metal){ mat.metalnessMap=T[n+'_arm']; mat.metalness=1; } else mat.metalness=0;
+    mat.color.set(o.color||0xffffff); mat.needsUpdate=true;
+  };
+  // walls: real plaster with the two-tone institutional paint + baseboard painted over it
+  const wallMap=composite(T.wall_diff,(g,s)=>{
+    g.globalCompositeOperation='multiply'; g.fillStyle='#ece4d6'; g.fillRect(0,0,s,s*.62);
+    g.fillStyle='#5f6d79'; g.fillRect(0,s*.62,s,s*.38);
+    g.globalCompositeOperation='source-over'; g.fillStyle='#2b3238'; g.fillRect(0,s*.615,s,s*.016);
+    g.fillStyle='#1a1b1d'; g.fillRect(0,s*.95,s,s*.05);
+    const gr=g.createLinearGradient(0,s*.6,0,s); gr.addColorStop(0,'rgba(0,0,0,0)'); gr.addColorStop(1,'rgba(25,18,8,.28)'); g.fillStyle=gr; g.fillRect(0,s*.6,s,s*.4);
+  });
+  const crateMap=composite(T.crate_diff,(g,s)=>{ g.strokeStyle='rgba(40,26,12,.9)'; g.lineWidth=34; g.strokeRect(17,17,s-34,s-34); g.lineWidth=30; g.beginPath(); g.moveTo(34,34); g.lineTo(s-34,s-34); g.stroke(); g.strokeStyle='rgba(0,0,0,.35)'; g.lineWidth=3; g.strokeRect(34,34,s-68,s-68); });
+  const doorMap=composite(T.door_diff,(g,s)=>{ g.strokeStyle='rgba(0,0,0,.45)'; g.lineWidth=6; g.strokeRect(60,48,s-120,s*.38); g.strokeRect(60,s*.5,s-120,s*.42); g.strokeStyle='rgba(255,255,255,.1)'; g.lineWidth=3; g.strokeRect(64,52,s-128,s*.38-8); });
+  apply(M.floor,'floor',{ns:1.2});
+  apply(M.wall,'wall',{map:wallMap,ns:.8});
+  apply(M.ceil,'ceil',{ns:.3});
+  apply(M.crate,'crate',{map:crateMap});
+  apply(M.door,'door',{map:doorMap,metal:true});
+  apply(M.locker,'door',{metal:true,color:0x9fb3bd});
+  apply(M.metal,'metal',{metal:true});
+}
+loadPBR();
 
 
 // ================= AUDIO =================
