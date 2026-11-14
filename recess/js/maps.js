@@ -403,6 +403,25 @@ export function buildComplex() {
     m.spawns.players.push({ f: 1, x: (x + 0.5) * 2, z: (z + 0.5) * 2, yaw });
   }
   m.spawns.spec = { f: 1, x: 34 * 2, z: 18 * 2 };
+  // jump pads in the big open rooms, power-up spawn points along the concourse and atriums
+  m.pads = [];
+  for (const z of m.zones) {
+    if (!['atrium', 'playground', 'court', 'trampoline', 'garden', 'cafeteria'].includes(z.kind) || z.x0 == null) continue;
+    let n = 0;
+    for (let i = 0; i < 60 && n < 2; i++) {
+      const x = z.x0 + 2 + Math.floor(R() * (z.x1 - z.x0 - 3)), zz = z.z0 + 2 + Math.floor(R() * (z.z1 - z.z0 - 3));
+      if (m.t(z.f, x, zz) !== FLOOR || m.dway[z.f][m.I(x, zz)]) continue;
+      let clear = true; for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if (m.t(z.f, x + dx, zz + dz) !== FLOOR) clear = false;
+      if (!clear || m.pads.some(p => p.f === z.f && Math.abs(p.cx - x) + Math.abs(p.cz - zz) < 4)) continue;
+      m.pads.push({ f: z.f, cx: x, cz: zz, x: (x + 0.5) * 2, z: (zz + 0.5) * 2 }); n++;
+    }
+  }
+  m.puSpots = [];
+  for (let f = 1; f <= 2; f++) for (let z = 1; z < m.H - 1; z += 3) for (let x = 1; x < m.W - 1; x += 3) {
+    if (m.t(f, x, z) !== FLOOR || m.dway[f][m.I(x, z)] || m.pads.some(p => p.f === f && p.cx === x && p.cz === z)) continue;
+    const k = m.zones[m.zone[f][m.I(x, z)]]; if (!k || !['hall', 'atrium', 'balcony', 'court', 'playground', 'cafeteria', 'lounge', 'garden', 'maze'].includes(k.kind)) continue;
+    m.puSpots.push({ f, x: (x + 0.5) * 2, z: (z + 0.5) * 2 });
+  }
   m.finalizeLamps();
   return m;
 }

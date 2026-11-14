@@ -55,10 +55,21 @@ export function makeAvatar(id, name, color) {
     tex.needsUpdate = true;
   };
   drawTag(false, '');
+  // shield bubble, emote bubble
+  const bubble = new THREE.Mesh(new THREE.SphereGeometry(1.0, 20, 14), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.4, 1.4, 2.2), transparent: true, opacity: 0.22, depthWrite: false }));
+  bubble.position.y = 0.95; bubble.visible = false; root.add(bubble);
+  const ecv = document.createElement('canvas'); ecv.width = ecv.height = 128; const ecx = ecv.getContext('2d'); const etex = new THREE.CanvasTexture(ecv);
+  const esp = new THREE.Sprite(new THREE.SpriteMaterial({ map: etex, transparent: true, depthTest: false, fog: false })); esp.scale.set(0.75, 0.75, 1); esp.position.y = 2.75; esp.visible = false; esp.renderOrder = 21; root.add(esp);
+  let em = null, cloaked = false, ringHex = 0;
+  const emote = (glyph, kind) => { ecx.clearRect(0, 0, 128, 128); ecx.font = '96px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; ecx.textAlign = 'center'; ecx.textBaseline = 'middle'; ecx.fillText(glyph, 64, 70); etex.needsUpdate = true; em = { t: 2.6, kind }; esp.visible = true; };
   let ph = 0, air = 0;
   // s: {speed, crouch, jump(air), it, seeker, speaking, label, t, pitch, flash}
   const update = (dt, s) => {
     drawTag(!!s.speaking, s.label || '');
+    const rc = s.ringColor || 0xff4d33; if (rc !== ringHex) { ringHex = rc; ring.material.color.set(rc).multiplyScalar(2.5); }
+    bubble.visible = !!s.shield; if (s.shield) { bubble.material.opacity = 0.16 + 0.08 * Math.sin(s.t * 6); bubble.rotation.y += dt; }
+    if (!!s.cloak !== cloaked) { cloaked = !!s.cloak; body.traverse(o => { if (o.material) { o.material.transparent = cloaked; o.material.opacity = cloaked ? 0.12 : 1; } }); tag.visible = !cloaked; blob.visible = !cloaked; }
+    if (em) { em.t -= dt; esp.position.y = 2.75 + Math.sin(s.t * 6) * 0.06; esp.material.opacity = Math.min(1, em.t * 2); if (em.t <= 0) { em = null; esp.visible = false; body.rotation.y = 0; } }
     ring.visible = !!s.it; if (s.it) { ring.material.opacity = 0.55 + 0.3 * Math.sin(s.t * 8); ring.scale.setScalar(1 + 0.08 * Math.sin(s.t * 8)); }
     cap.visible = !!(s.it || s.seeker); fl.visible = !!s.flash;
     const k = Math.min(1.4, s.speed / 3.2); ph += dt * (4 + s.speed * 2.2) * (k > 0.05 ? 1 : 0.2);
@@ -70,6 +81,9 @@ export function makeAvatar(id, name, color) {
     if (s.flash) { arms[1][0].rotation.x = -1.2 - (s.pitch || 0) * 0.8; arms[1][1].rotation.x = -0.1; }
     head.rotation.x = -(s.pitch || 0) * 0.5 + (s.crouch ? -0.3 : 0);
     torso.scale.y = 1 + Math.sin(s.t * 2.2) * 0.012;
+    if (em && em.kind === 'dance') { body.rotation.y = s.t * 7; body.position.y += Math.abs(Math.sin(s.t * 10)) * 0.18; arms.forEach(([p], i) => { p.rotation.x = -2.6 + Math.sin(s.t * 10 + i * 3) * 0.5; }); }
+    else if (em && em.kind === 'wave') { arms[0][0].rotation.x = -2.8; arms[0][0].rotation.z = 0.3 + Math.sin(s.t * 14) * 0.4; }
+    else if (em && em.kind === 'hype') { arms.forEach(([p]) => { p.rotation.x = -3.0; }); body.position.y += Math.abs(Math.sin(s.t * 12)) * 0.12; }
   };
-  return { group: root, update, tag, setOpacity: v => root.traverse(o => { if (o.material && o !== tag) { o.material.transparent = v < 1; o.material.opacity = v; } }) };
+  return { group: root, update, tag, emote, setOpacity: v => root.traverse(o => { if (o.material && o !== tag) { o.material.transparent = v < 1; o.material.opacity = v; } }) };
 }

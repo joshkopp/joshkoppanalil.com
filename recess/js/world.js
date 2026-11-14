@@ -1,5 +1,6 @@
 // RECESS — builds the 3D maps (spooky school + bright fun center) from the grid.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { WALL, FLOOR, RAMP, RHOLE, HOLE, VENT, PROP, DOOR, FAKE, VENT_H } from './maps.js';
 
 const T = {};
@@ -45,8 +46,9 @@ export class World {
   constructor(scene, map, gfx) {
     this.scene = scene; this.m = map; this.gfx = gfx; this.fun = map.theme === 'fun';
     this.root = new THREE.Group(); scene.add(this.root);
-    this.mats(); this.shell(); this.extras(); this.buildProps(); this.buildLamps(); this.buildDoors();
+    this.mats(); this.shell(); this.extras(); this.buildProps(); this.buildLamps(); this.buildDoors(); this.buildPads();
     this.root.traverse(o => { if (o.isMesh && !o.userData.noShadow) { o.receiveShadow = true; o.castShadow = o.userData.cast !== false; } });
+    this.bakeStatic();
   }
   zoneColor(zi) {
     if (!this.fun || zi < 0) return null; const z = this.m.zones[zi];
@@ -272,7 +274,7 @@ export class World {
     L.forEach((l, i) => { mtx.makeTranslation(l.x, l.y + 0.27, l.z); glow.setMatrixAt(i, mtx); l.color = this.fun ? new THREE.Color().setHSL(l.kind === 'arcade' || l.kind === 'theater' ? l.hue : 0.12, l.kind === 'arcade' || l.kind === 'theater' ? 1 : 0.15, 0.6) : new THREE.Color(1, 0.88, 0.7); l.k = 0; });
     glow.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(n * 3), 3); glow.userData.noShadow = true; glow.frustumCulled = false;
     this.glow = glow; this.root.add(glow);
-    const k = this.gfx === 'low' ? 4 : this.gfx === 'med' ? 6 : 8;
+    const k = this.gfx === 'low' ? 3 : this.gfx === 'med' ? 6 : 8;
     this.pool = []; for (let i = 0; i < k; i++) { const p = new THREE.PointLight(0xffffff, 0, 12, 2); this.scene.add(p); this.pool.push(p); }
     this.poolT = 0;
   }
@@ -295,13 +297,63 @@ export class World {
       this.pool.forEach((p, i) => p.userData.l = cand[i] && cand[i][0]);
     }
     for (const p of this.pool) { const l = p.userData.l; if (!l) { p.intensity = 0; continue; } p.position.set(l.x, l.y - 0.1, l.z); p.color.copy(l.color); p.intensity = l.k * (this.fun ? 3.2 : 6); p.distance = this.fun ? 12 : 10; }
+    for (const o of this.padObjs || []) { o.arrow.position.y = 0.45 + Math.abs(Math.sin(s.t * 3 + o.p.x)) * 0.35; o.arrow.rotation.y = s.t * 2; o.glow.scale.setScalar(1 + Math.sin(s.t * 5) * 0.06); }
     for (const o of this.doorObjs) { o.a += ((o.d.open ? 1 : 0) - o.a) * Math.min(1, s.dt * 4); o.piv.rotation.y = -o.a * 1.5; }
     for (const o of this.spotObjs) {
       if (!o) continue;
       o.a += (o.tgt - o.a) * Math.min(1, s.dt * 8);
       if (o.door) { if (o.s.type === 'curtain') o.door.scale.z = 1 + o.a * 2; else if (o.s.type === 'box') o.door.rotation.x = -o.a * 1.2; else o.door.rotation.y = -o.a * 1.5; }
-      if (o.shake > 0) { o.shake -= s.dt; o.g.rotation.y = o.baseRot + Math.sin(s.t * 60) * 0.02 * Math.min(1, o.shake * 3); } else o.g.rotation.y = o.baseRot;
+      if (o.shake > 0) { o.shake -= s.dt; if (o.door) o.door.position.x += Math.sin(s.t * 70) * 0.004; }
     }
+  }
+  buildPads() {
+    this.padObjs = [];
+    for (const p of this.m.pads || []) {
+      const g = new THREE.Group(); g.position.set(p.x, this.m.base(p.f) + 0.02, p.z);
+      const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.95, 0.08, 28), new THREE.MeshStandardMaterial({ color: 0x1b1b2e, roughness: 0.4 })); disc.position.y = 0.04; g.add(disc);
+      const glow = new THREE.Mesh(new THREE.RingGeometry(0.45, 0.78, 28), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.3, 2.2, 1.4), side: THREE.DoubleSide })); glow.rotation.x = -Math.PI / 2; glow.position.y = 0.09; glow.userData.noBake = true; g.add(glow);
+      const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.4, 4), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.8, 2.2, 0.6) })); arrow.position.y = 0.5; arrow.userData.noBake = true; g.add(arrow);
+      this.root.add(g); this.padObjs.push({ p, glow, arrow });
+    }
+  }
+  setPads(on) { for (const o of this.padObjs) { o.glow.visible = o.arrow.visible = on; } }
+  // Merge every static mesh into a handful of big meshes (one per material look). This turns
+  // thousands of draw calls into ~40, which is what lets school iPads keep up.
+  bakeStatic() {
+    this.root.updateMatrixWorld(true);
+    const keep = new Set();
+    for (const o of this.spotObjs) if (o) { if (o.door) keep.add(o.door); if (o.tell) keep.add(o.tell); }
+    for (const o of this.doorObjs) keep.add(o.piv);
+    const buckets = new Map(), victims = [];
+    const visit = (obj, kept) => {
+      for (const c of obj.children) {
+        const k = kept || keep.has(c) || c.userData.noBake;
+        if (c.isMesh && !c.isInstancedMesh && !k && c.material && !Array.isArray(c.material)) {
+          const m = c.material;
+          const key = [m.type, m.map ? m.map.uuid : '', m.normalMap ? m.normalMap.uuid : '', m.roughnessMap ? m.roughnessMap.uuid : '', m.transparent ? 't' + m.opacity.toFixed(2) : 'o', m.side, m.blending, (m.roughness ?? 0).toFixed(1), (m.metalness ?? 0).toFixed(1), c.castShadow ? 'c' : '', c.userData.noShadow ? 'n' : ''].join('|');
+          let g = c.geometry.index ? c.geometry.toNonIndexed() : c.geometry.clone();
+          for (const a of Object.keys(g.attributes)) if (!['position', 'normal', 'uv', 'color'].includes(a)) g.deleteAttribute(a);
+          const n = g.attributes.position.count;
+          if (!g.attributes.uv) g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(n * 2), 2));
+          if (!g.attributes.normal) g.computeVertexNormals();
+          const col = new Float32Array(n * 3), base = g.attributes.color, mc = m.color || new THREE.Color(1, 1, 1);
+          for (let i = 0; i < n; i++) { col[i * 3] = (base ? base.getX(i) : 1) * mc.r; col[i * 3 + 1] = (base ? base.getY(i) : 1) * mc.g; col[i * 3 + 2] = (base ? base.getZ(i) : 1) * mc.b; }
+          g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+          g.applyMatrix4(c.matrixWorld);
+          if (!buckets.has(key)) buckets.set(key, { mat: m, geos: [], cast: c.castShadow, recv: c.receiveShadow });
+          buckets.get(key).geos.push(g); victims.push(c);
+        } else if (c.children.length && !k) visit(c, false);
+      }
+    };
+    visit(this.root, false);
+    for (const v of victims) v.parent.remove(v);
+    for (const b of buckets.values()) {
+      const merged = mergeGeometries(b.geos, false); if (!merged) continue;
+      const mat = b.mat.clone(); mat.vertexColors = true; if (mat.color) mat.color.set(0xffffff);
+      const me = new THREE.Mesh(merged, mat); me.castShadow = b.cast; me.receiveShadow = b.recv; this.root.add(me);
+      b.geos.forEach(g => g.dispose());
+    }
+    this.baked = { meshes: victims.length, into: buckets.size };
   }
   setTells(ids) { const set = new Set(ids || []); for (const o of this.spotObjs) if (o && o.tell) o.tell.visible = set.has(o.s.id); }
   dispose() { this.scene.remove(this.root); this.pool.forEach(p => this.scene.remove(p)); this.root.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }

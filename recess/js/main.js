@@ -16,7 +16,8 @@ import { makeAvatar, COLORS } from './avatar.js';
 const $ = id => document.getElementById(id);
 const Q = new URLSearchParams(location.search), LOCAL = Q.has('local'), NORENDER = Q.has('norender');
 const store = { get(k, d) { try { const v = localStorage.getItem('recess-' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('recess-' + k, JSON.stringify(v)); } catch (e) {} } };
-const S = Object.assign({ vol: 0.8, voice: 1, music: 0.45, sens: 1, fov: 80, gfx: 'med', inv: false, mic: 'open', cam: 'first', name: '' }, store.get('settings', {}));
+const TOUCH = navigator.maxTouchPoints > 1 || 'ontouchstart' in window;
+const S = Object.assign({ vol: 0.8, voice: 1, music: 0.45, sens: 1, fov: 80, gfx: TOUCH ? 'low' : 'med', inv: false, mic: 'open', cam: 'first', name: '' }, store.get('settings', {}));
 let session = null; try { session = JSON.parse(sessionStorage.getItem('recess-session') || 'null'); } catch (e) {}
 const myId = (session && session.id) || Math.random().toString(36).slice(2, 10);
 const now = () => performance.now();
@@ -24,7 +25,10 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const lerpAng = (a, b, k) => { let d = b - a; while (d > Math.PI) d -= 6.283; while (d < -Math.PI) d += 6.283; return a + d * k; };
 const EYE = 1.6, CEYE = 0.95, RAD = 0.32;
-const MODES = { hide: { name: 'Hide & Seek', map: 'school' }, tag: { name: 'Tag', map: 'complex' } };
+const MODES = { hide: { name: 'Hide & Seek', map: 'school' }, tag: { name: 'Tag', map: 'complex' }, infect: { name: 'Infection', map: 'complex' } };
+const TAGLIKE = m => m === 'tag' || m === 'infect';
+const PW = { speed: { icon: '⚡', name: 'Speed boost', dur: 6, col: 0xffd23f }, jump: { icon: '🦘', name: 'Super jump', dur: 8, col: 0x5cf08a }, shield: { icon: '🛡️', name: 'Shield', dur: 5, col: 0x4fd4ff }, cloak: { icon: '👻', name: 'Cloak', dur: 7, col: 0xc77dff } };
+const EMOTES = { 1: ['👋', 'wave'], 2: ['😂', 'laugh'], 3: ['🔥', 'hype'], 4: ['💃', 'dance'] };
 const sfx = new Sfx();
 let mesh = null;
 
@@ -38,7 +42,7 @@ const VIG = { uniforms: { tDiffuse: { value: null }, red: { value: 0 }, dark: { 
   fragmentShader: 'uniform sampler2D tDiffuse;uniform float red,dark,t;varying vec2 vUv;float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}void main(){vec3 c=texture2D(tDiffuse,vUv).rgb;vec2 d=vUv-.5;float v=dot(d,d);c*=1.-v*dark*2.;c=mix(c,vec3(1.,.1,.1),red*smoothstep(.12,.45,v));c+=(h(vUv*800.+t)-.5)*.025;gl_FragColor=vec4(c,1.);}' };
 let composer, renderPass, bloom, vig;
 function setupRender() {
-  const pr = S.gfx === 'low' ? Math.min(devicePixelRatio, 0.85) : S.gfx === 'med' ? Math.min(devicePixelRatio, 1.25) : Math.min(devicePixelRatio, 1.75);
+  const pr = S.gfx === 'low' ? Math.min(devicePixelRatio, 1) : S.gfx === 'med' ? Math.min(devicePixelRatio, 1.25) : Math.min(devicePixelRatio, 1.75);
   renderer.setPixelRatio(pr); renderer.setSize(innerWidth, innerHeight);
   composer = new EffectComposer(renderer); renderPass = new RenderPass(new THREE.Scene(), camera); composer.addPass(renderPass);
   bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.35, 0.4, 0.92); bloom.enabled = S.gfx !== 'low'; composer.addPass(bloom);
@@ -57,7 +61,7 @@ function getMap(key) {
   const map = key === 'school' ? buildSchool() : buildComplex();
   const scene = new THREE.Scene();
   if (key === 'school') { scene.background = new THREE.Color(0x05070c); scene.fog = new THREE.FogExp2(0x070a12, 0.045); scene.add(new THREE.HemisphereLight(0x8094b8, 0x1a1410, 0.22)); }
-  else { scene.background = new THREE.Color(0x9fd3ff); scene.fog = new THREE.Fog(0xcfe6ff, 45, 150); scene.add(new THREE.HemisphereLight(0xffffff, 0xb8a890, 0.62)); const d = new THREE.DirectionalLight(0xfff2e0, 0.5); d.position.set(30, 60, 20); scene.add(d); }
+  else { scene.background = new THREE.Color(0x9fd3ff); scene.fog = new THREE.Fog(0xcfe6ff, S.gfx === 'low' ? 28 : 45, S.gfx === 'low' ? 80 : 150); scene.add(new THREE.HemisphereLight(0xffffff, 0xb8a890, 0.62)); const d = new THREE.DirectionalLight(0xfff2e0, 0.5); d.position.set(30, 60, 20); scene.add(d); }
   const world = new World(scene, map, S.gfx);
   const spots = []; for (let i = 0; i < 3; i++) { const s = new THREE.SpotLight(0xfff0d8, 0, 24, 0.5, 0.5, 1.6); s.target = new THREE.Object3D(); scene.add(s, s.target); spots.push(s); }
   return (MAPS[key] = { key, map, scene, world, spots });
@@ -85,6 +89,7 @@ const G = {
   me: { x: 0, y: 0, z: 0, f: 0, vy: 0, yaw: 0, pitch: 0, vx: 0, vz: 0, crouch: false, ck: 0, sprint: false, sta: 100, staT: 0, air: false, spot: -1, flash: true, bob: 0, step: 0, speed: 0 },
   others: new Map(), keys: {}, colors: {}, names: {}, muted: new Set(), cam3: S.cam === 'third', spec: { i: 0, free: false, x: 0, y: 3, z: 0, yaw: 0, pitch: -0.2 },
   prompt: null, searchT: 0, sendAcc: 0, lastSeq: 0, H: null, tagFx: [], ready: false,
+  noLock: TOUCH || !('requestPointerLock' in HTMLElement.prototype), pu: new Map(), radarAt: -1e9, tauntAt: -1e9, emoteAt: 0, pickAt: {},
 };
 const nameOf = id => G.names[id] || (mesh && (mesh.players().find(p => p.id === id) || {}).name) || 'Player';
 const colorOf = id => G.colors[id] || '#bbb';
@@ -102,7 +107,7 @@ function bindSettings() {
 }
 function applySettings(gfx) {
   store.set('settings', S); sfx.setVolume(S.vol, S.voice, S.music); camera.fov = S.fov; camera.updateProjectionMatrix();
-  if (gfx) { const pr = S.gfx === 'low' ? Math.min(devicePixelRatio, 0.85) : S.gfx === 'med' ? Math.min(devicePixelRatio, 1.25) : Math.min(devicePixelRatio, 1.75); renderer.setPixelRatio(pr); composer.setPixelRatio(pr); composer.setSize(innerWidth, innerHeight); bloom.enabled = S.gfx !== 'low'; }
+  if (gfx) { const pr = S.gfx === 'low' ? Math.min(devicePixelRatio, 1) : S.gfx === 'med' ? Math.min(devicePixelRatio, 1.25) : Math.min(devicePixelRatio, 1.75); renderer.setPixelRatio(pr); composer.setPixelRatio(pr); composer.setSize(innerWidth, innerHeight); bloom.enabled = S.gfx !== 'low'; }
 }
 async function applyMic() {
   if (!mesh) return renderVoice();
@@ -176,6 +181,8 @@ $('bLink').onclick = () => navigator.clipboard.writeText(location.origin + locat
 $('bReady').onclick = () => { G.ready = !G.ready; mesh.setMeta({ ready: G.ready }); sfx.click(); renderLobby(); };
 $('bStart').onclick = () => { if (isHost()) hostStartRound(); };
 document.querySelectorAll('.mode').forEach(el => el.onclick = () => { if (!isHost()) return; G.lobby.mode = el.dataset.mode; mesh.sendAll({ t: 'lobby', l: G.lobby }); renderLobby(); sfx.click(); });
+$('optConvert').onchange = () => { if (!isHost()) return; G.lobby.convert = $('optConvert').checked; mesh.sendAll({ t: 'lobby', l: G.lobby }); };
+$('optPower').onchange = () => { if (!isHost()) return; G.lobby.power = $('optPower').checked; mesh.sendAll({ t: 'lobby', l: G.lobby }); };
 $('chatIn').onkeydown = e => { if (e.key === 'Enter') { const t = $('chatIn').value.trim(); if (t) sendChat(t); $('chatIn').value = ''; } };
 
 function renderLobby() {
@@ -191,6 +198,11 @@ function renderLobby() {
   $('plist').querySelectorAll('[data-mute]').forEach(b => b.onclick = () => toggleMute(b.dataset.mute));
   $('plist').querySelectorAll('[data-report]').forEach(b => b.onclick = () => report(b.dataset.report));
   document.querySelectorAll('.mode').forEach(el => { el.classList.toggle('sel', el.dataset.mode === G.lobby.mode); el.classList.toggle('locked', host !== myId); });
+  $('optConvert').checked = G.lobby.convert !== false; $('optPower').checked = G.lobby.power !== false;
+  $('optConvert').disabled = $('optPower').disabled = host !== myId;
+  $('optRowHide').classList.toggle('hidden', G.lobby.mode !== 'hide'); $('optRowTag').classList.toggle('hidden', G.lobby.mode === 'hide');
+  const board = Object.entries(G.lobby.board || {}).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  $('board').innerHTML = board.length ? board.map(([n, w], i) => `<div><span>${['🥇', '🥈', '🥉'][i] || '·'} ${esc(n)}</span><b>${w} win${w === 1 ? '' : 's'}</b></div>`).join('') : '<div class="dim">Win a round to get on the board!</div>';
   const amHost = host === myId, others = ps.filter(p => p.id !== host), allReady = others.every(p => p.ready);
   $('bStart').classList.toggle('hidden', !amHost); $('bReady').classList.toggle('hidden', amHost);
   $('bReady').textContent = G.ready ? 'Ready ✓' : 'Ready up'; $('bReady').classList.toggle('on', G.ready);
@@ -212,6 +224,7 @@ function bindNet() {
   mesh.on('corr', (m, from) => { if (from === mesh.hostId()) { Object.assign(G.me, { x: m.x, y: m.y, z: m.z, f: m.f, vx: 0, vz: 0, vy: 0 }); } });
   mesh.on('in', (m, from) => { if (G.H) hostInput(from, m); });
   mesh.on('rq', (m, from) => { if (mesh.isHost()) hostRequest(from, m); });
+  mesh.on('emo', (m, from) => { if (G.phase === 'game') showEmote(from, m.e); });
 }
 
 // ================================================================== round lifecycle (all clients)
@@ -223,20 +236,21 @@ async function loadRound(m) { // m: {mode, roles, seed}
   const M = G.M = getMap(MODES[m.mode].map); G.mapKey = M.key;
   M.map.doors.forEach(d => d.open = false);
   M.scene.add(flash, flashT);
-  G.round = { mode: m.mode, ph: 'wait', tl: 0, sk: null, roles: m.roles || {}, ep: 0, stats: {}, tells: [], frozenUntil: 0 };
+  G.round = { mode: m.mode, ph: 'wait', tl: 0, sk: null, roles: m.roles || {}, ep: 0, stats: {}, tells: [], frozenUntil: 0, power: m.power };
   G.others.clear();
   G.selfAv = makeAvatar(myId, S.name || 'You', colorOf(myId)); G.selfAv.tag.visible = false; M.scene.add(G.selfAv.group);
   const sp = spawnFor(m.mode, m.roles && m.roles[myId], m.spawnIx || 0);
   Object.assign(G.me, { x: sp.x, z: sp.z, f: sp.f, y: M.map.base(sp.f), vy: 0, vx: 0, vz: 0, yaw: sp.yaw || 0, pitch: 0, crouch: false, sta: 100, spot: -1, air: false });
   renderPass.scene = M.scene; if (!NORENDER) renderer.compile(M.scene, camera);
   $('loading').classList.add('hidden'); $('hud').classList.remove('hidden'); $('hud').className = 'mode-' + m.mode;
-  G.phase = 'game'; sfx.music(m.mode === 'tag' ? 'tag' : 'hide');
-  if (!document.pointerLockElement) $('clickIn').classList.remove('hidden');
+  G.phase = 'game'; sfx.music(TAGLIKE(m.mode) ? 'tag' : 'hide'); G.me.pw = null; clearPickups(); M.world.setPads(!!m.power);
+  if (!document.pointerLockElement && !G.noLock) $('clickIn').classList.remove('hidden');
+  $('touchUI').classList.toggle('hidden', !TOUCH);
   mesh.sendTo(mesh.hostId(), { t: 'rq', k: 'loaded' });
 }
 function spawnFor(mode, role, ix) {
   const map = getMap(MODES[mode].map).map;
-  if (mode === 'hide') { if (role === 's') return { ...map.spawns.seeker[0], yaw: 0 }; if (role === 'x') return { ...map.spawns.spec }; const s = map.spawns.hiders[ix % map.spawns.hiders.length]; return { ...s, yaw: Math.PI }; }
+  if (mode === 'hide') { if (role === 's') return { ...map.spawns.seeker[0], x: map.spawns.seeker[0].x + (ix % 3) * 0.8, yaw: 0 }; if (role === 'x') return { ...map.spawns.spec }; const s = map.spawns.hiders[ix % map.spawns.hiders.length]; return { ...s, yaw: Math.PI }; }
   const s = map.spawns.players[ix % map.spawns.players.length]; return { ...s };
 }
 function endRound(keepPhase) {
@@ -248,7 +262,7 @@ function endRound(keepPhase) {
   $('hidingOv').classList.add('hidden'); $('specBar').classList.add('hidden'); $('lockedOv').classList.add('hidden'); $('score').classList.add('hidden');
 }
 function backToLobby() {
-  endRound(); G.phase = 'lobby'; G.ready = false; mesh && mesh.setMeta({ ready: false });
+  endRound(); G.phase = 'lobby'; clearPickups(); $('touchUI').classList.add('hidden');
   showMenuScene(); $('hud').classList.add('hidden'); $('clickIn').classList.add('hidden'); if (document.pointerLockElement) document.exitPointerLock();
   sfx.music(null); show('lobby'); renderLobby();
 }
@@ -264,7 +278,7 @@ function onEvent(m) {
       if (m.ph === 'count') { let n = 3; const tick = () => { if (!G.round || G.round.ph !== 'count') return; big(String(n), '', 900, 'count'); sfx.count(n); n--; if (n > 0) setTimeout(tick, 1000); }; tick(); }
       if (m.ph === 'hide') { sfx.count(0); sfx.whistle(); const role = R.roles[myId]; big(role === 's' ? 'YOU ARE THE SEEKER' : 'HIDE!', role === 's' ? 'You are locked in until the hiders are ready' : `${nameOf(R.sk)} is the seeker. You have ${m.tl}s`, 3200, role === 's' ? 'red' : ''); }
       if (m.ph === 'seek') { G.M.map.doors.forEach(d => d.open = true); sfx.whistle(); sfx.door({ x: 7 * 2 + 1, y: 1, z: 21 * 2 + 1 }, true); big(R.roles[myId] === 's' ? 'GO FIND THEM' : 'THE SEEKER IS OUT', '', 2500, 'red'); }
-      if (m.ph === 'play') { sfx.count(0); sfx.whistle(); big(R.sk === myId ? 'YOU ARE IT' : 'RUN!', R.sk === myId ? 'Tag someone with E or click' : `${nameOf(R.sk)} is IT`, 2600, R.sk === myId ? 'red' : ''); }
+      if (m.ph === 'play') { sfx.count(0); sfx.whistle(); const it = R.roles[myId] === 'i'; if (R.mode === 'infect') big(it ? 'YOU ARE INFECTED' : 'SURVIVE!', it ? 'Spread it: tag the survivors' : 'Don\'t get tagged — every tag adds a zombie', 2800, it ? 'green' : ''); else big(it ? 'YOU ARE IT' : 'RUN!', it ? 'Tag someone with E (or tap)' : `${nameOf(R.sk)} is IT`, 2600, it ? 'red' : ''); }
       break;
     case 'tag': {
       if (!R) return; const prev = R.sk; R.sk = m.b; R.ep = m.ep; R.roles[m.a] = 'r'; R.roles[m.b] = 'i';
@@ -275,8 +289,9 @@ function onEvent(m) {
       break;
     }
     case 'found': {
-      if (!R) return; R.roles[m.id] = 'x';
-      if (m.id === myId) { G.me.spot = -1; $('hidingOv').classList.add('hidden'); big('FOUND!', `${nameOf(m.by)} found you · now spectating`, 2600, 'red'); sfx.found(); G.spec.i = 0; }
+      if (!R) return; R.roles[m.id] = m.role || 'x';
+      if (m.id === myId) { G.me.spot = -1; $('hidingOv').classList.add('hidden'); sfx.found(); G.spec.i = 0;
+        if (m.role === 's') { Object.assign(G.me, { x: m.x, z: m.z }); big('FOUND!', 'You\'re a seeker now — go find the rest', 2800, 'red'); } else big('FOUND!', `${nameOf(m.by)} found you · now spectating`, 2600, 'red'); }
       else { toast(`${nameOf(m.by)} found ${nameOf(m.id)}${m.spot != null ? ' in a ' + (G.M.map.spots[m.spot] || {}).type : ''}!`); const p = posOf(m.id); if (p) sfx.found(); }
       if (m.spot != null) { const o = G.M.world.spotObjs[m.spot]; if (o) { o.tgt = 1; setTimeout(() => o.tgt = 0, 900); } }
       break;
@@ -290,6 +305,24 @@ function onEvent(m) {
     case 'end': showResults(m); break;
     case 'lobby': backToLobby(); break;
     case 'report': toast(`${m.by} reported ${m.who}`, 5000); break;
+    case 'infect': {
+      if (!R) return; R.roles[m.b] = 'i';
+      const p = posOf(m.b); if (p) { spawnBurst(p.x, p.y + 1.1, p.z, 0.33); sfx.zap(p); }
+      if (m.b === myId) { big('INFECTED!', 'Now go get the others', 1800, 'green'); R.frozenUntil = now() + m.freeze; $('flashFx').className = 'green'; setTimeout(() => $('flashFx').className = '', 50); }
+      else if (m.a === myId) big('GOT ONE!', `${nameOf(m.b)} is infected`, 1300, 'green');
+      else toast(`🧟 ${nameOf(m.a)} infected ${nameOf(m.b)}`);
+      break;
+    }
+    case 'pw': if (m.id === myId) { G.me.pw = { type: m.type, until: now() + m.dur * 1000 }; sfx.power(); big(PW[m.type].icon + ' ' + PW[m.type].name.toUpperCase(), '', 1200); } else { const p = posOf(m.id); if (p) sfx.pickup(); } break;
+    case 'radar': { // only sent to the seeker who used it
+      const el = $('radar'), hot = m.d < 8, warm = m.d < 20;
+      el.className = 'on ' + (hot ? 'hot' : warm ? 'warm' : 'cold');
+      $('radarTxt').textContent = m.d == null ? 'NO HIDERS LEFT' : (hot ? '🔥 HOT' : warm ? '🌡️ WARM' : '🧊 COLD') + (m.df > 0 ? ' · UPSTAIRS' : m.df < 0 ? ' · DOWNSTAIRS' : '');
+      G.radar = { ang: m.ang, until: now() + 3500 }; sfx.sonar(); setTimeout(() => el.className = '', 3500); break;
+    }
+    case 'radarWarn': if (myRole() === 'h') { toast('📡 The seeker pinged their radar…', 2000); sfx.sonar(); } break;
+    case 'taunt': { const p = { x: m.x, y: m.y + 1, z: m.z }; [sfx.honk, sfx.squeak, sfx.yoohoo][m.n % 3].call(sfx, p); if (m.id === myId) toast('📢 Taunted! (+1 point)', 1200); break; }
+    case 'board': G.lobby.board = m.board; break;
   }
 }
 function spotAnim(id) { const o = G.M && G.M.world.spotObjs[id]; if (o) { o.tgt = 1; setTimeout(() => o.tgt = 0, 450); } }
@@ -298,7 +331,7 @@ function posOf(id) { if (id === myId) return { x: G.me.x, y: G.me.y, z: G.me.z }
 // snapshots: [id,x,y,z,f,yaw,pitch,flags,role,spot]
 function onSnap(m) {
   const R = G.round; if (!R || G.phase !== 'game') return;
-  R.ph = m.ph; R.tl = m.tl; R.sk = m.sk; R.ep = m.ep; R.tells = m.tells || []; if (m.S) R.stats = m.S; if (m.door != null) G.M.map.doors.forEach(d => d.open = !!m.door);
+  R.ph = m.ph; R.tl = m.tl; R.sk = m.sk; R.ep = m.ep; R.tells = m.tells || []; if (m.S) R.stats = m.S; if (m.pu) syncPickups(m.pu); if (m.door != null) G.M.map.doors.forEach(d => d.open = !!m.door);
   G.M.world.setTells(R.tells);
   const seen = new Set();
   for (const e of m.P) {
@@ -313,10 +346,10 @@ function onSnap(m) {
 }
 
 // ================================================================== host simulation
-function newHost() { return { players: new Map(), ph: 'lobby', mode: G.lobby.mode, t: 0, tl: 0, sk: null, ep: 0, spots: {}, lastSeeker: G.H && G.H.lastSeeker, sendAcc: 0, statAcc: 0, loaded: new Set(), waitT: 0 }; }
+function newHost() { return { players: new Map(), ph: 'lobby', mode: G.lobby.mode, t: 0, tl: 0, sk: null, ep: 0, spots: {}, lastSeeker: G.H && G.H.lastSeeker, sendAcc: 0, statAcc: 0, loaded: new Set(), waitT: 0, pu: new Map(), puN: 0, puT: 3, orig: [], board: (G.H && G.H.board) || G.lobby.board || {} }; }
 function hostPlayer(id) {
   const H = G.H; let p = H.players.get(id);
-  if (!p) { p = { id, x: 0, y: 0, z: 0, f: 0, yw: 0, pt: 0, fl: 0, role: 'x', spot: -1, conn: true, lastT: now(), hist: [], stats: { it: 0, tags: 0, tagged: 0 }, searchAt: 0, ix: H.players.size }; H.players.set(id, p); }
+  if (!p) { p = { id, x: 0, y: 0, z: 0, f: 0, yw: 0, pt: 0, fl: 0, role: 'x', spot: -1, conn: true, lastT: now(), hist: [], stats: { it: 0, tags: 0, tagged: 0, surv: 0, taunts: 0 }, searchAt: 0, radarAt: -1e9, tauntAt: -1e9, frozenUntil: 0, pw: null, ix: H.players.size }; H.players.set(id, p); }
   return p;
 }
 function hostBegin() {
@@ -325,11 +358,14 @@ function hostBegin() {
   let sk = ids[Math.floor(Math.random() * ids.length)];
   if (ids.length > 2 && sk === H.lastSeeker) sk = ids[(ids.indexOf(sk) + 1) % ids.length];
   H.sk = sk; H.lastSeeker = sk;
+  // bigger lobbies start with two seekers / two zombies
+  const extra = ids.length >= (mode === 'hide' ? 8 : 7) && mode !== 'tag' ? ids.filter(id => id !== sk)[Math.floor(Math.random() * (ids.length - 1))] : null;
+  H.orig = [sk, extra].filter(Boolean); H.convert = G.lobby.convert !== false; H.power = G.lobby.power !== false && TAGLIKE(mode);
   const roles = {};
-  ids.forEach((id, i) => { const p = hostPlayer(id); p.ix = i; p.role = mode === 'hide' ? (id === sk ? 's' : 'h') : (id === sk ? 'i' : 'r'); roles[id] = p.role; const s = spawnFor(mode, p.role, i); Object.assign(p, { x: s.x, z: s.z, f: s.f, y: getMap(MODES[mode].map).map.base(s.f), lastT: now() }); });
+  ids.forEach((id, i) => { const p = hostPlayer(id); p.ix = i; const chosen = H.orig.includes(id); p.role = mode === 'hide' ? (chosen ? 's' : 'h') : (chosen ? 'i' : 'r'); roles[id] = p.role; const s = spawnFor(mode, p.role, i); Object.assign(p, { x: s.x, z: s.z, f: s.f, y: getMap(MODES[mode].map).map.base(s.f), lastT: now() }); });
   H.ph = 'wait'; H.waitT = 0; H.loaded = new Set();
   H.itFrozenUntil = 0; H.prevIt = null; H.prevImmune = 0;
-  const msg = { t: 'ev', k: 'start', mode, roles, seed: 1 };
+  const msg = { t: 'ev', k: 'start', mode, roles, seed: 1, power: H.power };
   for (const id of ids) mesh.sendTo(id, { ...msg, spawnIx: H.players.get(id).ix });
 }
 function hostSetPhase(ph, tl) {
@@ -351,10 +387,13 @@ function hostPresence() {
 function hostLeft(p) {
   const H = G.H;
   if (p.spot >= 0) { delete H.spots[p.spot]; p.spot = -1; }
+  if (H.mode === 'infect' && H.ph === 'play' && ![...H.players.values()].some(q => q.conn && q.role === 'i')) {
+    const cand = [...H.players.values()].filter(q => q.conn && q.role === 'r'); if (cand.length) { const n = cand[Math.floor(Math.random() * cand.length)]; n.role = 'i'; hostEv({ k: 'infect', a: p.id, b: n.id, freeze: 1500 }); }
+  }
   if (H.mode === 'tag' && H.sk === p.id && (H.ph === 'play')) {
     const cand = [...H.players.values()].filter(q => q.conn && q.id !== p.id); if (cand.length) { const n = cand[Math.floor(Math.random() * cand.length)]; p.role = 'r'; n.role = 'i'; H.sk = n.id; H.ep++; hostEv({ k: 'tag', a: p.id, b: n.id, ep: H.ep, freeze: 2000 }); }
   }
-  if (H.mode === 'hide' && H.sk === p.id && (H.ph === 'hide' || H.ph === 'seek')) hostEnd('hiders', 'The seeker left the game.');
+  if (H.mode === 'hide' && p.role === 's' && (H.ph === 'hide' || H.ph === 'seek') && ![...H.players.values()].some(q => q !== p && q.conn && q.role === 's')) hostEnd('hiders', 'The seeker left the game.');
 }
 function becomeHost() {
   // the old host left mid-round: rebuild the authoritative state from our latest snapshot
@@ -367,8 +406,10 @@ function becomeHost() {
   chatAdd(null, 'You are now the host.', 'sys');
   for (const p of H.players.values()) if (!p.conn) { p.goneAt = now(); hostLeft(p); }
 }
-const BASE_SPEED = { hide: { walk: 3.4, sprint: 5.6 }, tag: { walk: 4.2, sprint: 6.6 } };
-function maxSpeed(mode, role) { return BASE_SPEED[mode].sprint * (role === 'i' ? 1.12 : 1); }
+const BASE_SPEED = { hide: { walk: 3.4, sprint: 5.6 }, tag: { walk: 4.2, sprint: 6.6 }, infect: { walk: 4.2, sprint: 6.6 } };
+const roleMult = (mode, role) => role === 'i' ? (mode === 'infect' ? 1.07 : 1.12) : 1;
+const pwOn = (p, type) => p && p.pw && p.pw.type === type && now() < p.pw.until;
+function maxSpeed(mode, role, p) { return BASE_SPEED[mode].sprint * roleMult(mode, role) * (pwOn(p, 'speed') ? 1.35 : 1); }
 function hostInput(id, m) {
   const H = G.H; if (!H || H.ph === 'lobby') return;
   const p = hostPlayer(id), map = getMap(MODES[H.mode].map).map, t = now();
@@ -377,11 +418,11 @@ function hostInput(id, m) {
   if (p.role === 'x' || id === myId) { Object.assign(p, { x: m.x, y: m.y, z: m.z, f: m.f }); p.lastT = t; return; }
   if (p.spot >= 0) { const s = map.spots[p.spot]; Object.assign(p, { x: s.x, z: s.z, f: s.f }); return; }
   const dt = Math.min(1.5, (t - p.lastT) / 1000), dist = Math.hypot(m.x - p.x, m.z - p.z);
-  const allow = maxSpeed(H.mode, p.role) * 1.3 * dt + 1.2;
+  const allow = maxSpeed(H.mode, p.role, p) * 1.3 * dt + 1.2;
   let bad = dist > allow;
   if (!bad && map.inBlocked(m.f, m.x, m.z, true)) bad = true;
   if (!bad && m.f !== p.f) { const okStair = [p.f, m.f].some(f => { const [x, z] = map.cell(m.x, m.z); const tt = map.t(f, x, z); return tt === RAMP || tt === RHOLE; }) || [p.f, m.f].some(f => { const [x, z] = map.cell(p.x, p.z); const tt = map.t(f, x, z); return tt === RAMP || tt === RHOLE; }); if (!okStair || Math.abs(m.f - p.f) > 1) bad = true; }
-  if (!bad && (H.ph === 'count' || H.ph === 'wait' || (H.mode === 'tag' && p.id === H.sk && t < H.itFrozenUntil)) && dist > 0.6) bad = true;
+  if (!bad && (H.ph === 'count' || H.ph === 'wait' || (H.mode === 'tag' && p.id === H.sk && t < H.itFrozenUntil) || (H.mode === 'infect' && t < p.frozenUntil)) && dist > 0.6) bad = true;
   if (!bad && H.mode === 'hide' && p.role === 's' && H.ph !== 'seek') { const zz = map.zoneAt(m.f, m.x, m.z); if (!zz || zz.kind !== 'principal') bad = true; }
   if (bad) { if (t - (p.corrAt || 0) > 250) { p.corrAt = t; mesh.sendTo(id, { t: 'corr', x: p.x, y: p.y, z: p.z, f: p.f }); } return; }
   Object.assign(p, { x: m.x, y: m.y, z: m.z, f: m.f }); p.lastT = t;
@@ -401,6 +442,33 @@ function hostRequest(id, m) {
   const p = H.players.get(id); if (!p) return;
   const map = getMap(MODES[H.mode].map).map, t = now();
   const deny = msg => mesh.sendTo(id, { t: 'ev', k: 'deny', msg });
+  if (m.k === 'pick') {
+    const u = H.pu.get(m.id); if (!u || p.role === 'x' || u.f !== p.f || Math.hypot(u.x - p.x, u.z - p.z) > 2.4) return;
+    H.pu.delete(m.id); p.pw = { type: u.type, until: t + PW[u.type].dur * 1000 };
+    hostEv({ k: 'pw', id, type: u.type, dur: PW[u.type].dur }); return;
+  }
+  if (m.k === 'radar') {
+    if (p.role !== 's' || H.ph !== 'seek' || t - p.radarAt < 24000) return; p.radarAt = t;
+    let best = null; for (const q of H.players.values()) if (q.role === 'h' && q.conn) { const d = Math.hypot(q.x - p.x, q.z - p.z) + Math.abs(q.f - p.f) * 6; if (!best || d < best.d) best = { d, q }; }
+    const r = best ? { d: Math.round(Math.hypot(best.q.x - p.x, best.q.z - p.z)), ang: Math.atan2(best.q.x - p.x, best.q.z - p.z), df: best.q.f - p.f } : { d: null };
+    mesh.sendTo(id, { t: 'ev', k: 'radar', ...r }); if (id === myId) onEvent({ k: 'radar', ...r });
+    for (const q of H.players.values()) if (q.role === 'h') { if (q.id === myId) onEvent({ k: 'radarWarn' }); else mesh.sendTo(q.id, { t: 'ev', k: 'radarWarn' }); }
+    return;
+  }
+  if (m.k === 'taunt') {
+    if (p.role !== 'h' || !(H.ph === 'seek' || H.ph === 'hide') || t - p.tauntAt < 14000) return; p.tauntAt = t; p.stats.taunts++;
+    const map2 = getMap(MODES[H.mode].map).map; hostEv({ k: 'taunt', id, x: p.x, y: map2.base(p.f), z: p.z, n: Math.floor(Math.random() * 3) }); return;
+  }
+  if (H.mode === 'infect' && m.k === 'tag') {
+    if (H.ph !== 'play' || p.role !== 'i' || t < p.frozenUntil) return;
+    const q = H.players.get(m.id); if (!q || !q.conn || q.role !== 'r') return;
+    if (pwOn(q, 'shield')) return deny('🛡️ They have a shield!');
+    if (!nearHist(q, p.x, p.z, p.f, 2.6) || !map.los(p.f, p.x, p.z, q.x, q.z)) return deny('Missed — too far!');
+    q.role = 'i'; q.frozenUntil = t + 1500; q.pw = null; p.stats.tags++; q.stats.tagged++;
+    hostEv({ k: 'infect', a: id, b: q.id, freeze: 1500 });
+    if (![...H.players.values()].some(r => r.conn && r.role === 'r')) hostEnd('infected');
+    return;
+  }
   if (H.mode === 'hide') {
     if (m.k === 'hide') {
       if (p.role !== 'h' || p.spot >= 0 || !(H.ph === 'hide' || H.ph === 'seek')) return;
@@ -428,6 +496,7 @@ function hostRequest(id, m) {
     if (H.ph !== 'play' || id !== H.sk || m.ep !== H.ep || t < H.itFrozenUntil) return;
     const q = H.players.get(m.id); if (!q || !q.conn || q.id === id) return;
     if (q.id === H.prevIt && t < H.prevImmune) return deny('No tag-backs! Find someone else.');
+    if (pwOn(q, 'shield')) return deny('🛡️ They have a shield!');
     if (!nearHist(q, p.x, p.z, p.f, 2.6) || !map.los(p.f, p.x, p.z, q.x, q.z)) return deny('Missed — too far!');
     H.ep++; p.role = 'r'; q.role = 'i'; H.sk = q.id; H.prevIt = id; H.prevImmune = t + 3500; H.itFrozenUntil = t + 2000;
     p.stats.tags++; q.stats.tagged++;
@@ -435,18 +504,18 @@ function hostRequest(id, m) {
   }
 }
 function hostFound(id, by, spot) {
-  const H = G.H, q = H.players.get(id); q.role = 'x';
-  hostEv({ k: 'found', id, by, spot });
+  const H = G.H, q = H.players.get(id); q.role = H.convert ? 's' : 'x';
+  hostEv({ k: 'found', id, by, spot, role: q.role, x: q.x, z: q.z });
   const left = [...H.players.values()].filter(p => p.role === 'h' && p.conn);
   if (!left.length) hostEnd('seeker');
 }
 function hostLateJoin(id) {
   const H = G.H, p = hostPlayer(id);
   if (!p.role || (!p.conn && p.goneAt && now() - p.goneAt > 60000)) p.role = 'x';
-  if (p.role === 'x' && H.mode === 'tag') p.role = 'r';
+  if (p.role === 'x' && TAGLIKE(H.mode)) p.role = 'r';
   p.conn = true;
   const roles = {}; for (const q of H.players.values()) roles[q.id] = q.role;
-  mesh.sendTo(id, { t: 'ev', k: 'start', mode: H.mode, roles, seed: 1, spawnIx: p.ix });
+  mesh.sendTo(id, { t: 'ev', k: 'start', mode: H.mode, roles, seed: 1, spawnIx: p.ix, power: H.power });
   setTimeout(() => { mesh.sendTo(id, { t: 'ev', k: 'phase', ph: H.ph, tl: H.tl, sk: H.sk, roles }); if (p.spot >= 0) mesh.sendTo(id, { t: 'ev', k: 'hid', id, spot: p.spot }); }, 1500);
 }
 function hostChat(id, text) {
@@ -463,7 +532,14 @@ function hostChat(id, text) {
 function hostEnd(winner, note) {
   const H = G.H; if (!H || H.ph === 'end') return; H.ph = 'end';
   const stats = {}; for (const p of H.players.values()) stats[p.id] = { ...p.stats, role: p.role, name: nameOf(p.id) };
-  const m = { k: 'end', mode: H.mode, winner, note, stats, sk: H.sk };
+  const m = { k: 'end', mode: H.mode, winner, note, stats, sk: H.sk, orig: H.orig };
+  // session leaderboard
+  const ps = [...H.players.values()]; let won = [];
+  if (H.mode === 'hide') won = winner === 'seeker' ? ps.filter(p => H.orig.includes(p.id)) : winner === 'hiders' ? ps.filter(p => p.role === 'h') : [];
+  else if (H.mode === 'tag') won = ps.slice().sort((a, b) => a.stats.it - b.stats.it).slice(0, 1);
+  else won = winner === 'survivors' ? ps.filter(p => p.role === 'r') : ps.filter(p => H.orig.includes(p.id));
+  for (const p of won) H.board[nameOf(p.id)] = (H.board[nameOf(p.id)] || 0) + 1;
+  G.lobby.board = { ...H.board }; mesh.sendAll({ t: 'lobby', l: G.lobby });
   hostEv(m);
   setTimeout(() => { if (G.H === H) { H.ph = 'lobby'; hostEv({ k: 'lobby' }); } }, 9000);
 }
@@ -473,10 +549,16 @@ function hostTick() {
   // disconnected players get 60 s to come back
   for (const p of H.players.values()) if (!p.conn && p.goneAt && t - p.goneAt > 60000 && p.role !== 'x') { p.role = 'x'; if (H.mode === 'hide') { const left = [...H.players.values()].filter(q => q.role === 'h' && q.conn); if (!left.length && H.ph === 'seek') hostEnd('seeker'); } }
   if (H.ph === 'wait') { H.waitT += dt; const need = [...H.players.values()].filter(p => p.conn).length; if (H.loaded.size >= need || H.waitT > 10) hostSetPhase('count', 3); }
-  else if (H.ph === 'count') { H.tl -= dt; if (H.tl <= 0) { if (H.mode === 'hide') hostSetPhase('hide', 20); else hostSetPhase('play', 240); } }
+  else if (H.ph === 'count') { H.tl -= dt; if (H.tl <= 0) { if (H.mode === 'hide') hostSetPhase('hide', 20); else hostSetPhase('play', H.mode === 'infect' ? 180 : 240); } }
   else if (H.ph === 'hide') { H.tl -= dt; if (H.tl <= 0) { const hiders = [...H.players.values()].filter(p => p.role === 'h').length; hostSetPhase('seek', Math.min(300, 150 + 20 * hiders)); } }
   else if (H.ph === 'seek') { H.tl -= dt; if (H.tl <= 0) hostEnd('hiders'); }
-  else if (H.ph === 'play') { H.tl -= dt; const it = H.players.get(H.sk); if (it) it.stats.it += dt; if (H.tl <= 0) hostEnd('tag'); }
+  else if (H.ph === 'play') {
+    H.tl -= dt;
+    if (H.mode === 'tag') { const it = H.players.get(H.sk); if (it) it.stats.it += dt; if (H.tl <= 0) hostEnd('tag'); }
+    else { for (const p of H.players.values()) if (p.role === 'r' && p.conn) p.stats.surv += dt; if (H.tl <= 0) hostEnd('survivors'); }
+    // power-ups keep spawning around the complex
+    if (H.power) { H.puT -= dt; const cap = Math.min(9, 3 + H.players.size); if (H.puT <= 0 && H.pu.size < cap) { H.puT = 6; const map = getMap(MODES[H.mode].map).map, sp = map.puSpots[Math.floor(Math.random() * map.puSpots.length)], types = Object.keys(PW); if (![...H.pu.values()].some(u => Math.hypot(u.x - sp.x, u.z - sp.z) < 6)) { const id = ++H.puN; H.pu.set(id, { id, type: types[Math.floor(Math.random() * types.length)], ...sp }); } } }
+  }
   // snapshots, tailored per recipient
   H.sendAcc += dt; H.statAcc += dt;
   if (H.sendAcc >= 1 / 15) {
@@ -485,13 +567,14 @@ function hostTick() {
     const tells = H.mode === 'hide' ? Object.keys(H.spots).map(Number).filter(s => map.spots[s].risk === 'risky') : [];
     const withStats = H.statAcc > 1; if (withStats) H.statAcc = 0;
     const S2 = withStats ? Object.fromEntries([...H.players.values()].map(p => [p.id, p.stats])) : null;
-    const row = p => [p.id, +p.x.toFixed(2), +p.y.toFixed(2), +p.z.toFixed(2), p.f, +p.yw.toFixed(2), +p.pt.toFixed(2), p.fl, p.role, p.spot];
+    const row = p => [p.id, +p.x.toFixed(2), +p.y.toFixed(2), +p.z.toFixed(2), p.f, +p.yw.toFixed(2), +p.pt.toFixed(2), p.fl | (pwOn(p, 'shield') ? 16 : 0) | (pwOn(p, 'cloak') ? 32 : 0) | (pwOn(p, 'speed') ? 64 : 0), p.role, p.spot];
+    const pu = H.power ? [...H.pu.values()].map(u => [u.id, u.type, u.x, u.z, u.f]) : null;
     for (const q of H.players.values()) {
       if (!q.conn) continue;
       const seekerView = H.mode === 'hide' && q.role === 's';
       const P = [...H.players.values()].filter(p => p.conn && !(seekerView && p.spot >= 0)).map(p => { const r = row(p); if (seekerView) r[9] = -1; return r; });
       const msg = { t: 'sn', ph: H.ph, tl: Math.max(0, Math.ceil(H.tl)), sk: H.sk, ep: H.ep, P, tells, door: H.mode === 'hide' ? (H.ph === 'seek' ? 1 : 0) : null };
-      if (S2) msg.S = S2;
+      if (S2) msg.S = S2; if (pu) msg.pu = pu;
       if (q.id === myId) onSnapLocal(msg); else mesh.sendTo(q.id, msg, false);
     }
   }
@@ -506,10 +589,16 @@ function showResults(m) {
   let title, sub, body;
   if (m.mode === 'hide') {
     const surv = rows.filter(([, s]) => s.role === 'h').map(([, s]) => s.name);
-    title = m.winner === 'seeker' ? 'SEEKER WINS' : m.winner === 'hiders' ? 'HIDERS WIN' : 'ROUND OVER';
+    title = m.winner === 'seeker' ? 'SEEKERS WIN' : m.winner === 'hiders' ? 'HIDERS WIN' : 'ROUND OVER';
     sub = m.note || (m.winner === 'seeker' ? `${nameOf(m.sk)} found everyone` : `Survivors: ${surv.join(', ') || '—'}`);
-    body = rows.map(([id, s]) => `<tr><td><i style="background:${colorOf(id)}"></i>${esc(s.name)}</td><td>${s.role === 's' ? 'Seeker' : s.role === 'h' ? 'Survived' : 'Found'}</td></tr>`).join('');
-    const iWon = (m.winner === 'seeker' && m.sk === myId) || (m.winner === 'hiders' && m.sk !== myId); iWon ? sfx.win() : sfx.lose();
+    body = '<tr><th>Player</th><th>Result</th><th>Taunts</th></tr>' + rows.map(([id, s]) => `<tr class="${(m.winner === 'hiders' && s.role === 'h') || (m.winner === 'seeker' && m.orig && m.orig.includes(id)) ? 'win' : ''}"><td><i style="background:${colorOf(id)}"></i>${esc(s.name)}</td><td>${m.orig && m.orig.includes(id) ? '🔦 Seeker' : s.role === 'h' ? '🏆 Survived' : 'Found'}</td><td>${s.taunts || 0}</td></tr>`).join('');
+    const mine = m.stats[myId]; const iWon = (m.winner === 'seeker' && m.orig && m.orig.includes(myId)) || (m.winner === 'hiders' && mine && mine.role === 'h'); iWon ? sfx.win() : sfx.lose();
+  } else if (m.mode === 'infect') {
+    rows.sort((a, b) => b[1].surv - a[1].surv || b[1].tags - a[1].tags);
+    title = m.winner === 'survivors' ? 'SURVIVORS WIN' : m.winner === 'infected' ? 'THE INFECTION WINS' : 'ROUND OVER';
+    sub = m.note || (m.winner === 'survivors' ? `Still standing: ${rows.filter(([, s]) => s.role === 'r').map(([, s]) => s.name).join(', ')}` : 'Everyone got infected');
+    body = '<tr><th>Player</th><th>Survived</th><th>Infected</th></tr>' + rows.map(([id, s], i) => `<tr class="${i === 0 ? 'win' : ''}"><td><i style="background:${colorOf(id)}"></i>${i === 0 ? '🏆 ' : ''}${esc(s.name)}${m.orig && m.orig.includes(id) ? ' 🧟' : ''}</td><td>${s.surv.toFixed(0)}s</td><td>${s.tags}</td></tr>`).join('');
+    const mine = m.stats[myId]; ((m.winner === 'survivors' && mine && mine.role === 'r') || (m.winner === 'infected' && m.orig && m.orig.includes(myId))) ? sfx.win() : sfx.lose();
   } else {
     rows.sort((a, b) => a[1].it - b[1].it);
     title = 'TAG — FINAL SCORES'; sub = m.note || `${rows[0] ? rows[0][1].name : ''} wins with the least time as IT`;
@@ -524,8 +613,9 @@ function renderScore() {
   const ids = Object.keys(R.roles);
   const rows = ids.map(id => { const s = R.stats[id] || { it: 0, tags: 0, tagged: 0 }; return { id, s, role: R.roles[id] }; });
   if (R.mode === 'tag') rows.sort((a, b) => b.s.it - a.s.it);
-  $('scoreBody').innerHTML = (R.mode === 'tag' ? '<tr><th>Player</th><th>Time IT</th><th>Tags</th><th>Tagged</th><th></th></tr>' : '<tr><th>Player</th><th>Status</th><th></th></tr>') +
-    rows.map(r => `<tr class="${r.id === R.sk ? 'it' : ''}"><td><i style="background:${colorOf(r.id)}"></i>${esc(nameOf(r.id))}${r.id === myId ? ' (you)' : ''}${mesh.speaking(r.id) ? ' <span class="spk on">●</span>' : ''}</td>${R.mode === 'tag' ? `<td>${r.s.it.toFixed(1)}s</td><td>${r.s.tags}</td><td>${r.s.tagged}</td>` : `<td>${{ s: 'Seeker', h: 'Hiding', x: 'Found' }[r.role] || '—'}</td>`}<td>${r.id === myId ? '' : `<button class="mini" data-mute="${r.id}">${G.muted.has(r.id) ? 'Unmute' : 'Mute'}</button><button class="mini" data-report="${r.id}">Report</button>`}</td></tr>`).join('');
+  if (R.mode === 'infect') rows.sort((a, b) => (a.role === 'r') - (b.role === 'r') || b.s.tags - a.s.tags);
+  $('scoreBody').innerHTML = (R.mode === 'tag' ? '<tr><th>Player</th><th>Time IT</th><th>Tags</th><th>Tagged</th><th></th></tr>' : R.mode === 'infect' ? '<tr><th>Player</th><th>Status</th><th>Infected</th><th></th></tr>' : '<tr><th>Player</th><th>Status</th><th></th></tr>') +
+    rows.map(r => `<tr class="${r.id === R.sk ? 'it' : ''}"><td><i style="background:${colorOf(r.id)}"></i>${esc(nameOf(r.id))}${r.id === myId ? ' (you)' : ''}${mesh.speaking(r.id) ? ' <span class="spk on">●</span>' : ''}</td>${R.mode === 'tag' ? `<td>${r.s.it.toFixed(1)}s</td><td>${r.s.tags}</td><td>${r.s.tagged}</td>` : R.mode === 'infect' ? `<td>${r.role === 'i' ? '🧟 Infected' : '🏃 Survivor'}</td><td>${r.s.tags || 0}</td>` : `<td>${{ s: '🔦 Seeker', h: 'Hiding', x: 'Found' }[r.role] || '—'}</td>`}<td>${r.id === myId ? '' : `<button class="mini" data-mute="${r.id}">${G.muted.has(r.id) ? 'Unmute' : 'Mute'}</button><button class="mini" data-report="${r.id}">Report</button>`}</td></tr>`).join('');
   $('scoreBody').querySelectorAll('[data-mute]').forEach(b => b.onclick = () => toggleMute(b.dataset.mute));
   $('scoreBody').querySelectorAll('[data-report]').forEach(b => b.onclick = () => report(b.dataset.report));
 }
@@ -540,11 +630,15 @@ function frozen() {
   const R = G.round; if (!R) return true;
   if (R.ph === 'wait' || R.ph === 'count' || R.ph === 'end') return true;
   if (R.mode === 'tag' && R.sk === myId && now() < R.frozenUntil) return true;
+  if (R.mode === 'infect' && myRole() === 'i' && now() < R.frozenUntil) return true;
   return false;
 }
 function updateMe(dt) {
   const me = G.me, map = G.M.map, R = G.round, sens = 0.0022 * S.sens;
-  const locked = document.pointerLockElement === renderer.domElement || NORENDER;
+  const locked = document.pointerLockElement === renderer.domElement || NORENDER || G.noLock;
+  // arrow keys look around (keyboard-only iPads)
+  const typingNow = document.activeElement === $('gameChatIn'), ak = 2.3 * dt * S.sens;
+  if (!typingNow) { if (key('ArrowLeft')) me.yaw += ak; if (key('ArrowRight')) me.yaw -= ak; if (key('ArrowUp')) me.pitch += ak * (S.inv ? -0.7 : 0.7); if (key('ArrowDown')) me.pitch -= ak * (S.inv ? -0.7 : 0.7); }
   me.yaw -= mdx * sens; me.pitch = clamp(me.pitch - mdy * sens * (S.inv ? -1 : 1), -1.45, 1.45); mdx = mdy = 0;
   if (spectating()) return spectate(dt);
   if (me.spot >= 0) { // hiding
@@ -555,15 +649,16 @@ function updateMe(dt) {
   }
   const typing = document.activeElement === $('gameChatIn');
   let ix = 0, iz = 0;
-  if (!typing && locked && !frozen()) { if (key('KeyW') || key('ArrowUp')) iz -= 1; if (key('KeyS') || key('ArrowDown')) iz += 1; if (key('KeyA') || key('ArrowLeft')) ix -= 1; if (key('KeyD') || key('ArrowRight')) ix += 1; }
+  if (!typing && locked && !frozen()) { if (key('KeyW')) iz -= 1; if (key('KeyS')) iz += 1; if (key('KeyA')) ix -= 1; if (key('KeyD')) ix += 1; }
   const moving = ix || iz;
   const [cx, cz] = map.cell(me.x, me.z), inVent = map.t(me.f, cx, cz) === VENT;
   if (inVent) me.crouch = true;
-  const sp = BASE_SPEED[R.mode], mult = myRole() === 'i' ? 1.12 : 1;
+  const pwType = me.pw && now() < me.pw.until ? me.pw.type : null;
+  const sp = BASE_SPEED[R.mode], mult = roleMult(R.mode, myRole()) * (pwType === 'speed' ? 1.35 : 1);
   const wantSprint = moving && !typing && (key('ShiftLeft') || key('ShiftRight')) && !me.crouch && iz <= 0;
   me.sprint = wantSprint && me.sta > 0 && !me.exh;
-  if (me.sprint) { me.sta -= dt * (R.mode === 'tag' ? 22 : 16); me.staT = 1; if (me.sta <= 0) { me.sta = 0; me.exh = true; sfx.breathe(0.3); } }
-  else { me.staT -= dt; if (me.staT <= 0) me.sta = Math.min(100, me.sta + dt * (R.mode === 'tag' ? 18 : 12)); if (me.exh && me.sta > 30) me.exh = false; }
+  if (me.sprint) { me.sta -= dt * (TAGLIKE(R.mode) ? 22 : 16); me.staT = 1; if (me.sta <= 0) { me.sta = 0; me.exh = true; sfx.breathe(0.3); } }
+  else { me.staT -= dt; if (me.staT <= 0) me.sta = Math.min(100, me.sta + dt * (TAGLIKE(R.mode) ? 18 : 12)); if (me.exh && me.sta > 30) me.exh = false; }
   const maxV = (me.crouch ? 1.8 : me.sprint ? sp.sprint : sp.walk) * mult;
   const l = Math.hypot(ix, iz) || 1, s = Math.sin(me.yaw), c = Math.cos(me.yaw);
   const tx = moving ? (ix * c + iz * s) / l * maxV : 0, tz = moving ? (-ix * s + iz * c) / l * maxV : 0;
@@ -574,7 +669,14 @@ function updateMe(dt) {
   me.speed = Math.hypot(me.x - ox, me.z - oz) / Math.max(dt, 1e-4);
   // vertical: jump + gravity
   const ground = map.heightAt(me.f, me.x, me.z);
-  if (me.air) { me.vy -= 22 * dt; me.y += me.vy * dt; if (me.y <= ground) { me.y = ground; me.air = false; me.vy = 0; sfx.step({ x: me.x, y: me.y, z: me.z }, 0.4, false); } }
+  // jump pads launch you up (into the open air of the atriums)
+  if (!me.air && map.pads && G.round.power) for (const pd of map.pads) if (pd.f === me.f && Math.hypot(pd.x - me.x, pd.z - me.z) < 0.9) { me.air = true; me.vy = 13.5; sfx.pad({ x: me.x, y: me.y, z: me.z }); break; }
+  if (me.air) {
+    me.vy -= 22 * dt; me.y += me.vy * dt;
+    const above = map.t(me.f + 1, cx, cz), roof = (above === 4 || above === 3 ? map.base(me.f + 1) + map.FH : map.base(me.f) + map.FH) - 1.85;
+    if (me.y > roof) { me.y = roof; me.vy = Math.min(me.vy, 0); }
+    if (me.y <= ground) { me.y = ground; me.air = false; me.vy = 0; sfx.step({ x: me.x, y: me.y, z: me.z }, 0.4, false); }
+  }
   else { me.y += (ground - me.y) * Math.min(1, dt * 18); if (Math.abs(ground - me.y) > 1.2) me.y = ground; }
   me.ck += ((me.crouch ? 1 : 0) - me.ck) * Math.min(1, dt * 10);
   // footsteps
@@ -631,7 +733,7 @@ function updateOthers(dt) {
     o.av.group.visible = !hidden && !spec && now() - (o.seen || 0) < 450;
     o.av.group.position.set(o.x, o.y, o.z); o.av.group.rotation.y = o.yaw + Math.PI;
     const fl = o.fl || 0;
-    o.av.update(dt, { speed: o.speed, crouch: !!(fl & 1), air: !!(fl & 4), it: o.role === 'i', seeker: o.role === 's', speaking: mesh.speaking(o.id), label: o.role === 'i' ? 'IT' : o.role === 's' ? 'SEEKER' : '', t: G.t, pitch: o.pitch, flash: R.mode === 'hide' && !!(fl & 8) });
+    o.av.update(dt, { speed: o.speed, crouch: !!(fl & 1), air: !!(fl & 4), it: o.role === 'i', seeker: o.role === 's', speaking: mesh.speaking(o.id), label: o.role === 'i' ? (R.mode === 'infect' ? 'ZOMBIE' : 'IT') : o.role === 's' ? 'SEEKER' : '', t: G.t, pitch: o.pitch, flash: R.mode === 'hide' && !!(fl & 8), ringColor: R.mode === 'infect' ? 0x33ff66 : 0xff4d33, shield: !!(fl & 16), cloak: !!(fl & 32) });
     o.step += mv; if (o.av.group.visible && !(fl & 4) && o.step > ((fl & 1) ? 1.1 : o.speed > 4.5 ? 2.0 : 1.6)) { o.step = 0; const seeker = o.role === 's' || o.role === 'i'; const v = (fl & 1) ? 0.08 : o.speed > 4.5 ? 0.5 : 0.28; if (seeker && R.mode === 'hide') sfx.thud({ x: o.x, y: o.y, z: o.z }, 0.35 + v); else sfx.step({ x: o.x, y: o.y, z: o.z }, v, false); }
   }
   // remote flashlights (hide & seek)
@@ -648,9 +750,9 @@ function findTarget() {
   const f = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(me.pitch, me.yaw, 0, 'YXZ'));
   const role = myRole(); let best = null, bs = 1e9;
   const consider = (x, y, z, maxD, minDot, o) => { const dx = x - me.x, dy = y - (me.y + 1.4), dz = z - me.z, d = Math.hypot(dx, dy, dz), dh = Math.hypot(dx, dz); if (dh > maxD) return; const dot = d > 0.01 ? (dx * f.x + dy * f.y + dz * f.z) / d : 1; if (dot < minDot) return; const sc = dh * (1.5 - dot); if (sc < bs) { bs = sc; best = o; } };
-  if (R.mode === 'tag') {
+  if (TAGLIKE(R.mode)) {
     if (role !== 'i') return null;
-    for (const o of G.others.values()) if (o.av.group.visible && o.f === me.f && o.role !== 'x') consider(o.x, o.y + 1, o.z, 2.6, 0.2, { kind: 'tag', id: o.id, text: 'TAG ' + nameOf(o.id) });
+    for (const o of G.others.values()) if (o.av.group.visible && o.f === me.f && o.role === 'r') consider(o.x, o.y + 1, o.z, 2.6, 0.2, { kind: 'tag', id: o.id, text: (R.mode === 'infect' ? 'INFECT ' : 'TAG ') + nameOf(o.id) });
     return best;
   }
   if (role === 'h' && (R.ph === 'hide' || R.ph === 'seek')) for (const s of map.spots) if (s.f === me.f) consider(s.x, map.base(s.f) + 0.9, s.z, 2.3, 0.45, { kind: 'hide', spot: s.id, text: `Hide (${s.type}) · ${s.risk}` });
@@ -673,9 +775,9 @@ function act(t) {
 
 // ================================================================== vfx
 const sparkMat = new THREE.SpriteMaterial({ color: 0xffd84a, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
-function spawnBurst(x, y, z) {
+function spawnBurst(x, y, z, hue = 0) {
   if (!G.M) return;
-  for (let i = 0; i < 26; i++) { const s = new THREE.Sprite(sparkMat.clone()); s.material.color.setHSL(Math.random() * 0.15, 1, 0.6); s.scale.setScalar(0.25); s.position.set(x, y, z); G.M.scene.add(s); const a = Math.random() * 6.28, e = Math.random() * 1.2 - 0.2, v = 4 + Math.random() * 4; G.tagFx.push({ mesh: s, vx: Math.cos(a) * Math.cos(e) * v, vy: Math.sin(e) * v + 2, vz: Math.sin(a) * Math.cos(e) * v, life: 0.7 }); }
+  for (let i = 0; i < 26; i++) { const s = new THREE.Sprite(sparkMat.clone()); s.material.color.setHSL(hue + Math.random() * 0.15, 1, 0.6); s.scale.setScalar(0.25); s.position.set(x, y, z); G.M.scene.add(s); const a = Math.random() * 6.28, e = Math.random() * 1.2 - 0.2, v = 4 + Math.random() * 4; G.tagFx.push({ mesh: s, vx: Math.cos(a) * Math.cos(e) * v, vy: Math.sin(e) * v + 2, vz: Math.sin(a) * Math.cos(e) * v, life: 0.7 }); }
   const ring = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.35, 32), new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 1.2, 0.3), transparent: true, side: THREE.DoubleSide, depthWrite: false })); ring.rotation.x = -Math.PI / 2; ring.position.set(x, y - 1, z); G.M.scene.add(ring); G.tagFx.push({ mesh: ring, ring: true, life: 0.6 });
 }
 function updateFx(dt) {
@@ -693,23 +795,37 @@ function updateHUD(dt) {
   hudT -= dt; if (hudT > 0) return; hudT = 0.1;
   const R = G.round, me = G.me, role = myRole();
   const mm = Math.floor(R.tl / 60), ss = Math.floor(R.tl % 60);
-  const phaseName = { wait: 'WAITING FOR PLAYERS', count: 'GET READY', hide: 'HIDING TIME', seek: 'SEEKING', play: 'TAG', end: 'ROUND OVER' }[R.ph] || '';
+  const phaseName = { wait: 'WAITING FOR PLAYERS', count: 'GET READY', hide: 'HIDING TIME', seek: 'SEEKING', play: R.mode === 'infect' ? 'INFECTION' : 'TAG', end: 'ROUND OVER' }[R.ph] || '';
   $('timer').textContent = R.ph === 'wait' ? '--:--' : `${mm}:${String(ss).padStart(2, '0')}`;
   $('phase').textContent = phaseName;
   const ids = Object.keys(R.roles);
   if (R.mode === 'hide') {
-    const left = ids.filter(id => R.roles[id] === 'h').length, total = ids.filter(id => R.roles[id] !== 's').length;
-    $('who').innerHTML = `Seeker: <b style="color:${colorOf(R.sk)}">${esc(nameOf(R.sk))}</b>${R.sk === myId ? ' (you)' : ''}`;
-    $('remain').textContent = `${left}/${total} hiders left`;
+    const left = ids.filter(id => R.roles[id] === 'h').length, seekers = ids.filter(id => R.roles[id] === 's');
+    $('who').innerHTML = seekers.length > 1 ? `Seekers: <b>${seekers.length}</b>` : `Seeker: <b style="color:${colorOf(R.sk)}">${esc(nameOf(R.sk))}</b>${R.sk === myId ? ' (you)' : ''}`;
+    $('remain').textContent = `${left} hider${left === 1 ? '' : 's'} left`;
+    $('myIt').textContent = '';
+  } else if (R.mode === 'infect') {
+    const inf = ids.filter(id => R.roles[id] === 'i').length;
+    $('who').innerHTML = `🧟 Infected: <b style="color:#5cf08a">${inf}</b> / ${ids.length}`;
+    $('remain').textContent = `${ids.length - inf} survivor${ids.length - inf === 1 ? '' : 's'}`;
+    const st = R.stats[myId]; $('myIt').textContent = st && myRole() === 'r' ? `Survived ${st.surv.toFixed(0)}s` : st ? `Infected ${st.tags} so far` : '';
   } else {
     $('who').innerHTML = `IT: <b style="color:${colorOf(R.sk)}">${esc(nameOf(R.sk))}</b>${R.sk === myId ? ' (you!)' : ''}`;
     $('remain').textContent = `${ids.length} players`;
     const st = R.stats[myId]; $('myIt').textContent = st ? `Your time as IT: ${st.it.toFixed(1)}s` : '';
   }
-  $('roleTag').textContent = { h: 'HIDER', s: 'SEEKER', x: 'SPECTATOR', i: 'YOU ARE IT', r: 'RUNNER' }[role] || '';
-  $('roleTag').className = role === 'i' || role === 's' ? 'red' : '';
+  $('roleTag').textContent = (R.mode === 'infect' ? { i: '🧟 INFECTED', r: '🏃 SURVIVOR' } : { h: 'HIDER', s: 'SEEKER', x: 'SPECTATOR', i: 'YOU ARE IT', r: 'RUNNER' })[role] || '';
+  $('roleTag').className = R.mode === 'infect' && role === 'i' ? 'green' : role === 'i' || role === 's' ? 'red' : '';
+  const tnow = now(), ab = [];
+  if (R.mode === 'hide' && role === 's' && R.ph === 'seek') { const cd = Math.max(0, 24 - (tnow - G.radarAt) / 1000); ab.push(`<div class="ab ${cd ? '' : 'ready'}"><kbd>R</kbd>📡 Radar ${cd ? Math.ceil(cd) + 's' : 'ready'}</div>`); }
+  if (R.mode === 'hide' && role === 'h' && (R.ph === 'seek' || R.ph === 'hide')) { const cd = Math.max(0, 14 - (tnow - G.tauntAt) / 1000); ab.push(`<div class="ab ${cd ? '' : 'ready'}"><kbd>G</kbd>📢 Taunt ${cd ? Math.ceil(cd) + 's' : '(+1 pt)'}</div>`); }
+  if (G.me.pw && tnow < G.me.pw.until) ab.push(`<div class="ab pw">${PW[G.me.pw.type].icon} ${PW[G.me.pw.type].name} ${Math.ceil((G.me.pw.until - tnow) / 1000)}s</div>`);
+  if (!spectating() && G.me.spot < 0) ab.push('<div class="ab dim"><kbd>1-4</kbd>Emotes</div>');
+  $('abil').innerHTML = ab.join('');
+  const tab = $('tAbility'), abKind = R.mode === 'hide' ? (role === 's' ? '📡' : role === 'h' ? '📢' : '') : ''; tab.style.display = abKind ? '' : 'none'; if (tab.textContent !== abKind) tab.textContent = abKind;
+  if (G.radar && tnow < G.radar.until) $('radarArrow').style.transform = `rotate(${(G.me.yaw + Math.PI - G.radar.ang) * 180 / Math.PI}deg)`;
   $('staB').style.width = me.sta + '%'; $('sta').classList.toggle('low', me.sta < 25); $('sta').style.opacity = me.sta < 99.5 ? 1 : 0.35;
-  const t = G.prompt; $('prompt').innerHTML = t ? `<kbd>E</kbd>${esc(t.text)}` : '';
+  const t = G.prompt; $('prompt').innerHTML = t ? `<kbd>${TOUCH ? 'E / tap' : 'E'}</kbd>${esc(t.text)}` : '';
   $('prompt').className = t && (t.kind === 'tag' || t.kind === 'find') ? 'hot' : '';
   $('lockedOv').classList.toggle('hidden', !(R.mode === 'hide' && role === 's' && R.ph === 'hide'));
   if (!$('lockedOv').classList.contains('hidden')) $('lockedT').textContent = Math.ceil(R.tl);
@@ -724,7 +840,7 @@ function updateHUD(dt) {
     const inten = R.ph === 'seek' ? clamp(1 - d / 18, 0.15, 1) : 0.05; sfx.setIntensity(inten);
     G.hb = (G.hb || 0) - 0.1; if (d < 12 && role === 'h' && G.hb <= 0) { G.hb = 0.4 + d / 12 * 0.8; sfx.heartbeat(0.25 + (1 - d / 12) * 0.4); }
     vig.uniforms.dark.value = 0.9; vig.uniforms.red.value = role === 'h' && d < 8 ? (1 - d / 8) * 0.6 : 0;
-  } else { vig.uniforms.dark.value = 0.25; vig.uniforms.red.value = role === 'i' && !G.noVig ? 0.3 : 0; }
+  } else { vig.uniforms.dark.value = 0.25; vig.uniforms.red.value = role === 'i' && !G.noVig && R.mode === 'tag' ? 0.3 : 0; }
 }
 
 // ================================================================== input
@@ -741,9 +857,15 @@ addEventListener('keydown', e => {
   if (e.repeat) return;
   if (e.code === 'Enter') { e.preventDefault(); $('gameChat').classList.add('typing'); $('gameChatIn').focus(); return; }
   if (e.code === 'KeyE') act(G.prompt);
+  if (/^(Key[WASD]|Arrow)/.test(e.code)) $('touchUI').classList.add('kb'); // keyboard attached: hide the big on-screen buttons
+  if (e.code === 'KeyR') useRadar();
+  if (e.code === 'KeyG') useTaunt();
+  if (/^Digit[1-4]$/.test(e.code)) doEmote(+e.code.slice(5));
+  if (e.code.startsWith('Arrow')) e.preventDefault();
+  if ((e.code === 'Escape' || e.code === 'KeyP') && G.noLock) togglePause();
   if (e.code === 'KeyQ') { G.cam3 = !G.cam3; toast(G.cam3 ? 'Third person' : 'First person', 900); }
   if (e.code === 'KeyC' && !spectating()) { const [x, z] = G.M.map.cell(G.me.x, G.me.z); if (!(G.me.crouch && G.M.map.t(G.me.f, x, z) === VENT)) G.me.crouch = !G.me.crouch; }
-  if (e.code === 'Space' && !spectating() && !G.me.air && G.me.spot < 0 && !frozen() && !G.me.crouch) { G.me.air = true; G.me.vy = 6.8; sfx.boing({ x: G.me.x, y: G.me.y, z: G.me.z }); }
+  if (e.code === 'Space' && !spectating() && !G.me.air && G.me.spot < 0 && !frozen() && !G.me.crouch) { G.me.air = true; G.me.vy = jumpV(); sfx.boing({ x: G.me.x, y: G.me.y, z: G.me.z }); }
   if (e.code === 'Space' && spectating()) { G.spec.free = !G.spec.free; }
   if (e.code === 'KeyF' && G.round && G.round.mode === 'hide') { G.me.flash = !G.me.flash; sfx.click(); }
   if (e.code === 'KeyV') mesh.setTalking(true);
@@ -753,14 +875,83 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => { G.keys[e.code] = false; if (e.code === 'Tab') $('score').classList.add('hidden'); if (e.code === 'KeyV' && mesh) mesh.setTalking(false); });
 addEventListener('blur', () => { G.keys = {}; });
 renderer.domElement.addEventListener('mousedown', e => {
-  if (G.phase !== 'game') return;
+  if (G.phase !== 'game' || G.noLock) return;
   if (document.pointerLockElement !== renderer.domElement) { lockPointer(); return; }
   if (spectating()) { G.spec.i += e.button === 2 ? -1 : 1; G.spec.free = false; return; }
   if (e.button === 0 && G.prompt && (G.prompt.kind === 'tag' || G.prompt.kind === 'find')) act(G.prompt);
 });
 addEventListener('contextmenu', e => { if (G.phase === 'game') e.preventDefault(); });
-function lockPointer() { if (G.phase !== 'game') return; const p = renderer.domElement.requestPointerLock({ unadjustedMovement: true }); if (p && p.catch) p.catch(() => renderer.domElement.requestPointerLock()); }
+function lockPointer() {
+  if (G.phase !== 'game') return;
+  if (G.noLock) { $('clickIn').classList.add('hidden'); show(null); return; }
+  try { const p = renderer.domElement.requestPointerLock({ unadjustedMovement: true }); if (p && p.catch) p.catch(() => { const q = renderer.domElement.requestPointerLock(); if (q && q.catch) q.catch(() => { G.noLock = true; lockPointer(); }); }); } catch (e) { G.noLock = true; lockPointer(); }
+}
+function togglePause() { if (G.phase !== 'game') return; if ($('pause').classList.contains('hidden')) { backTo = 'pause'; show('pause'); } else { show(null); lockPointer(); } }
+const drag = { id: null, x: 0, y: 0, t: 0, moved: 0 };
+renderer.domElement.addEventListener('pointerdown', e => {
+  if (G.phase !== 'game' || (!G.noLock && e.pointerType === 'mouse')) return;
+  ensureAudio(); if (e.pointerType === 'touch') $('touchUI').classList.remove('kb'); drag.id = e.pointerId; drag.x = e.clientX; drag.y = e.clientY; drag.t = now(); drag.moved = 0;
+  try { renderer.domElement.setPointerCapture(e.pointerId); } catch (er) {}
+});
+renderer.domElement.addEventListener('pointermove', e => {
+  if (e.pointerId !== drag.id) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY; drag.moved += Math.abs(dx) + Math.abs(dy);
+  const k = e.pointerType === 'touch' ? 1.5 : 1.1; mdx += dx * k; mdy += dy * k;
+});
+const endDrag = e => {
+  if (e.pointerId !== drag.id) return; drag.id = null;
+  if (drag.moved < 10 && now() - drag.t < 300) { if (spectating()) { G.spec.i++; G.spec.free = false; } else if (G.prompt) act(G.prompt); }
+};
+renderer.domElement.addEventListener('pointerup', endDrag); renderer.domElement.addEventListener('pointercancel', endDrag);
+const tbtn = (id, down, up) => { const b = $(id); if (!b) return; b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); ensureAudio(); down(); b.classList.add('on'); }); const u = () => { b.classList.remove('on'); up && up(); }; b.addEventListener('pointerup', u); b.addEventListener('pointercancel', u); b.addEventListener('pointerleave', u); };
+tbtn('tAct', () => act(G.prompt));
+tbtn('tJump', () => { if (spectating()) { G.spec.free = !G.spec.free; return; } if (!G.me.air && G.me.spot < 0 && !frozen() && !G.me.crouch) { G.me.air = true; G.me.vy = jumpV(); sfx.boing(G.me); } });
+tbtn('tSprint', () => G.keys.ShiftLeft = true, () => G.keys.ShiftLeft = false);
+tbtn('tCrouch', () => { G.me.crouch = !G.me.crouch; });
+tbtn('tAbility', () => myRole() === 's' ? useRadar() : useTaunt());
+tbtn('tEmote', () => doEmote(1 + Math.floor(Math.random() * 4)));
+tbtn('tCam', () => { G.cam3 = !G.cam3; });
+tbtn('tChat', () => { $('gameChat').classList.add('typing'); $('gameChatIn').focus(); });
+tbtn('tMic', () => micToggle());
+tbtn('tMenu', () => togglePause());
+tbtn('tScore', () => { $('score').classList.toggle('hidden'); renderScore(); });
+tbtn('tFull', () => { const d = document.documentElement, f = d.requestFullscreen || d.webkitRequestFullscreen; if (document.fullscreenElement || document.webkitFullscreenElement) (document.exitFullscreen || document.webkitExitFullscreen).call(document); else if (f) f.call(d); });
+function jumpV() { return G.me.pw && now() < G.me.pw.until && G.me.pw.type === 'jump' ? 11 : 6.8; }
+function useRadar() { const R = G.round; if (!R || R.mode !== 'hide' || myRole() !== 's' || R.ph !== 'seek') return; if (now() - G.radarAt < 24000) { toast('Radar recharging…', 900); return; } G.radarAt = now(); mesh.sendTo(mesh.hostId(), { t: 'rq', k: 'radar' }); }
+function useTaunt() { const R = G.round; if (!R || R.mode !== 'hide' || myRole() !== 'h') return; if (now() - G.tauntAt < 14000) { toast('Taunt recharging…', 900); return; } G.tauntAt = now(); mesh.sendTo(mesh.hostId(), { t: 'rq', k: 'taunt' }); }
+function doEmote(n) {
+  if (!G.round || G.me.spot >= 0 || spectating() || now() - G.emoteAt < 1500) return; G.emoteAt = now();
+  mesh.sendAll({ t: 'emo', e: n }); showEmote(myId, n);
+}
+function showEmote(id, n) {
+  const [glyph, kind] = EMOTES[n] || EMOTES[1];
+  const av = id === myId ? G.selfAv : G.others.get(id) && G.others.get(id).av; if (av) av.emote(glyph, kind);
+  const p = posOf(id); if (p) sfx.emote(n, p);
+  if (id === myId && !G.cam3) toast(glyph, 900);
+}
+const PU_GEO = new THREE.OctahedronGeometry(0.32);
+function clearPickups() { for (const g of G.pu.values()) g.parent && g.parent.remove(g); G.pu.clear(); }
+function syncPickups(list) {
+  if (!list || !G.M) return;
+  const seen = new Set(), map = G.M.map;
+  for (const [id, type, x, z, f] of list) {
+    seen.add(id); if (G.pu.has(id) || !PW[type]) continue;
+    const g = new THREE.Group(); g.position.set(x, map.base(f) + 0.9, z);
+    g.add(new THREE.Mesh(PU_GEO, new THREE.MeshBasicMaterial({ color: new THREE.Color(PW[type].col).multiplyScalar(1.8) })));
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ color: PW[type].col, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false })); halo.scale.setScalar(1.3); g.add(halo);
+    g.userData = { id, type, x, z, f }; G.M.scene.add(g); G.pu.set(id, g);
+  }
+  for (const [id, g] of G.pu) if (!seen.has(id)) { g.parent && g.parent.remove(g); G.pu.delete(id); }
+}
+function updatePickups() {
+  const me = G.me; G.pickAt = G.pickAt || {};
+  for (const g of G.pu.values()) {
+    const u = g.userData; g.rotation.y = G.t * 2; g.position.y = G.M.map.base(u.f) + 0.9 + Math.sin(G.t * 3 + u.id) * 0.12;
+    if (!spectating() && u.f === me.f && Math.abs(me.y - G.M.map.base(u.f)) < 2 && Math.hypot(u.x - me.x, u.z - me.z) < 1.3 && now() - (G.pickAt[u.id] || 0) > 600) { G.pickAt[u.id] = now(); mesh.sendTo(mesh.hostId(), { t: 'rq', k: 'pick', id: u.id }); }
+  }
+}
 document.addEventListener('pointerlockchange', () => {
+  if (G.noLock) return;
   const on = document.pointerLockElement === renderer.domElement;
   if (on) { $('clickIn').classList.add('hidden'); show(null); }
   else if (G.phase === 'game' && document.activeElement !== $('gameChatIn') && G.round && G.round.ph !== 'end') { backTo = 'pause'; show('pause'); }
@@ -794,8 +985,8 @@ function step(render) {
   const M = G.M, R = G.round, me = G.me;
   updateMe(dt);
   updateOthers(dt);
-  if (G.selfAv) { const sa = G.selfAv, show3 = G.cam3 && !spectating() && me.spot < 0; sa.group.visible = show3; if (show3) { sa.group.position.set(me.x, me.y, me.z); sa.group.rotation.y = me.yaw + Math.PI; sa.update(dt, { speed: me.speed, crouch: me.crouch, air: me.air, it: myRole() === 'i', seeker: myRole() === 's', speaking: false, label: '', t: G.t, pitch: me.pitch, flash: R.mode === 'hide' && me.flash }); } }
-  updateFx(dt);
+  if (G.selfAv) { const sa = G.selfAv, show3 = G.cam3 && !spectating() && me.spot < 0; sa.group.visible = show3; if (show3) { sa.group.position.set(me.x, me.y, me.z); sa.group.rotation.y = me.yaw + Math.PI; sa.update(dt, { speed: me.speed, crouch: me.crouch, air: me.air, it: myRole() === 'i', seeker: myRole() === 's', speaking: false, label: '', t: G.t, pitch: me.pitch, flash: R.mode === 'hide' && me.flash, ringColor: R.mode === 'infect' ? 0x33ff66 : 0xff4d33, shield: !!(me.pw && now() < me.pw.until && me.pw.type === 'shield'), cloak: !!(me.pw && now() < me.pw.until && me.pw.type === 'cloak') }); } }
+  updateFx(dt); updatePickups();
   G.prompt = findTarget();
   if (G.searchT > 0) G.searchT -= dt;
   // flashlight (school only)
@@ -844,4 +1035,4 @@ async function boot() {
 bindSettings(); applySettings();
 frame();
 boot().catch(e => { $('loadMsg').textContent = 'FAILED TO LOAD · ' + (e.message || e); console.error(e); });
-if (LOCAL || Q.has('debug')) window.__r = { G, mesh: () => mesh, hostRequest, myId, act, MAPS };
+if (LOCAL || Q.has('debug')) window.__r = { G, mesh: () => mesh, hostRequest, myId, act, MAPS, doEmote, useRadar, useTaunt };

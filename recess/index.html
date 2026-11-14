@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="robots" content="noindex">
 <title>RECESS — Hide & Seek + Tag</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,7 +12,7 @@
 :root{--a:#ffd23f;--b:#ff4f8b;--c:#4fd1ff;--bg:rgba(14,16,24,.78);--line:rgba(255,255,255,.1);--fg:#f3f4f8;--dim:#9aa0b4;--red:#ff3b4f}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;background:#000;color:var(--fg);font-family:'Outfit',system-ui,sans-serif;user-select:none;-webkit-user-select:none}
-canvas{display:block}
+canvas{display:block;touch-action:none}html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}input{-webkit-user-select:text;user-select:text}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 input,select{font:inherit;color:var(--fg);background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:11px 14px;outline:none;user-select:text}
 input:focus,select:focus{border-color:var(--a)}
@@ -53,7 +54,7 @@ h2{font-size:28px;font-weight:800}
 .spk{color:#5dff8f;opacity:.12;font-size:13px}.spk.on{opacity:1}
 .mini{font-size:11px;padding:3px 7px;border-radius:7px;background:rgba(255,255,255,.07);color:var(--dim)}.mini:hover{color:#fff}
 .count{color:var(--dim);font-size:12px;text-align:right;padding:2px 4px}
-.modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}@media(max-width:700px){.modes{grid-template-columns:1fr}}
 .mode{border-radius:16px;padding:14px;border:2px solid var(--line);cursor:pointer;background:rgba(255,255,255,.04);text-align:left;transition:.15s}
 .mode b{display:block;font-size:19px;font-weight:800}.mode span{color:var(--dim);font-size:13px}
 .mode.sel{border-color:var(--a);background:rgba(255,210,63,.1)}
@@ -81,7 +82,20 @@ kbd{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--fg);backgr
 #tr{position:absolute;top:16px;right:20px;text-align:right;text-shadow:0 1px 8px rgba(0,0,0,.8)}
 #remain{font-weight:800;font-size:18px}#myIt{font-size:13px;color:var(--dim)}
 #roleTag{display:inline-block;margin-top:6px;padding:4px 10px;border-radius:8px;background:rgba(0,0,0,.45);font-size:12px;letter-spacing:.14em;font-weight:800}
-#roleTag.red{background:var(--red)}
+#roleTag.red{background:var(--red)}#roleTag.green{background:#22b34f}#big.green b{color:#5cf08a}
+.opts{display:flex;flex-direction:column;gap:6px}.opt{display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer}.opt input{width:20px;height:20px;accent-color:var(--a)}
+#board{display:flex;flex-direction:column;gap:4px;font-size:14px;max-height:120px;overflow-y:auto}#board div{display:flex;justify-content:space-between;padding:4px 10px;border-radius:8px;background:rgba(255,255,255,.04)}#board .dim{color:var(--dim);justify-content:center}
+#abil{position:absolute;left:20px;bottom:120px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.ab{padding:6px 12px;border-radius:10px;background:rgba(0,0,0,.5);font-size:13px;font-weight:700;opacity:.65}.ab.ready{opacity:1;box-shadow:0 0 0 2px var(--a)}.ab.pw{opacity:1;background:rgba(92,240,138,.25);box-shadow:0 0 14px rgba(92,240,138,.5)}.ab.dim{opacity:.45;font-weight:500}.ab kbd{margin-right:6px}
+#radar{position:absolute;left:50%;top:22%;transform:translateX(-50%);display:none;flex-direction:column;align-items:center;gap:4px;text-shadow:0 2px 10px #000;font-weight:800;font-size:20px;letter-spacing:.08em}
+#radar.on{display:flex}#radar.hot{color:#ff6b4a}#radar.warm{color:var(--a)}#radar.cold{color:#7fd4ff}#radarArrow{font-size:44px;line-height:1;transition:transform .1s}
+#touchUI{position:fixed;inset:0;pointer-events:none;z-index:6}#touchUI.hidden{display:none}
+#touchUI button{pointer-events:auto;position:absolute;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.35);color:#fff;border-radius:50%;font:800 13px inherit;font-family:inherit;width:64px;height:64px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:none;backdrop-filter:blur(4px)}
+#touchUI.kb .big,#touchUI.kb #tSprint,#touchUI.kb #tCrouch,#touchUI.kb #tAbility,#touchUI.kb #tEmote{display:none!important}
+#touchUI button.on{background:rgba(255,210,63,.45);border-color:var(--a)}
+#touchUI .big{width:84px;height:84px;font-size:15px}
+#touchUI .tl{width:44px;height:44px;font-size:18px;border-radius:12px}
+#flashFx.green{background:rgba(60,255,120,.4);opacity:1;transition:none}
 #sta{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);width:220px;height:6px;border-radius:6px;background:rgba(0,0,0,.45);overflow:hidden;transition:opacity .3s}
 #staB{height:100%;background:linear-gradient(90deg,#5dff8f,#c6ff5d);transition:width .1s}#sta.low #staB{background:var(--red)}
 #prompt{position:absolute;left:50%;top:60%;transform:translateX(-50%);font-weight:700;font-size:17px;text-shadow:0 2px 10px rgba(0,0,0,.9);white-space:nowrap}
@@ -165,9 +179,16 @@ body:has(#hud:not(.hidden)) .foot{display:none}
       <div class="modes">
         <button class="mode" data-mode="hide"><b>🔦 Hide &amp; Seek</b><span>Abandoned school · 2 floors · 50+ rooms · vents &amp; secret passages</span></button>
         <button class="mode" data-mode="tag"><b>⚡ Tag</b><span>Funtopia complex · 3 floors · atriums, loops &amp; tunnels</span></button>
+        <button class="mode" data-mode="infect"><b>🧟 Infection</b><span>Tag, but everyone you get joins your team · last one standing wins</span></button>
+      </div>
+      <div class="opts">
+        <label class="opt" id="optRowHide"><input type="checkbox" id="optConvert" checked>Found hiders join the seekers</label>
+        <label class="opt" id="optRowTag"><input type="checkbox" id="optPower" checked>Power-ups &amp; jump pads</label>
       </div>
       <div class="label">Players</div>
       <div id="plist"></div>
+      <div class="label">Leaderboard (this room)</div>
+      <div id="board"></div>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px">
       <div class="label">Voice</div>
@@ -196,7 +217,7 @@ body:has(#hud:not(.hidden)) .foot{display:none}
     <label for="sInv">Invert Y</label><input type="checkbox" id="sInv" style="justify-self:start;width:18px;height:18px"><span></span>
   </div>
   <div class="label" style="margin-top:6px">Controls</div>
-  <div class="keys"><kbd>WASD</kbd><span>Move</span><kbd>Shift</kbd><span>Sprint (uses stamina)</span><kbd>Space</kbd><span>Jump · spectator: free camera</span><kbd>C</kbd><span>Crouch (needed in vents)</span><kbd>E / Click</kbd><span>Hide · search · tag</span><kbd>Q</kbd><span>First / third person</span><kbd>F</kbd><span>Flashlight (hide &amp; seek)</span><kbd>Enter</kbd><span>Chat (nearby players)</span><kbd>Tab</kbd><span>Scoreboard · mute / report</span><kbd>V</kbd><span>Push to talk</span><kbd>M / N</kbd><span>Mute mic / mute sound</span></div>
+  <div class="keys"><kbd>WASD</kbd><span>Move</span><kbd>Arrows</kbd><span>Look around (no mouse needed)</span><kbd>R</kbd><span>Seeker radar (hot / cold + arrow)</span><kbd>G</kbd><span>Hider taunt (+1 pt, makes a noise)</span><kbd>1–4</kbd><span>Emotes</span><kbd>Esc / P</kbd><span>Pause</span><kbd>Shift</kbd><span>Sprint (uses stamina)</span><kbd>Space</kbd><span>Jump · spectator: free camera</span><kbd>C</kbd><span>Crouch (needed in vents)</span><kbd>E / Click</kbd><span>Hide · search · tag</span><kbd>Q</kbd><span>First / third person</span><kbd>F</kbd><span>Flashlight (hide &amp; seek)</span><kbd>Enter</kbd><span>Chat (nearby players)</span><kbd>Tab</kbd><span>Scoreboard · mute / report</span><kbd>V</kbd><span>Push to talk</span><kbd>M / N</kbd><span>Mute mic / mute sound</span></div>
   <button class="btn sm" id="bSetBack">← Back</button>
 </div></section>
 
@@ -207,6 +228,10 @@ body:has(#hud:not(.hidden)) .foot{display:none}
   <ul><li>One random player is the seeker and gets locked in the principal's office for 20 seconds.</li><li>Everyone else hides. Walk up to a locker, cabinet, closet, desk, bookshelf, curtain, box, bed, couch or wall panel and press <kbd>E</kbd>. Press <kbd>E</kbd> again to come out.</li><li><b>Risky</b> spots are quick to get into but your shoes might show. <b>Safe</b> spots take the seeker longer to search. Vents need you to crouch. Some walls aren't walls.</li><li>The seeker presses <kbd>E</kbd> to search a spot or to catch someone in the open. Found players spectate.</li><li>Hiders win if anyone is still hidden when time runs out. The seeker wins by finding everyone.</li><li>Voice chat is proximity-based, so the seeker can hear you talking. Stay quiet.</li></ul>
   <h3>⚡ Tag — Funtopia Complex</h3>
   <ul><li>One player starts as IT, glowing red and 12% faster.</li><li>IT tags someone with <kbd>E</kbd> or a click when they're close. The tagged player becomes IT and is frozen for 2 seconds, and they can't tag the person who just tagged them right back.</li><li>Sprint with <kbd>Shift</kbd> (watch your stamina), cut through rooms, take the stairs in the atriums, and use the maintenance tunnels underneath.</li><li>Whoever spent the least time as IT after 4 minutes wins.</li></ul>
+  <h3>🧟 Infection — Funtopia Complex</h3>
+  <ul><li>One or two players start infected (green). Tag a survivor and they turn into a zombie too.</li><li>Survivors win if anyone is still standing when the 3-minute timer runs out. The infection wins if it gets everyone.</li><li>Grab glowing power-ups: ⚡ speed, 🦘 super jump, 🛡️ shield (can't be tagged), 👻 cloak. Step on the glowing jump pads to bounce way up over whoever is chasing you.</li></ul>
+  <h3>🎮 On a school iPad / Chromebook</h3>
+  <ul><li>No mouse needed: <kbd>WASD</kbd> to move and the <kbd>arrow keys</kbd> to look. You can also drag on the screen to look and tap to do the action.</li><li>Set Graphics to Low in Settings if it stutters.</li></ul>
   <button class="btn sm" id="bHowBack">← Back</button>
 </div></section>
 
@@ -233,6 +258,8 @@ body:has(#hud:not(.hidden)) .foot{display:none}
   <div id="tr"><div id="remain"></div><div id="myIt"></div><div id="roleTag"></div></div>
   <div id="cross"></div>
   <div id="prompt"></div>
+  <div id="radar"><div id="radarArrow">⬆</div><div id="radarTxt"></div></div>
+  <div id="abil"></div>
   <div id="sta"><div id="staB"></div></div>
   <div id="toasts"></div>
   <div id="big"><b></b><span></span></div>
@@ -240,11 +267,25 @@ body:has(#hud:not(.hidden)) .foot{display:none}
   <div class="ov hidden" id="lockedOv"><b>LOCKED IN</b><i id="lockedT">20</i><span>THE HIDERS ARE HIDING · LISTEN CAREFULLY</span></div>
   <div id="specBar" class="hidden"><div id="specName">SPECTATING</div><small>Click: next player · Right-click: previous · Space: free camera</small></div>
   <div id="gameChat"><div id="vInd"></div><div id="gameChatLog"></div><input id="gameChatIn" maxlength="160" placeholder="Talk to nearby players… (Enter)"></div>
-  <div id="hint">Enter chat · Tab scoreboard · Q camera · M mute</div>
+  <div id="hint">Arrows look · Enter chat · Tab scores · Q camera · R/G ability · 1–4 emotes · M mute</div>
   <div id="score" class="hidden"><table id="scoreBody"></table></div>
   <div id="flashFx"></div>
 </div>
 <div id="clickIn" class="hidden">CLICK TO PLAY<small>Esc to pause</small></div>
+<div id="touchUI" class="hidden">
+  <button class="tl" id="tMenu" style="left:16px;top:16px">⏸</button>
+  <button class="tl" id="tScore" style="left:68px;top:16px">🏆</button>
+  <button class="tl" id="tFull" style="left:120px;top:16px">⛶</button>
+  <button class="big" id="tAct" style="right:24px;bottom:120px">ACT</button>
+  <button class="big" id="tJump" style="right:124px;bottom:40px">JUMP</button>
+  <button id="tSprint" style="right:24px;bottom:30px">RUN</button>
+  <button id="tCrouch" style="right:130px;bottom:140px">DUCK</button>
+  <button id="tAbility" style="right:30px;bottom:220px">📡📢</button>
+  <button id="tEmote" style="right:110px;bottom:230px">😂</button>
+  <button class="tl" id="tCam" style="right:16px;top:90px">📷</button>
+  <button class="tl" id="tChat" style="right:16px;top:142px">💬</button>
+  <button class="tl" id="tMic" style="right:16px;top:194px">🎙</button>
+</div>
 <div class="foot">🎧 Headphones recommended</div>
 
 <script type="module" src="js/main.js"></script>

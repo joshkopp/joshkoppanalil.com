@@ -14,6 +14,19 @@ The seeker is locked in the principal's office for 20 s. Hiders win if anyone su
 
 **Tag: Funtopia Complex.** Three floors and 52 rooms on a looping concourse grid. It has two atriums with balconies and stairs on both sides, maintenance tunnels underneath with service stairs, plus an arcade, indoor playground, laser maze, cafeteria, offices, storage, theater, trampoline park and rooftop garden. Every room has 2+ exits. IT is 12% faster. A tag freezes the new IT for 2 s and blocks tag-backs for 3.5 s. Least time as IT after 4 minutes wins.
 
+## Extra fun (v2)
+
+- **Infection mode** (Funtopia): 1–2 zombies start, every tag converts, 3-minute timer, survivors win if anyone's left.
+- **Hide & Seek**: 2 seekers at 8+ players, optional "found hiders join the seekers", seeker **radar** (R, 24s cooldown, hot/cold + arrow), hider **taunt** (G, 14s, +1 point).
+- **Power-ups** in Tag/Infection (speed, super jump, shield, cloak) and glowing **jump pads**; toggle in the lobby.
+- **Emotes** on 1–4, room leaderboard in the lobby, ready state sticks between rounds.
+
+## School iPads
+
+- No pointer lock needed: arrow keys look, WASD move, Esc/P pause. Drag on the screen to look, tap to act.
+- On-screen buttons on touch devices; they hide automatically once you use the keyboard.
+- Graphics default to Low on touch devices; static geometry is merged (about 1,400 meshes into 28 draw batches).
+
 ## Networking
 
 - **Supabase Realtime** (existing `casino` project) is used only for presence (who's in room `recess-<code>`), WebRTC signalling, and a low-rate fallback relay. It needs no tables. This keeps usage far under the free tier (100 msgs/s, where every recipient counts).
