@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>JKML · Word Bomb</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg1:#1b1035;--bg2:#0d1b3d;--card:rgba(255,255,255,.07);--line:rgba(255,255,255,.12);--fg:#f5f3ff;--dim:#b3abd6;--a:#ffd23f;--b:#ff5d8f;--c:#4fd4ff;--g:#5cf08a;--r:#ff4d5e}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Baloo 2',system-ui,sans-serif;color:var(--fg);background:radial-gradient(1200px 700px at 20% 10%,#3a1d6e 0%,transparent 60%),radial-gradient(1000px 700px at 90% 90%,#0f4a6e 0%,transparent 60%),linear-gradient(160deg,var(--bg1),var(--bg2));overflow:hidden}
+body:before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(255,255,255,.08) 1px,transparent 1px);background-size:26px 26px;pointer-events:none}
+button{font:inherit;color:inherit;border:0;cursor:pointer;background:none}
+input,select{font:inherit;color:var(--fg);background:rgba(0,0,0,.25);border:2px solid var(--line);border-radius:14px;padding:10px 14px;outline:none}
+input:focus,select:focus{border-color:var(--a)}
+select option{background:#24164a}
+.hidden{display:none!important}
+.btn{padding:11px 18px;border-radius:14px;font-weight:800;font-size:17px;background:var(--card);border:2px solid var(--line);transition:transform .08s,filter .15s,background .15s}
+.btn:hover:not(:disabled){filter:brightness(1.15)}.btn:active:not(:disabled){transform:translateY(2px)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.y{background:linear-gradient(180deg,#ffe066,#ffb703);color:#3a2300;border:0;box-shadow:0 5px 0 #b77d00}
+.btn.p{background:linear-gradient(180deg,#ff7aa8,#ff3d77);color:#fff;border:0;box-shadow:0 5px 0 #a4194a}
+.btn.g{background:linear-gradient(180deg,#7dffa6,#29d46a);color:#062b12;border:0;box-shadow:0 5px 0 #13863e}
+.btn.sm{padding:6px 11px;font-size:14px;border-radius:10px}
+.btn.on{border-color:var(--g);color:#b9ffd0}
+.shake{animation:sh .35s}@keyframes sh{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+/* menu */
+#menu{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px}
+.mcard{width:min(460px,96vw);background:rgba(20,12,44,.7);backdrop-filter:blur(10px);border:2px solid var(--line);border-radius:28px;padding:30px;display:flex;flex-direction:column;gap:12px;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+.logo{display:flex;align-items:center;gap:14px}
+.logo .bombI{width:74px;height:74px;flex:none}
+.logo h1{font-size:58px;line-height:.85;font-weight:800;letter-spacing:-.01em;background:linear-gradient(90deg,var(--a),var(--b),var(--c));-webkit-background-clip:text;background-clip:text;color:transparent}
+.logo small{display:block;font-size:20px;color:var(--dim);font-weight:700;-webkit-text-fill-color:var(--dim)}
+.tag{color:var(--dim);font-size:16px;line-height:1.35}
+.row{display:flex;gap:10px;align-items:center}.row>*{flex:1}
+#emojiBtn{flex:0 0 54px;height:50px;font-size:28px;border-radius:14px;background:rgba(0,0,0,.25);border:2px solid var(--line)}
+#code{text-transform:uppercase;letter-spacing:.35em;text-align:center;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:22px}
+.err{min-height:22px;color:#ff98a6;font-weight:700}
+.how{font-size:14px;color:var(--dim);line-height:1.5;background:rgba(0,0,0,.2);border-radius:14px;padding:10px 14px}
+.how b{color:var(--fg)}
+/* room */
+#room{position:fixed;inset:0;display:grid;grid-template-columns:1fr 330px;grid-template-rows:auto 1fr auto}
+#top{grid-column:1/3;display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:2px solid var(--line);background:rgba(0,0,0,.18)}
+#top .brand{font-weight:800;font-size:24px;background:linear-gradient(90deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
+.codepill{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:20px;letter-spacing:.2em;background:rgba(0,0,0,.3);border:2px dashed var(--a);color:var(--a);padding:2px 12px;border-radius:12px}
+#pcount{color:var(--dim);font-weight:700}
+#top .sp{flex:1}
+#vol{width:90px;accent-color:var(--a)}
+/* stage */
+#stage{position:relative;overflow:hidden}
+#seats{position:absolute;inset:0}
+.seat{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;width:170px;transition:left .5s,top .5s,opacity .3s}
+.seat .av{width:66px;height:66px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:38px;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.35),rgba(255,255,255,.05));border:4px solid var(--c);box-shadow:0 6px 0 rgba(0,0,0,.25);transition:transform .2s}
+.seat .nm{font-weight:800;font-size:16px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 2px 4px rgba(0,0,0,.4)}
+.seat .nm i{font-style:normal;color:var(--dim);font-weight:600}
+.lives{font-size:14px;letter-spacing:1px;min-height:18px}
+.typed{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:18px;min-height:26px;letter-spacing:.04em;color:#fff;background:rgba(0,0,0,.28);padding:0 8px;border-radius:8px;max-width:200px;overflow:hidden;white-space:nowrap}
+.typed:empty{background:none}
+.typed em{font-style:normal;color:var(--a)}
+.typed.good{background:rgba(92,240,138,.3);color:#c9ffd9}
+.seat.cur .av{transform:scale(1.18);box-shadow:0 0 0 6px rgba(255,210,63,.35),0 0 30px var(--c)}
+.seat.cur .nm{color:var(--a)}
+.seat.dead{opacity:.38;filter:grayscale(1)}
+.seat.gone .nm:after{content:' (offline)';color:var(--dim);font-weight:500}
+.seat.win .av{box-shadow:0 0 0 6px rgba(255,210,63,.6),0 0 40px #ffd23f;transform:scale(1.25)}
+.seat.wrong .av{animation:sh .35s;border-color:var(--r)!important}
+.seat.hit .av{animation:hit .8s}@keyframes hit{0%{transform:scale(1.5);background:#ff7b2c}40%{transform:scale(.9)}100%{transform:scale(1)}}
+#bombWrap{position:absolute;left:50%;top:50%;width:190px;height:190px;transform:translate(-50%,-50%)}
+#arrow{position:absolute;left:50%;top:50%;width:0;height:0;transition:transform .35s cubic-bezier(.3,1.5,.5,1),opacity .3s}
+#arrow:after{content:'';position:absolute;left:-14px;top:-122px;border-left:14px solid transparent;border-right:14px solid transparent;border-bottom:26px solid var(--a);filter:drop-shadow(0 3px 0 rgba(0,0,0,.3))}
+#bomb{position:absolute;inset:0}
+#bomb svg{width:100%;height:100%;overflow:visible}
+#bomb.lit .spark{animation:spark .18s infinite alternate}
+@keyframes spark{from{transform:scale(.7) rotate(0)}to{transform:scale(1.25) rotate(40deg)}}
+#bomb.lit{animation:wob 1.4s ease-in-out infinite}
+@keyframes wob{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+#bomb.boom{animation:boom .7s}
+@keyframes boom{0%{transform:scale(1.5);filter:brightness(3) sepia(1) hue-rotate(-20deg)}100%{transform:scale(1)}}
+#prompt{position:absolute;left:50%;top:58%;transform:translate(-50%,-50%);font-family:'JetBrains Mono',monospace;font-weight:800;font-size:38px;letter-spacing:.05em;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.4)}
+#status{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);font-weight:700;font-size:18px;color:var(--dim);text-align:center}
+#status b{color:var(--a)}
+#results{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(20,12,44,.9);border:2px solid var(--a);border-radius:22px;padding:18px 22px;min-width:320px;z-index:5;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+#results h3{text-align:center;font-size:24px;margin-bottom:8px}
+#results div{display:flex;justify-content:space-between;gap:18px;padding:4px 0;border-top:1px solid var(--line);font-weight:700}
+#results div span:last-child{color:var(--dim);font-weight:600}
+/* bottom bar */
+#bottom{grid-column:1;padding:12px 18px 16px;display:flex;flex-direction:column;align-items:center;gap:8px}
+#wordBox{width:min(560px,100%);display:flex;flex-direction:column;align-items:center;gap:4px}
+#word{width:100%;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:28px;text-align:center;letter-spacing:.08em;text-transform:uppercase;padding:12px;border-radius:18px;border-width:3px}
+#wordBox.mine #word{border-color:var(--a);box-shadow:0 0 0 6px rgba(255,210,63,.18);background:rgba(0,0,0,.35)}
+#word:disabled{opacity:.6}
+#hint{min-height:20px;font-weight:700;color:var(--dim)}#hint.bad{color:#ff98a6}
+#letters{display:flex;gap:3px;flex-wrap:wrap;justify-content:center}
+#letters span{width:24px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.35)}
+#letters span.got{background:var(--g);color:#06341a}
+#used{font-size:13px;color:var(--dim)}
+/* side */
+#side{grid-column:2;grid-row:2/4;border-left:2px solid var(--line);display:flex;flex-direction:column;gap:10px;padding:12px;background:rgba(0,0,0,.14);min-height:0}
+#ctrl{display:flex;flex-direction:column;gap:8px}
+#hostSet{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;font-weight:700;font-size:14px;background:rgba(0,0,0,.2);border-radius:14px;padding:10px}
+#hostSet select{padding:5px 8px;border-radius:9px;font-size:14px}
+.lab{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:800}
+#roster{display:flex;flex-direction:column;gap:3px;max-height:150px;overflow-y:auto}
+.rp{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:14px;padding:3px 8px;border-radius:8px;background:rgba(255,255,255,.04)}
+.rp button{font-size:12px;color:var(--dim);background:rgba(255,255,255,.08);padding:1px 8px;border-radius:7px}
+#chat{flex:1;display:flex;flex-direction:column;min-height:0;background:rgba(0,0,0,.22);border-radius:14px;overflow:hidden}
+#chatLog{flex:1;overflow-y:auto;padding:10px;font-size:15px;line-height:1.4;user-select:text}
+.msg{margin-bottom:3px;word-wrap:break-word}.msg.sys{color:var(--dim);font-size:13px}
+#chatIn{border:0;border-top:2px solid var(--line);border-radius:0;background:rgba(0,0,0,.2)}
+#toasts{position:fixed;top:70px;left:calc(50% - 165px);transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;z-index:30;pointer-events:none}
+.toast{background:rgba(20,12,44,.92);border:2px solid var(--a);padding:6px 14px;border-radius:12px;font-weight:700;transition:opacity .4s}.toast.out{opacity:0}
+@media (max-width:820px){#room{grid-template-columns:1fr;grid-template-rows:auto 1fr auto 230px}#side{grid-column:1;grid-row:4;border-left:0;border-top:2px solid var(--line);flex-direction:row}#ctrl{flex:0 0 46%}.seat{width:110px}.seat .av{width:48px;height:48px;font-size:26px}#bombWrap{width:130px;height:130px}#prompt{font-size:28px}#arrow:after{top:-86px}#toasts{left:50%}#roster{display:none}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <radialGradient id="bg" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#5a5a78"/><stop offset=".55" stop-color="#25233a"/><stop offset="1" stop-color="#0d0c16"/></radialGradient>
+  <symbol id="bombS" viewBox="-100 -100 200 200">
+    <path d="M38 -62 q22 -26 48 -14" stroke="#c9a46a" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <rect x="18" y="-74" width="34" height="24" rx="6" transform="rotate(35 35 -62)" fill="#3b3a52"/>
+    <circle cx="0" cy="8" r="72" fill="url(#bg)"/>
+    <ellipse cx="-26" cy="-22" rx="20" ry="12" fill="rgba(255,255,255,.18)" transform="rotate(-35 -26 -22)"/>
+    <g class="spark" style="transform-origin:86px -76px"><circle cx="86" cy="-76" r="10" fill="#ffd23f"/><path d="M86 -96 L90 -80 L106 -76 L90 -72 L86 -56 L82 -72 L66 -76 L82 -80Z" fill="#ff7b2c"/></g>
+  </symbol>
+</defs></svg>
+
+<!-- MENU -->
+<section id="menu"><div class="mcard">
+  <div class="logo"><svg class="bombI"><use href="#bombS"/></svg><h1>JKML<small>Word Bomb</small></h1></div>
+  <div class="tag">A party word game for 1–16 friends. When the bomb is on you, type a word that contains the letters before it blows up.</div>
+  <div class="row"><button id="emojiBtn" title="Change avatar">🦊</button><input id="name" maxlength="16" placeholder="Your nickname" autocomplete="off" spellcheck="false"></div>
+  <button class="btn y" id="bCreate">Create a room</button>
+  <div class="row"><input id="code" maxlength="4" placeholder="CODE" autocomplete="off"><button class="btn p" id="bJoin" style="flex:.7">Join</button></div>
+  <button class="btn g hidden" id="bRejoin">Rejoin</button>
+  <div class="err" id="menuErr"></div>
+  <div class="how"><b>How to play:</b> When the arrow points at you, type a word containing the letters on the bomb (like <b>ING</b> → <b>SINGER</b>) and press Enter. The fuse is secret, so be quick. If it blows up on you, you lose a heart. Words can't be reused. Use every letter in your bonus row to earn a heart back. The last player standing wins.</div>
+</div></section>
+
+<!-- ROOM -->
+<section id="room" class="hidden">
+  <div id="top">
+    <span class="brand">JKML</span><span class="codepill" id="roomCode">----</span>
+    <button class="btn sm" id="bCopy">Copy invite</button><span id="pcount"></span>
+    <span class="sp"></span>
+    <button class="btn sm" id="bMic">🎙 Voice off</button><button class="btn sm" id="bDeaf">🔊</button>
+    <input type="range" id="vol" min="0" max="1" step="0.05" title="Volume">
+    <button class="btn sm" id="bLeave">Leave</button>
+  </div>
+  <div id="stage">
+    <div id="seats"></div>
+    <div id="bombWrap"><div id="arrow"></div><div id="bomb"><svg><use href="#bombS"/></svg></div><div id="prompt">…</div></div>
+    <div id="status"></div>
+    <div id="results" class="hidden"></div>
+  </div>
+  <div id="bottom">
+    <div id="wordBox"><input id="word" maxlength="30" autocomplete="off" spellcheck="false" disabled><div id="hint"></div></div>
+    <div id="letters"></div><div id="used"></div>
+  </div>
+  <aside id="side">
+    <div id="ctrl">
+      <button class="btn y" id="bJoinGame">Join game</button>
+      <button class="btn sm hidden" id="bLeaveSeat">Leave seat</button>
+      <button class="btn g hidden" id="bStart">Start game</button>
+      <div id="hostSet" class="hidden">
+        <label for="sLives">Lives</label><select id="sLives"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+        <label for="sDiff">Prompts</label><select id="sDiff"><option value="easy">Easy</option><option value="normal">Normal</option><option value="hard">Hard</option><option value="insane">Insane</option></select>
+        <label for="sTurn">Min fuse</label><select id="sTurn"><option value="3">3 s</option><option value="5">5 s</option><option value="8">8 s</option><option value="12">12 s</option></select>
+      </div>
+      <div class="lab">In the room</div><div id="roster"></div>
+    </div>
+    <div id="chat"><div id="chatLog"></div><input id="chatIn" maxlength="200" placeholder="Chat…" autocomplete="off"></div>
+  </aside>
+</section>
+<div id="toasts"></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
