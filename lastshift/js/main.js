@@ -870,11 +870,12 @@ function updatePrompt(dt) {
 let last = now(), sendAcc = 0;
 function frame() {
   requestAnimationFrame(frame);
-  step(true);
+  lastRaf = now(); step(true);
 }
+let lastRaf = 0;
 // background tabs get no animation frames: keep simulating + syncing on a timer so an
 // alt-tabbed host doesn't freeze the monster for everyone
-setInterval(() => { if (document.hidden && (G.phase === 'play' || G.phase === 'end')) step(false); }, 100);
+setInterval(() => { if (now() - lastRaf > 300 && (G.phase === 'play' || G.phase === 'end')) step(false); }, 100);
 function step(render) {
   const t = now(), dt = Math.min(render ? 0.05 : 0.12, (t - last) / 1000); last = t;
   if (G.phase === 'menu' || G.phase === 'lobby' || G.phase === 'boot' || G.phase === 'loading') { if (render) menuFrame(dt); return; }
