@@ -19,7 +19,7 @@ export class Net {
     const ch = this.sb.channel('lastshift-' + code, { config: { broadcast: { self: false, ack: false }, presence: { key: me.id } } });
     this.ch = ch; this.code = code;
     let firstSync, synced = new Promise(r => (firstSync = r));
-    ch.on('broadcast', { event: 'm' }, ({ payload }) => { if (payload && payload.t) this.emit(payload.t, payload); });
+    ch.on('broadcast', { event: 'm' }, ({ payload }) => { if (!payload || !payload.t) return; if (payload._to && !payload._to.includes(me.id)) return; this.emit(payload.t, payload); });
     ch.on('presence', { event: 'sync' }, () => { this._read(); firstSync(); this.emit('presence', this.list); });
     ch.on('presence', { event: 'leave' }, ({ key }) => this.emit('left', key));
     const status = await new Promise(res => {
@@ -49,7 +49,20 @@ export class Net {
   players() { return this.list; }
   hostId() { return this.list.length ? this.list[0].id : this.meta && this.meta.id; }
   async update(fields) { if (!this.ch || !this.meta) return; Object.assign(this.meta, fields); try { await this.ch.track(this.meta); } catch (e) {} }
-  send(payload) { if (this.ch) this.ch.send({ type: 'broadcast', event: 'm', payload }).catch(() => {}); }
+  // Game traffic goes peer-to-peer over the voice connections' data channels; Supabase only
+  // carries WebRTC signalling and a fallback for peers whose direct link isn't up (free-tier
+  // Realtime allows ~100 msgs/s and counts every recipient, which 4 players would exceed).
+  send(payload) {
+    const v = this.voice, me = this.meta && this.meta.id;
+    if (v && me && payload.t !== 'rtc') {
+      const reliable = payload.t !== 'p', miss = [];
+      for (const p of this.list) if (p.id !== me && !v.sendDC(p.id, payload, reliable)) miss.push(p.id);
+      if (!miss.length) return;
+      if (!reliable) { const t = performance.now(); if (t - (this._fb || 0) < 330) return; this._fb = t; }
+      payload = { ...payload, _to: miss };
+    }
+    if (this.ch) this.ch.send({ type: 'broadcast', event: 'm', payload }).catch(() => {});
+  }
   async leave() {
     const ch = this.ch; this.ch = null; this.meta = null; this.list = [];
     if (ch) { try { await ch.untrack(); } catch (e) {} try { await this.sb.removeChannel(ch); } catch (e) {} }

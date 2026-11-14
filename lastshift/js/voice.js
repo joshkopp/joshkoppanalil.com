@@ -3,7 +3,7 @@ const ICE = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.goo
 
 export class Voice {
   constructor(net, sfx, myId) {
-    this.net = net; this.sfx = sfx; this.me = myId; this.peers = new Map(); this.mic = null; this.micOn = false; this.ptt = false; this.pttDown = false; this.level = 0;
+    this.net = net; this.sfx = sfx; this.me = myId; net.voice = this; this.peers = new Map(); this.mic = null; this.micOn = false; this.ptt = false; this.pttDown = false; this.level = 0;
     net.on('rtc', m => { if (m.to === this.me) this._signal(m).catch(e => console.warn('rtc', e)); });
   }
   silentTrack() {
@@ -43,6 +43,9 @@ export class Voice {
     p.lp.type = 'lowpass'; p.lp.frequency.value = 9000; p.pan.panningModel = 'HRTF'; p.pan.distanceModel = 'linear'; p.pan.refDistance = 1; p.pan.maxDistance = 1e4; p.pan.rolloffFactor = 0;
     p.an.fftSize = 256; p.buf = new Float32Array(256);
     p.gain.connect(p.lp); p.lp.connect(p.pan); p.pan.connect(this.sfx.voice); p.out = p.gain;
+    p.dr = pc.createDataChannel('r', { negotiated: true, id: 0, ordered: true });
+    p.du = pc.createDataChannel('u', { negotiated: true, id: 1, ordered: false, maxRetransmits: 0 });
+    for (const dc of [p.dr, p.du]) dc.onmessage = e => { try { const m = JSON.parse(e.data); if (m && m.t) this.net.emit(m.t, m); } catch (er) {} };
     pc.onicecandidate = e => { if (e.candidate) this.net.send({ t: 'rtc', to: id, from: this.me, k: 'ice', d: e.candidate.toJSON() }); };
     pc.ontrack = e => {
       const stream = e.streams[0] || new MediaStream([e.track]);
@@ -97,5 +100,6 @@ export class Voice {
       p.an.getFloatTimeDomainData(p.buf); let s = 0; for (const v of p.buf) s += v * v; p.lvl = Math.sqrt(s / p.buf.length);
     }
   }
+  sendDC(id, msg, reliable) { const p = this.peers.get(id), dc = p && (reliable ? p.dr : p.du); if (!dc || dc.readyState !== 'open') return false; try { dc.send(JSON.stringify(msg)); return true; } catch (e) { return false; } }
   speaking(id) { const p = this.peers.get(id); return p ? p.lvl > 0.02 : false; }
 }

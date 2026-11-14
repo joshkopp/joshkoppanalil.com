@@ -142,7 +142,7 @@ export class World {
           const nx = x + dx, nz = z + dz; if (!open(m.t(nx, nz))) continue;
           const [y0, y1] = range(nx, nz), key = wallMat(nx, nz), vs = key === 'hWall' ? 3.0 : C;
           const ex = (x + 0.5 + dx * 0.5) * C, ez = (z + 0.5 + dz * 0.5) * C;
-          const rx = -dz, rz = dx; // right vector for a viewer facing the wall (n=(dx,dz)) → cross(-n,up)
+          const rx = dz, rz = -dx; // CCW winding seen from the open neighbour
           const h = C / 2;
           const a = [ex - rx * h, y0, ez - rz * h], b = [ex + rx * h, y0, ez + rz * h], c = [ex + rx * h, y1, ez + rz * h], d = [ex - rx * h, y1, ez - rz * h];
           const ua = (a[0] * rx + a[2] * rz) / C, ub = ua + 1;
