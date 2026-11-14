@@ -95,6 +95,12 @@ input[type=range]{accent-color:#f2c94c;width:160px;vertical-align:middle}
 .item span{font-family:'Share Tech Mono',monospace;color:#7ddc6e;font-size:15px}
 .item.no{opacity:.35;cursor:default}.item.no:hover{background:rgba(255,255,255,.05)}
 .item.own{border-color:rgba(242,201,76,.6)}.item.own span{color:#f2c94c}
+
+.skrow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:15px;font-weight:600;letter-spacing:1px}
+.skrow div{display:flex;gap:5px}
+.sw{display:inline-block;width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid rgba(255,255,255,.15);transition:transform .1s}
+.sw:hover{transform:scale(1.15)}.sw.on{border-color:#f2c94c;box-shadow:0 0 8px rgba(242,201,76,.6)}
+details summary{cursor:pointer;color:#f2c94c;letter-spacing:4px;font-size:13px;margin-top:14px}
 a.back{position:fixed;left:16px;top:12px;color:#8a918c;font-size:14px;letter-spacing:2px;text-decoration:none;z-index:5}
 a.back:hover{color:#f2c94c}
 </style>
@@ -147,7 +153,8 @@ a.back:hover{color:#f2c94c}
       <label>CS SENSITIVITY <input id="sens" type="range" min="0.3" max="6" step="0.05" value="2"> <span id="sensVal" class="mono">2.00</span></label>
       <span id="best" class="mono" style="color:#8a918c"></span>
     </div>
-    <p style="font-size:12px;color:#5d635f;margin-top:14px">Surface textures: Poly Haven (CC0)</p>
+    <details><summary>WEAPON SKINS</summary><div id="menuSkins" style="margin-top:8px"></div></details>
+    <p style="font-size:12px;color:#5d635f;margin-top:14px" id="credits">Surface textures: Poly Haven (CC0). Weapon models (CC-BY, Sketchfab): M4A1, USP &amp; Desert Eagle by TastyTony · AKM by Vlasov Daniil · L96A1 by D_U · M9 Bayonet by Kirill Filantyev.</p>
   </div>
 </div>
 
@@ -165,6 +172,8 @@ a.back:hover{color:#f2c94c}
 <script type="module">
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 const V3 = THREE.Vector3;
 const $ = id => document.getElementById(id);
@@ -514,8 +523,8 @@ const GM = {
   rubber: std({color:0x151515, roughness:.92}),
   blade: std({color:0xe8ecf0, metalness:.85, roughness:.22}),
   lens: std({color:0x223a5a, metalness:.95, roughness:.05}),
-  glove: std({color:0x1d1e20, roughness:.78}),
-  knuckle: std({color:0x3a3c40, roughness:.55, metalness:.2}),
+  glove: std({color:0x0e0f10, roughness:.92}),
+  knuckle: std({color:0x24262a, roughness:.6, metalness:.2}),
   sleeve: std({map:texCamo, roughness:.92}),
   cuff: std({color:0x22252b, roughness:.85}),
 };
@@ -526,10 +535,11 @@ const _up=new V3(0,1,0);
 function limb(parent,a,b,r0,r1,mat){ const d=new V3().subVectors(b,a), len=d.length(); const m=new THREE.Mesh(CYL(r1,r0,len,12),mat); m.position.copy(a).addScaledVector(d,.5); m.quaternion.setFromUnitVectors(_up,d.normalize()); parent.add(m); return m; }
 function hand(parent,p,rot){
   const h=new THREE.Group(); h.position.copy(p); h.rotation.set(rot[0],rot[1],rot[2]); parent.add(h);
-  mk(h,BOX(.052,.078,.085),GM.glove,0,0,0);
-  mk(h,BOX(.05,.024,.07),GM.glove,0,.04,-.035);
-  mk(h,BOX(.054,.018,.03),GM.knuckle,0,.045,.0);
-  mk(h,BOX(.022,.022,.06),GM.glove,-.03,.02,-.04,0,.4,0); // thumb
+  const RB=(a,b,c,r)=>new RoundedBoxGeometry(a,b,c,3,r);
+  mk(h,RB(.054,.08,.088,.018),GM.glove,0,0,0);
+  for(let f=0;f<4;f++) mk(h,RB(.013,.022,.062,.006),GM.glove,-.019+f*.0127,.038,-.03-Math.abs(f-1.5)*.004);
+  mk(h,RB(.058,.02,.034,.008),GM.knuckle,0,.046,.002);
+  mk(h,RB(.022,.022,.062,.01),GM.glove,-.031,.018,-.038,0,.4,0); // thumb
   return h;
 }
 function arm(parent,handP,handRot,elbowOff){
@@ -673,6 +683,93 @@ const VM={};
 for(const id in WEAP){ const v=WEAP[id].build(); v.g.visible=false; v.g.scale.setScalar(.85); v.g.traverse(o=>{ if(o.isMesh){ o.castShadow=false; o.frustumCulled=false; } }); gunScene.add(v.g); VM[id]=v; }
 const gunFlash = new THREE.Sprite(new THREE.SpriteMaterial({map:texFlash, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true}));
 gunFlash.visible=false; gunScene.add(gunFlash);
+
+
+// ================= REAL GUN MODELS (Sketchfab, CC-BY — see credits) =================
+const gltfLoader=new GLTFLoader();
+// len = real-world length (m), rotY/rotX orient the muzzle down -z, cz = where the model's center sits, top = height of the top of the gun
+const GUN_CFG={
+  m4:{len:.86, rotY:PI2, cz:-.06, top:.085, sup:{r:.022,len:.27}},
+  ak:{len:.88, rotY:0, cz:-.05, top:.07, mag:true},
+  awp:{len:1.2, rotY:PI2, cz:-.17, top:.14, bodyColored:true},
+  usp:{len:.2, rotY:PI2, cz:-.03, top:.008, sup:{r:.016,len:.16}},
+  deagle:{len:.27, rotY:PI2, cz:-.035, top:.012, allBody:true, defColor:0x3b3d42},
+  knife:{len:.3, rotY:-PI2, rotX:PI2, cz:-.03, center:true},
+};
+const extraGunMats=[];
+const skinTargets={};
+const SKINS=[
+  {id:'default',name:'Factory',sw:'#2a2b2e'},
+  {id:'tan',name:'Desert Cerakote',color:0x9a8156,metal:.15,rough:.6,sw:'#9a8156'},
+  {id:'od',name:'Olive Drab',color:0x4c5838,metal:.15,rough:.62,sw:'#4c5838'},
+  {id:'arctic',name:'Arctic',color:0xdfe4e8,metal:.1,rough:.5,sw:'#dfe4e8'},
+  {id:'cobalt',name:'Cobalt',color:0x2b54a8,metal:.75,rough:.28,sw:'#2b54a8'},
+  {id:'crimson',name:'Crimson',color:0x8e1b1b,metal:.55,rough:.32,sw:'#8e1b1b'},
+  {id:'violet',name:'Midnight Violet',color:0x4a2a7a,metal:.7,rough:.3,sw:'#4a2a7a'},
+  {id:'gold',name:'24K Gold',color:0xe2b24c,metal:1,rough:.2,sw:'#e2b24c'},
+  {id:'chrome',name:'Mirror Chrome',color:0xd6dadf,metal:1,rough:.06,sw:'#d6dadf'},
+];
+let skinSel={}; try{ skinSel=JSON.parse(localStorage.getItem('jkb_skins'))||{}; }catch(e){}
+function scanPts(root){
+  root.updateMatrixWorld(true); const pts=[], v=new V3();
+  root.traverse(m=>{ if(!m.isMesh) return; const p=m.geometry.attributes.position; for(let i=0;i<p.count;i++){ v.fromBufferAttribute(p,i); if(m.isSkinnedMesh) m.applyBoneTransform(i,v); v.applyMatrix4(m.matrixWorld); pts.push(v.clone()); } });
+  return pts;
+}
+async function loadGunModel(id){
+  const cfg=GUN_CFG[id], v=VM[id];
+  let gl; try{ gl=await gltfLoader.loadAsync('guns/'+id+'.glb'); }catch(e){ return; }
+  const model=gl.scene, holder=new THREE.Group(); holder.add(model);
+  model.rotation.order='YXZ'; model.rotation.set(cfg.rotX||0,cfg.rotY||0,0);
+  let b=new THREE.Box3().setFromPoints(scanPts(holder));
+  model.scale.multiplyScalar(cfg.len/b.getSize(new V3()).z);
+  const pts=scanPts(holder); b=new THREE.Box3().setFromPoints(pts); const c=b.getCenter(new V3());
+  holder.position.set(-c.x, cfg.center? -c.y : cfg.top-b.max.y, cfg.cz-c.z);
+  const frontZ=b.min.z+holder.position.z;
+  let fy=0,n=0; for(const p of pts) if(p.z<b.min.z+cfg.len*.025){ fy+=p.y; n++; } fy=(n?fy/n:c.y)+holder.position.y;
+  // hide the old procedural gun, keep the gloves and sleeves
+  const keep=new Set([GM.glove,GM.knuckle,GM.cuff,GM.sleeve]);
+  v.g.traverse(o=>{ if(o.isMesh && !keep.has(o.material)) o.visible=false; });
+  const st={defaults:[],textured:[]};
+  model.traverse(o=>{
+    if(!o.isMesh) return; o.frustumCulled=false; o.castShadow=false;
+    const om=o.material;
+    if(om.map){ om.metalness=Math.min(om.metalness,.65); st.textured.push(om); extraGunMats.push(om); om.userData.def={c:om.color.getHex(),mt:om.metalness,r:om.roughness}; return; }
+    const col=om.color.clone(), lum=col.r*.3+col.g*.59+col.b*.11, sat=Math.max(col.r,col.g,col.b)-Math.min(col.r,col.g,col.b);
+    let nm;
+    if(cfg.allBody || (lum<.32 && sat<.08) || (cfg.bodyColored && sat>.12 && lum<.45 && col.g>col.r)){
+      const dc=cfg.allBody?cfg.defColor:new THREE.Color().copy(col).multiplyScalar(cfg.bodyColored&&sat>.12?1.25:1.7).getHex();
+      nm=new THREE.MeshStandardMaterial({map:cfg.bodyColored&&sat>.12?texPoly:texGunMetal,color:dc,metalness:sat>.12?.1:.8,roughness:sat>.12?.55:.38});
+      st.defaults.push({mat:nm,color:dc,metal:nm.metalness,rough:nm.roughness,map:nm.map});
+    } else if(sat<.08 && lum<.75){ nm=new THREE.MeshStandardMaterial({map:texGunMetal,color:col.clone().multiplyScalar(1.3),metalness:.9,roughness:.32}); }
+    else if(lum>.85) nm=new THREE.MeshStandardMaterial({color:0x0c1824,metalness:.9,roughness:.05}); // glass / lens
+    else nm=new THREE.MeshStandardMaterial({color:col,metalness:Math.min(om.metalness,.8),roughness:Math.max(om.roughness,.25)});
+    o.material=nm; extraGunMats.push(nm);
+  });
+  v.g.add(holder); v.g.updateMatrixWorld(true);
+  if(cfg.mag){ let mm=null; model.traverse(o=>{ if(o.isMesh && /^mag_/.test(o.name) && !/release/.test(o.name)) mm=o; }); if(mm){ v.mag.attach(mm); } }
+  if(cfg.sup){
+    const s=cfg.sup, sup=new THREE.Group(); v.g.add(sup);
+    mk(sup,CYL(s.r,s.r,s.len,20),GM.sup,0,fy,frontZ-s.len/2,PI2);
+    mk(sup,CYL(s.r*1.08,s.r*1.08,.012,20),GM.metal,0,fy,frontZ-.006,PI2);
+    mk(sup,CYL(s.r*1.08,s.r*1.08,.01,20),GM.metal,0,fy,frontZ-s.len+.005,PI2);
+    mk(sup,new THREE.CircleGeometry(s.r*.35,12),GM.dark,0,fy,frontZ-s.len-.001,0,Math.PI,0);
+    v.sup=sup; v.mz={on:frontZ-s.len,off:frontZ};
+  } else v.mz={on:frontZ,off:frontZ};
+  v.muzzleY=fy; v.real=true;
+  skinTargets[id]=st; applySkin(id,skinSel[id]||'default');
+}
+function applySkin(id,sid){
+  skinSel[id]=sid; try{ localStorage.setItem('jkb_skins',JSON.stringify(skinSel)); }catch(e){}
+  const st=skinTargets[id]; if(!st) return;
+  const sk=SKINS.find(s=>s.id===sid)||SKINS[0], def=sk.id==='default';
+  for(const d of st.defaults){ d.mat.color.setHex(def?d.color:sk.color); d.mat.metalness=def?d.metal:sk.metal; d.mat.roughness=def?d.rough:sk.rough; d.mat.map=def?d.map:texGunMetal; d.mat.needsUpdate=true; }
+  for(const m of st.textured){ const u=m.userData.def; m.color.setHex(def?u.c:sk.color); m.metalness=def?u.mt:Math.max(.4,sk.metal); m.roughness=def?u.r:sk.rough; }
+}
+function skinPickerHTML(ids){
+  return ids.map(id=>`<div class="skrow"><span>${WEAP[id].name}</span><div>${SKINS.map(s=>`<i class="sw${(skinSel[id]||'default')===s.id?' on':''}" title="${s.name}" data-w="${id}" data-s="${s.id}" style="background:${s.id==='default'?'linear-gradient(135deg,#1b1c1e 50%,#4a4c50 50%)':s.sw}"></i>`).join('')}</div></div>`).join('');
+}
+function bindSkinPicker(el,rerender){ for(const i of el.querySelectorAll('.sw')) i.onclick=()=>{ applySkin(i.dataset.w,i.dataset.s); initAudio(); sfx.buy(); rerender(); }; }
+for(const id in GUN_CFG) loadGunModel(id);
 
 // ================= ENTITY MODELS =================
 const HELM = new THREE.SphereGeometry(.155,16,10,0,Math.PI*2,0,Math.PI/2);
@@ -1337,6 +1434,9 @@ function itemInfo(id){
 function renderShop(){
   $('shopMoney').textContent='$'+money;
   $('shop').innerHTML=SHOP.map(([cat,ids])=>`<div class="cat">${cat}</div><div class="items">${ids.map(id=>{ const it=itemInfo(id); const cls=it.own?'own':(money<it.price?'no':''); return `<div class="item ${cls}" data-id="${id}">${it.name}<span>${it.own?it.ownTxt:'$'+it.price}</span></div>`; }).join('')}</div>`).join('');
+  const owned=[inv[1],inv[2],'knife'].filter(Boolean);
+  $('shop').insertAdjacentHTML('beforeend',`<div class="cat">SKINS</div>${skinPickerHTML(owned)}`);
+  bindSkinPicker($('shop'),renderShop);
   for(const el of $('shop').querySelectorAll('.item')) el.onclick=()=>buy(el.dataset.id);
 }
 function buy(id){
@@ -1498,7 +1598,7 @@ function updVM(dt){
   if(vm.slide){ const empty=!w.melee && AM[w.id].mag===0 && !(a&&a.type==='reload'&&a.t/a.dur>.8); vm.slide.position.z=empty?.04:P.slideK*.04; }
   if(vm.bolt){ const cyc=w.id==='awp' && P.fireCd>0 ? 1-P.fireCd/w.rate : 1; const b=bump(seg(cyc,.3,.85)); vm.bolt.position.z=.1+.07*b; vm.bolt.rotation.z=-1.1*bump(seg(cyc,.25,.92)); vm.g.rotation.z+=.15*bump(seg(cyc,.2,.95)); }
   // muzzle position follows silencer
-  if(vm.mz) vm.muzzle.position.set(0,w.slot===1?(w.id==='awp'?0:(w.id==='ak'?.012:.025)):0,(w.silencer&&SIL[w.id])?vm.mz.on:vm.mz.off);
+  if(vm.mz) vm.muzzle.position.set(0,vm.muzzleY!=null?vm.muzzleY:w.slot===1?(w.id==='awp'?0:(w.id==='ak'?.012:.025)):0,(w.silencer&&SIL[w.id])?vm.mz.on:vm.mz.off);
   if(gunFlashT>0){ gunFlashT-=dt; vm.muzzle.getWorldPosition(gunFlash.position); if(gunFlashT<=0) gunFlash.visible=false; } else gunFlash.visible=false;
   muzzleLight.intensity=Math.max(0,muzzleLight.intensity-dt*400); gunFlashLight.intensity=Math.max(0,gunFlashLight.intensity-dt*150);
 }
@@ -1512,7 +1612,7 @@ function updLights(dt){
   for(const p of pool){ let k=1; if(p.flick){ k=.65+.35*Math.sin(T*17+p.seed)*Math.sin(T*5.3+p.seed*2); if(Math.random()<.04) k=.05; } p.l.intensity=p.base*k;
     const d2=p.l.position.distanceToSquared(camera.position); lum+=p.l.intensity/(d2+4)*.25; }
   lum=clamp(lum+muzzleLight.intensity*.02+bangLight.intensity*.01,.6,1.4);
-  gunHemi.intensity=.9*lum; gunKey.intensity=2.2*lum; for(const m of Object.values(GM)) m.envMapIntensity=1.0*lum;
+  gunHemi.intensity=.9*lum; gunKey.intensity=2.2*lum; for(const m of Object.values(GM)) m.envMapIntensity=1.0*lum; for(const m of extraGunMats) m.envMapIntensity=1.0*lum;
   bangLight.intensity=Math.max(0,bangLight.intensity-dt*1600);
   if(beacon && beacon.visible){ beacon.material.opacity=.12+.08*Math.sin(T*4); beacon.rotation.y+=dt; }
 }
@@ -1576,6 +1676,8 @@ function loop(){
   renderer.render(scene,camera);
   if(state==='playing'||state==='paused'){ renderer.clearDepth(); renderer.render(gunScene,gunCam); }
 }
+function renderMenuSkins(){ const el=$('menuSkins'); el.innerHTML=skinPickerHTML(['m4','ak','awp','usp','deagle','knife']); bindSkinPicker(el,renderMenuSkins); }
+renderMenuSkins();
 buildLevel(1);
 showOnly('menu');
 loop();
