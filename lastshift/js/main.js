@@ -875,7 +875,7 @@ function frame() {
 let lastRaf = 0;
 // background tabs get no animation frames: keep simulating + syncing on a timer so an
 // alt-tabbed host doesn't freeze the monster for everyone
-setInterval(() => { if (now() - lastRaf > 300 && (G.phase === 'play' || G.phase === 'end')) step(false); }, 100);
+setInterval(() => { if (now() - lastRaf > 300 && (G.phase === 'play' || G.phase === 'end')) { try { step(false); } catch (e) { (window.__errs = window.__errs || []).push(String(e.stack || e)); } } }, 100);
 function step(render) {
   const t = now(), dt = Math.min(render ? 0.05 : 0.12, (t - last) / 1000); last = t;
   if (G.phase === 'menu' || G.phase === 'lobby' || G.phase === 'boot' || G.phase === 'loading') { if (render) menuFrame(dt); return; }
@@ -937,4 +937,4 @@ frame();
 boot().catch(e => { $('loadMsg').textContent = 'FAILED TO LOAD · ' + (e.message || e); console.error(e); });
 
 // test hooks (offline only)
-if (OFFLINE || BC) window.__ls = { G, net: () => net, camera, renderer, hostReq, commit, myId, interact, req };
+if (OFFLINE || BC || Q.has('debug')) window.__ls = { G, net: () => net, camera, renderer, hostReq, commit, myId, interact, req };
