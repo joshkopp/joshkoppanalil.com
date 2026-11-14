@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>THE LAST SHIFT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;600&family=Share+Tech+Mono&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+:root{--red:#e01e2b;--red2:#7a0c13;--fg:#d8d6d0;--dim:#7d7a74;--bg:rgba(8,8,9,.86);--line:rgba(255,255,255,.09)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;color:var(--fg);font-family:'Oswald',system-ui,sans-serif;user-select:none;-webkit-user-select:none}
+canvas{display:block}
+.mono{font-family:'Share Tech Mono',monospace}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input,select{font:inherit;color:var(--fg);background:rgba(255,255,255,.04);border:1px solid var(--line);padding:9px 12px;border-radius:3px;outline:none;user-select:text}
+input:focus,select:focus{border-color:var(--red)}
+select option{background:#111}
+.hidden{display:none!important}
+/* ---------- screens ---------- */
+.screen{position:fixed;inset:0;display:flex;align-items:center;padding:0 9vw;background:linear-gradient(90deg,rgba(0,0,0,.92) 0%,rgba(0,0,0,.6) 45%,rgba(0,0,0,0) 75%);z-index:20}
+.panel{width:min(440px,90vw);display:flex;flex-direction:column;gap:14px}
+.panel.wide{width:min(820px,92vw)}
+h1{font-weight:600;font-size:clamp(46px,7vw,92px);letter-spacing:.06em;line-height:.9;text-transform:uppercase;position:relative}
+h1 span{color:var(--red);display:block;font-size:.3em;letter-spacing:.45em;white-space:nowrap;font-weight:300;margin-bottom:10px}
+h1.glitch{animation:gl 6s infinite}
+@keyframes gl{0%,93%,100%{text-shadow:none;transform:none}94%{text-shadow:3px 0 var(--red),-3px 0 #39f;transform:translateX(2px)}95%{text-shadow:-4px 0 var(--red),2px 0 #39f;transform:translateX(-3px) skewX(4deg)}96%{text-shadow:none;transform:none}}
+h2{font-weight:400;font-size:26px;letter-spacing:.25em;text-transform:uppercase;color:var(--fg)}
+h2 b{color:var(--red);font-weight:400}
+.tag{color:var(--dim);font-size:14px;letter-spacing:.2em;text-transform:uppercase}
+.btn{display:block;width:100%;text-align:left;font-size:22px;letter-spacing:.22em;text-transform:uppercase;padding:9px 0 9px 0;color:var(--fg);border-left:2px solid transparent;transition:.15s}
+.btn:hover:not(:disabled),.btn:focus-visible{color:#fff;padding-left:16px;border-left-color:var(--red)}
+.btn:disabled{opacity:.3;cursor:default}
+.btn.sm{font-size:16px}
+.btn.solid{background:var(--red);color:#fff;text-align:center;border:0;padding:12px;border-radius:2px}
+.btn.solid:hover:not(:disabled){filter:brightness(1.15);padding-left:12px}
+.btn.ghost{border:1px solid var(--line);text-align:center;padding:10px;border-radius:2px}
+.btn.ghost:hover:not(:disabled){border-color:var(--red);padding-left:10px}
+.row{display:flex;gap:10px;align-items:center}
+.row>*{flex:1}
+.err{color:#ff5c66;font-size:15px;letter-spacing:.05em;min-height:20px}
+.label{font-size:12px;letter-spacing:.25em;text-transform:uppercase;color:var(--dim)}
+#code{font-family:'Share Tech Mono',monospace;font-size:22px;letter-spacing:.4em;text-transform:uppercase;text-align:center}
+.foot{position:fixed;right:28px;bottom:24px;color:var(--dim);font-size:12px;letter-spacing:.2em;z-index:21}
+/* lobby */
+.lobby{display:grid;grid-template-columns:1.1fr 1fr;gap:28px}
+.roomcode{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:10px 14px;border-radius:3px}
+.roomcode b{font-family:'Share Tech Mono',monospace;font-size:34px;letter-spacing:.35em;color:#fff;font-weight:400;flex:1}
+.roomcode button{font-size:12px;letter-spacing:.2em;border:1px solid var(--line);padding:6px 10px;border-radius:2px;text-transform:uppercase}
+.roomcode button:hover{border-color:var(--red)}
+#plist{display:flex;flex-direction:column;gap:6px}
+.pl{display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:3px;font-size:18px;letter-spacing:.06em}
+.pl.empty{color:#444;border-style:dashed}
+.pl i{width:10px;height:10px;border-radius:50%;flex:none}
+.pl .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl .st{font-size:13px;letter-spacing:.2em;color:var(--dim)}
+.pl .st.ok{color:#5fd27a}
+.pl .host{font-size:11px;letter-spacing:.2em;color:var(--red);border:1px solid var(--red2);padding:1px 6px;border-radius:2px}
+.spk{width:14px;height:14px;opacity:.15;transition:opacity .1s}.spk.on{opacity:1}
+.chat{display:flex;flex-direction:column;height:300px;border:1px solid var(--line);background:rgba(0,0,0,.35);border-radius:3px}
+#chatLog{flex:1;overflow-y:auto;padding:10px 12px;font-family:'Share Tech Mono',monospace;font-size:14px;line-height:1.5;user-select:text}
+#chatLog .sys{color:var(--dim)}
+#chatIn{border:0;border-top:1px solid var(--line);border-radius:0;font-family:'Share Tech Mono',monospace;font-size:14px}
+/* settings */
+.set{display:grid;grid-template-columns:150px 1fr 48px;gap:10px 14px;align-items:center;font-size:15px;letter-spacing:.12em;text-transform:uppercase}
+.set output{font-family:'Share Tech Mono',monospace;color:var(--dim);font-size:13px;text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;height:2px;background:#333;padding:0;border:0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--red)}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--red);border:0}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;font-size:14px;color:var(--dim);letter-spacing:.08em;margin-top:6px}
+.keys kbd{font-family:'Share Tech Mono',monospace;color:var(--fg);border:1px solid var(--line);padding:0 6px;border-radius:2px;font-size:12px;justify-self:start}
+.credits p{color:var(--dim);font-size:16px;letter-spacing:.06em;line-height:1.7}
+.credits p b{color:var(--fg);font-weight:400}
+/* ---------- HUD ---------- */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10}
+#obj{position:absolute;left:24px;top:20px;font-size:14px;letter-spacing:.12em;line-height:1.75;text-shadow:0 0 6px #000;max-width:46vw}
+#obj .h{font-size:11px;letter-spacing:.35em;color:var(--red);margin-bottom:2px}
+#obj .done{color:#6c6a64;text-decoration:line-through}
+#obj .inv{color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:12px;margin-top:4px}
+#team{position:absolute;left:24px;bottom:22px;display:flex;flex-direction:column;gap:5px}
+.tm{display:flex;align-items:center;gap:8px;font-size:14px;letter-spacing:.1em;text-shadow:0 0 6px #000}
+.tm i{width:8px;height:8px;border-radius:50%}
+.tm .s{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--dim)}
+.tm .s.dn{color:#ff4b55;animation:bl 1s infinite}.tm .s.es{color:#6fe08a}
+@keyframes bl{50%{opacity:.35}}
+#meters{position:absolute;right:26px;bottom:24px;display:flex;flex-direction:column;align-items:flex-end;gap:7px}
+.meter{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.25em;color:var(--dim)}
+.meter div{width:120px;height:3px;background:rgba(255,255,255,.12)}
+.meter div b{display:block;height:100%;background:var(--fg);transition:width .2s}
+#sta{transition:opacity .4s}
+#prompt{position:absolute;left:50%;top:62%;transform:translateX(-50%);font-size:16px;letter-spacing:.18em;text-shadow:0 0 8px #000;white-space:nowrap;text-transform:uppercase}
+#prompt kbd{font-family:'Share Tech Mono',monospace;border:1px solid rgba(255,255,255,.5);padding:0 6px;margin-right:8px;border-radius:2px}
+#prompt.no{color:#a9a49a}
+#dot{position:absolute;left:50%;top:50%;width:3px;height:3px;margin:-1.5px;border-radius:50%;background:rgba(255,255,255,.55)}
+#hold{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px;transform:rotate(-90deg)}
+#feed{position:absolute;left:24px;top:46%;transform:translateY(-50%);display:flex;flex-direction:column;gap:4px;font-family:'Share Tech Mono',monospace;font-size:13px;max-width:36vw}
+#feed div{text-shadow:0 0 6px #000;transition:opacity 1s}
+#feed div.sys{color:#b9b4aa}
+#gchat{position:absolute;left:24px;top:calc(46% + 110px);width:min(380px,40vw);pointer-events:auto;font-family:'Share Tech Mono',monospace;font-size:13px;background:rgba(0,0,0,.6)}
+#toast{position:absolute;left:50%;top:15%;transform:translateX(-50%);text-align:center;pointer-events:none}
+#toast .t{font-size:13px;letter-spacing:.25em;text-transform:uppercase;color:#cfcac0;text-shadow:0 0 8px #000;margin-bottom:6px;transition:opacity .6s}
+#callout{position:absolute;left:50%;top:32%;transform:translate(-50%,-50%);text-align:center;opacity:0;transition:opacity 1.2s}
+#callout b{display:block;font-size:46px;font-weight:400;letter-spacing:.3em;text-shadow:0 0 18px #000}
+#callout span{display:block;font-size:15px;letter-spacing:.35em;color:#b8b2a8;margin-top:8px;text-shadow:0 0 10px #000}
+#callout.on{opacity:1;transition:opacity .3s}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px}
+#lockerOv .slits{position:absolute;left:27%;right:27%;top:38%;bottom:38%;background:repeating-linear-gradient(180deg,rgba(0,0,0,.97) 0 16px,rgba(0,0,0,.1) 16px 27px);box-shadow:0 0 0 100vmax #000,inset 0 0 50px 24px #000}
+#lockerOv div{position:absolute;bottom:13%;font-size:14px;letter-spacing:.25em;color:#8b867c;z-index:1}
+#downOv{background:radial-gradient(ellipse at center,rgba(60,0,0,.2) 30%,rgba(90,0,0,.85) 100%)}
+#downOv b{font-size:40px;letter-spacing:.35em;font-weight:400;color:#ff3c47}
+#downOv span{font-size:14px;letter-spacing:.25em;color:#d7c9c4}
+#escOv b,#specOv b{font-size:26px;letter-spacing:.35em;font-weight:400}
+#escOv span,#specOv span{font-size:13px;letter-spacing:.25em;color:#bbb}
+#escOv,#specOv{justify-content:flex-start;padding-top:12vh}
+#flash{position:absolute;inset:0;background:#7a0000;opacity:0;mix-blend-mode:screen}
+/* ---------- modals ---------- */
+.modal{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
+.keypad{background:#121313;border:1px solid #2c2e2d;padding:18px;border-radius:6px;box-shadow:0 20px 60px #000,inset 0 1px 0 rgba(255,255,255,.05);width:250px}
+#kpDisp{font-family:'Share Tech Mono',monospace;font-size:34px;letter-spacing:.4em;text-align:center;background:#031208;color:#67ff8e;padding:10px 0 10px 12px;border-radius:3px;margin-bottom:12px;text-shadow:0 0 8px #3f6;min-height:62px}
+#kpDisp.bad{color:#ff4a4a;text-shadow:0 0 8px #f33;background:#140303}
+.kpg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kpg button{font-family:'Share Tech Mono',monospace;font-size:22px;padding:12px 0;background:#1e2120;border:1px solid #303433;border-radius:4px;box-shadow:0 2px 0 #000}
+.kpg button:active{transform:translateY(2px);box-shadow:none}
+.kpg .go{color:#6f6}.kpg .clr{color:#f66}
+.crt{width:min(560px,90vw);background:#020a04;border:14px solid #1a1c1b;border-radius:18px;padding:28px;font-family:'Share Tech Mono',monospace;color:#63ff88;text-shadow:0 0 6px #2f6;box-shadow:0 30px 80px #000;position:relative;overflow:hidden}
+.crt:after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.25) 0 2px,transparent 2px 4px);pointer-events:none}
+.crt h3{font-weight:400;font-size:15px;letter-spacing:.2em;opacity:.8}
+.crt .big{font-size:64px;letter-spacing:.3em;margin:18px 0}
+.crt p{font-size:14px;line-height:1.6;opacity:.85}
+#pause,#end,#enter{z-index:25}
+#enter{background:rgba(0,0,0,.6);cursor:pointer;justify-content:center;flex-direction:column;align-items:center;text-align:center;padding:0}
+#enter b{font-size:30px;letter-spacing:.4em;font-weight:400}
+#enter span{color:var(--dim);letter-spacing:.25em;font-size:14px;margin-top:10px}
+#end .panel{align-items:flex-start}
+#endTitle{font-size:clamp(48px,8vw,96px);font-weight:600;letter-spacing:.12em;line-height:1}
+#endTitle.win{color:#e8e4da}#endTitle.lose{color:var(--red)}
+#endStats{font-family:'Share Tech Mono',monospace;color:var(--dim);font-size:14px;line-height:1.8}
+#loading{position:fixed;inset:0;z-index:40;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;letter-spacing:.4em;font-size:14px;color:var(--dim)}
+#loading b{font-weight:400;font-size:22px;color:var(--fg)}
+@media (max-width:760px){.lobby{grid-template-columns:1fr}.chat{height:180px}.screen{padding:0 6vw;background:rgba(0,0,0,.8)}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+
+<div id="loading"><b>THE LAST SHIFT</b><span id="loadMsg">LOADING</span></div>
+
+<!-- MAIN MENU -->
+<section class="screen hidden" id="menu"><div class="panel">
+  <h1 class="glitch"><span>St. Agnes · Night</span>The Last<br>Shift</h1>
+  <p class="tag" style="margin:6px 0 18px">A co-op horror game for 1–4 players</p>
+  <label class="label" for="name">Your name</label>
+  <input id="name" maxlength="14" placeholder="Name" autocomplete="off" spellcheck="false">
+  <div style="height:8px"></div>
+  <button class="btn" id="bPlay">Play</button>
+  <button class="btn" id="bSettings">Settings</button>
+  <button class="btn" id="bCredits">Credits</button>
+</div></section>
+
+<!-- PLAY: CREATE / JOIN -->
+<section class="screen hidden" id="play"><div class="panel">
+  <h2>Find your <b>crew</b></h2>
+  <p class="tag">Create a room and share the code, or join a friend.</p>
+  <div style="height:6px"></div>
+  <button class="btn solid" id="bCreate">Create Room</button>
+  <div class="label" style="margin-top:10px">or join with a code</div>
+  <div class="row"><input id="code" maxlength="6" placeholder="······" autocomplete="off" spellcheck="false"><button class="btn ghost" id="bJoin" style="flex:.6">Join</button></div>
+  <div class="err" id="playErr"></div>
+  <button class="btn sm" id="bBack1">← Back</button>
+</div></section>
+
+<!-- LOBBY -->
+<section class="screen hidden" id="lobby"><div class="panel wide">
+  <h2>Lobby</h2>
+  <div class="lobby">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="roomcode"><b id="roomCode">------</b><button id="bCopy">Copy</button><button id="bLink">Link</button></div>
+      <div id="plist"></div>
+      <div class="row"><button class="btn ghost" id="bReady">Ready</button><button class="btn ghost" id="bMic">Mic: Off</button></div>
+      <button class="btn solid" id="bStart">Start Game</button>
+      <div class="err" id="lobbyNote" style="color:var(--dim)"></div>
+      <button class="btn sm" id="bLeave">← Leave room</button>
+    </div>
+    <div class="chat"><div id="chatLog"></div><input id="chatIn" maxlength="140" placeholder="Say something…" autocomplete="off"></div>
+  </div>
+</div></section>
+
+<!-- SETTINGS -->
+<section class="screen hidden" id="settings"><div class="panel" style="width:min(520px,92vw)">
+  <h2>Settings</h2>
+  <div class="set">
+    <label for="sVol">Volume</label><input type="range" id="sVol" min="0" max="1" step="0.05"><output id="oVol"></output>
+    <label for="sVoice">Voice chat</label><input type="range" id="sVoice" min="0" max="2" step="0.05"><output id="oVoice"></output>
+    <label for="sSens">Sensitivity</label><input type="range" id="sSens" min="0.2" max="3" step="0.05"><output id="oSens"></output>
+    <label for="sFov">Field of view</label><input type="range" id="sFov" min="60" max="100" step="1"><output id="oFov"></output>
+    <label for="sGfx">Graphics</label><select id="sGfx"><option value="low">Low</option><option value="med">Medium</option><option value="high">High</option></select><span></span>
+    <label for="sMic">Microphone</label><select id="sMic"><option value="off">Off</option><option value="open">Open mic</option><option value="ptt">Push to talk (V)</option></select><span></span>
+    <label for="sInv">Invert Y</label><input type="checkbox" id="sInv" style="justify-self:start;width:18px;height:18px"><span></span>
+  </div>
+  <div class="label" style="margin-top:12px">Controls</div>
+  <div class="keys">
+    <kbd>W A S D</kbd><span>Move</span><kbd>Mouse</kbd><span>Look</span><kbd>Shift</kbd><span>Sprint (loud)</span><kbd>C</kbd><span>Crouch (quiet, harder to see)</span>
+    <kbd>F</kbd><span>Flashlight</span><kbd>E</kbd><span>Interact · hold to revive</span><kbd>T</kbd><span>Text chat</span><kbd>V</kbd><span>Push to talk</span><kbd>Esc</kbd><span>Pause</span>
+  </div>
+  <div style="height:8px"></div>
+  <button class="btn sm" id="bSetBack">← Back</button>
+</div></section>
+
+<!-- CREDITS -->
+<section class="screen hidden" id="credits"><div class="panel credits">
+  <h2>Credits</h2>
+  <p><b>Design &amp; development</b><br>Josh Koppanalil</p>
+  <p><b>Built with</b><br>three.js · Supabase Realtime · WebRTC · Web Audio</p>
+  <p><b>Sound</b><br>Every sound is synthesized live in your browser.</p>
+  <p><b>The facility</b><br>St. Agnes Memorial was closed in 1987. Nobody was ever told why.</p>
+  <div style="height:8px"></div>
+  <button class="btn sm" id="bCredBack">← Back</button>
+</div></section>
+
+<div class="foot mono" id="foot">HEADPHONES RECOMMENDED</div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div id="obj"></div>
+  <div id="feed"></div>
+  <input id="gchat" class="hidden" maxlength="140" placeholder="Message team… (Enter)">
+  <div id="team"></div>
+  <div id="meters">
+    <div class="meter" id="sta">STAMINA<div><b id="staB" style="width:100%"></b></div></div>
+    <div class="meter">LIGHT<div><b id="batB" style="width:100%"></b></div></div>
+  </div>
+  <div id="dot"></div>
+  <svg id="hold" class="hidden" viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="3"/><circle id="holdC" cx="22" cy="22" r="18" fill="none" stroke="#e01e2b" stroke-width="3" stroke-dasharray="113" stroke-dashoffset="113"/></svg>
+  <div id="prompt"></div>
+  <div id="toast"></div>
+  <div id="callout"><b></b><span></span></div>
+  <div class="ov hidden" id="lockerOv"><i class="slits"></i><div>HIDING · [E] LEAVE</div></div>
+  <div class="ov hidden" id="downOv"><b>DOWN</b><span id="bleed">A TEAMMATE CAN REVIVE YOU</span></div>
+  <div class="ov hidden" id="escOv"><b>YOU MADE IT OUT</b><span id="escSub">WAITING FOR THE OTHERS</span></div>
+  <div class="ov hidden" id="specOv"><b>TAKEN</b><span id="specSub">SPECTATING · CLICK TO SWITCH</span></div>
+  <div id="flash"></div>
+</div>
+
+<!-- KEYPAD -->
+<div class="modal hidden" id="keypad"><div class="keypad">
+  <div id="kpDisp"></div>
+  <div class="kpg">
+    <button>1</button><button>2</button><button>3</button><button>4</button><button>5</button><button>6</button><button>7</button><button>8</button><button>9</button>
+    <button class="clr" data-k="clr">C</button><button>0</button><button class="go" data-k="go">✓</button>
+  </div>
+  <button class="btn sm" id="kpClose" style="text-align:center;margin-top:10px">Close</button>
+</div></div>
+
+<!-- SECURITY MONITOR -->
+<div class="modal hidden" id="monitor"><div class="crt">
+  <h3>ST. AGNES SECURITY · TERMINAL 02</h3>
+  <p style="margin-top:12px">MAIN GATE OVERRIDE<br>&gt; AUTH CODE:</p>
+  <div class="big" id="monCode">----</div>
+  <p>CAM 04 [BASEMENT]: SIGNAL LOST<br>CAM 07 [MORGUE]: MOTION DETECTED<br>&gt; DO NOT RE-ENTER SUBLEVEL B1</p>
+  <button class="btn sm" id="monClose" style="margin-top:14px;color:#63ff88">[ CLOSE ]</button>
+</div></div>
+
+<!-- CLICK TO ENTER -->
+<div class="ov hidden" id="enter" style="position:fixed"><b>CLICK TO ENTER</b><span>STAY QUIET · STAY TOGETHER</span></div>
+
+<!-- PAUSE -->
+<section class="screen hidden" id="pause"><div class="panel">
+  <h2>Paused</h2>
+  <p class="tag">The game keeps running for everyone else.</p>
+  <button class="btn" id="bResume">Resume</button>
+  <button class="btn" id="bPSettings">Settings</button>
+  <button class="btn" id="bQuit">Leave game</button>
+</div></section>
+
+<!-- END -->
+<section class="screen hidden" id="end"><div class="panel">
+  <div id="endTitle"></div>
+  <p class="tag" id="endSub"></p>
+  <div id="endStats"></div>
+  <div style="height:6px"></div>
+  <button class="btn" id="bEndLobby">Back to lobby</button>
+  <button class="btn" id="bEndMenu">Main menu</button>
+</div></section>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
