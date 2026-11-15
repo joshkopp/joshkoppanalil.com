@@ -155,17 +155,19 @@
     }
   }
 
+  // The timer decides when the roll lands; animation frames only drive the flicker,
+  // so a hidden or backgrounded tab can't stall the result.
   function spin(final) {
     return new Promise((done) => {
       const el = $('readout');
-      if (REDUCED) { el.textContent = final.toFixed(2); return done(); }
-      const t0 = performance.now();
-      const step = (now) => {
-        const t = now - t0;
-        if (t < 620) {
-          el.textContent = (Math.random() * 100).toFixed(2).padStart(5, '0');
-          requestAnimationFrame(step);
-        } else { el.textContent = final.toFixed(2); done(); }
+      let over = false;
+      const finish = () => { if (over) return; over = true; el.textContent = final.toFixed(2); done(); };
+      if (REDUCED || document.hidden) return finish();
+      setTimeout(finish, 620);
+      const step = () => {
+        if (over) return;
+        el.textContent = (Math.random() * 100).toFixed(2).padStart(5, '0');
+        requestAnimationFrame(step);
       };
       requestAnimationFrame(step);
     });
