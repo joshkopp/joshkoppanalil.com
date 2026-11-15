@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="robots" content="noindex">
 <title>THE LAST SHIFT</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -74,6 +75,13 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .credits p b{color:var(--fg);font-weight:400}
 /* ---------- HUD ---------- */
 #hud{position:fixed;inset:0;pointer-events:none;z-index:10}
+canvas{touch-action:none}html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}input{-webkit-user-select:text;user-select:text}
+#touchUI{position:fixed;inset:0;pointer-events:none;z-index:12}
+#touchUI button{pointer-events:auto;position:absolute;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.45);color:#e8e2d6;border-radius:50%;font:13px 'Share Tech Mono',monospace;letter-spacing:.08em;width:64px;height:64px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:none}
+#touchUI button.on{background:rgba(255,60,70,.4);border-color:#ff5c66}
+#touchUI .big{width:84px;height:84px;font-size:15px}
+#touchUI .tl{width:44px;height:44px;font-size:18px;border-radius:6px}
+#touchUI.kb .big,#touchUI.kb #tRun,#touchUI.kb #tCrouch,#touchUI.kb #tLight{display:none!important}
 #obj{position:absolute;left:24px;top:20px;font-size:14px;letter-spacing:.12em;line-height:1.75;text-shadow:0 0 6px #000;max-width:46vw}
 #obj .h{font-size:11px;letter-spacing:.35em;color:var(--red);margin-bottom:2px}
 #obj .done{color:#6c6a64;text-decoration:line-through}
@@ -202,7 +210,7 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
   <div class="label" style="margin-top:12px">Controls</div>
   <div class="keys">
     <kbd>W A S D</kbd><span>Move</span><kbd>Mouse</kbd><span>Look</span><kbd>Shift</kbd><span>Sprint (loud)</span><kbd>C</kbd><span>Crouch (quiet, harder to see)</span>
-    <kbd>F</kbd><span>Flashlight</span><kbd>E</kbd><span>Interact · hold to revive</span><kbd>T</kbd><span>Text chat</span><kbd>V</kbd><span>Push to talk</span><kbd>Esc</kbd><span>Pause</span>
+    <kbd>Arrows</kbd><span>Look around (no mouse needed)</span><kbd>F</kbd><span>Flashlight</span><kbd>E</kbd><span>Interact · hold to revive</span><kbd>T</kbd><span>Text chat</span><kbd>V</kbd><span>Push to talk</span><kbd>Esc / P</kbd><span>Pause</span>
   </div>
   <div style="height:8px"></div>
   <button class="btn sm" id="bSetBack">← Back</button>
@@ -261,6 +269,17 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
   <p>CAM 04 [BASEMENT]: SIGNAL LOST<br>CAM 07 [MORGUE]: MOTION DETECTED<br>&gt; DO NOT RE-ENTER SUBLEVEL B1</p>
   <button class="btn sm" id="monClose" style="margin-top:14px;color:#63ff88">[ CLOSE ]</button>
 </div></div>
+
+<div id="touchUI" class="hidden">
+  <button class="tl" id="tMenu" style="right:16px;top:16px">⏸</button>
+  <button class="tl" id="tFull" style="right:68px;top:16px">⛶</button>
+  <button class="tl" id="tChat" style="right:16px;top:70px">💬</button>
+  <button class="tl" id="tTalk" style="right:16px;top:122px">🎙</button>
+  <button class="big" id="tAct" style="right:24px;bottom:170px">ACT</button>
+  <button id="tRun" style="right:24px;bottom:80px">RUN</button>
+  <button id="tCrouch" style="right:124px;bottom:90px">DUCK</button>
+  <button id="tLight" style="right:124px;bottom:180px">LIGHT</button>
+</div>
 
 <!-- CLICK TO ENTER -->
 <div class="ov hidden" id="enter" style="position:fixed"><b>CLICK TO ENTER</b><span>STAY QUIET · STAY TOGETHER</span></div>

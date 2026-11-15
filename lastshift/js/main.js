@@ -18,7 +18,8 @@ const $ = id => document.getElementById(id);
 const Q = new URLSearchParams(location.search);
 const OFFLINE = Q.has('offline'), BC = Q.has('bc'), NORENDER = Q.has('norender');
 const store = { get(k, d) { try { const v = localStorage.getItem('lastshift-' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('lastshift-' + k, JSON.stringify(v)); } catch (e) {} } };
-const S = Object.assign({ vol: 0.85, voice: 1, sens: 1, fov: 78, gfx: 'med', inv: false, mic: 'off', name: '' }, store.get('settings', {}));
+const TOUCH = navigator.maxTouchPoints > 1 || 'ontouchstart' in window;
+const S = Object.assign({ vol: 0.85, voice: 1, sens: 1, fov: 78, gfx: TOUCH ? 'low' : 'med', inv: false, mic: 'off', name: '' }, store.get('settings', {}));
 const myId = Math.random().toString(36).slice(2, 10);
 const sfx = new Sfx();
 let net = null, voice = null;
@@ -77,6 +78,7 @@ function redFlash(v) { flashEl.style.transition = 'none'; flashEl.style.opacity 
 
 // ======================================================================== state
 const G = {
+  noLock: TOUCH || !('requestPointerLock' in HTMLElement.prototype),
   phase: 'boot', map: null, world: null, scene: null, W: null, Wm: null, host: false, ai: null, roster: [], names: {}, colors: {}, seed: 0,
   me: { x: 0, y: 0, z: 0, fy: 0, yaw: 0, pitch: 0, vx: 0, vz: 0, crouch: false, ck: 0, flash: true, bat: 100, sta: 100, staT: 0, exh: false, hidden: -1, noise: 0, bob: 0, stepAcc: 0, speed: 0, sprint: false, flick: 0 },
   mon: { model: null, buf: [], x: 0, z: 0, y: -99, yaw: 0, st: 'roam', sp: 0, stepAcc: 0, seen: false },
@@ -184,7 +186,7 @@ async function leaveRoom() {
   if (voice) voice.dropAll();
   endRound();
   if (net) await net.leave();
-  G.phase = 'menu'; renderPass.scene = menuScene; $('hud').classList.add('hidden'); $('enter').classList.add('hidden'); sfx.stopAmbient();
+  G.phase = 'menu'; renderPass.scene = menuScene; $('hud').classList.add('hidden'); $('touchUI').classList.add('hidden'); $('enter').classList.add('hidden'); sfx.stopAmbient();
   if (document.pointerLockElement) document.exitPointerLock();
   show('menu');
 }
@@ -264,7 +266,8 @@ async function beginRound(m) {
   if (!NORENDER) renderer.compile(scene, camera);
   $('loading').classList.add('hidden');
   G.phase = 'play';
-  $('hud').classList.remove('hidden'); $('enter').classList.remove('hidden');
+  $('hud').classList.remove('hidden'); $('enter').classList.remove('hidden'); $('touchUI').classList.toggle('hidden', !TOUCH);
+  $('enter').querySelector('b').textContent = G.noLock ? (TOUCH ? 'TAP TO ENTER' : 'PRESS ANY KEY') : 'CLICK TO ENTER';
   ['lockerOv', 'downOv', 'escOv', 'specOv'].forEach(i => $(i).classList.add('hidden'));
   $('feed').innerHTML = ''; $('toast').innerHTML = '';
   sfx.resumeAmbient(); sfx.setHum(0);
@@ -280,7 +283,7 @@ function endRound() {
 function backToLobby() {
   endRound();
   G.phase = 'lobby'; G.ready = false; renderPass.scene = menuScene;
-  $('hud').classList.add('hidden'); $('enter').classList.add('hidden'); ['keypad', 'monitor'].forEach(i => $(i).classList.add('hidden'));
+  $('hud').classList.add('hidden'); $('touchUI').classList.add('hidden'); $('enter').classList.add('hidden'); ['keypad', 'monitor'].forEach(i => $(i).classList.add('hidden'));
   if (document.pointerLockElement) document.exitPointerLock();
   sfx.stopAmbient();
   net.update({ phase: 'lobby', ready: false });
@@ -516,6 +519,8 @@ function alive() { const P = G.W && G.W.pl[myId]; return P && !P.dn && !P.tk; }
 function updateMe(dt) {
   const me = G.me, map = G.map, P = G.W.pl[myId] || {};
   const sens = 0.0021 * S.sens;
+  // arrow keys look around (school iPads with keyboards, no mouse)
+  if (!G.modal && $('gchat').classList.contains('hidden') && !P.tk) { const ak = 2.3 * dt * S.sens; if (keyDown('ArrowLeft')) me.yaw += ak; if (keyDown('ArrowRight')) me.yaw -= ak; if (keyDown('ArrowUp')) me.pitch += ak * (S.inv ? -0.7 : 0.7); if (keyDown('ArrowDown')) me.pitch -= ak * (S.inv ? -0.7 : 0.7); }
   if (!P.tk) { me.yaw -= mouseDX * sens; me.pitch = clamp(me.pitch - mouseDY * sens * (S.inv ? -1 : 1), -1.45, 1.45); }
   mouseDX = mouseDY = 0;
   if (P.tk) { spectate(dt); return; }
@@ -531,9 +536,9 @@ function updateMe(dt) {
     me.noise = Math.max(0, me.noise - dt * 2); me.speed = 0; me.sta = Math.min(100, me.sta + dt * 15);
     return;
   }
-  const typing = !$('gchat').classList.contains('hidden') || (!NORENDER && document.pointerLockElement !== renderer.domElement);
+  const typing = !$('gchat').classList.contains('hidden') || (!NORENDER && ((!G.noLock && document.pointerLockElement !== renderer.domElement) || !!G.modal || !$('enter').classList.contains('hidden')));
   let fx = 0, fz = 0;
-  if (!typing) { if (keyDown('KeyW') || keyDown('ArrowUp')) fz -= 1; if (keyDown('KeyS') || keyDown('ArrowDown')) fz += 1; if (keyDown('KeyA') || keyDown('ArrowLeft')) fx -= 1; if (keyDown('KeyD') || keyDown('ArrowRight')) fx += 1; }
+  if (!typing) { if (keyDown('KeyW')) fz -= 1; if (keyDown('KeyS')) fz += 1; if (keyDown('KeyA')) fx -= 1; if (keyDown('KeyD')) fx += 1; }
   const moving = fx || fz;
   const wantSprint = !typing && (keyDown('ShiftLeft') || keyDown('ShiftRight')) && moving && fz <= 0 && !me.crouch;
   me.sprint = wantSprint && !me.exh && me.sta > 0;
@@ -572,7 +577,7 @@ function updateMe(dt) {
 }
 function spectate(dt) {
   const al = [...G.remotes.values()].filter(r => { const P = G.W.pl[r.id]; return P && !P.tk && r.av.group.visible; });
-  $('specSub').textContent = al.length ? 'SPECTATING ' + nameOf(al[G.spect % al.length].id).toUpperCase() + ' · CLICK TO SWITCH' : 'NO ONE LEFT TO WATCH';
+  $('specSub').textContent = al.length ? 'SPECTATING ' + nameOf(al[G.spect % al.length].id).toUpperCase() + (TOUCH ? ' · TAP TO SWITCH' : G.noLock ? ' · E TO SWITCH' : ' · CLICK TO SWITCH') : 'NO ONE LEFT TO WATCH';
   if (!al.length) { camera.position.set(G.mon.x, G.mon.y + 3.5, G.mon.z + 3); camera.lookAt(G.mon.x, G.mon.y + 1.5, G.mon.z); return; }
   const r = al[G.spect % al.length];
   const P = G.W.pl[r.id];
@@ -713,16 +718,46 @@ $('enter').onclick = () => { ensureAudio(); lockPointer(); };
 
 function lockPointer() {
   if (G.phase !== 'play') return;
-  const p = renderer.domElement.requestPointerLock({ unadjustedMovement: true });
-  if (p && p.catch) p.catch(() => renderer.domElement.requestPointerLock());
+  if (G.noLock) { $('enter').classList.add('hidden'); show(null); return; }
+  try { const p = renderer.domElement.requestPointerLock({ unadjustedMovement: true }); if (p && p.catch) p.catch(() => { const q = renderer.domElement.requestPointerLock(); if (q && q.catch) q.catch(() => { G.noLock = true; lockPointer(); }); }); } catch (e) { G.noLock = true; lockPointer(); }
 }
+function togglePause() { if (G.phase !== 'play' || G.modal) return; if ($('pause').classList.contains('hidden')) show('pause'); else { show(null); lockPointer(); } }
+// drag to look (touch screens / trackpads without pointer lock); quick tap = interact
+const drag = { id: null, x: 0, y: 0, t: 0, moved: 0 };
+renderer.domElement.addEventListener('pointerdown', e => {
+  if (G.phase !== 'play' || (!G.noLock && e.pointerType === 'mouse')) return;
+  ensureAudio(); if (e.pointerType === 'touch') $('touchUI').classList.remove('kb');
+  drag.id = e.pointerId; drag.x = e.clientX; drag.y = e.clientY; drag.t = now(); drag.moved = 0;
+  try { renderer.domElement.setPointerCapture(e.pointerId); } catch (er) {}
+});
+renderer.domElement.addEventListener('pointermove', e => {
+  if (e.pointerId !== drag.id) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY; drag.moved += Math.abs(dx) + Math.abs(dy);
+  const k = e.pointerType === 'touch' ? 1.5 : 1.1; mouseDX += dx * k; mouseDY += dy * k;
+});
+const endDrag = e => {
+  if (e.pointerId !== drag.id) return; drag.id = null;
+  if (drag.moved < 10 && now() - drag.t < 300) { const P = G.W && G.W.pl[myId]; if (P && P.tk) G.spect++; else { const t = G.interact; if (t && t.kind !== 'revive') interact(t); } }
+};
+renderer.domElement.addEventListener('pointerup', endDrag); renderer.domElement.addEventListener('pointercancel', endDrag);
+// on-screen buttons
+const tbtn = (id, down, up) => { const b = $(id); if (!b) return; b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); ensureAudio(); down(); b.classList.add('on'); }); const u = () => { if (!b.classList.contains('on')) return; b.classList.remove('on'); up && up(); }; b.addEventListener('pointerup', u); b.addEventListener('pointercancel', u); b.addEventListener('pointerleave', u); };
+tbtn('tAct', () => { G.keys.KeyE = true; const t = G.interact; if (t && t.kind !== 'revive') interact(t); }, () => { G.keys.KeyE = false; });
+tbtn('tRun', () => G.keys.ShiftLeft = true, () => G.keys.ShiftLeft = false);
+tbtn('tCrouch', () => { if (alive() && G.me.hidden < 0) G.me.crouch = !G.me.crouch; });
+tbtn('tLight', () => { if (alive()) { G.me.flash = !G.me.flash; sfx.click(); } });
+tbtn('tChat', () => { $('gchat').classList.remove('hidden'); setTimeout(() => $('gchat').focus(), 0); });
+tbtn('tTalk', () => { if (voice) voice.setTalking(true); }, () => { if (voice) voice.setTalking(false); });
+tbtn('tMenu', () => togglePause());
+tbtn('tFull', () => { const d = document.documentElement, f = d.requestFullscreen || d.webkitRequestFullscreen; if (document.fullscreenElement || document.webkitFullscreenElement) (document.exitFullscreen || document.webkitExitFullscreen).call(document); else if (f) f.call(d); });
 document.addEventListener('pointerlockchange', () => {
+  if (G.noLock) return;
   const locked = document.pointerLockElement === renderer.domElement;
   if (locked) { $('enter').classList.add('hidden'); show(null); }
   else if (G.phase === 'play' && !G.modal && $('gchat').classList.contains('hidden')) { show('pause'); }
 });
 renderer.domElement.addEventListener('click', () => {
-  if (G.phase !== 'play') return;
+  if (G.phase !== 'play' || G.noLock) return;
   if (document.pointerLockElement !== renderer.domElement) { lockPointer(); return; }
   const P = G.W && G.W.pl[myId]; if (P && P.tk) G.spect++;
 });
@@ -738,12 +773,16 @@ addEventListener('keydown', e => {
     if (e.key === 'Escape') { $('gchat').classList.add('hidden'); $('gchat').blur(); }
     return;
   }
+  if (G.noLock && !$('enter').classList.contains('hidden')) { e.preventDefault(); ensureAudio(); lockPointer(); return; } // any key enters
   G.keys[e.code] = true;
+  if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
+  if (/^(Key[WASD]|Arrow)/.test(e.code)) $('touchUI').classList.add('kb');
   if (e.repeat) return;
+  if ((e.code === 'Escape' || e.code === 'KeyP' || e.code === 'Backquote') && G.noLock) { togglePause(); return; }
   const P = G.W && G.W.pl[myId];
   if (e.code === 'KeyF' && alive()) { G.me.flash = !G.me.flash; sfx.click(); }
   if (e.code === 'KeyC' && alive() && G.me.hidden < 0) G.me.crouch = !G.me.crouch;
-  if (e.code === 'KeyE') { const t = G.interact; if (t && t.kind !== 'revive') interact(t); }
+  if (e.code === 'KeyE') { if (P && P.tk) { G.spect++; return; } const t = G.interact; if (t && t.kind !== 'revive') interact(t); }
   if (e.code === 'KeyT') { e.preventDefault(); $('gchat').classList.remove('hidden'); setTimeout(() => $('gchat').focus(), 0); }
   if (e.code === 'KeyV' && voice) voice.setTalking(true);
   if (e.code === 'Tab') e.preventDefault();
@@ -858,7 +897,7 @@ function updatePrompt(dt) {
   if (!t) { el.innerHTML = ''; G.holdT = 0; $('hold').classList.add('hidden'); return; }
   const actionable = t.kind !== 'info' || t.reqDoor;
   el.className = actionable ? '' : 'no';
-  el.innerHTML = actionable ? `<kbd>E</kbd>${esc(t.text)}` : esc(t.text);
+  el.innerHTML = actionable ? `<kbd>${TOUCH ? (t.kind === 'revive' ? 'HOLD E / ACT' : 'E / TAP') : t.kind === 'revive' ? 'HOLD E' : 'E'}</kbd>${esc(t.text)}` : esc(t.text);
   if (t.kind === 'revive') {
     if (keyDown('KeyE')) { G.holdT += dt; G.me.noise = Math.max(G.me.noise, 0.25); } else G.holdT = 0;
     $('hold').classList.toggle('hidden', G.holdT <= 0); $('holdC').style.strokeDashoffset = 113 * (1 - Math.min(1, G.holdT / 3));
