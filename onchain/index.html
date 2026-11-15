@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>JK Dice — a dice game you can audit</title>
-<meta name="description" content="A provably fair dice game on Solana devnet. The house commits to its seed before you bet, reveals it after, and every roll can be recomputed by hand.">
+<title>Above Board: a dice game you can audit</title>
+<meta name="description" content="A provably fair dice game on Solana devnet. The house locks in its seed before you bet, reveals it after, and every roll can be recomputed by hand.">
 <link rel="icon" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,128 +15,112 @@
 <div class="sheet">
 
   <main class="slip">
-    <div class="band">
+    <header class="band">
       <svg class="guilloche" id="guilloche" viewBox="0 0 800 160" preserveAspectRatio="none" aria-hidden="true"></svg>
       <div class="band-inner">
         <div>
-          <h1 class="wordmark">JK Dice</h1>
-          <p class="tagline">The oldest trick in gambling is a loaded die. This one hands you the proof it wasn't.</p>
+          <h1 class="wordmark">Above Board</h1>
+          <p class="tagline">The house locks in its seed before you bet, then shows it after. Check any roll yourself.</p>
         </div>
-        <div class="issue">
-          Solana devnet<br>
-          Play chips, <b>no real value</b><br>
-          Slip No. <b id="slipNo">0001</b>
+        <div class="wallet">
+          <span class="wstatus"><span class="dot" id="dot"></span><span id="walletInfo">No wallet connected</span></span>
+          <span class="wbtns">
+            <button id="airdropBtn" hidden>Get devnet SOL</button>
+            <button id="connectBtn">Connect Phantom</button>
+          </span>
         </div>
       </div>
-    </div>
+    </header>
 
-    <div class="wallet">
-      <span class="spacer"><span class="dot" id="dot"></span><span id="walletInfo">Wallet not connected</span></span>
-      <button id="airdropBtn" hidden>Get 1 devnet SOL</button>
-      <button id="connectBtn">Connect Phantom</button>
-    </div>
-
-    <section class="commit">
-      <div class="commit-head">
-        <p class="lede">Before you bet, the house publishes a fingerprint of its secret seed. It can't change the seed after seeing your bet without breaking the fingerprint.</p>
-      </div>
-      <div class="hashline">
-        <span class="k">Sealed seed</span>
-        <span class="hash" id="commit">waiting</span>
-      </div>
-      <div class="seedrow">
-        <div>
-          <label for="clientSeed">Your seed, mixed into every roll</label>
-          <input type="text" id="clientSeed" spellcheck="false" autocomplete="off">
-        </div>
-        <div class="printed">
-          <span class="k">Roll number</span>
-          <span class="v" id="nonceOut">1</span>
-        </div>
-      </div>
-    </section>
-
+    <p class="howto">Pick a stake and your odds, then press Roll. <b>You win if the number lands in the hatched zone.</b> Play chips only, no real value.</p>
     <div class="perf"></div>
 
-    <section class="stage">
-      <div class="stamp" id="stamp" aria-hidden="true"></div>
-      <p class="readout idle" id="readout">00.00</p>
-      <p class="callout" id="callout">Set your odds and roll.</p>
+    <div class="play">
+      <section class="stage">
+        <div class="stamp" id="stamp" aria-hidden="true"></div>
+        <p class="readout idle" id="readout">00.00</p>
+        <p class="callout" id="callout">&nbsp;</p>
 
-      <div class="scale">
-        <div class="track">
-          <div class="zone" id="zone"></div>
-          <div class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-          <div class="needle" id="needle"></div>
+        <div class="scale">
+          <div class="track">
+            <div class="zone" id="zone"><span class="zlabel">win zone</span></div>
+            <div class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="needle" id="needle"></div>
+          </div>
+          <div class="scale-nums"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
         </div>
-        <div class="scale-nums"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
-      </div>
-    </section>
+      </section>
 
-    <div class="perf"></div>
-
-    <section class="controls">
-      <div class="ledger">
-        <div class="cell"><span class="k">Balance</span><span class="v" id="bal">1,000</span></div>
-        <div class="cell"><span class="k">Pays</span><span class="v" id="mult">1.98&times;</span></div>
-        <div class="cell"><span class="k">Win returns</span><span class="v" id="pay">19.80</span></div>
-      </div>
-
-      <div class="field">
-        <label for="bet">Stake</label>
-        <div class="betrow">
-          <input type="number" id="bet" value="10" min="1" step="1" inputmode="numeric">
-          <button id="half" title="Halve the stake">&frac12;</button>
-          <button id="dbl" title="Double the stake">2&times;</button>
-          <button id="max" title="Stake everything">Max</button>
+      <section class="controls">
+        <div class="field">
+          <div class="lbl"><label for="bet">Stake</label><span class="bal">Balance <b id="bal">1,000</b></span></div>
+          <div class="betrow">
+            <input type="number" id="bet" value="10" min="1" step="1" inputmode="numeric">
+            <button id="half" title="Halve the stake">&frac12;</button>
+            <button id="dbl" title="Double the stake">2&times;</button>
+            <button id="max" title="Stake everything">Max</button>
+          </div>
         </div>
-      </div>
 
-      <div class="field">
-        <label for="chance">Win chance <span id="chanceLbl">50</span>%</label>
-        <input type="range" id="chance" min="2" max="98" value="50">
-      </div>
-
-      <div class="field">
-        <div class="seg" role="group" aria-label="Betting direction">
-          <button id="mUnder" aria-pressed="true">Roll under <span id="tUnder">50</span></button>
-          <button id="mOver" aria-pressed="false">Roll over <span id="tOver">50</span></button>
+        <div class="field">
+          <div class="lbl"><label for="chance">Win chance</label><b id="chanceLbl">50%</b></div>
+          <input type="range" id="chance" min="2" max="98" value="50" aria-describedby="odds">
+          <p class="odds" id="odds">Lower chance pays more.</p>
         </div>
-      </div>
 
-      <button class="roll" id="rollBtn">ROLL</button>
+        <div class="field">
+          <div class="seg" role="group" aria-label="Betting direction">
+            <button id="mUnder" aria-pressed="true">Roll under <span id="tUnder">50</span></button>
+            <button id="mOver" aria-pressed="false">Roll over <span id="tOver">50</span></button>
+          </div>
+        </div>
 
-      <label class="opt">
-        <input type="checkbox" id="onchain">
-        <span>Write each result to Solana devnet as a memo, so the proof lives somewhere you don't control. Needs a connected wallet with devnet SOL.</span>
-      </label>
-    </section>
+        <p class="summary" id="summary">&nbsp;</p>
+        <button class="roll" id="rollBtn">ROLL</button>
+
+        <label class="opt">
+          <input type="checkbox" id="onchain">
+          <span>Also write each result to Solana devnet (needs a connected wallet).</span>
+        </label>
+      </section>
+    </div>
+
+    <div class="seal">
+      <span class="k">Sealed before your bet</span>
+      <span class="hash" id="commit">waiting</span>
+      <details class="more">
+        <summary>How it stays fair, and check a roll</summary>
+        <div class="dbody">
+          <p class="lede">The fingerprint above is a SHA-256 hash of the house's secret seed. The house can't swap the seed after seeing your bet without breaking the fingerprint. After each roll the seed is revealed, and the stub below lets you recompute it.</p>
+          <label for="commitFull">Full fingerprint</label>
+          <div class="hash full" id="commitFull">waiting</div>
+          <div class="vgrid">
+            <div><label for="clientSeed">Your seed (mixed into every roll)</label><input type="text" id="clientSeed" spellcheck="false" autocomplete="off"></div>
+            <div><label>Next roll number</label><div class="rollno" id="nonceOut">1</div></div>
+          </div>
+          <h2 class="sub">Check a roll yourself</h2>
+          <div class="vgrid">
+            <div><label for="vSeed">Revealed seed</label><input type="text" id="vSeed" spellcheck="false"></div>
+            <div><label for="vCommit">Fingerprint (optional)</label><input type="text" id="vCommit" spellcheck="false"></div>
+            <div><label for="vClient">Player seed</label><input type="text" id="vClient" spellcheck="false"></div>
+            <div><label for="vNonce">Roll number</label><input type="number" id="vNonce" value="1"></div>
+          </div>
+          <button id="vBtn" style="margin-top:10px">Recompute</button>
+          <div class="vout" id="vOut">Paste a revealed seed above.</div>
+        </div>
+      </details>
+    </div>
   </main>
 
   <section class="stubs">
     <h2>Audit trail <span id="stubCount"></span></h2>
-    <div id="hist"><div class="empty">No rolls yet. Every bet prints a stub here with its seed revealed.</div></div>
+    <div id="hist"><div class="empty">No rolls yet. Every bet prints a stub here with the seed revealed.</div></div>
   </section>
 
-  <details>
-    <summary>Check a roll yourself</summary>
-    <div class="dbody">
-      <p class="lede" style="margin-bottom:12px">Paste any revealed seed and recompute the result. Nothing here talks to the house — the maths runs in your browser.</p>
-      <div class="vgrid">
-        <div><label for="vSeed">Revealed seed</label><input type="text" id="vSeed" spellcheck="false"></div>
-        <div><label for="vCommit">Sealed fingerprint (optional)</label><input type="text" id="vCommit" spellcheck="false"></div>
-        <div><label for="vClient">Player seed</label><input type="text" id="vClient" spellcheck="false"></div>
-        <div><label for="vNonce">Roll number</label><input type="number" id="vNonce" value="1"></div>
-      </div>
-      <button id="vBtn" style="margin-top:12px">Recompute</button>
-      <div class="vout" id="vOut">Awaiting input.</div>
-    </div>
-  </details>
-
   <div class="colophon">
-    <p><span class="formula">roll = HMAC-SHA256(seed, playerSeed:rollNumber)</span> &rarr; first 32 bits scaled to 0.00&ndash;99.99. The sealed fingerprint is <span class="formula">SHA-256(seed)</span>. House edge 1%.</p>
-    <p>Built for the <a href="https://www.universityblockchain.org/programs/hackathon">University Blockchain Conference 2026 hackathon</a> by <a href="/">Josh Koppanalil</a>. Devnet only, play chips only, nothing here is worth money and nothing here is a wager.</p>
-    <p>In this build the house runs in your browser, so you can read every line of it. Moving seed generation server-side is what makes the commitment meaningful against a real operator.</p>
+    <p><span class="formula">roll = HMAC-SHA256(seed, playerSeed:rollNumber)</span>, first 32 bits scaled to 0.00 to 99.99. Fingerprint is <span class="formula">SHA-256(seed)</span>. House edge 1%.</p>
+    <p>Built for the <a href="https://www.universityblockchain.org/programs/hackathon">University Blockchain Conference 2026 hackathon</a> by <a href="/">Josh Koppanalil</a>. Solana devnet and play chips only. Nothing here has value and nothing here is a wager.</p>
+    <p>In this build the house runs in your browser so every line is readable. Moving seed generation to a server is what makes the commitment hold against a real operator.</p>
   </div>
 </div>
 

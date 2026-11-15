@@ -1,4 +1,4 @@
-/* JK Dice — UI and Solana devnet wiring. Fairness maths lives in fairness.js. */
+/* Above Board — UI and Solana devnet wiring. Fairness maths lives in fairness.js. */
 (() => {
   const $ = (id) => document.getElementById(id);
   const MEMO_PROGRAM = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
@@ -48,12 +48,20 @@
   }
 
   /* ── odds display ── */
+  const need = (mode, chance) => (mode === 'under' ? `under ${chance}` : `${100 - chance} or over`);
+
+  function hint() {
+    if (S.busy) return;
+    $('callout').textContent = `You win if the roll is ${need(S.mode, S.chance)}.`;
+  }
+
   function render() {
     const mult = Fair.multiplier(S.chance);
     const bet = Math.max(0, Number($('bet').value) || 0);
-    $('chanceLbl').textContent = S.chance;
-    $('mult').innerHTML = mult.toFixed(2) + '&times;';
-    $('pay').textContent = fmt(Math.round(bet * mult * 100) / 100);
+    const back = Math.round(bet * mult * 100) / 100;
+    $('chanceLbl').textContent = S.chance + '%';
+    $('odds').textContent = S.chance <= 20 ? 'Long shot, pays big.' : S.chance >= 80 ? 'Safe bet, small payout.' : 'Lower chance pays more.';
+    $('summary').innerHTML = `Win and get back <b>${fmt(back)}</b> chips (${mult.toFixed(2)}&times;).`;
     $('tUnder').textContent = S.chance;
     $('tOver').textContent = 100 - S.chance;
     $('mUnder').setAttribute('aria-pressed', S.mode === 'under');
@@ -62,14 +70,14 @@
     z.style.left = (S.mode === 'under' ? 0 : 100 - S.chance) + '%';
     z.style.width = S.chance + '%';
     $('bal').textContent = fmt(S.bal);
-    $('nonceOut').value = S.nonce;
-    $('slipNo').textContent = pad4(S.nonce);
+    $('nonceOut').textContent = S.nonce;
   }
 
   async function seal() {
     S.serverSeed = Fair.randomSeed();
     S.commit = await Fair.sha256Hex(S.serverSeed);
-    $('commit').textContent = S.commit;
+    $('commit').textContent = S.commit.slice(0, 12) + '\u2026' + S.commit.slice(-8);
+    $('commitFull').textContent = S.commit;
   }
 
   function spin(final) {
@@ -118,8 +126,8 @@
     stamp.className = 'stamp ' + (win ? 'paid' : 'void');
     requestAnimationFrame(() => stamp.classList.add('show'));
     $('callout').textContent = win
-      ? `Needed ${mode} ${mode === 'under' ? chance : 100 - chance}. Returned ${fmt(Math.round(bet * mult * 100) / 100)} chips.`
-      : `Needed ${mode} ${mode === 'under' ? chance : 100 - chance}. Stake lost.`;
+      ? `You needed ${need(mode, chance)}. You get back ${fmt(Math.round(bet * mult * 100) / 100)} chips.`
+      : `You needed ${need(mode, chance)}. Stake lost.`;
 
     S.bal = Math.round((S.bal + delta) * 100) / 100;
     S.history.unshift({ n: nonce, bet, mode, chance, value, win, delta, serverSeed, commit, clientSeed, tx: null });
@@ -148,7 +156,7 @@
     try {
       const { Connection, PublicKey, Transaction, TransactionInstruction } = solanaWeb3;
       const conn = new Connection(RPC, 'confirmed');
-      const memo = `JKDICE1 c=${entry.commit} s=${entry.serverSeed} p=${entry.clientSeed} n=${entry.n} r=${entry.value.toFixed(2)}`;
+      const memo = `ABOVEBOARD1 c=${entry.commit} s=${entry.serverSeed} p=${entry.clientSeed} n=${entry.n} r=${entry.value.toFixed(2)}`;
       const tx = new Transaction().add(new TransactionInstruction({
         keys: [{ pubkey: new PublicKey(S.pubkey), isSigner: true, isWritable: false }],
         programId: new PublicKey(MEMO_PROGRAM),
@@ -176,9 +184,8 @@
       <div class="stub ${e.win ? 'win' : 'lose'}${fresh && i === 0 ? ' fresh' : ''}">
         <span class="no">${pad4(e.n)}</span>
         <span>
-          <span class="fig">${e.value.toFixed(2)}</span>
-          <span class="meta">${e.bet} on ${e.mode} ${e.mode === 'under' ? e.chance : 100 - e.chance}</span>
-          <span class="seed">${short(e.serverSeed)}</span>
+          <span class="fig">${e.value.toFixed(2)}</span><span class="meta">${e.bet} on ${need(e.mode, e.chance)}</span>
+          <span class="seed">seed ${short(e.serverSeed)}</span>
         </span>
         <span class="right">
           <span class="amt">${e.delta > 0 ? '+' : ''}${fmt(e.delta)}</span>
@@ -248,10 +255,10 @@
   }
 
   /* ── wiring ── */
-  $('chance').oninput = (e) => { S.chance = +e.target.value; render(); };
+  $('chance').oninput = (e) => { S.chance = +e.target.value; render(); hint(); };
   $('bet').oninput = render;
-  $('mUnder').onclick = () => { S.mode = 'under'; render(); };
-  $('mOver').onclick = () => { S.mode = 'over'; render(); };
+  $('mUnder').onclick = () => { S.mode = 'under'; render(); hint(); };
+  $('mOver').onclick = () => { S.mode = 'over'; render(); hint(); };
   $('half').onclick = () => { $('bet').value = Math.max(1, Math.floor(+$('bet').value / 2)); render(); };
   $('dbl').onclick = () => { $('bet').value = Math.max(1, Math.min(Math.floor(S.bal), Math.floor(+$('bet').value) * 2)); render(); };
   $('max').onclick = () => { $('bet').value = Math.floor(S.bal); render(); };
@@ -278,6 +285,7 @@
   drawGuilloche();
   $('clientSeed').value = Fair.randomSeed(8);
   render();
+  hint();
   seal();
   const p = provider();
   if (p && p.isConnected && p.publicKey) connected(p.publicKey.toString());
