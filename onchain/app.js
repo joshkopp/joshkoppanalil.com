@@ -4,13 +4,15 @@
   const MEMO_PROGRAM = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
   const RPC = 'https://api.devnet.solana.com';
   const STORE = 'aboveboard.v1';
+  const HOUSE = 'https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/aboveboard';
+  const FAUCET = 'https://faucet.solana.com/';
   const START = 1000;
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   const S = {
     bal: START, nonce: 1, mode: 'under', chance: 50,
-    serverSeed: '', commit: '', history: [], pubkey: null, busy: false
+    serverSeed: '', commit: '', commitTx: null, houseMode: 'local', history: [], pubkey: null, busy: false
   };
 
   const fmt = (n) => n.toLocaleString('en-US', { maximumFractionDigits: 2 });
@@ -110,11 +112,47 @@
     $('nonceOut').textContent = S.nonce;
   }
 
+  async function house(body, ms = 7000) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), ms);
+    try {
+      const r = await fetch(HOUSE, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal: ctl.signal });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw Object.assign(new Error(j.message || `House error ${r.status}`), { status: r.status });
+      return j;
+    } finally { clearTimeout(t); }
+  }
+
   async function seal() {
-    S.serverSeed = Fair.randomSeed();
-    S.commit = await Fair.sha256Hex(S.serverSeed);
-    $('commit').textContent = S.commit.slice(0, 12) + '…' + S.commit.slice(-8);
+    S.commit = ''; S.serverSeed = ''; S.commitTx = null;
+    $('commit').textContent = 'sealing\u2026';
+    try {
+      const j = await house({ action: 'commit' });
+      S.commit = j.commit; S.commitTx = j.commitTx || null; S.houseMode = 'remote';
+      S.houseNote = j.note || null;
+    } catch {
+      S.serverSeed = Fair.randomSeed();
+      S.commit = await Fair.sha256Hex(S.serverSeed);
+      S.houseMode = 'local'; S.commitTx = null;
+    }
+    $('commit').textContent = S.commit.slice(0, 12) + '\u2026' + S.commit.slice(-8);
     $('commitFull').textContent = S.commit;
+    renderSeal();
+  }
+
+  function renderSeal() {
+    const el = $('sealStatus');
+    if (S.houseMode === 'remote' && S.commitTx) {
+      el.innerHTML = `<a target="_blank" rel="noopener" href="https://explorer.solana.com/tx/${S.commitTx}?cluster=devnet">sealed on devnet</a>`;
+      el.className = 'sstat ok';
+    } else if (S.houseMode === 'remote') {
+      el.textContent = 'sealed by the house server';
+      el.className = 'sstat';
+      el.title = 'The house wallet needs devnet SOL to post seals onchain.';
+    } else {
+      el.textContent = 'offline mode: sealed in your browser';
+      el.className = 'sstat warn';
+    }
   }
 
   function spin(final) {
@@ -135,7 +173,8 @@
 
   /* ── a round ── */
   async function roll() {
-    if (S.busy || !S.commit) return;
+    if (S.busy) return;
+    if (!S.commit) return flash('Still sealing the next seed. One moment.');
     const bet = stake();
     if (bet < 1) return flash('Enter a stake of at least 1 chip.');
     if (bet > S.bal) { clampStake(); render(); return flash(`Stake lowered to your balance of ${fmt(Math.floor(S.bal))}.`); }
@@ -150,9 +189,27 @@
     $('readout').className = 'readout';
     $('callout').textContent = 'Rolling…';
 
-    const { serverSeed, commit, nonce, mode, chance } = S;
+    const { commit, commitTx, nonce, mode, chance, houseMode } = S;
     const cs = $('clientSeed').value.trim();
+    let serverSeed = S.serverSeed;
+    if (houseMode === 'remote') {
+      try {
+        const j = await house({ action: 'reveal', commit, clientSeed: cs, nonce });
+        serverSeed = j.serverSeed;
+      } catch (e) {
+        S.busy = false; $('rollBtn').disabled = false; hint();
+        flash((e && e.message) || 'The house did not answer. Try again.');
+        if (e && e.status === 409) seal();
+        return;
+      }
+    }
+    // Never trust the house: recompute locally and check its fingerprint.
     const value = await Fair.roll(serverSeed, cs, nonce);
+    if ((await Fair.sha256Hex(serverSeed)) !== commit) {
+      S.busy = false; $('rollBtn').disabled = false;
+      flash('The revealed seed does not match its fingerprint. Roll cancelled.');
+      return seal();
+    }
     const win = Fair.isWin(value, mode, chance);
     const mult = Fair.multiplier(chance);
     const back = round2(bet * mult);
@@ -173,7 +230,7 @@
       : `You needed ${need(mode, chance)}. Stake lost.`;
 
     S.bal = round2(S.bal + delta);
-    const entry = { n: nonce, bet, mode, chance, value, win, delta, serverSeed, commit, clientSeed: cs, tx: null, txState: null, checked: null };
+    const entry = { n: nonce, bet, mode, chance, value, win, delta, serverSeed, commit, commitTx, house: houseMode, clientSeed: cs, tx: null, txState: null, checked: null };
     S.history.unshift(entry);
     S.nonce++;
 
@@ -190,13 +247,13 @@
     S.busy = false;
     $('rollBtn').disabled = false;
 
-    if ($('onchain').checked && S.pubkey) record(entry);
   }
 
   /* ── optional devnet memo ── */
   async function record(entry) {
+    if (!S.pubkey) { await toggleWallet(); if (!S.pubkey) return; }
     const p = provider();
-    if (!p || !S.pubkey || typeof solanaWeb3 === 'undefined') return;
+    if (!p || typeof solanaWeb3 === 'undefined') return;
     entry.txState = 'pending'; renderStubs();
     try {
       const { Connection, PublicKey, Transaction, TransactionInstruction } = solanaWeb3;
@@ -218,18 +275,20 @@
       entry.txState = 'failed';
       const msg = String(e && e.message || e);
       flash(/reject|denied|cancel/i.test(msg) ? 'Devnet write cancelled in Phantom.'
-        : /insufficient|0x1|debit/i.test(msg) ? 'Not enough devnet SOL for the fee. Use "Get devnet SOL".'
+        : /insufficient|0x1|debit|prior credit/i.test(msg) ? 'Not enough devnet SOL for the fee. Use "Get devnet SOL".'
         : 'Devnet write failed. Check Phantom is set to Devnet.');
     }
     renderStubs(); save();
   }
 
   /* ── audit trail ── */
-  function txCell(e) {
-    if (e.tx) return `<a class="chk" target="_blank" rel="noopener" href="https://explorer.solana.com/tx/${e.tx}?cluster=devnet">on devnet</a>`;
-    if (e.txState === 'pending') return '<span class="chk">writing…</span>';
-    if (e.txState === 'failed') return '<span class="chk bad">not written</span>';
-    return '';
+  function txCell(e, i) {
+    const bits = [];
+    if (e.commitTx) bits.push(`<a class="chk" target="_blank" rel="noopener" title="The house posted this fingerprint before your bet" href="https://explorer.solana.com/tx/${e.commitTx}?cluster=devnet">seal</a>`);
+    if (e.tx) bits.push(`<a class="chk" target="_blank" rel="noopener" title="You wrote this result to devnet" href="https://explorer.solana.com/tx/${e.tx}?cluster=devnet">result</a>`);
+    else if (e.txState === 'pending') bits.push('<span class="chk">writing\u2026</span>');
+    else bits.push(`<button class="ghost" data-w="${i}">${e.txState === 'failed' ? 'Retry devnet' : 'Put on devnet'}</button>`);
+    return bits.join(' ');
   }
   function renderStubs(fresh) {
     const h = S.history;
@@ -247,7 +306,7 @@
           <span class="seed">seed ${short(e.serverSeed)}</span>
         </span>
         <span class="right">
-          ${txCell(e)}
+          ${txCell(e, i)}
           <span class="amt">${e.delta > 0 ? '+' : ''}${fmt(e.delta)}</span>
           ${e.checked === null || e.checked === undefined
             ? `<button data-v="${i}" aria-label="Check roll ${e.n}">Check</button>`
@@ -256,6 +315,8 @@
       </div>`).join('');
   }
   $('hist').addEventListener('click', async (ev) => {
+    const w = ev.target.closest('button[data-w]');
+    if (w) return record(S.history[+w.dataset.w]);
     const b = ev.target.closest('button[data-v]');
     if (!b) return;
     const e = S.history[+b.dataset.v];
@@ -282,9 +343,7 @@
     $('dot').classList.toggle('live', on);
     $('connectBtn').textContent = on ? 'Disconnect' : 'Connect Phantom';
     $('airdropBtn').hidden = !on;
-    $('onchain').disabled = !on;
-    $('optNote').textContent = on ? '' : ' Connect a wallet to turn this on.';
-    if (!on) { $('onchain').checked = false; $('walletInfo').textContent = 'No wallet connected'; }
+    if (!on) $('walletInfo').textContent = 'No wallet connected';
     else balance();
   }
 
@@ -309,22 +368,12 @@
     } catch { flash('Connection cancelled.'); }
   }
 
+  // Devnet's RPC airdrop is closed; the official faucet is the only reliable source.
   async function airdrop() {
     if (!S.pubkey) return;
-    const btn = $('airdropBtn');
-    btn.disabled = true;
-    try {
-      flash('Requesting 1 devnet SOL…', 8000);
-      const conn = new solanaWeb3.Connection(RPC, 'confirmed');
-      const sig = await conn.requestAirdrop(new solanaWeb3.PublicKey(S.pubkey), 1e9);
-      await conn.confirmTransaction(sig, 'confirmed');
-      balance();
-      flash('1 devnet SOL received.');
-    } catch {
-      flash('The devnet faucet is rate limited. Opening faucet.solana.com instead.');
-      window.open('https://faucet.solana.com/', '_blank', 'noopener');
-    }
-    btn.disabled = false;
+    try { await navigator.clipboard.writeText(S.pubkey); flash('Your address is copied. Paste it into the faucet and pick Devnet.', 6000); }
+    catch { flash('Paste your wallet address into the faucet and pick Devnet.', 6000); }
+    window.open(FAUCET, '_blank', 'noopener');
   }
 
   /* ── wiring ── */

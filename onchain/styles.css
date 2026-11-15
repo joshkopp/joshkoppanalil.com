@@ -255,3 +255,8 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 @media(max-width:620px){
   .stamp{font-size:13px;padding:3px 8px;right:10px;top:8px;border-width:2px}
 }
+.sstat{margin-left:10px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-soft)}
+.sstat.ok a{color:var(--seal);font-weight:600}
+.sstat.warn{color:var(--void)}
+.stub .right .ghost{font-size:11.5px}
+@media(max-width:560px){.sstat{display:block;margin:3px 0 0}}

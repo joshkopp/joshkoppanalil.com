@@ -79,20 +79,17 @@
         <button class="roll" id="rollBtn">ROLL</button>
         <p class="kbd">or press <kbd>Space</kbd></p>
 
-        <label class="opt">
-          <input type="checkbox" id="onchain">
-          <span>Also write each result to Solana devnet.<span id="optNote"></span></span>
-        </label>
       </section>
     </div>
 
     <div class="seal">
       <span class="k">Sealed before your bet</span>
       <span class="hash" id="commit">waiting</span>
+      <span class="sstat" id="sealStatus"></span>
       <details class="more">
         <summary>How it stays fair, and check a roll</summary>
         <div class="dbody">
-          <p class="lede">The fingerprint above is a SHA-256 hash of the house's secret seed. The house can't swap the seed after seeing your bet without breaking the fingerprint. After each roll the seed is revealed, and the stub below lets you recompute it.</p>
+          <p class="lede">The fingerprint above is a SHA-256 hash of the house's secret seed, posted to Solana devnet before you bet. The timestamp on that transaction proves the house picked its seed first, and the house can't swap it later without breaking the fingerprint. After each roll the seed is revealed and your browser recomputes the result itself.</p>
           <p class="flabel">Full fingerprint</p>
           <div class="hash full" id="commitFull">waiting</div>
           <div class="vgrid">
@@ -121,7 +118,7 @@
   <div class="colophon">
     <p><span class="formula">roll = HMAC-SHA256(seed, playerSeed:rollNumber)</span>, first 32 bits scaled to 0.00 to 99.99. Fingerprint is <span class="formula">SHA-256(seed)</span>. House edge 1%.</p>
     <p>Built for the <a href="https://www.universityblockchain.org/programs/hackathon">University Blockchain Conference 2026 hackathon</a> by <a href="/">Josh Koppanalil</a>. Solana devnet and play chips only. Nothing here has value and nothing here is a wager.</p>
-    <p>In this build the house runs in your browser so every line is readable. Moving seed generation to a server is what makes the commitment hold against a real operator.</p>
+    <p>The house runs on a server and posts every fingerprint to devnet from its own wallet. Your browser never trusts it: each revealed seed is checked against its fingerprint before the roll counts. If the house is unreachable the game falls back to a house in your browser and says so. Use <b>Put on devnet</b> on any stub to sign the result into the chain yourself.</p>
   </div>
 </div>
 
