@@ -951,8 +951,11 @@ function jetFx() { fxTick++;
   if (P.alive && P.alt < 90 && P.speed > 120 && fxTick % 2 === 0) { const f = fwdOf(P.q), x = P.pos.x - f.x * 25, z = P.pos.z - f.z * 25, y = terrain.height(x, z) + 3; smoke.emit(x, y, z, { size: 10 + Math.random() * 8, life: 2.6, color: [.86, .7, .5], alpha: .5 * (1 - P.alt / 90), spread: 14, grow: 1.4, vy: 10, drag: 1.2 }); }
 }
 let last = performance.now();
-function frame(now) {
-  requestAnimationFrame(frame); const rdt = (now - last) / 1000; let dt = Math.min(.05, rdt); last = now; const time = now / 1000; if (rdt < .2) adapt(rdt);
+let lastRaf = 0;
+// in a match the sim keeps running even if this tab stops getting animation frames (background tab, minimized)
+setInterval(() => { const t = performance.now(); if (MP.on && G.mode === 'play' && t - lastRaf > 300) frame(t, true); }, 60);
+function frame(now, timer) {
+  if (!timer) { lastRaf = now; requestAnimationFrame(frame); } const rdt = (now - last) / 1000; let dt = Math.min(.05, rdt); last = now; const time = now / 1000; if (rdt < .2) adapt(rdt);
   if (G.mode === 'play') {
     if (G.slow > 0) { G.slow -= dt; dt *= .3; } G.slowCd -= dt;
     const n = Math.min(3, Math.ceil(dt * 60 - .01)); for (let i = 0; i < n; i++) step(dt / n); updateTips(dt);
@@ -974,7 +977,7 @@ function frame(now) {
   if (P && G.mode === 'play') Sound.engine(P.alive ? P.thr : 0, P.ab && P.alive, P.alive ? P.speed : 0, G.view === 'first');
   if (G.mode === 'play' && S.control === 'aim' && !TOUCH && !MP.menu && (fxTick % 30 === 0)) $('#clickfly').classList.toggle('on', !document.pointerLockElement);
   if (G.mode === 'play' || G.mode === 'paused') { drawHUD(G.mode === 'play' ? dt : 0, time); updateMFD(time); } else hg.clearRect(0, 0, hud.width, hud.height);
-  renderer.render(scene, cam);
+  if (!timer) renderer.render(scene, cam);
 }
 resize(); toMenu();
 warmUp(); { const tmp = ['viper', 'raptor', 'striker'].map(t => buildJet(t, 'red', true)).concat([buildBomber(false), buildBomber(true), buildUnit('sam'), buildUnit('aa')]), m = missileMesh(); tmp.forEach((o, i) => { o.position.set(i * 60, 1200, 0); scene.add(o); }); scene.add(m); fire.emit(0, 1200, 0, { must: true }); smoke.emit(0, 1200, 0, { must: true }); trails.emit(0, 1200, 0, { must: true });
