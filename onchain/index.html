@@ -77,10 +77,11 @@
 
         <p class="summary" id="summary">&nbsp;</p>
         <button class="roll" id="rollBtn">ROLL</button>
+        <p class="kbd">or press <kbd>Space</kbd></p>
 
         <label class="opt">
           <input type="checkbox" id="onchain">
-          <span>Also write each result to Solana devnet (needs a connected wallet).</span>
+          <span>Also write each result to Solana devnet.<span id="optNote"></span></span>
         </label>
       </section>
     </div>
@@ -92,11 +93,11 @@
         <summary>How it stays fair, and check a roll</summary>
         <div class="dbody">
           <p class="lede">The fingerprint above is a SHA-256 hash of the house's secret seed. The house can't swap the seed after seeing your bet without breaking the fingerprint. After each roll the seed is revealed, and the stub below lets you recompute it.</p>
-          <label for="commitFull">Full fingerprint</label>
+          <p class="flabel">Full fingerprint</p>
           <div class="hash full" id="commitFull">waiting</div>
           <div class="vgrid">
             <div><label for="clientSeed">Your seed (mixed into every roll)</label><input type="text" id="clientSeed" spellcheck="false" autocomplete="off"></div>
-            <div><label>Next roll number</label><div class="rollno" id="nonceOut">1</div></div>
+            <div><p class="flabel">Next roll number</p><div class="rollno" id="nonceOut">1</div></div>
           </div>
           <h2 class="sub">Check a roll yourself</h2>
           <div class="vgrid">
@@ -113,7 +114,7 @@
   </main>
 
   <section class="stubs">
-    <h2>Audit trail <span id="stubCount"></span></h2>
+    <h2>Audit trail <span class="meta2"><span id="stubCount"></span><button id="clearBtn" class="ghost" hidden>Reset</button></span></h2>
     <div id="hist"><div class="empty">No rolls yet. Every bet prints a stub here with the seed revealed.</div></div>
   </section>
 

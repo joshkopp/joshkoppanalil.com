@@ -199,7 +199,8 @@ summary{cursor:pointer;font-size:13px;color:var(--seal);font-weight:600;padding:
 /* ─── audit trail ──────────────────────────────────────── */
 .stubs{margin-top:22px}
 .stubs h2{font-family:"IBM Plex Sans Condensed",sans-serif;font-size:15px;font-weight:600;margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline}
-.stubs h2 span{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-soft);font-weight:400}
+.stubs h2 .meta2{display:flex;gap:10px;align-items:baseline}
+.stubs h2 #stubCount{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-soft);font-weight:400}
 .stub{
   background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--ink);
   padding:7px 12px;margin-bottom:6px;display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;
@@ -230,3 +231,27 @@ summary{cursor:pointer;font-size:13px;color:var(--seal);font-weight:600;padding:
 .flash{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:9px 15px;font-size:13px;max-width:92vw;display:none;z-index:20;box-shadow:4px 4px 0 rgba(21,36,58,.3)}
 
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+
+/* ─── polish ───────────────────────────────────────────── */
+.flabel{margin:0 0 4px;font-size:12.5px;font-weight:600}
+.kbd{margin:7px 0 0;text-align:center;font-size:11.5px;color:var(--ink-faint)}
+kbd{font-family:"IBM Plex Mono",monospace;font-size:10.5px;border:1px solid var(--rule);border-bottom-width:2px;padding:0 5px;background:var(--field);color:var(--ink-soft)}
+@media(hover:none){.kbd{display:none}}
+.opt input:disabled + span{opacity:.6}
+#optNote{color:var(--ink-faint)}
+button.ghost{border:none;box-shadow:none;background:none;padding:0;font-family:"IBM Plex Mono",monospace;font-size:11.5px;font-weight:400;color:var(--ink-soft);text-decoration:underline;text-underline-offset:2px}
+button.ghost:hover{color:var(--void);box-shadow:none}
+button.ghost:active{transform:none}
+.roll:disabled{opacity:1;background:#2b3a50}
+.stub .right .chk.ok{font-weight:600}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.readout{min-height:1em}
+.flash{border-radius:1px}
+/* iOS zooms into inputs under 16px */
+@media(max-width:620px){input[type=text],input[type=number]{font-size:16px}}
+.zone.thin .zlabel{display:none}
+.touch .kbd{display:none}
+@media(max-width:620px){
+  .stamp{font-size:13px;padding:3px 8px;right:10px;top:8px;border-width:2px}
+}
