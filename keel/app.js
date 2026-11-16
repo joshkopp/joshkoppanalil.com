@@ -1,8 +1,9 @@
 (() => {
   'use strict';
   const METER = 'https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/keel';
-  // Public mainnet RPC refuses browser origins, so mainnet reads go through the meter's free read-only relay.
-  const DEFAULT_RPC = { mainnet: `${METER}/rpc/mainnet`, devnet: 'https://api.devnet.solana.com' };
+  // api.mainnet-beta refuses browser origins (403); PublicNode's free endpoint
+  // allows CORS and parallel reads. The meter's /rpc relay is the fallback.
+  const DEFAULT_RPC = { mainnet: 'https://solana-rpc.publicnode.com', devnet: 'https://api.devnet.solana.com' };
   const TREASURY = '4DJ1z4aUMe4VLg9qxaCHmfNhFKqyCaP7RC6dQBJFQvuw';
   const LAMPORTS = 1e9;
   const T = window.KeelTrace;

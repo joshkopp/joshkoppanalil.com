@@ -30,7 +30,9 @@
     for (let i = 0; i < tries; i++) {
       let r;
       try {
-        r = await fetchImpl(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
+        const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 15000);
+        r = await fetchImpl(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }), signal: ctl.signal });
+        clearTimeout(to);
       } catch (e) { last = e; await sleep(300 * 2 ** i); continue; }
       if (r.status === 429 || r.status >= 500) { last = new Error(`RPC ${r.status}`); await sleep(400 * 2 ** i); continue; }
       if (r.status === 403) throw new Error('This RPC refused the request (403). Add your own RPC URL in RPC settings.');
@@ -133,7 +135,7 @@
   async function trace(url, address, limit, onProgress) {
     const sigs = await rpc(url, 'getSignaturesForAddress', [address, { limit }]);
     onProgress && onProgress(0, sigs.length);
-    const full = await pool(sigs, 3, (s) =>
+    const full = await pool(sigs, /devnet/.test(url) ? 2 : 4, (s) =>
       getTx(url, s.signature).catch(() => null), onProgress);
     // Public RPCs drop some calls under load; give the misses one slow second pass.
     for (let i = 0; i < full.length; i++) {

@@ -19,7 +19,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const PAY_RPC = "https://api.devnet.solana.com";
 const DATA_RPC: Record<string, string> = {
-  mainnet: "https://api.mainnet-beta.solana.com",
+  mainnet: "https://solana-rpc.publicnode.com",
   devnet: "https://api.devnet.solana.com",
 };
 const PAY_TO = "4DJ1z4aUMe4VLg9qxaCHmfNhFKqyCaP7RC6dQBJFQvuw";

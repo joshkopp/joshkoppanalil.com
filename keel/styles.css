@@ -253,7 +253,8 @@ dialog menu { display: flex; justify-content: flex-end; gap: 8px; padding: 0; ma
 /* ── small screens ── */
 @media (max-width: 900px) {
   .frame { grid-template-columns: 1fr; grid-template-rows: auto 52px 1fr; }
-  .rail { grid-row: auto; position: static; height: auto; flex-direction: row; align-items: center; padding: 12px 16px; border-right: 0; border-bottom: 1px solid var(--line); overflow-x: auto; gap: 8px; }
+  .rail { grid-row: auto; position: static; height: auto; flex-direction: row; align-items: center; padding: 12px 16px; border-right: 0; border-bottom: 1px solid var(--line); overflow-x: auto; gap: 8px; scrollbar-width: none; }
+  .rail::-webkit-scrollbar { display: none; }
   .mark { padding: 0 12px 0 0; }
   .nav { flex-direction: row; }
   .nav a { padding: 6px 10px; border-left: 0; border-bottom: 2px solid transparent; }
