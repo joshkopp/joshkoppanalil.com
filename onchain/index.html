@@ -134,7 +134,10 @@
 
 <div class="flash" id="flash" role="status" aria-live="polite"></div>
 
-<script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
+<!-- Self-hosted so a live demo never depends on a CDN. buffer.js must load
+     first: @solana/web3.js expects Node's Buffer global and ships none. -->
+<script src="vendor/buffer.js?v=8"></script>
+<script src="vendor/solana-web3.js?v=8"></script>
 <script src="fairness.js?v=8"></script>
 <script src="app.js?v=8"></script>
 </body>
