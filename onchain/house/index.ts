@@ -13,7 +13,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   Connection, Keypair, PublicKey, SystemProgram, Transaction, TransactionInstruction,
-  LAMPORTS_PER_SOL, sendAndConfirmTransaction,
+  LAMPORTS_PER_SOL,
 } from "npm:@solana/web3.js@1.95.3";
 
 const RPC = "https://api.devnet.solana.com";
@@ -134,6 +134,7 @@ async function verifyStake(sig: string, player: string, housePk: PublicKey) {
   const hi = keys.staticAccountKeys.findIndex((k) => k.equals(housePk));
   if (hi < 0) return { ok: false as const, message: "That transaction didn't pay the house." };
   const received = (tx.meta!.postBalances[hi] ?? 0) - (tx.meta!.preBalances[hi] ?? 0);
+  if (received <= 0) return { ok: false as const, message: "That transaction didn't pay the house." };
   if (received < SOL_MIN_STAKE) return { ok: false as const, message: "Stake too small. Minimum is 0.001 SOL." };
   if (received > SOL_MAX_STAKE) return { ok: false as const, message: "Stake too large. Maximum is 0.005 SOL." };
   if (!keys.staticAccountKeys[0]?.equals(new PublicKey(player)))
@@ -141,6 +142,10 @@ async function verifyStake(sig: string, player: string, housePk: PublicKey) {
   return { ok: true as const, lamports: received };
 }
 
+// Returns as soon as devnet accepts the transaction. Waiting for confirmation
+// here would mean a timeout could report failure on a payout that actually
+// landed, and the Claim path would then pay it a second time. The signature is
+// recorded either way, so the player can always check it on Explorer.
 async function payout(to: string, lamports: number) {
   const kp = await getHouse();
   const bal = await conn.getBalance(kp.publicKey);
@@ -148,7 +153,10 @@ async function payout(to: string, lamports: number) {
   const tx = new Transaction().add(SystemProgram.transfer({
     fromPubkey: kp.publicKey, toPubkey: new PublicKey(to), lamports,
   }));
-  return await sendAndConfirmTransaction(conn, tx, [kp], { commitment: "confirmed" });
+  tx.feePayer = kp.publicKey;
+  tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash;
+  tx.sign(kp);
+  return await conn.sendRawTransaction(tx.serialize(), { skipPreflight: false });
 }
 
 async function roll(body: Record<string, unknown>) {

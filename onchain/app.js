@@ -207,18 +207,42 @@
   }
 
   /* ── staking real devnet SOL ── */
+  // The public devnet RPC throttles websocket subscriptions, so confirmation is
+  // polled over plain HTTP rather than via connection.confirmTransaction.
+  async function awaitSig(conn, signature, ms = 40000) {
+    const t0 = Date.now();
+    while (Date.now() - t0 < ms) {
+      const st = await conn.getSignatureStatuses([signature]);
+      const v = st && st.value && st.value[0];
+      if (v) {
+        if (v.err) throw new Error('The stake transaction failed on devnet.');
+        if (v.confirmationStatus === 'confirmed' || v.confirmationStatus === 'finalized') return;
+      }
+      await new Promise((r) => setTimeout(r, 1200));
+    }
+    throw new Error('Timed out waiting for devnet to confirm the stake.');
+  }
+
   async function sendStake(lamports) {
     const p = provider();
+    if (!S.house) throw new Error("The house wallet address hasn't loaded yet. Give it a second and try again.");
+    if (typeof solanaWeb3 === 'undefined') throw new Error('The Solana library did not load. Refresh the page.');
     const { Connection, PublicKey, Transaction, SystemProgram } = solanaWeb3;
     const conn = new Connection(RPC, 'confirmed');
-    const tx = new Transaction().add(SystemProgram.transfer({
-      fromPubkey: new PublicKey(S.pubkey), toPubkey: new PublicKey(S.house), lamports
-    }));
-    tx.feePayer = new PublicKey(S.pubkey);
-    const bh = await conn.getLatestBlockhash();
-    tx.recentBlockhash = bh.blockhash;
-    const { signature } = await p.signAndSendTransaction(tx);
-    await conn.confirmTransaction({ signature, ...bh }, 'confirmed');
+
+    const from = new PublicKey(S.pubkey);
+    const have = await conn.getBalance(from);
+    if (have < lamports + 10000) {
+      throw new Error(`Your wallet holds ${(have / LAMPORTS).toFixed(4)} devnet SOL, which won't cover a ${(lamports / LAMPORTS).toFixed(4)} stake plus fees. If Phantom shows more than that, it is probably on the wrong network — switch it to Devnet.`);
+    }
+
+    const tx = new Transaction().add(SystemProgram.transfer({ fromPubkey: from, toPubkey: new PublicKey(S.house), lamports }));
+    tx.feePayer = from;
+    tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash;
+    const res = await p.signAndSendTransaction(tx);
+    const signature = res && res.signature;
+    if (!signature) throw new Error('Phantom did not return a signature.');
+    await awaitSig(conn, signature);
     return signature;
   }
 
@@ -250,10 +274,11 @@
       try { solSig = await sendStake(Math.round(bet * LAMPORTS)); }
       catch (e) {
         S.busy = false; render(); hint();
-        const m = String(e && e.message || e);
-        return flash(/reject|denied|cancel/i.test(m) ? 'Stake cancelled in Phantom.'
-          : /insufficient|debit|prior credit/i.test(m) ? 'Not enough devnet SOL. Use "Get devnet SOL".'
-          : 'Could not send the stake. Check Phantom is on Devnet.');
+        const m = String((e && e.message) || e);
+        console.error('stake failed:', e);
+        return flash(/reject|denied|cancel|user declined/i.test(m) ? 'Stake cancelled in Phantom.'
+          : /insufficient|debit|prior credit/i.test(m) ? 'Not enough devnet SOL for the stake and fee.'
+          : m, 9000);
       }
     }
 
@@ -268,11 +293,22 @@
     } else {
       try {
         // Safe to retry: the house serves roll numbers idempotently.
-        res = await call({ action: 'roll', sessionId: S.sessionId, nonce, stake: bet, chance, mode, solStakeSig: solSig || undefined });
+        const body = { action: 'roll', sessionId: S.sessionId, nonce, stake: bet, chance, mode, solStakeSig: solSig || undefined };
+        res = await call(body);
       } catch (e) {
-        S.busy = false; render(); hint();
-        if (e.code === 'revealed' || e.status === 404) { flash('That session is closed. Opening a new one.'); return openSession(); }
-        return flash(e.message || 'The house did not answer. Press Roll again to retry the same roll number.');
+        // A just-confirmed stake can take a moment to be readable by the house.
+        if (solSig && e.code === 'bad_stake' && /isn't on devnet yet/.test(e.message || '')) {
+          $('callout').textContent = 'Waiting for devnet to publish the stake\u2026';
+          for (let i = 0; i < 6 && !res; i++) {
+            await new Promise((r) => setTimeout(r, 2500));
+            try { res = await call({ action: 'roll', sessionId: S.sessionId, nonce, stake: bet, chance, mode, solStakeSig: solSig }); } catch { /* keep waiting */ }
+          }
+        }
+        if (!res) {
+          S.busy = false; render(); hint();
+          if (e.code === 'revealed' || e.status === 404) { flash('That session is closed. Opening a new one.'); return openSession(); }
+          return flash(e.message || 'The house did not answer. Press Roll again to retry the same roll number.', 8000);
+        }
       }
     }
 
