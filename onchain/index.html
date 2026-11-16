@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Above Board: a dice game you can audit</title>
-<meta name="description" content="A provably fair dice game on Solana devnet. The house locks in its seed before you bet, reveals it after, and every roll can be recomputed by hand.">
+<meta name="description" content="A provably fair dice game on Solana devnet. The house seals its seed onchain before you bet, reveals it after, and every roll can be recomputed by hand.">
 <link rel="icon" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans+Condensed:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=1794773292">
+<link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
 <div class="sheet">
@@ -20,7 +20,7 @@
       <div class="band-inner">
         <div>
           <h1 class="wordmark">Above Board</h1>
-          <p class="tagline">The house locks in its seed before you bet, then shows it after. Check any roll yourself.</p>
+          <p class="tagline">The house seals its seed on Solana before you bet, then shows it after. Check any roll yourself.</p>
         </div>
         <div class="wallet">
           <span class="wstatus"><span class="dot" id="dot"></span><span id="walletInfo">No wallet connected</span></span>
@@ -32,7 +32,7 @@
       </div>
     </header>
 
-    <p class="howto">Pick a stake and your odds, then press Roll. <b>You win if the number lands in the hatched zone.</b> Play chips only, no real value.</p>
+    <p class="howto">Pick a stake and your odds, then press Roll. <b>You win if the number lands in the hatched zone.</b> <span id="howtoMoney">Play chips by default, no real value.</span></p>
     <div class="perf"></div>
 
     <div class="play">
@@ -53,9 +53,9 @@
 
       <section class="controls">
         <div class="field">
-          <div class="lbl"><label for="bet">Stake</label><span class="bal">Balance <b id="bal">1,000</b></span></div>
+          <div class="lbl"><label for="bet" id="stakeLabel">Stake</label><span class="bal" id="balWrap">Balance <b id="bal">—</b></span></div>
           <div class="betrow">
-            <input type="number" id="bet" value="10" min="1" step="1" inputmode="numeric">
+            <input type="number" id="bet" value="10" min="1" step="1" inputmode="decimal">
             <button id="half" title="Halve the stake">&frac12;</button>
             <button id="dbl" title="Double the stake">2&times;</button>
             <button id="max" title="Stake everything">Max</button>
@@ -76,25 +76,30 @@
         </div>
 
         <p class="summary" id="summary">&nbsp;</p>
-        <button class="roll" id="rollBtn">ROLL</button>
+        <button class="roll" id="rollBtn" disabled>OPENING SESSION…</button>
         <p class="kbd">or press <kbd>Space</kbd></p>
 
+        <label class="opt">
+          <input type="checkbox" id="solMode">
+          <span>Stake real devnet SOL instead of chips. Each bet is a transfer you sign, and wins are paid back onchain.<span id="solNote"></span></span>
+        </label>
       </section>
     </div>
 
     <div class="seal">
-      <span class="k">Sealed before your bet</span>
-      <span class="hash" id="commit">waiting</span>
-      <span class="sstat" id="sealStatus"></span>
+      <div class="sealrow">
+        <span><span class="k">Session seed, sealed before your first bet</span>
+        <span class="hash" id="commit">opening…</span>
+        <span class="sstat" id="sealStatus"></span></span>
+        <button id="revealBtn" class="ghost" disabled>End session &amp; reveal</button>
+      </div>
       <details class="more">
         <summary>How it stays fair, and check a roll</summary>
         <div class="dbody">
-          <p class="lede">The fingerprint above is a SHA-256 hash of the house's secret seed, posted to Solana devnet before you bet. The timestamp on that transaction proves the house picked its seed first, and the house can't swap it later without breaking the fingerprint. After each roll the seed is revealed and your browser recomputes the result itself.</p>
-          <p class="flabel">Full fingerprint</p>
-          <div class="hash full" id="commitFull">waiting</div>
+          <p class="lede">One seed covers the whole session. The house posts its fingerprint to devnet <b>before</b> your first bet, and you fix your own seed at the same moment, so every outcome in the session is already decided: roll number 1, 2, 3 and so on are fixed functions of the two seeds. That is what stops the house dropping a roll it dislikes — asking again for the same roll number returns the same number. Roll numbers run without gaps, so a missing one is visible in the reveal.</p>
           <div class="vgrid">
-            <div><label for="clientSeed">Your seed (mixed into every roll)</label><input type="text" id="clientSeed" spellcheck="false" autocomplete="off"></div>
-            <div><p class="flabel">Next roll number</p><div class="rollno" id="nonceOut">1</div></div>
+            <div><p class="flabel">Full fingerprint</p><div class="hash full" id="commitFull">—</div></div>
+            <div><p class="flabel">Your seed</p><div class="hash full" id="clientSeedOut">—</div></div>
           </div>
           <h2 class="sub">Check a roll yourself</h2>
           <div class="vgrid">
@@ -111,21 +116,26 @@
   </main>
 
   <section class="stubs">
-    <h2>Audit trail <span class="meta2"><span id="stubCount"></span><button id="clearBtn" class="ghost" hidden>Reset</button></span></h2>
-    <div id="hist"><div class="empty">No rolls yet. Every bet prints a stub here with the seed revealed.</div></div>
+    <h2>Audit trail <span class="meta2"><span id="stubCount"></span></span></h2>
+    <div id="hist"><div class="empty">No rolls yet. Every bet prints a stub here.</div></div>
+  </section>
+
+  <section class="stubs" id="boardWrap">
+    <h2>Leaderboard <span class="meta2"><span class="muted">net chips, counted by the house</span><button id="boardRefresh" class="ghost">Refresh</button></span></h2>
+    <div id="board"><div class="empty">Connect a wallet to appear here.</div></div>
   </section>
 
   <div class="colophon">
     <p><span class="formula">roll = HMAC-SHA256(seed, playerSeed:rollNumber)</span>, first 32 bits scaled to 0.00 to 99.99. Fingerprint is <span class="formula">SHA-256(seed)</span>. House edge 1%.</p>
-    <p>Built for the <a href="https://www.universityblockchain.org/programs/hackathon">University Blockchain Conference 2026 hackathon</a> by <a href="/">Josh Koppanalil</a>. Solana devnet and play chips only. Nothing here has value and nothing here is a wager.</p>
-    <p>The house runs on a server and posts every fingerprint to devnet from its own wallet. Your browser never trusts it: each revealed seed is checked against its fingerprint before the roll counts. If the house is unreachable the game falls back to a house in your browser and says so. Use <b>Put on devnet</b> on any stub to sign the result into the chain yourself.</p>
+    <p>Built for the <a href="https://www.universityblockchain.org/programs/hackathon">University Blockchain Conference 2026 hackathon</a> by <a href="/">Josh Koppanalil</a>. Solana devnet only. Chips and devnet SOL have no value, and nothing here is a wager.</p>
+    <p>The house runs as a server function whose source is in the repo. Your browser never trusts it: on reveal it rechecks the seed against the fingerprint that was already on the chain, recomputes every roll, and flags any gap in the roll numbers. If the house is unreachable the game falls back to a house in your browser and says so.</p>
   </div>
 </div>
 
 <div class="flash" id="flash" role="status" aria-live="polite"></div>
 
 <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
-<script src="fairness.js?v=1794773292"></script>
-<script src="app.js?v=1794773292"></script>
+<script src="fairness.js?v=7"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>
