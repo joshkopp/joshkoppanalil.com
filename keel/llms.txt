@@ -1,0 +1,30 @@
+# Keel API Market
+
+> Pay-per-pull Solana data APIs for agents. No API keys, no accounts. Every
+> endpoint answers HTTP 402 with a quote; pay it in devnet SOL and repeat the
+> request with the transaction signature.
+
+Base: https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/keel
+Catalog (free, JSON): GET /catalog
+Public receipts (free): GET /ledger
+
+## Protocol
+1. GET /api/<name>?<params>  ->  402, body.accepts[0] = { payTo, maxAmountRequired, extra: { lamports, reference, expiresAt } }
+2. Send a devnet SystemProgram.transfer from your key to `payTo` for at least `lamports`.
+   Append `reference` to that instruction's keys as { isSigner: false, isWritable: false }.
+   Wait for commitment "confirmed". Quotes live 300 seconds.
+3. GET /api/<name>?<same params>  with header  X-PAYMENT: <signature>  ->  200 { api, receipt, data }
+   Response header X-PAYMENT-RESPONSE is base64 JSON of the receipt.
+
+One signature buys one pull for the exact params quoted. If the upstream fails
+(502), repeat step 3 with the same signature; up to 3 attempts are honoured.
+
+## Endpoints
+- pulse    0.00005 SOL  net=mainnet|devnet          slot, epoch progress, TPS
+- price    0.00005 SOL                              SOL/USD, 24h change, market cap
+- profile  0.0005 SOL   address, net                balance, tokens, activity, failure rate
+- trace    0.001 SOL    address, limit(5-40), net   counterparties and SOL/token flows
+- tx       0.0003 SOL   signature, net              plain-English transaction breakdown
+- token    0.0005 SOL   mint, net                   supply, authorities, holder concentration
+
+Human interface: https://joshkoppanalil.com/keel/
