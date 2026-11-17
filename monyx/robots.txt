@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /pro/
+Sitemap: https://monyx.pro/sitemap.xml

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="color-scheme" content="light dark">
+<title>Monyx for Grok Bot</title>
+<meta name="description" content="Connect Grok Bot to Monyx so it can ask friends for money, track who owes what, and draft payments you approve with a tap.">
+<link rel="icon" href="../favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../page.css">
+</head>
+<body>
+<header><div class="bar">
+  <a class="logo" href="../"><svg class="mk" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M10 21v-7.2a3 3 0 0 1 6 0V21m0-7.2a3 3 0 0 1 6 0V21"/></svg>monyx<small>Grok Bot</small></a>
+  <a class="open" href="../">Open Monyx</a>
+</div></header>
+<div class="wrap solo"><main>
+
+<p class="kicker">Grok Bot</p>
+<h1>A money assistant that can't run off with your money</h1>
+<p class="lede">Connect Grok Bot to Monyx and it can chase rent, split dinner, recap your week and draft payments. It can't send anything: every payment it drafts waits for your tap in Monyx.</p>
+
+<h2>What it can do</h2>
+<table>
+<tr><th>Ask it</th><th>What happens</th></tr>
+<tr><td>"Ask Maya and Jordan for their share of the $1,800 rent on the 1st"</td><td>A routine sends each of them a $600 request every month</td></tr>
+<tr><td>"Dinner was $84 with Maya, Jordan and Sam"</td><td>Three $21 requests, one per friend</td></tr>
+<tr><td>"I owe Maya for the concert tickets, 42.50"</td><td>A $42.50 draft appears in Monyx under "Waiting for your OK"</td></tr>
+<tr><td>"How did I do this week?"</td><td>A summary of who paid you, who you paid, and what's still open</td></tr>
+<tr><td>"Who hasn't paid me back?"</td><td>Your open requests, oldest first, with an offer to nudge</td></tr>
+</table>
+
+<h2>Set it up (2 minutes)</h2>
+<ol>
+<li>In Monyx, open <strong>Me → AI assistant</strong>, give it a name and a weekly limit, and tap <strong>Create key</strong>. Copy the key; you'll only see it once.</li>
+<li>Open the Monyx template in Grok Bot and tap <strong>Add to Grok Bot</strong>. If you're making your own Bot instead, add the skill file below.</li>
+<li>When Grok Bot asks for the <strong>Monyx key</strong> credential, paste the key.</li>
+<li>Say "what's my Monyx balance?" to check it works. Then try "ask Maya for $5 for coffee".</li>
+</ol>
+<div class="btnrow"><a class="primary" href="SKILL.md">Skill file (SKILL.md)</a><a href="../">Open Monyx</a></div>
+
+<h2>Why it's safe</h2>
+<ul>
+<li><strong>Read, ask and draft only.</strong> An assistant key can't send, withdraw or see your recovery key. The server has no way to move your money, even if it wanted to.</li>
+<li><strong>Weekly limit.</strong> You choose how much it can draft per week. Drafts over the limit are refused.</li>
+<li><strong>You approve every payment</strong> with the same confirmation screen as any other payment, labelled "Drafted by your assistant".</li>
+<li><strong>Remove it any time</strong> from Me → AI assistant. The key stops working immediately.</li>
+</ul>
+
+<h2>For developers</h2>
+<p>The same API works with any assistant that can make HTTPS calls. Base URL:</p>
+<pre>https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/monyx-pay</pre>
+<p>Send <code>Authorization: Bearer mx_…</code>. Endpoints: <code>GET /agent/me</code>, <code>GET /agent/activity</code>, <code>GET /agent/people?q=</code>, <code>GET|POST /agent/requests</code>, <code>GET|POST /agent/drafts</code>. The <a href="SKILL.md">skill file</a> documents each one.</p>
+<pre>curl -X POST $BASE/agent/drafts \
+  -H "Authorization: Bearer $MONYX_KEY" -H "Content-Type: application/json" \
+  -d '{"to":"@maya","usd":42.5,"note":"🎟️ Concert tickets","reason":"You said you owe Maya"}'</pre>
+
+</main></div>
+<footer><div class="bar"><span>Monyx · Test mode: balances are test dollars with no real value.</span><nav><a href="../about/">About</a><a href="../privacy/">Privacy</a><a href="../terms/">Terms</a><a href="../documentation/">Guide</a><a href="https://github.com/joshkopp/monyx/issues">Contact</a></nav></div></footer>
+</body>
+</html>

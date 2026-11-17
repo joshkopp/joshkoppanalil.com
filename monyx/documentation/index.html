@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f5f5f8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0c0c10" media="(prefers-color-scheme: dark)">
@@ -13,91 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
-<style>
-:root { color-scheme: light dark; --bg: #f5f5f8; --card: #ffffff; --card2: #f0f0f4; --ink: #14131a; --ink2: #3c3b47; --mute: #6d6b79; --faint: #a4a2ae; --line: rgba(20,19,26,.08); --line2: rgba(20,19,26,.14); --brand: #5b47f0; --brand-ink: #3e2ec4; --brand-soft: #eeebff; --green: #0e9a62; --amber: #a86b0f; --amber-soft: #fdf3e1; }
-@media (prefers-color-scheme: dark) { :root { --bg: #0c0c10; --card: #16161c; --card2: #1e1e26; --ink: #f4f3f8; --ink2: #c9c7d3; --mute: #8e8c9a; --faint: #5f5d6b; --line: rgba(255,255,255,.07); --line2: rgba(255,255,255,.13); --brand: #6f5cff; --brand-ink: #b3a9ff; --brand-soft: rgba(111,92,255,.16); --green: #3ddc97; --amber: #f2c46d; --amber-soft: rgba(242,196,109,.08); } }
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 84px; }
-body { margin: 0; background: var(--bg); color: var(--ink2); font: 17px/1.65 "Geist", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
-a { color: var(--ink); text-decoration-color: var(--faint); text-underline-offset: 3px; }
-a:hover { text-decoration-color: var(--brand); }
-::selection { background: var(--brand); color: #fff; }
-.mk { width: 28px; height: 28px; flex-shrink: 0; } .mk rect { fill: var(--brand); } .mk path { fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
-
-header { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
-.bar { max-width: 1080px; margin: 0 auto; height: 64px; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; }
-.logo { display: inline-flex; align-items: center; gap: 9px; color: var(--ink); text-decoration: none; font-weight: 700; font-size: 21px; letter-spacing: -.045em; }
-.logo small { font-size: 14px; font-weight: 500; color: var(--mute); letter-spacing: 0; margin-left: 6px; }
-.open { background: var(--brand); color: #fff; text-decoration: none; font-weight: 600; font-size: 14px; height: 38px; padding: 0 16px; border-radius: 12px; display: inline-flex; align-items: center; }
-.open:hover { filter: brightness(1.08); }
-
-.wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 64px; }
-nav.toc { position: sticky; top: 96px; align-self: start; padding-top: 56px; font-size: 14px; }
-nav.toc p { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--faint); margin: 0 0 10px; }
-nav.toc a { display: block; color: var(--mute); text-decoration: none; padding: 5px 0 5px 12px; border-left: 1px solid var(--line); }
-nav.toc a:hover, nav.toc a.on { color: var(--ink); border-left-color: var(--brand); }
-
-main { padding: 56px 0 120px; max-width: 680px; }
-.kicker { color: var(--brand-ink); font-size: 14px; font-weight: 500; margin: 0 0 12px; }
-h1 { color: var(--ink); font-size: clamp(36px, 6vw, 52px); line-height: 1.04; letter-spacing: -.045em; font-weight: 700; margin: 0 0 18px; }
-.lede { font-size: 20px; color: var(--ink2); margin: 0 0 32px; }
-h2 { color: var(--ink); font-size: 28px; letter-spacing: -.03em; font-weight: 600; line-height: 1.15; margin: 72px 0 14px; padding-top: 4px; }
-h2 .n { color: var(--faint); font-weight: 500; margin-right: 10px; font-variant-numeric: tabular-nums; }
-h3 { color: var(--ink); font-size: 18px; font-weight: 600; letter-spacing: -.015em; margin: 32px 0 6px; }
-p { margin: 0 0 16px; }
-strong { color: var(--ink); font-weight: 600; }
-code { font: 500 .86em "Geist Mono", monospace; color: var(--ink); background: var(--card2); padding: 2px 6px; border-radius: 6px; }
-ul { padding-left: 20px; margin: 0 0 16px; } li { margin: 6px 0; } li::marker { color: var(--faint); }
-
-.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 8px 0 8px; }
-.card { background: var(--card); border-radius: 18px; padding: 18px; box-shadow: inset 0 0 0 1px var(--line); font-size: 15px; line-height: 1.5; }
-.card b { display: block; color: var(--ink); font-size: 16px; margin-bottom: 4px; }
-.card .ico { width: 34px; height: 34px; border-radius: 10px; background: var(--brand-soft); display: grid; place-items: center; margin-bottom: 12px; }
-.card .ico svg { width: 18px; height: 18px; fill: none; stroke: var(--brand-ink); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-
-.flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: center; gap: 8px; margin: 22px 0 24px; }
-.flow .step { background: var(--card); border-radius: 16px; padding: 14px; box-shadow: inset 0 0 0 1px var(--line); font-size: 14px; line-height: 1.45; text-align: center; min-height: 100%; }
-.flow .step b { display: block; color: var(--ink); font-size: 15px; margin-bottom: 2px; }
-.flow .arrow { color: var(--faint); font-size: 18px; }
-.flow .step.hi { box-shadow: inset 0 0 0 2px var(--brand); }
-
-.note { display: flex; gap: 12px; background: var(--card); border-radius: 16px; padding: 16px 18px; margin: 22px 0; box-shadow: inset 0 0 0 1px var(--line); font-size: 15px; line-height: 1.55; }
-.note .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brand); margin-top: 8px; flex-shrink: 0; }
-.note.warn { background: var(--amber-soft); box-shadow: none; }
-.note.warn .dot { background: var(--amber); }
-.note p:last-child { margin: 0; }
-
-table { width: 100%; border-collapse: collapse; margin: 14px 0 22px; font-size: 15px; }
-th { text-align: left; font-weight: 500; color: var(--mute); font-size: 13px; padding: 0 12px 10px 0; border-bottom: 1px solid var(--line2); }
-td { padding: 12px 12px 12px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
-td:first-child { color: var(--ink); font-weight: 500; white-space: nowrap; }
-
-details { background: var(--card); border-radius: 16px; margin: 10px 0; box-shadow: inset 0 0 0 1px var(--line); }
-summary { cursor: pointer; list-style: none; padding: 16px 48px 16px 18px; color: var(--ink); font-weight: 500; position: relative; }
-summary::-webkit-details-marker { display: none; }
-summary::after { content: "+"; position: absolute; right: 18px; top: 13px; color: var(--mute); font-size: 22px; font-weight: 300; transition: transform .2s; }
-details[open] summary::after { transform: rotate(45deg); }
-details > div { padding: 0 18px 16px; font-size: 15px; }
-details > div p:last-child { margin: 0; }
-
-footer { border-top: 1px solid var(--line); color: var(--faint); font-size: 14px; }
-footer .bar { height: auto; padding: 28px 24px; }
-
-@media (max-width: 860px) {
-  .wrap { grid-template-columns: 1fr; gap: 0; }
-  nav.toc { display: none; }
-  main { padding-top: 36px; }
-  .cards { grid-template-columns: 1fr; gap: 8px; }
-  .card { display: grid; grid-template-columns: 34px 1fr; column-gap: 14px; padding: 14px 16px; }
-  .card .ico { margin: 0; grid-row: span 2; }
-  .card b { margin: 0; }
-  .lede { font-size: 18px; }
-  body { font-size: 16px; }
-  .flow { grid-template-columns: 1fr; }
-  .flow .arrow { transform: rotate(90deg); justify-self: center; }
-  td:first-child { white-space: normal; }
-}
-</style>
+<link rel="stylesheet" href="../page.css">
 </head>
 <body>
 <header><div class="bar">
@@ -135,7 +53,7 @@ footer .bar { height: auto; padding: 28px 24px; }
   <h2 id="basics"><span class="n">01</span>The basics</h2>
   <p>Monyx is built on <strong>Solana</strong>, a public payment network that anyone can use, like the internet is for email. When you pay someone, the money moves from your account to theirs over that network in about a second.</p>
   <p>You never see any of that. Monyx turns long account numbers into usernames, shows everything in dollars, and handles the technical parts for you.</p>
-  <div class="note"><span class="dot"></span><p><strong>The one thing to remember:</strong> your money lives in <em>your</em> account, which only you control. Monyx can't move it, freeze it, or spend it. That's also why your recovery key matters so much (more on that below).</p></div>
+  <div class="note"><span class="dot"></span><p><strong>The one thing to remember:</strong> your dollars live in <em>your</em> account, which only you control. Monyx can't move, freeze or spend them. (Coins in Invest are the one exception: Monyx holds those for you, like a brokerage. More below.) That's also why your recovery key matters so much.</p></div>
 
   <h2 id="voice"><span class="n">02</span>Talk to pay</h2>
   <p>Tap <strong>Just say it</strong> on the home screen (or the mic on the pay screen) and say what you want, the way you'd tell a friend. Monyx works out who, how much and what for, and shows you the payment, ready to send.</p>
@@ -150,6 +68,7 @@ footer .bar { height: auto; padding: 28px 24px; }
   <div class="note"><span class="dot"></span><p><strong>Voice never sends money by itself.</strong> It only fills in the payment. You always see the person's name, photo and the amount, and nothing moves until you tap Pay. If Monyx mishears, you lose a tap, not your money.</p></div>
   <h3>Hearing when you get paid</h3>
   <p>With <strong>Read payments aloud</strong> on (in the Me tab), Monyx says it when money arrives: “Maya sent you 14 dollars for pizza.” It also tells you when someone asks you for money. Turn off <strong>Monyx talks back</strong> if you'd rather read than listen.</p>
+  <p>This works within a few seconds even if the money came from outside Monyx (another wallet, an exchange). <strong>QuickNode Streams</strong> watches the network for dollars arriving at your account and tells Monyx straight away.</p>
   <h3>How it works</h3>
   <p>Your voice is turned into text by <strong>ElevenLabs</strong>, a speech company, and Monyx's replies are spoken by an ElevenLabs voice. To help with names, Monyx sends along the names of people you've paid before. Recordings aren't saved by Monyx. If voice isn't switched on, Monyx uses your browser's own speech recognition instead, and you can always type the same sentence.</p>
 
@@ -173,7 +92,9 @@ footer .bar { height: auto; padding: 28px 24px; }
     <div class="arrow">→</div>
     <div class="step"><b>They have it</b>It's in their account, ready to spend</div>
   </div>
-  <p>Monyx isn't in the middle of the payment. It goes straight from your account to theirs, which is why it's fast and why Monyx doesn't charge a fee.</p>
+  <p>The money goes straight from your account to theirs. Monyx only adds one thing: it <strong>pays the network fee</strong> (a fraction of a cent) by adding its signature to the payment you already signed. It can't change who the payment goes to or how much. That's why there's no fee for you, and why you never need any crypto to send dollars.</p>
+  <h3>Paying someone who isn't on Monyx</h3>
+  <p>Tap <strong>Send with a link, to anyone</strong> (or just say "send Mom 20"). Monyx moves the money into a one-off account whose key is only inside the link, and you text the link to them. They open it, make a free account, and the money is theirs. Until then, you can cancel it from Me → Pay links and get it back. Treat the link like cash: anyone who has it can claim it.</p>
   <h3>Ways to find someone</h3>
   <table>
     <tr><th>Method</th><th>How it works</th></tr>
@@ -193,14 +114,15 @@ footer .bar { height: auto; padding: 28px 24px; }
   <p>Say dinner was <strong>$60</strong> for three people including you. Each share is $20, so your two friends each get a request for $20 and you collect $40.</p>
 
   <h2 id="adding"><span class="n">06</span>Adding money</h2>
-  <p>New accounts get a <strong>welcome bonus</strong> to try things out. After that, tap <strong>Add money</strong> on the home screen:</p>
+  <p>New accounts get <strong>$10 in test dollars</strong> to try things out. After that, tap <strong>Add money</strong> on the home screen:</p>
   <ul>
-    <li><strong>Get free test money:</strong> copy your account number, open the free test-money site, and paste it in. It shows up within a minute.</li>
+    <li><strong>Add free test dollars:</strong> one tap, $5 a day, straight from Monyx.</li>
     <li><strong>Get paid by a friend:</strong> share your pay link or QR code.</li>
+    <li><strong>Need more for testing?</strong> Circle, which issues USDC, runs a free test faucet. The Add money screen links to it.</li>
   </ul>
 
   <h2 id="crypto"><span class="n">07</span>Buying crypto</h2>
-  <p>The <strong>Invest</strong> tab has nine popular coins: Bitcoin, Ethereum, USD Coin, XRP, Dogecoin, Cardano, Chainlink, Avalanche and Litecoin. Prices are live and update every minute.</p>
+  <p>The <strong>Invest</strong> tab has nine popular coins: Bitcoin, Ethereum, Solana, XRP, Dogecoin, Cardano, Chainlink, Avalanche and Litecoin. Prices are live and update every minute.</p>
   <table>
     <tr><th>Action</th><th>What happens</th></tr>
     <tr><td>Buy</td><td>You pay from your Monyx cash, and Monyx adds the coin to your account at the live price. The smallest buy is $1.</td></tr>
@@ -208,15 +130,16 @@ footer .bar { height: auto; padding: 28px 24px; }
     <tr><td>Swap</td><td>Trade one coin straight for another at today's prices. Instant, no fee.</td></tr>
   </table>
   <p>Coin prices go up and down, so the dollar value of what you own changes over time. The Invest tab shows how much it moved today.</p>
-  <div class="note"><span class="dot"></span><p><strong>How it differs from payments:</strong> your cash sits in your own account, but the coins you buy are recorded and kept by Monyx, the way a brokerage app holds stock for you. That's what makes buying and swapping instant.</p></div>
+  <div class="note warn"><span class="dot"></span><p><strong>Invest works differently from payments.</strong> Your dollars sit in your own account, which only you control. Coins you buy are <strong>held by Monyx</strong> in its own records, the way a brokerage app holds stock for you. When you buy, your dollars go to Monyx; when you sell, Monyx pays dollars back. So for Invest, unlike payments, you're trusting Monyx. In test mode, none of it has real value.</p></div>
 
   <h2 id="safety"><span class="n">08</span>Safety &amp; privacy</h2>
   <h3>What Monyx knows</h3>
   <ul>
     <li>Your name, username and account number</li>
     <li>Payment requests you send and receive</li>
-    <li>Your crypto trades and balances</li>
-    <li>When you use voice: the sentence you said, long enough to understand it. Recordings aren't kept.</li>
+    <li>Your crypto trades and the coins it holds for you</li>
+    <li>Payments it helped send (it pays the fee), and payments it saw arrive for you</li>
+    <li>When you use voice: the sentence you said, long enough to understand it. Recordings aren't kept. Full details are on the <a href="../privacy/">privacy page</a>.</li>
   </ul>
   <h3>What Monyx never has</h3>
   <ul>
@@ -228,8 +151,8 @@ footer .bar { height: auto; padding: 28px 24px; }
   <p>If a payment fails, Monyx tells you in plain words: "Nothing was sent," or "We couldn't confirm it yet, check your activity." If a crypto purchase goes through but doesn't get recorded straight away, Monyx remembers it and finishes it the next time you open the app.</p>
 
   <h2 id="test"><span class="n">09</span>Test mode</h2>
-  <p>Monyx is in <strong>test mode</strong> right now, which is why you'll see a yellow "Test mode" tag. Everything works for real, but it runs on Solana's test network, so the money is play money with no value. You can't cash it out and you can't lose real money. It's a safe way to try everything.</p>
-  <p>Your balance is held in Solana's own currency (SOL) and shown in dollars at the live price, so the dollar figure can shift slightly even when you haven't done anything.</p>
+  <p>Monyx is in <strong>test mode</strong> right now, which is why you'll see a "Test mode" tag. The app, the payments and the network are all real software doing real work, but they run on Solana's <strong>test network</strong> with <strong>test dollars</strong> (test USDC). Test dollars have no value: you can't cash them out, and you can't lose real money. It's a safe way to try everything.</p>
+  <p>Your balance is in <strong>USDC</strong>, a digital dollar, so $1 is always $1. It doesn't move with crypto prices.</p>
 
   <h2 id="pro"><span class="n">10</span>Monyx Pro</h2>
   <p>For the curious and for developers. Open it from the Me tab.</p>
@@ -239,29 +162,19 @@ footer .bar { height: auto; padding: 28px 24px; }
   </ul>
 
   <h2 id="faq"><span class="n">11</span>Questions</h2>
-  <details><summary>Does Monyx charge fees?</summary><div><p>No. The Solana network charges a tiny fee per payment, a fraction of a cent, and in test mode that's play money too.</p></div></details>
+  <details><summary>Does Monyx charge fees?</summary><div><p>No. The Solana network charges a fee of a fraction of a cent per payment, and Monyx pays it for you. You never pay a fee or need any crypto to send dollars.</p></div></details>
   <details><summary>I lost my recovery key. Can you help?</summary><div><p>If you're still logged in on a device, open the Me tab, tap <strong>Recovery key</strong> and save it now. If you've lost both the key and your logged-in device, the account can't be recovered. Nobody holds a copy, including us.</p></div></details>
   <details><summary>Someone asked for my recovery key. Should I give it?</summary><div><p>Never. Anyone with it can empty your account. Monyx will never ask for it.</p></div></details>
   <details><summary>Can I undo a payment?</summary><div><p>No, payments are final. Ask the person to send it back.</p></div></details>
-  <details><summary>Why did my balance change when I didn't do anything?</summary><div><p>Your balance is held in SOL and shown in dollars, so it moves a little with SOL's price. Crypto you own also changes value as prices move.</p></div></details>
+  <details><summary>Why did my balance change when I didn't do anything?</summary><div><p>Your dollar balance only changes when money comes in or goes out. Check Activity: a friend may have paid you. Coins in Invest do change value as prices move.</p></div></details>
+  <details><summary>Can an AI assistant spend my money?</summary><div><p>No. If you connect Grok Bot (Me → AI assistant), it can see your activity, ask friends for money and <strong>draft</strong> payments. Every draft waits on your home screen until you tap Pay. You set a weekly limit and can remove it any time. <a href="../grok-bot/">How it works</a></p></div></details>
   <details><summary>Can I use Monyx on more than one device?</summary><div><p>Yes. On the new device, choose "I already have an account" and paste your recovery key.</p></div></details>
-  <details><summary>My friend isn't on Monyx. Can I still pay them?</summary><div><p>Send them your pay link. They'll see who's paying and can sign up in under a minute. If they already have a Solana account, you can also paste their account number.</p></div></details>
+  <details><summary>My friend isn't on Monyx. Can I still pay them?</summary><div><p>Yes. Send them money with a link: they open it, sign up in under a minute, and it's theirs. You can cancel it until they claim it. If they already have a Solana account, you can also paste their account number.</p></div></details>
 </main>
 </div>
 
-<footer><div class="bar"><span>Monyx · monyx.pro · Test mode: balances are play money with no real value.</span><a href="../">Back to the app</a></div></footer>
+<footer><div class="bar"><span>Monyx · Test mode: balances are test dollars with no real value.</span><nav><a href="../about/">About</a><a href="../privacy/">Privacy</a><a href="../terms/">Terms</a><a href="https://github.com/joshkopp/monyx/issues">Contact</a><a href="../">Open Monyx</a></nav></div></footer>
 
-<script>
-// Highlight the section you're reading in the sidebar.
-(() => {
-  const links = [...document.querySelectorAll('nav.toc a')];
-  const ids = links.map((a) => a.getAttribute('href').slice(1));
-  const io = new IntersectionObserver((es) => es.forEach((e) => {
-    if (!e.isIntersecting) return;
-    links.forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id));
-  }), { rootMargin: '-20% 0px -70% 0px' });
-  ids.forEach((id) => { const el = document.getElementById(id); if (el) io.observe(el); });
-})();
-</script>
+<script src="toc.js"></script>
 </body>
 </html>

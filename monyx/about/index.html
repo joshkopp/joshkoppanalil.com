@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="color-scheme" content="light dark">
+<title>About · Monyx</title>
+<meta name="description" content="Monyx is the money app you can talk to, built for the 2026 University Blockchain Conference hackathon.">
+<link rel="icon" href="../favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../page.css">
+</head>
+<body>
+<header><div class="bar">
+  <a class="logo" href="../"><svg class="mk" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M10 21v-7.2a3 3 0 0 1 6 0V21m0-7.2a3 3 0 0 1 6 0V21"/></svg>monyx<small>About</small></a>
+  <a class="open" href="../">Open Monyx</a>
+</div></header>
+<div class="wrap solo"><main>
+
+<p class="kicker">About</p>
+<h1>The money app you can talk to</h1>
+<p class="lede">Say "send Maya 20 for pizza", check it, tap Pay. The money arrives in about a second, with no fee. That's Monyx.</p>
+
+<h2>Why we built it</h2>
+<p>Payment apps all ask you to do the same chores: find the person, type the amount, type the note. Crypto apps add more: wallets, gas, seed phrases. We wanted something your friends who have never touched crypto could use on day one. So Monyx hides the plumbing. Usernames instead of addresses, dollars instead of tokens, Monyx pays the fees, and you can just say what you want.</p>
+
+<h2>What's under the hood</h2>
+<ul>
+<li><strong>Solana</strong> moves the money. It settles in about a second for a fraction of a cent.</li>
+<li><strong>USDC</strong> is the money, so a dollar stays a dollar.</li>
+<li><strong>ElevenLabs</strong> listens and talks back.</li>
+<li><strong>QuickNode Streams</strong> tells you the moment you're paid, even by someone outside Monyx.</li>
+<li><strong>Grok Bot</strong> can be your money assistant: it asks friends for rent and drafts payments that wait for your tap.</li>
+<li>Keys never leave your device, and Monyx can't move your money.</li>
+</ul>
+
+<h2>Who made it</h2>
+<p>Monyx was built by <a href="https://joshkoppanalil.com">Josh Koppanalil</a> for the <a href="https://www.universityblockchain.org/programs/hackathon">2026 University Blockchain Conference hackathon</a> (Consumer Apps track).</p>
+
+<h2>What happens after test mode</h2>
+<p>Today Monyx runs on Solana's test network with test USDC. Going live would mean real USDC on Solana mainnet, a licensed partner for adding and withdrawing dollars to a bank, identity checks where the law requires them, and moving Invest to real on-chain assets or a regulated broker. Until then, nothing in Monyx has real value.</p>
+
+<div class="btnrow"><a class="primary" href="../">Open Monyx</a><a href="../documentation/">How it works</a><a href="https://github.com/joshkopp/monyx">Source code</a></div>
+
+</main></div>
+<footer><div class="bar"><span>Monyx · Test mode: balances are test dollars with no real value.</span><nav><a href="../about/">About</a><a href="../privacy/">Privacy</a><a href="../terms/">Terms</a><a href="../documentation/">Guide</a><a href="https://github.com/joshkopp/monyx/issues">Contact</a></nav></div></footer>
+</body>
+</html>

@@ -10,7 +10,11 @@ Copy the contents of this folder (not the folder itself) to the root of monyx.pr
 - `voice-parse.js`: turns a spoken sentence into pay / request / split / balance / activity (tests: `node voice-parse.test.js`)
 - `pro/`: Monyx Pro (wallet tracer, agent API market, ledger)
 - `llms.txt`, `agents.json`: instructions for AI agents using the API market
-- `server/index.ts`: source of the Supabase edge function `monyx` (accounts, requests, profile pictures, exchange)
+- `server/index.ts`: source of the Supabase edge function `monyx` (accounts, usernames, requests, profile pictures)
+- `payments/index.ts`: source of `monyx-pay` (USDC payments with Monyx paying the fee, test dollars, pay links, live inbox, exchange, Grok Bot agent API)
+- `payments/quicknode-filter.js`: the QuickNode Streams filter
+- `grok-bot/`: setup page and `SKILL.md` for Grok Bot
+- `privacy/`, `terms/`, `about/`, `404.html`, `robots.txt`, `sitemap.xml`, `og.png`: site pages
 - `meter/index.ts`: source of the Supabase edge function `monyx-market` (pay-per-pull API market)
 - `voice/index.ts`: source of the Supabase edge function `monyx-voice` (ElevenLabs speech-to-text and text-to-speech)
 
@@ -19,3 +23,17 @@ Add the secret `ELEVENLABS_API_KEY` to the Supabase project (Edge Functions → 
 Without the key, the app falls back to the browser's built-in speech recognition and speech, and typing always works.
 
 The backend stays on Supabase, so nothing changes when the domain does.
+
+## Money setup (USDC on devnet)
+Dollars are Circle's devnet USDC (`4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`). The Monyx bank wallet
+(`9JBSMxHPKMDLyUMhwV2NzFNUikNoQfnJj82NyBoPNJRs`) pays every network fee in SOL and hands out test dollars in USDC, so it needs both:
+- **USDC:** go to https://faucet.circle.com, choose Solana Devnet and paste the bank address. That gives 20 USDC every 2 hours. Each new account takes $10, then $5 a day.
+- **SOL** for fees: https://faucet.solana.com. Each payment costs the bank about 0.000005 SOL, plus about 0.002 SOL the first time someone receives USDC.
+
+## QuickNode Streams (live "you got paid" for money from outside Monyx)
+1. Pick a long random string and add it as the Supabase secret `QN_STREAMS_KEY`.
+2. In QuickNode, create a Stream: Solana, Devnet, dataset **Block**, starting from the latest block.
+3. Choose "Modify the payload" and paste `payments/quicknode-filter.js`.
+4. Destination: Webhook, URL `https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/monyx-pay/streams?key=<QN_STREAMS_KEY>`.
+5. Send a test USDC payment to a Monyx account from any wallet. The app announces it within a few seconds.
+Payments made inside Monyx already show up instantly without Streams, because the relay logs them.

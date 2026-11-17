@@ -1,23 +1,17 @@
-// Monyx: usernames, sessions, requests, the welcome bonus and the crypto exchange.
-// Deployed as the Supabase edge function "monyx".
+// Monyx people: usernames, sessions, profile photos and payment requests.
+// Deployed as the Supabase edge function "monyx". Everything that moves money
+// (USDC payments, test dollars, pay links, the exchange) lives in "monyx-pay".
 //
-// Payments between people never touch this server. Users hold their own keys
-// in the browser and sign their own transfers. The server maps @usernames to
-// account addresses, stores payment requests, pays a one-time welcome bonus,
-// and runs the test-mode exchange from the Monyx bank wallet (devnet SOL).
+// This server never touches anyone's money. Users hold their own keys in the
+// browser. It maps @usernames to account addresses and stores requests.
 //
 // Proof of ownership: to register or log in, the browser signs
 //   "Sign in to Monyx\n\nAccount: <address>\nTime: <unix ms>"
 // with the account key. The server checks the ed25519 signature and that the
 // time is within 5 minutes, then issues a 30-day session token.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { Connection, Keypair, PublicKey, SystemProgram, Transaction, TransactionInstruction, sendAndConfirmTransaction } from "npm:@solana/web3.js@1.95.3";
+import { Keypair } from "npm:@solana/web3.js@1.95.3";
 
-const RPC = "https://api.devnet.solana.com";
-const MEMO = new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");
-const BONUS = 50_000_000;            // 0.05 test SOL
-const BANK_FLOOR = 20_000_000;       // keep for fees
-const BONUS_PER_IP_DAY = 3;
 const SIGNUPS_PER_IP_HOUR = 10;
 const SESSION_DAYS = 30;
 const HANDLE = /^[a-z0-9_]{3,20}$/;
@@ -40,7 +34,6 @@ const oops = (where: string, e: unknown, status = 500) => {
 };
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
-const conn = new Connection(RPC, "confirmed");
 const PUBLIC = "id, handle, name, address, avatar, created_at";
 // Profile pictures live in the public "avatars" storage bucket. Each upload gets
 // a new file name so phones never show a stale cached photo.
@@ -85,80 +78,15 @@ async function me(req: Request) {
   return u;
 }
 
-// ---------- the bank (welcome bonus) ----------
-let bankKp: Keypair | null = null;
+// ---------- the bank ----------
+// Only used to label the Monyx bank in activity ("Monyx paid you").
+let bankAddr: string | null = null;
 async function bank() {
-  if (bankKp) return bankKp;
-  let { data } = await db.from("monyx_config").select("value").eq("key", "bank_secret").maybeSingle();
-  if (!data) {
-    const kp = Keypair.generate();
-    await db.from("monyx_config").upsert({ key: "bank_secret", value: JSON.stringify([...kp.secretKey]) }, { onConflict: "key", ignoreDuplicates: true });
-    ({ data } = await db.from("monyx_config").select("value").eq("key", "bank_secret").single());
-  }
-  bankKp = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(data!.value)));
-  return bankKp;
+  if (bankAddr) return bankAddr;
+  const { data } = await db.from("monyx_config").select("value").eq("key", "bank_secret").single();
+  bankAddr = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(data!.value))).publicKey.toBase58();
+  return bankAddr;
 }
-async function giveBonus(user: any, ip: string) {
-  if (user.bonus_sig) return { status: "already", signature: user.bonus_sig };
-  const day = new Date(Date.now() - 86400_000).toISOString();
-  const { count } = await db.from("monyx_users").select("*", { count: "exact", head: true }).eq("bonus_ip", ip).not("bonus_sig", "is", null).gte("created_at", day);
-  if ((count ?? 0) >= BONUS_PER_IP_DAY) return { status: "limit" };
-  const kp = await bank();
-  const bal = await conn.getBalance(kp.publicKey).catch(() => 0);
-  if (bal - BONUS < BANK_FLOOR) return { status: "bank_empty" };
-  // Claim first so two tabs can't both collect.
-  const { data: claimed } = await db.from("monyx_users").update({ bonus_sig: "pending", bonus_ip: ip }).eq("id", user.id).is("bonus_sig", null).select();
-  if (!claimed?.length) return { status: "already" };
-  try {
-    const tx = new Transaction()
-      .add(SystemProgram.transfer({ fromPubkey: kp.publicKey, toPubkey: new PublicKey(user.address), lamports: BONUS }))
-      .add(new TransactionInstruction({ programId: MEMO, keys: [], data: new TextEncoder().encode("Welcome to Monyx") }));
-    const signature = await sendAndConfirmTransaction(conn, tx, [kp], { commitment: "confirmed" });
-    await db.from("monyx_users").update({ bonus_sig: signature }).eq("id", user.id);
-    return { status: "sent", signature, lamports: BONUS };
-  } catch (e) {
-    await db.from("monyx_users").update({ bonus_sig: null }).eq("id", user.id);
-    console.error("[monyx] bonus:", e);
-    return { status: "failed" };
-  }
-}
-
-// ---------- exchange ----------
-// Test-mode exchange. Cash is devnet SOL in the user's own wallet. Buying
-// sends SOL to the bank and credits the asset in Monyx's ledger at the live
-// price; selling debits the ledger and the bank pays SOL back. Swaps are
-// ledger-only. Prices come from CoinGecko, refreshed every minute.
-const ASSETS: Record<string, { sym: string; name: string; color: string }> = {
-  bitcoin: { sym: "BTC", name: "Bitcoin", color: "#f7931a" },
-  ethereum: { sym: "ETH", name: "Ethereum", color: "#627eea" },
-  "usd-coin": { sym: "USDC", name: "USD Coin", color: "#2775ca" },
-  ripple: { sym: "XRP", name: "XRP", color: "#23292f" },
-  dogecoin: { sym: "DOGE", name: "Dogecoin", color: "#c2a633" },
-  cardano: { sym: "ADA", name: "Cardano", color: "#0033ad" },
-  chainlink: { sym: "LINK", name: "Chainlink", color: "#2a5ada" },
-  "avalanche-2": { sym: "AVAX", name: "Avalanche", color: "#e84142" },
-  litecoin: { sym: "LTC", name: "Litecoin", color: "#345d9d" },
-};
-let mk: { t: number; data: any[] } | null = null;
-async function markets() {
-  if (mk && Date.now() - mk.t < 60_000) return mk.data;
-  const ids = ["solana", ...Object.keys(ASSETS)].join(",");
-  const r = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&sparkline=true&price_change_percentage=24h`).catch(() => null);
-  if (!r || !r.ok) { if (mk) return mk.data; throw new Error("Prices are unavailable right now. Try again in a minute."); }
-  const j = await r.json();
-  mk = { t: Date.now(), data: j.map((c: any) => ({
-    id: c.id, symbol: ASSETS[c.id]?.sym ?? String(c.symbol).toUpperCase(), name: ASSETS[c.id]?.name ?? c.name,
-    color: ASSETS[c.id]?.color ?? "#14f195", price: c.current_price, change24h: c.price_change_percentage_24h,
-    marketCap: c.market_cap, spark: (c.sparkline_in_7d?.price || []).filter((_: unknown, i: number) => i % 4 === 0),
-  })) };
-  return mk.data;
-}
-async function price(id: string) {
-  const m = (await markets()).find((x: any) => x.id === id);
-  if (!m) throw new Error("Unknown asset");
-  return m.price as number;
-}
-const roundQty = (q: number) => Math.floor(q * 1e10) / 1e10;
 
 // ---------- router ----------
 Deno.serve(async (req) => {
@@ -168,14 +96,6 @@ Deno.serve(async (req) => {
   const ip = (req.headers.get("x-forwarded-for") || "?").split(",")[0].trim();
   const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
   try {
-    if (path === "/bank") {
-      const kp = await bank();
-      return json({ address: kp.publicKey.toBase58(), bonusSol: BONUS / 1e9 });
-    }
-    if (path === "/markets") {
-      const all = await markets();
-      return json({ solPrice: all.find((a: any) => a.id === "solana")?.price, assets: all.filter((a: any) => a.id !== "solana") });
-    }
     if (path === "/check") {
       const h = (url.searchParams.get("handle") || "").toLowerCase();
       if (!HANDLE.test(h)) return json({ available: false, reason: "3–20 letters, numbers or _" });
@@ -195,7 +115,7 @@ Deno.serve(async (req) => {
       const { data } = await db.from("monyx_users").select(PUBLIC).in("address", list);
       const users: Record<string, unknown> = {};
       for (const u of data || []) users[u.address] = pub(u);
-      try { const b = (await bank()).publicKey.toBase58(); if (list.includes(b)) users[b] = { handle: "monyx", name: "Monyx", address: b, bank: true }; } catch { /* ignore */ }
+      try { const b = await bank(); if (list.includes(b)) users[b] = { handle: "monyx", name: "Monyx", address: b, bank: true }; } catch { /* ignore */ }
       return json({ users });
     }
     const um = path.match(/^\/u\/([a-z0-9_]{3,20})$/i);
@@ -219,101 +139,25 @@ Deno.serve(async (req) => {
         return fail("That username was just taken. Try another.", 409, "taken");
       }
       const t = await newSession(u.id);
-      const bonus = body.bonus === false ? { status: "skipped" } : await giveBonus(u, ip);
-      return json({ token: t, user: pub(u), bonus });
+      return json({ token: t, user: pub(u) }); // the app then asks monyx-pay for welcome dollars
     }
     if (path === "/login" && req.method === "POST") {
       if (!(await proves(body.address, Number(body.ts), String(body.sig || "")))) return fail("Couldn't verify this key.", 401, "unauthorized");
       const { data: u } = await db.from("monyx_users").select("*").eq("address", body.address).maybeSingle();
       if (!u) return fail("No account for this key yet.", 404, "no_account");
-      return json({ token: await newSession(u.id), user: pub(u), bonusClaimed: !!u.bonus_sig });
+      return json({ token: await newSession(u.id), user: pub(u) });
     }
 
     // ---------- signed-in routes ----------
     const user = await me(req);
     if (!user) return fail("Please sign in again.", 401, "unauthorized");
 
-    if (path === "/me") return json({ user: pub(user), bonusClaimed: !!user.bonus_sig && user.bonus_sig !== "pending" });
+    if (path === "/me") return json({ user: pub(user) });
     if (path === "/logout" && req.method === "POST") {
       await db.from("monyx_sessions").delete().eq("token", (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, ""));
       return json({ ok: true });
     }
-    if (path === "/bonus" && req.method === "POST") return json(await giveBonus(user, ip));
 
-    if (path === "/portfolio") {
-      const { data } = await db.from("monyx_holdings").select("asset, qty").eq("user_id", user.id).gt("qty", 0);
-      const all = await markets();
-      const holdings = (data || []).map((h: any) => {
-        const m = all.find((a: any) => a.id === h.asset) || { price: 0 };
-        return { ...m, id: h.asset, qty: Number(h.qty), value: Number(h.qty) * m.price };
-      }).sort((a: any, b: any) => b.value - a.value);
-      const { data: trades } = await db.from("monyx_trades").select("kind, asset_from, asset_to, qty_from, qty_to, usd, sig, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
-      return json({ holdings, total: holdings.reduce((a: number, h: any) => a + h.value, 0), trades: trades || [] });
-    }
-    if (path === "/trade/buy" && req.method === "POST") {
-      const asset = String(body.asset || ""); const sig = String(body.sig || "");
-      if (!ASSETS[asset]) return fail("Pick something to buy.");
-      const kp = await bank(); const bankAddr = kp.publicKey.toBase58();
-      let tx: any = null;
-      for (let i = 0; i < 5 && !tx; i++) {
-        tx = await conn.getParsedTransaction(sig, { commitment: "confirmed", maxSupportedTransactionVersion: 0 }).catch(() => null);
-        if (!tx) await new Promise((s) => setTimeout(s, 1000));
-      }
-      if (!tx || tx.meta?.err) return fail("Couldn't find your payment yet. Try again in a moment.", 409, "not_found");
-      if (tx.blockTime && Date.now() / 1000 - tx.blockTime > 600) return fail("That payment is too old to use.", 409, "stale");
-      const keys = tx.transaction.message.accountKeys.map((k: any) => k.pubkey.toBase58());
-      const bi = keys.indexOf(bankAddr);
-      const received = bi >= 0 ? tx.meta.postBalances[bi] - tx.meta.preBalances[bi] : 0;
-      if (keys[0] !== user.address || received <= 0) return fail("That payment wasn't to Monyx.", 409, "mismatch");
-      const usd = Math.round((received / 1e9) * (await price("solana")) * 100) / 100;
-      const qty = roundQty(usd / (await price(asset)));
-      const { error } = await db.from("monyx_trades").insert({ user_id: user.id, kind: "buy", asset_from: "cash", asset_to: asset, qty_from: received / 1e9, qty_to: qty, usd, sig });
-      if (error) return fail("This payment was already used.", 409, "used");
-      await db.rpc("monyx_adjust", { p_user: user.id, p_asset: asset, p_delta: qty });
-      return json({ asset, symbol: ASSETS[asset].sym, qty, usd });
-    }
-    if (path === "/trade/sell" && req.method === "POST") {
-      const asset = String(body.asset || "");
-      if (!ASSETS[asset]) return fail("Pick something to sell.");
-      const p = await price(asset); const sp = await price("solana");
-      const { data: h } = await db.from("monyx_holdings").select("qty").eq("user_id", user.id).eq("asset", asset).maybeSingle();
-      const have = Number(h?.qty || 0);
-      const qty = body.all ? have : roundQty(Number(body.usd) / p);
-      const usd = Math.round(qty * p * 100) / 100;
-      if (!(qty > 0) || qty > have + 1e-12) return fail(`You have $${(have * p).toFixed(2)} of ${ASSETS[asset].sym} to sell.`);
-      if (usd < 0.5) return fail("The smallest sale is $0.50.");
-      const lamports = Math.round((usd / sp) * 1e9);
-      const kp = await bank();
-      if ((await conn.getBalance(kp.publicKey)) - lamports < BANK_FLOOR) return fail("Selling is paused while Monyx tops up. Swaps still work.", 503, "bank_low");
-      const { error: e1 } = await db.rpc("monyx_adjust", { p_user: user.id, p_asset: asset, p_delta: -qty });
-      if (e1) return fail("You don't have that much to sell.", 409, "insufficient");
-      try {
-        const t = new Transaction()
-          .add(SystemProgram.transfer({ fromPubkey: kp.publicKey, toPubkey: new PublicKey(user.address), lamports }))
-          .add(new TransactionInstruction({ programId: MEMO, keys: [], data: new TextEncoder().encode(`Sold ${ASSETS[asset].sym}`) }));
-        const sig = await sendAndConfirmTransaction(conn, t, [kp], { commitment: "confirmed" });
-        await db.from("monyx_trades").insert({ user_id: user.id, kind: "sell", asset_from: asset, asset_to: "cash", qty_from: qty, qty_to: lamports / 1e9, usd, sig });
-        return json({ asset, symbol: ASSETS[asset].sym, qty, usd, signature: sig });
-      } catch (e) {
-        await db.rpc("monyx_adjust", { p_user: user.id, p_asset: asset, p_delta: qty });
-        console.error("[monyx] sell payout:", e);
-        return fail("The sale didn't go through. Nothing changed, so you can try again.", 502, "upstream_failed");
-      }
-    }
-    if (path === "/trade/swap" && req.method === "POST") {
-      const from = String(body.from || ""), to = String(body.to || "");
-      if (!ASSETS[from] || !ASSETS[to] || from === to) return fail("Pick two different coins.");
-      const pf = await price(from), pt = await price(to);
-      const { data: h } = await db.from("monyx_holdings").select("qty").eq("user_id", user.id).eq("asset", from).maybeSingle();
-      const have = Number(h?.qty || 0);
-      const qtyFrom = body.all ? have : Math.min(have, roundQty(Number(body.usd) / pf));
-      const usd = Math.round(qtyFrom * pf * 100) / 100;
-      if (!(qtyFrom > 0) || usd < 0.01) return fail("Enter an amount to swap.");
-      const qtyTo = roundQty(usd / pt);
-      const { error } = await db.rpc("monyx_swap", { p_user: user.id, p_from: from, p_to: to, p_qty_from: qtyFrom, p_qty_to: qtyTo, p_usd: usd });
-      if (error) return fail("You don't have that much to swap.");
-      return json({ from: ASSETS[from].sym, to: ASSETS[to].sym, qtyFrom, qtyTo, usd });
-    }
     if (path === "/avatar" && req.method === "POST") {
       const now = Date.now(); const w = avatarHits.get(user.id);
       if (!w || now - w.t > 3600_000) avatarHits.set(user.id, { t: now, n: 1 });
@@ -368,18 +212,17 @@ Deno.serve(async (req) => {
       if (action === "cancel" && r.from_user === user.id) { await db.from("monyx_requests").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", r.id); return json({ ok: true }); }
       if (action === "decline" && r.to_user === user.id) { await db.from("monyx_requests").update({ status: "declined", updated_at: new Date().toISOString() }).eq("id", r.id); return json({ ok: true }); }
       if (action === "paid" && r.to_user === user.id) {
-        // Check the payment really went from the payer to the requester.
+        // Check the payment really went from the payer to the requester. Every
+        // app payment is relayed by monyx-pay, which logs it once confirmed.
         const sig = String(body.sig || "");
         const { data: requester } = await db.from("monyx_users").select("address").eq("id", r.from_user).single();
-        let tx: any = null;
-        for (let i = 0; i < 5 && !tx; i++) {
-          tx = await conn.getParsedTransaction(sig, { commitment: "confirmed", maxSupportedTransactionVersion: 0 }).catch(() => null);
-          if (!tx) await new Promise((s) => setTimeout(s, 1000));
+        let p: any = null;
+        for (let i = 0; i < 4 && !p; i++) {
+          ({ data: p } = await db.from("monyx_payments").select("from_addr, to_addr, units").eq("sig", sig).maybeSingle());
+          if (!p) await new Promise((s) => setTimeout(s, 800));
         }
-        if (!tx || tx.meta?.err) return fail("Couldn't find that payment yet.", 409, "not_found");
-        const keys = tx.transaction.message.accountKeys.map((k: any) => k.pubkey.toBase58());
-        const ri = keys.indexOf(requester!.address);
-        if (keys[0] !== user.address || ri < 0 || tx.meta.postBalances[ri] <= tx.meta.preBalances[ri]) return fail("That payment doesn't match this request.", 409, "mismatch");
+        if (!p) return fail("Couldn't find that payment yet.", 409, "not_found");
+        if (p.from_addr !== user.address || p.to_addr !== requester!.address) return fail("That payment doesn't match this request.", 409, "mismatch");
         await db.from("monyx_requests").update({ status: "paid", paid_sig: sig, updated_at: new Date().toISOString() }).eq("id", r.id);
         return json({ ok: true });
       }
@@ -387,7 +230,6 @@ Deno.serve(async (req) => {
     }
     return fail("Unknown route.", 404, "not_found");
   } catch (e) {
-    if (e instanceof Error && /Prices are unavailable/.test(e.message)) return fail(e.message, 503, "prices_unavailable");
     return oops(path, e);
   }
 });

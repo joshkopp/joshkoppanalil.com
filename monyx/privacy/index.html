@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="color-scheme" content="light dark">
+<title>Privacy · Monyx</title>
+<meta name="description" content="What Monyx collects, what it never has, and where your data goes, including voice.">
+<link rel="icon" href="../favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../page.css">
+</head>
+<body>
+<header><div class="bar">
+  <a class="logo" href="../"><svg class="mk" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M10 21v-7.2a3 3 0 0 1 6 0V21m0-7.2a3 3 0 0 1 6 0V21"/></svg>monyx<small>Privacy</small></a>
+  <a class="open" href="../">Open Monyx</a>
+</div></header>
+<div class="wrap solo"><main>
+
+<p class="kicker">Privacy</p>
+<h1>What Monyx knows about you</h1>
+<p class="updated">Last updated November 17, 2026</p>
+<p class="lede">Short version: Monyx stores your name, your username and your account number. We never have your recovery key, a password, your email or your bank details. Payments themselves are public on the Solana network.</p>
+
+<h2>What we store</h2>
+<ul>
+<li><strong>Your profile:</strong> your name, @username, account number (public key) and, if you add one, your profile photo.</li>
+<li><strong>Requests and pay links</strong> you send or receive: who, how much, the note, and whether they were paid.</li>
+<li><strong>A payment log:</strong> payments Monyx helped send (we pay the network fee), with amount, note and the accounts involved. This is the same information that's already public on the network.</li>
+<li><strong>Invest:</strong> the coins you hold and your trades. In test mode these are kept in Monyx's own ledger, not on the network.</li>
+<li><strong>AI assistant keys:</strong> if you connect one, we keep a scrambled (hashed) copy of the key, its name and its weekly limit, plus any payments it drafts.</li>
+<li><strong>Basic security data:</strong> the IP address used to create an account or claim test dollars, so we can limit abuse. Server logs are kept briefly to fix problems.</li>
+</ul>
+
+<h2>What we never have</h2>
+<ul>
+<li>Your <strong>recovery key</strong> (private key). It is created in your browser and stays there. Monyx can't see it, reset it, or move your money.</li>
+<li>A password, email address, phone number or bank details. We don't ask for them.</li>
+</ul>
+
+<h2>Voice</h2>
+<p>When you tap the mic, your browser records a few seconds of audio and sends it to Monyx, which passes it to <strong>ElevenLabs</strong> to turn it into text. To help with unusual names, the names and usernames of people you've paid are sent along. Spoken replies are made by ElevenLabs from the text Monyx wants to say. Monyx does not keep the recordings. ElevenLabs handles audio under <a href="https://elevenlabs.io/privacy-policy">its own privacy policy</a>. If voice isn't switched on, your browser's built-in speech recognition is used instead, which may send audio to your browser maker. You can always type instead.</p>
+
+<h2>The public network</h2>
+<p>Monyx runs on <strong>Solana</strong>, a public network. Anyone can look up an account number and see its payments, amounts and the notes attached to them. They won't see your name unless they already know which account is yours. Keep private things out of payment notes.</p>
+
+<h2>Other services we use</h2>
+<ul>
+<li><strong>Supabase</strong>: hosts our database, storage (profile photos) and server functions.</li>
+<li><strong>ElevenLabs</strong>: voice, as above.</li>
+<li><strong>QuickNode</strong>: watches the network for incoming payments, so we can tell you the moment you're paid.</li>
+<li><strong>CoinGecko</strong>: coin prices.</li>
+<li><strong>GitHub Pages</strong>: serves this website.</li>
+<li><strong>Google Fonts</strong>: the typeface. Your browser fetches it from Google.</li>
+</ul>
+<p>We don't sell data, show ads or use tracking cookies. The app keeps your account and a few settings in your browser's local storage.</p>
+
+<h2>Deleting your data</h2>
+<p>Log out and clear your browser data to remove your key from this device. To delete your Monyx profile, photo, requests and assistant keys, <a href="https://github.com/joshkopp/monyx/issues">contact us</a>. Payments already on the public network can't be deleted by anyone.</p>
+
+<h2>Test mode</h2>
+<p>Monyx is a student project built for the 2026 University Blockchain Conference hackathon and runs in test mode. Don't send it anything sensitive.</p>
+
+</main></div>
+<footer><div class="bar"><span>Monyx · Test mode: balances are test dollars with no real value.</span><nav><a href="../about/">About</a><a href="../privacy/">Privacy</a><a href="../terms/">Terms</a><a href="../documentation/">Guide</a><a href="https://github.com/joshkopp/monyx/issues">Contact</a></nav></div></footer>
+</body>
+</html>

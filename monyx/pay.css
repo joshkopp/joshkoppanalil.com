@@ -394,3 +394,21 @@ button.item:first-child { border-top: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .orb.on, .orb.thinking svg { animation: none; } }
 .payhead .mic { margin: 0 -8px 0 0; }
+
+/* ── pay links, assistant, speed, intros ── */
+.av.linkav, .av.bot { background: var(--brand-soft); color: var(--brand-ink); }
+.av.linkav svg, .av.bot svg { width: 46%; height: 46%; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.av.bot svg { fill: currentColor; stroke: none; }
+.speed { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; padding: 6px 12px; border-radius: 99px; background: color-mix(in srgb, var(--green) 14%, transparent); color: var(--green); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.warn.strong { background: rgba(224, 87, 79, .1); color: var(--bad); box-shadow: inset 0 0 0 1px rgba(224, 87, 79, .35); margin: 12px 0; }
+.warn.strong b { color: inherit; }
+.req.draft { box-shadow: inset 0 0 0 1px var(--brand); }
+details.more { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 12px; }
+details.more summary { cursor: pointer; color: var(--mute); font-size: 14px; }
+details.more .btn-row { margin-top: 10px; }
+.welcome.intro { justify-content: center; }
+.introcard { text-align: center; margin: 28px 0 8px; }
+.introcard .av.lg { margin: 0 auto 18px; width: 84px; height: 84px; font-size: 28px; }
+.introcard h1 { font-size: 34px; line-height: 1.1; letter-spacing: -.035em; margin: 0; }
+.introcard .note { display: inline-block; margin: 12px 0 0; padding: 6px 12px; border-radius: 99px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); font-size: 15px; }
+.introcard .sub { margin-top: 16px; }

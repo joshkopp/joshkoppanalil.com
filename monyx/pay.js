@@ -1,20 +1,25 @@
-// Monyx: pay anyone by @username, and buy, sell and swap crypto.
+// Monyx: the money app you can talk to. Pay anyone by voice or @username.
 // Every account is a Solana devnet keypair held in this browser (or Phantom).
-// Amounts are shown in dollars, converted at the live SOL price. The monyx
-// edge function maps usernames to accounts and stores requests; it never
-// holds anyone's money.
+// Money is USDC (digital dollars), so $1 is always $1. The Monyx bank pays
+// every network fee, so nobody needs SOL. Edge functions: "monyx" maps
+// usernames to accounts and stores requests; "monyx-pay" co-signs payments
+// as fee payer, hands out test dollars and runs claim links. Neither can move
+// anyone's money.
 (() => {
   'use strict';
   const API = 'https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/monyx';
   const VAPI = API + '-voice';
+  const PAPI = API + '-pay';
   const RPC = 'https://api.devnet.solana.com';
+  const USDC = '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU'; // Circle's devnet USDC
+  const TOKEN = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
+  const ATA_PROGRAM = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
   const MEMO = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
   const SITE = location.origin + location.pathname.replace(/index\.html$/, '');
   // The mark: a violet tile with a white "m". Simple enough to read at favicon size.
   const MARK = '<svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M10 21v-7.2a3 3 0 0 1 6 0V21m0-7.2a3 3 0 0 1 6 0V21"/></svg>';
   const LOGO = `<span class="logo">${MARK}monyx</span>`;
-  const L = 1e9;
-  const FEE = 10_000;
+  const U = 1e6; // USDC has 6 decimals
   const W = () => window.solanaWeb3;
 
   const $ = (s, el = document) => el.querySelector(s);
@@ -35,6 +40,7 @@
     scan: '<svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"/></svg>',
     plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
     key: '<svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l3 3"/></svg>',
+    spark: '<svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>',
     link: '<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
     info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
     camera: '<svg viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6L16.5 7h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.5" r="3.5"/></svg>',
@@ -51,26 +57,19 @@
   /* ───────── money ───────── */
   const S = {
     acct: store.get('monyx.acct'),       // { mode, secret?, address, token, user }
-    kp: null, price: store.get('monyx.price', 150), lamports: null,
+    kp: null, cash: null,
     feed: [], people: store.get('monyx.people', {}), requests: { incoming: [], outgoing: [] },
-    markets: store.get('monyx.markets', null), port: null, bankAddr: store.get('monyx.bank', null),
+    markets: store.get('monyx.markets', null), port: null, bankAddr: store.get('monyx.bank2', null),
+    drafts: [], claims: [], inboxAt: Date.now(), lastMs: null,
     signup: null, timers: [],
     voice: { server: store.get('monyx.voiceServer', null), talk: store.get('monyx.talkback', true), announce: store.get('monyx.announce', true), feedSeen: false, reqSeen: null },
   };
-  const usd = (lamports) => (lamports / L) * S.price;
-  const toLamports = (dollars) => Math.round((dollars / S.price) * L);
+  const usd = (units) => units / U;
+  const toUnits = (dollars) => Math.round(dollars * U);
   const money = (v, sign = false) => {
     const s = Math.abs(v).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return sign ? (v > 0 ? '+' : v < 0 ? '−' : '') + s : s;
   };
-  async function loadPrice() {
-    try {
-      const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
-      const p = (await r.json()).solana.usd;
-      if (p > 0) { S.price = p; store.set('monyx.price', p); }
-    } catch {}
-  }
-
   /* ───────── base58 / base64 ───────── */
   const ALPH = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
   function b58enc(bytes) {
@@ -151,57 +150,84 @@
   /* ───────── chain ───────── */
   async function rpc(method, params, tries = 4) {
     for (let i = 0; i < tries; i++) {
+      let j;
       try {
         const r = await fetch(RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
         if (r.status === 429 || r.status >= 500) throw new Error('busy');
-        const j = await r.json(); if (j.error) throw new Error(j.error.message);
-        return j.result;
-      } catch (e) { if (i === tries - 1) throw e; await new Promise((s) => setTimeout(s, 350 * 2 ** i)); }
+        j = await r.json();
+      } catch (e) { if (i === tries - 1) throw e; await new Promise((s) => setTimeout(s, 350 * 2 ** i)); continue; }
+      if (j.error) throw Object.assign(new Error(j.error.message), { rpc: true }); // a real answer: don't retry
+      return j.result;
     }
+  }
+  // Your dollars live in your USDC account, an address derived from your account number.
+  function ataOf(owner) {
+    const { PublicKey } = W();
+    return PublicKey.findProgramAddressSync([new PublicKey(owner).toBuffer(), new PublicKey(TOKEN).toBuffer(), new PublicKey(USDC).toBuffer()], new PublicKey(ATA_PROGRAM))[0];
+  }
+  async function usdcOf(owner) {
+    try { return Number((await rpc('getTokenAccountBalance', [ataOf(owner).toBase58()])).value.amount); }
+    catch (e) { if (e.rpc) return 0; throw e; } // no USDC account yet = $0
   }
   async function refreshBalance() {
     if (!S.acct) return;
-    try { S.lamports = (await rpc('getBalance', [S.acct.address])).value; paintBalance(); } catch {}
+    try { S.cash = await usdcOf(S.acct.address); paintBalance(); } catch {}
+  }
+  async function bankAddr() {
+    if (!S.bankAddr) { const i = await api(PAPI + '/info', { auth: false }); S.bankAddr = i.bank; store.set('monyx.bank2', i.bank); }
+    return S.bankAddr;
+  }
+  // Build "owner sends USDC to someone", sign it, and hand it to Monyx, which
+  // checks it and adds its signature as the fee payer. Nobody needs SOL.
+  async function usdcSend({ owner, signer, to, units, note, closeEscrow = false }) {
+    const { PublicKey, Transaction, TransactionInstruction, SystemProgram } = W();
+    const bank = new PublicKey(await bankAddr());
+    const o = new PublicKey(owner), t = new PublicKey(to), mint = new PublicKey(USDC), tok = new PublicKey(TOKEN);
+    const data = new Uint8Array(10); data[0] = 12; new DataView(data.buffer).setBigUint64(1, BigInt(units), true); data[9] = 6;
+    const tx = new Transaction()
+      .add(new TransactionInstruction({ programId: new PublicKey(ATA_PROGRAM), data: Buffer.from([1]), keys: [
+        { pubkey: bank, isSigner: true, isWritable: true }, { pubkey: ataOf(to), isSigner: false, isWritable: true },
+        { pubkey: t, isSigner: false, isWritable: false }, { pubkey: mint, isSigner: false, isWritable: false },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, { pubkey: tok, isSigner: false, isWritable: false }] }))
+      .add(new TransactionInstruction({ programId: tok, data: Buffer.from(data), keys: [
+        { pubkey: ataOf(owner), isSigner: false, isWritable: true }, { pubkey: mint, isSigner: false, isWritable: false },
+        { pubkey: ataOf(to), isSigner: false, isWritable: true }, { pubkey: o, isSigner: true, isWritable: false }] }));
+    if (note) tx.add(new TransactionInstruction({ programId: new PublicKey(MEMO), keys: [], data: Buffer.from(note.slice(0, 80), 'utf8') }));
+    if (closeEscrow) tx.add(new TransactionInstruction({ programId: tok, data: Buffer.from([9]), keys: [
+      { pubkey: ataOf(owner), isSigner: false, isWritable: true }, { pubkey: bank, isSigner: false, isWritable: true }, { pubkey: o, isSigner: true, isWritable: false }] }));
+    tx.recentBlockhash = (await rpc('getLatestBlockhash', [{ commitment: 'confirmed' }])).value.blockhash;
+    tx.feePayer = bank;
+    const signed = signer === 'phantom' ? await phantom().signTransaction(tx) : (tx.partialSign(signer), tx);
+    const raw = signed.serialize({ requireAllSignatures: false, verifySignatures: false });
+    return await api(PAPI + '/relay', { method: 'POST', body: { tx: b64(raw) }, auth: false });
   }
   async function send(toAddress, dollars, note) {
-    const { PublicKey, Transaction, SystemProgram, TransactionInstruction, Connection } = W();
-    const conn = new Connection(RPC, 'confirmed');
-    const from = new PublicKey(S.acct.address);
-    const lamports = toLamports(dollars);
-    let sig = null;
+    const units = toUnits(dollars);
     try {
-      const have = await conn.getBalance(from);
-      if (have < lamports + FEE) throw userError(`You have ${money(usd(have))}. Add money to send ${money(dollars)}.`);
-      const tx = new Transaction().add(SystemProgram.transfer({ fromPubkey: from, toPubkey: new PublicKey(toAddress), lamports }));
-      if (note) tx.add(new TransactionInstruction({ programId: new PublicKey(MEMO), keys: [], data: Buffer.from(note.slice(0, 80), 'utf8') }));
-      const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash('confirmed');
-      tx.recentBlockhash = blockhash; tx.feePayer = from;
-      let signed;
-      if (S.acct.mode === 'phantom') signed = await phantom().signTransaction(tx);
-      else { tx.sign(S.kp); signed = tx; }
-      sig = await conn.sendRawTransaction(signed.serialize());
-      const res = await conn.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
-      if (res.value && res.value.err) throw userError("The payment didn't go through. Nothing was sent.");
-      return sig;
+      const have = await usdcOf(S.acct.address);
+      if (have < units) throw userError(`You have ${money(usd(have))}. Add money to send ${money(dollars)}.`);
+      const r = await usdcSend({ owner: S.acct.address, signer: S.acct.mode === 'phantom' ? 'phantom' : S.kp, to: toAddress, units, note });
+      if (r.pending) throw userError("We couldn't confirm the payment yet. Check your activity in a minute before trying again.");
+      S.lastMs = r.ms || null;
+      S.cash = Math.max(0, have - units); paintBalance();
+      return r.sig;
     } catch (e) {
       if (e.safe) throw e;
       console.error('[monyx] send:', e);
       if (/user rejected|rejected the request|declined/i.test(String(e.message))) throw userError('Payment cancelled.');
-      // Once it's been broadcast we can't say "nothing was sent" for sure.
-      if (sig) throw userError("We couldn't confirm the payment yet. Check your activity in a minute before trying again.");
       if (/failed to fetch|network/i.test(String(e.message))) throw userError(OFFLINE);
       throw userError("The payment didn't go through. Nothing was sent.");
     }
   }
 
-  // Activity: read recent transactions and turn them into "who, how much, why".
+  // Activity: read recent USDC movements and turn them into "who, how much, why".
   async function loadFeed() {
     if (!S.acct) return;
     const me = S.acct.address;
-    const cacheKey = `monyx.feed.${me}`;
+    const cacheKey = `monyx.usdcfeed.${me}`;
     if (!S.feed.length) S.feed = store.get(cacheKey, []);
     try {
-      const sigs = await rpc('getSignaturesForAddress', [me, { limit: 25 }]);
+      const sigs = await rpc('getSignaturesForAddress', [ataOf(me).toBase58(), { limit: 25 }]);
       const known = new Map(S.feed.map((f) => [f.sig, f]));
       const todo = sigs.filter((s) => !known.has(s.signature));
       let i = 0; const got = new Map();
@@ -216,31 +242,27 @@
       store.set(cacheKey, S.feed);
       await resolvePeople(S.feed.map((f) => f.with).filter(Boolean));
       paintFeed(); paintPeople();
-      announceFeed([...got.values()]);
+      announceFeed([...got.values()].filter(Boolean));
     } catch { paintFeed(); }
   }
   function toEntry(tx, s, me) {
-    const keys = tx.transaction.message.accountKeys.map((k) => k.pubkey || k);
+    // Who gained and who lost USDC in this transaction.
+    const delta = new Map();
+    for (const [list, sign] of [[tx.meta.preTokenBalances, -1], [tx.meta.postTokenBalances, 1]])
+      for (const b of list || []) if (b.mint === USDC && b.owner) delta.set(b.owner, (delta.get(b.owner) || 0) + sign * Number(b.uiTokenAmount.amount));
+    const mine = delta.get(me) || 0;
+    if (!mine) return null;
+    let withAddr = null, best = 0;
+    for (const [o, d] of delta) if (o !== me && Math.sign(d) === -Math.sign(mine) && Math.abs(d) > best) { best = Math.abs(d); withAddr = o; }
+    let note = '';
     const ix = [...tx.transaction.message.instructions];
     for (const inner of tx.meta.innerInstructions || []) ix.push(...inner.instructions);
-    let withAddr = null; let note = '';
-    for (const x of ix) {
-      if (x.program === 'system' && x.parsed && x.parsed.type === 'transfer') {
-        const { source, destination } = x.parsed.info;
-        if (source === me && destination !== me) withAddr = destination;
-        else if (destination === me && source !== me) withAddr = source;
-      }
-      if (x.program === 'spl-memo' && typeof x.parsed === 'string') note = x.parsed;
-    }
-    const i = keys.indexOf(me);
-    const delta = i >= 0 ? tx.meta.postBalances[i] - tx.meta.preBalances[i] : 0;
-    // The sender also pays the network fee; show the amount the other person got.
-    const fee = keys[0] === me ? tx.meta.fee : 0;
-    return { sig: s.signature, time: s.blockTime, ok: !s.err, with: withAddr, note, lamports: delta + fee };
+    for (const x of ix) if (x.program === 'spl-memo' && typeof x.parsed === 'string') note = x.parsed;
+    return { sig: s.signature, time: s.blockTime, ok: !s.err, with: withAddr, note, amount: mine };
   }
   async function resolvePeople(addresses) {
     const fresh = Date.now() - store.get('monyx.peopleAt', 0) < 600_000;
-    const need = [...new Set(addresses)].filter((a) => !fresh || !S.people[a]);
+    const need = [...new Set(addresses)].filter((a) => !(S.people[a] && S.people[a].link) && (!fresh || !S.people[a]));
     if (!need.length) return;
     if (!fresh) store.set('monyx.peopleAt', Date.now());
     try {
@@ -261,10 +283,11 @@
   function avatar(p, size = '') {
     if (!p) return `<div class="av ${size} addr">?</div>`;
     if (p.bank) return `<div class="av ${size} bank">${MARK}</div>`;
+    if (p.link && !p.handle) return `<div class="av ${size} linkav">${ICON.link}</div>`;
     if (p.unknown || !p.name) return `<div class="av ${size} addr">#</div>`;
     let h = 2166136261; for (const c of p.handle || p.name) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; // FNV-1a spreads similar names across colours
     const ini = p.name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
-    const photo = p.avatar ? `<img src="${esc(p.avatar)}" alt="" loading="lazy" onerror="this.remove()">` : '';
+    const photo = p.avatar ? `<img src="${esc(p.avatar)}" alt="" loading="lazy" data-fallback>` : '';
     return `<div class="av ${size}" style="background:${PALETTE[h % PALETTE.length]}">${esc(ini)}${photo}</div>`;
   }
   const who = (p) => (p && !p.unknown ? (p.bank ? 'Monyx' : p.name) : (p ? short(p.address) : 'Someone'));
@@ -325,7 +348,7 @@
         <button class="btn btn-dark" id="goSignup">Create your account</button>
         <button class="btn btn-text" id="goLogin">I already have an account</button>
       </div>
-      <p class="fine">Monyx is in test mode. Balances are play money with no real value. <a href="documentation/">How it works</a></p>
+      <p class="fine">Monyx is in test mode: balances are test dollars with no real value. <a href="documentation/">How it works</a> · <a href="privacy/">Privacy</a> · <a href="terms/">Terms</a></p>
     </section>`);
     $('#goSignup').onclick = () => startSignup();
     $('#goLogin').onclick = () => (location.hash = '#login');
@@ -348,14 +371,19 @@
   function stepName() {
     const su = S.signup;
     show(stepShell(1, `<h2>What's your name?</h2><p class="sub">This is how friends will find you. Use the name they'd recognize.</p>
-      <label class="field" style="margin-top:22px"><input id="nm" autocomplete="name" placeholder="First and last name" value="${esc(su.name)}" maxlength="40"></label>`,
-      `<button class="btn btn-dark" id="next" disabled>Continue</button>`));
-    const nm = $('#nm'), next = $('#next');
-    const upd = () => (next.disabled = !nm.value.trim());
-    nm.oninput = upd; upd(); nm.focus();
-    nm.onkeydown = (e) => { if (e.key === 'Enter' && !next.disabled) next.click(); };
+      <label class="field" style="margin-top:22px"><input id="nm" autocomplete="name" placeholder="First and last name" value="${esc(su.name)}" maxlength="40" aria-describedby="hint"></label>
+      <div class="hint" id="hint"></div>`,
+      `<button class="btn btn-dark" id="next">Continue</button>`));
+    const nm = $('#nm'), next = $('#next'), hint = $('#hint');
+    nm.oninput = () => { hint.textContent = ''; hint.className = 'hint'; };
+    nm.focus();
+    nm.onkeydown = (e) => { if (e.key === 'Enter') next.click(); };
     $('#back').onclick = () => { location.hash = ''; };
-    next.onclick = () => { su.name = nm.value.trim(); if (!su.handle) su.handle = suggest(su.name); stepHandle(); };
+    next.onclick = () => {
+      const v = nm.value.trim();
+      if (v.length < 2) { hint.className = 'hint bad'; hint.textContent = 'Add your name so friends know it’s you.'; nm.focus(); return; }
+      su.name = v; if (!su.handle) su.handle = suggest(su.name); stepHandle();
+    };
   }
   const suggest = (name) => {
     const p = name.toLowerCase().normalize('NFD').replace(/[^a-z\s]/g, '').split(/\s+/).filter(Boolean);
@@ -365,30 +393,38 @@
     const su = S.signup;
     show(stepShell(2, `<h2>Pick your @username</h2><p class="sub">People pay you with this. Short and easy to say out loud works best.</p>
       <label class="field prefix" style="margin-top:22px"><span>@</span><input id="hd" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="20" value="${esc(su.handle)}"></label>
-      <div class="hint" id="hint"></div>`,
-      `<button class="btn btn-dark" id="next" disabled>Create account</button>`));
+      <div class="hint" id="hint" aria-live="polite"></div>`,
+      `<button class="btn btn-dark" id="next">Create account</button>`));
     const hd = $('#hd'), hint = $('#hint'), next = $('#next');
     let t, seq = 0;
     const check = async () => {
       const v = hd.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
       if (v !== hd.value) hd.value = v;
-      su.handle = v; su.avail = false; next.disabled = true;
+      su.handle = v; su.avail = false;
       if (v.length < 3) { hint.className = 'hint'; hint.textContent = 'At least 3 letters or numbers.'; return; }
       const my = ++seq;
       hint.className = 'hint'; hint.textContent = 'Checking…';
       try {
         const r = await api(`/check?handle=${encodeURIComponent(v)}`, { auth: false });
         if (my !== seq) return;
-        su.avail = r.available; next.disabled = !r.available;
+        su.avail = r.available;
         hint.className = 'hint ' + (r.available ? 'ok' : 'bad');
         hint.textContent = r.available ? `@${v} is yours if you want it.` : `${r.reason || 'Taken'}. Try @${v}${Math.floor(Math.random() * 90 + 10)}?`;
       } catch { hint.className = 'hint bad'; hint.textContent = "Couldn't check right now."; }
     };
     hd.oninput = () => { clearTimeout(t); t = setTimeout(check, 280); };
-    hd.onkeydown = (e) => { if (e.key === 'Enter' && !next.disabled) next.click(); };
+    hd.onkeydown = (e) => { if (e.key === 'Enter') next.click(); };
     check(); hd.focus();
     $('#back').onclick = stepName;
     next.onclick = async () => {
+      if (!su.avail) {
+        // Say why instead of a dead button.
+        hint.className = 'hint bad';
+        if (su.handle.length < 3) hint.textContent = 'Usernames need at least 3 letters or numbers.';
+        else if (/^Checking/.test(hint.textContent)) hint.textContent = 'One sec, still checking that name.';
+        else if (!/Try @/.test(hint.textContent)) hint.textContent = `@${su.handle} isn't available. Try another.`;
+        hd.focus(); return;
+      }
       next.disabled = true; next.innerHTML = '<span class="spin"></span>Setting things up';
       try {
         if (!su.kp) su.kp = W().Keypair.generate();
@@ -397,9 +433,10 @@
         S.acct = { mode: 'key', secret: Array.from(su.kp.secretKey), address, token: null, user: null };
         saveAcct();   // keep the key even if the next call fails
         const p = await proof(address);
-        const r = await api('/register', { method: 'POST', auth: false, body: { ...p, name: su.name, handle: su.handle } });
+        const r = await api('/register', { method: 'POST', auth: false, body: { ...p, name: su.name, handle: su.handle, bonus: false } });
         S.acct.token = r.token; S.acct.user = r.user; saveAcct();
-        su.bonus = r.bonus;
+        // Welcome dollars arrive while they save their key.
+        su.bonus = api(PAPI + '/topup', { method: 'POST' }).catch(() => null);
         stepKey();
       } catch (e) {
         next.disabled = false; next.textContent = 'Create account';
@@ -416,8 +453,9 @@
       <div class="keybox" id="kb" title="Tap to reveal">${esc(key)}</div>
       <div class="btn-row" style="margin-top:10px"><button class="btn btn-light btn-sm" id="cp" style="width:100%">Copy</button><button class="btn btn-light btn-sm" id="dl" style="width:100%">Download</button></div>
       <div class="warn">${ICON.info.replace('<svg', '<svg width="18" height="18" style="flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8"')}<span>Anyone with this key can spend your balance. Never share it, not even with Monyx.</span></div>
-      <label class="check"><input type="checkbox" id="ok"><span>I saved my recovery key somewhere safe.</span></label>`,
-      `<button class="btn btn-dark" id="next" disabled>Continue</button>`, false));
+      <label class="check"><input type="checkbox" id="ok"><span>I saved my recovery key somewhere safe.</span></label>
+      <div class="hint" id="hint" aria-live="polite"></div>`,
+      `<button class="btn btn-dark" id="next">Continue</button>`, false));
     $('#kb').onclick = (e) => e.currentTarget.classList.toggle('show');
     $('#cp').onclick = () => { $('#kb').classList.add('show'); copy(key, 'Recovery key copied'); };
     $('#dl').onclick = () => {
@@ -425,16 +463,19 @@
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `monyx-recovery-${S.acct.user.handle}.txt`; a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     };
-    $('#ok').onchange = (e) => ($('#next').disabled = !e.target.checked);
-    $('#next').onclick = stepDone;
+    $('#ok').onchange = () => ($('#hint').textContent = '');
+    $('#next').onclick = () => {
+      if (!$('#ok').checked) { const h = $('#hint'); h.className = 'hint bad'; h.textContent = 'Save your key, then tick the box. You can’t get back in without it.'; return; }
+      stepDone();
+    };
   }
-  function stepDone() {
-    const b = S.signup && S.signup.bonus;
+  async function stepDone() {
+    const b = S.signup && (await S.signup.bonus);
     const got = b && b.status === 'sent';
     show(`<section class="steps"><div class="body" style="display:grid;place-items:center;text-align:center">
       <div><div class="tick"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
       <h2>You're in, ${esc(S.acct.user.name.split(' ')[0])}.</h2>
-      <p class="sub">${got ? `We added <b style="color:var(--ink)">${money(usd(b.lamports))}</b> to your balance so you can try it out.` : 'Add money from your home screen whenever you’re ready.'}</p>
+      <p class="sub">${got ? `We added <b style="color:var(--ink)">${money(b.usd)}</b> in test dollars so you can try it out.` : 'Add money from your home screen whenever you’re ready.'}</p>
       <p class="sub">Friends can pay you at <b style="color:var(--ink)">@${esc(S.acct.user.handle)}</b>.</p></div>
     </div><div class="foot"><button class="btn btn-dark" id="go">Go to Monyx</button></div></section>`);
     $('#go').onclick = () => { const p = store.get('monyx.pending'); store.del('monyx.pending'); location.hash = p || '#home'; };
@@ -451,10 +492,13 @@
         <button class="btn btn-text" id="ph">Use a Phantom wallet instead</button></div>
     </section>`);
     const rk = $('#rk'), go = $('#go'), hint = $('#hint');
-    rk.oninput = () => (go.disabled = rk.value.trim().length < 40);
+    go.disabled = false;
+    rk.oninput = () => { hint.textContent = ''; };
     $('#back').onclick = () => (location.hash = '');
     go.onclick = async () => {
       let kp;
+      if (!rk.value.trim()) { hint.className = 'hint bad'; hint.textContent = 'Paste the recovery key you saved when you signed up.'; rk.focus(); return; }
+      if (rk.value.trim().length < 40) { hint.className = 'hint bad'; hint.textContent = 'That’s too short. A recovery key is about 88 letters and numbers.'; rk.focus(); return; }
       try { kp = parseRecovery(rk.value); } catch { hint.className = 'hint bad'; hint.textContent = "That doesn't look like a Monyx recovery key."; return; }
       go.disabled = true; go.innerHTML = '<span class="spin"></span>Logging in';
       S.kp = kp;
@@ -500,9 +544,9 @@
     $('#next').onclick = async () => {
       const hint = $('#hint');
       try {
-        const r = await api('/register', { method: 'POST', auth: false, body: { ...(await proof(address)), name: $('#nm').value, handle: $('#hd').value } });
+        const r = await api('/register', { method: 'POST', auth: false, body: { ...(await proof(address)), name: $('#nm').value, handle: $('#hd').value, bonus: false } });
         S.acct.token = r.token; S.acct.user = r.user; saveAcct();
-        S.signup = { bonus: r.bonus }; stepDone();
+        S.signup = { bonus: api(PAPI + '/topup', { method: 'POST' }).catch(() => null) }; stepDone();
       } catch (e) { hint.className = 'hint bad'; hint.textContent = friendly(e); }
     };
   }
@@ -526,6 +570,7 @@
       </section>
       <button class="talkbar" id="talk"><span class="mic">${ICON.mic}</span><span class="mid"><b>Just say it</b><span>“Send Maya $20 for pizza”</span></span></button>
       <div id="start"></div>
+      <div id="drafts"></div>
       <div id="reqs"></div>
       <div id="ppl"></div>
       <h3 class="hrow"><span>Activity</span><a href="#activity">See all</a></h3>
@@ -533,7 +578,7 @@
     $('#add').onclick = addMoney;
     $('#talk').onclick = talk;
     paintBalance(); paintRequests(); paintPeople(); if (S.feed.length) paintFeed();
-    refreshBalance(); loadFeed(); loadRequests();
+    paintDrafts(); refreshBalance(); loadFeed(); loadRequests(); loadDrafts();
     loadPortfolio().then(paintCryptoRow);
   }
   function paintCryptoRow() {
@@ -542,8 +587,8 @@
     $('#cryptoVal').textContent = money(S.port.total);
   }
   function paintBalance() {
-    const el = $('#bal'); if (!el || S.lamports == null) return;
-    const v = usd(S.lamports);
+    const el = $('#bal'); if (!el || S.cash == null) return;
+    const v = usd(S.cash);
     const [d, c] = v.toFixed(2).split('.');
     el.innerHTML = `<small>$</small>${Number(d).toLocaleString('en-US')}<span class="cents">.${c}</span>`;
     paintStart();
@@ -555,8 +600,8 @@
     const el = $('#start'); if (!el) return;
     if (store.get('monyx.startHidden')) { el.innerHTML = ''; return; }
     const steps = [
-      { t: 'Add money', s: 'Get free test money to try things out', done: S.lamports > 0, go: addMoney },
-      { t: 'Send your first payment', s: 'Pay a friend by their @username', done: S.feed.some((f) => f.lamports < 0 && f.with && !(S.people[f.with] || {}).bank), go: () => (location.hash = '#pay') },
+      { t: 'Add money', s: 'Get free test money to try things out', done: S.cash > 0, go: addMoney },
+      { t: 'Send your first payment', s: 'Pay a friend by their @username', done: S.feed.some((f) => f.amount < 0 && f.with && !(S.people[f.with] || {}).bank), go: () => (location.hash = '#pay') },
       { t: 'Share your pay link', s: 'So friends can pay you', done: !!store.get('monyx.shared'), go: shareLink },
       { t: 'Add a profile photo', s: 'So friends know it’s really you', done: !!S.acct.user.avatar, go: () => { location.hash = '#me'; setTimeout(pickPhoto, 50); } },
     ];
@@ -585,15 +630,16 @@
     if (!S.feed.length) { el.innerHTML = `<div class="empty">Nothing here yet.<br>Pay a friend, or share your link from the Me tab to get paid.</div>`; return; }
     el.innerHTML = S.feed.slice(0, +(el.dataset.limit || 100)).map((f) => {
       const p = S.people[f.with] || (f.with ? { address: f.with, unknown: true } : null);
-      const incoming = f.lamports > 0;
+      const incoming = f.amount > 0;
       const title = !f.with ? 'Account activity' : p && p.bank ? bankTitle(f, incoming) : incoming ? `<b>${esc(who(p))}</b> paid you` : `You paid <b>${esc(who(p))}</b>`;
       const sub = [f.note && !(p && p.bank) ? esc(f.note) : '', when(f.time)].filter(Boolean).join(' · ');
-      return `<a class="item" href="#tx/${f.sig}">${avatar(p)}<div class="mid"><div class="t">${title}</div><div class="s">${sub}${f.ok ? '' : ' · Failed'}</div></div><div class="amt ${incoming ? 'in' : ''}">${money(usd(f.lamports), true)}</div></a>`;
+      return `<a class="item" href="#tx/${f.sig}">${avatar(p)}<div class="mid"><div class="t">${title}</div><div class="s">${sub}${f.ok ? '' : ' · Failed'}</div></div><div class="amt ${incoming ? 'in' : ''}">${money(usd(f.amount), true)}</div></a>`;
     }).join('');
   }
   function bankTitle(f, incoming) {
     const n = f.note || '';
-    if (/welcome/i.test(n)) return '<b>Monyx</b> welcome bonus';
+    if (/welcome/i.test(n)) return '<b>Monyx</b> welcome dollars';
+    if (/^Test money/.test(n)) return '<b>Monyx</b> test dollars';
     if (/^Sold /.test(n)) return `Sold <b>${esc(n.slice(5))}</b>`;
     if (/^Buy /.test(n)) return `Bought <b>${esc(n.slice(4))}</b>`;
     return incoming ? '<b>Monyx</b> paid you' : 'Paid <b>Monyx</b>';
@@ -615,10 +661,10 @@
     const f = S.feed.find((x) => x.sig === sig);
     if (!f) { location.hash = '#home'; return; }
     const p = S.people[f.with] || (f.with ? { address: f.with, unknown: true } : null);
-    sheet(`<div class="confirm">${avatar(p, 'lg')}<div class="sub">${f.lamports > 0 ? 'From' : 'To'} ${esc(who(p))}${p && p.handle && !p.bank ? ` · @${esc(p.handle)}` : ''}</div>
-      <div class="big">${money(usd(Math.abs(f.lamports)))}</div><div class="note">${esc(f.note || '')}</div></div>
+    sheet(`<div class="confirm">${avatar(p, 'lg')}<div class="sub">${f.amount > 0 ? 'From' : 'To'} ${esc(who(p))}${p && p.handle && !p.bank ? ` · @${esc(p.handle)}` : ''}</div>
+      <div class="big">${money(usd(Math.abs(f.amount)))}</div><div class="note">${esc(f.note || '')}</div></div>
       <div class="ledger"><div><span>Status</span><b>${f.ok ? 'Completed' : 'Failed'}</b></div><div><span>Date</span><b>${f.time ? new Date(f.time * 1000).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</b></div></div>
-      ${p && p.handle && !p.bank ? `<button class="btn btn-dark" id="again">${f.lamports > 0 ? 'Pay' : 'Pay again'} ${esc(first(p))}</button>` : ''}
+      ${p && p.handle && !p.bank ? `<button class="btn btn-dark" id="again">${f.amount > 0 ? 'Pay' : 'Pay again'} ${esc(first(p))}</button>` : ''}
       <p class="fine" style="margin-top:14px"><a href="https://explorer.solana.com/tx/${sig}?cluster=devnet" target="_blank" rel="noopener">View public receipt</a></p>`, (el, close) => {
       const a = $('#again', el); if (a) a.onclick = () => { close(); location.hash = `#pay/${p.handle}`; };
     });
@@ -635,6 +681,7 @@
       <label class="field" style="margin-top:10px"><input id="note" maxlength="80" placeholder="What's it for?" value="${esc(st.note)}"></label>
       <div class="emojis">${['🍕 Food', '🏠 Rent', '☕ Coffee', '🚗 Ride', '🎁 Gift', '🎟️ Tickets'].map((e) => `<button data-e="${e}">${e}</button>`).join('')}</div>
       <button class="splitlink" id="split">${ICON.split} Split a bill with friends</button>
+      <button class="splitlink" id="vialink">${ICON.link} Send with a link, to anyone</button>
       <div class="payfoot"><div class="btn-row"><button class="btn btn-light" id="req" disabled>Request</button><button class="btn btn-dark" id="pay" disabled>Pay</button></div></div>`, { tabs: false });
     const amt = $('#amt'), note = $('#note');
     const size = () => { amt.style.width = Math.max(1, (amt.value || '0').length + 0.2) + 'ch'; };
@@ -642,13 +689,14 @@
       const v = parseFloat(amt.value);
       const okAmt = v > 0 && v <= 10000;
       const av = $('#avail');
-      if (S.lamports != null) {
-        const have = usd(Math.max(0, S.lamports - FEE));
+      if (S.cash != null) {
+        const have = usd(Math.max(0, S.cash));
         av.textContent = okAmt && v > have ? `You have ${money(have)}. You can still request it.` : `${money(have)} available`;
         av.className = 'avail' + (okAmt && v > have ? ' bad' : '');
       }
-      $('#pay').disabled = !(okAmt && st.to && (S.lamports == null || v <= usd(S.lamports - FEE)));
+      $('#pay').disabled = !(okAmt && st.to && (S.cash == null || v <= usd(S.cash)));
       $('#req').disabled = !(okAmt && st.to && st.to.handle && !st.to.bank);
+      $('#vialink').hidden = !!st.to;
     };
     amt.oninput = () => {
       let v = amt.value.replace(/[^0-9.]/g, '');
@@ -666,7 +714,9 @@
       const box = $('#toBox');
       if (st.to) {
         const p = st.to;
-        box.innerHTML = `<div class="chip">${avatar(p)}<div class="mid"><div class="t">${esc(who(p))}</div><div class="s">${p.handle ? '@' + esc(p.handle) : 'Account ' + esc(short(p.address))}</div></div><button class="x" id="clr" aria-label="Change">${ICON.x}</button></div>`;
+        box.innerHTML = p.link
+          ? `<div class="chip"><div class="av linkav">${ICON.link}</div><div class="mid"><div class="t">Pay link${p.name ? ` for ${esc(p.name)}` : ''}</div><div class="s">They don't need Monyx yet</div></div><button class="x" id="clr" aria-label="Change">${ICON.x}</button></div>`
+          : `<div class="chip">${avatar(p)}<div class="mid"><div class="t">${esc(who(p))}</div><div class="s">${p.handle ? '@' + esc(p.handle) : 'Account ' + esc(short(p.address))}</div></div><button class="x" id="clr" aria-label="Change">${ICON.x}</button></div>`;
         $('#clr').onclick = () => { st.to = null; renderTo(); valid(); $('#q').focus(); };
         valid(); return;
       }
@@ -695,7 +745,11 @@
             const { users } = await api(`/search?q=${encodeURIComponent(v)}`, { auth: false });
             if (my !== seq) return;
             const list = users.filter((u) => u.handle !== S.acct.user.handle);
-            if (list.length) paint(list, 'People'); else res.innerHTML = `<div class="empty">No one called “${esc(v)}” yet.<br>Ask them to join, or paste their account number.</div>`;
+            if (list.length) paint(list, 'People');
+            else {
+              res.innerHTML = `<div class="empty">No one called “${esc(v)}” on Monyx yet.<br><button class="btn btn-light btn-sm" id="nolink" style="margin-top:10px">Send ${esc(v)} a link instead</button></div>`;
+              $('#nolink').onclick = () => { st.to = { link: true, name: v, address: '' }; renderTo(); };
+            }
           } catch {}
         }, 220);
       };
@@ -716,7 +770,8 @@
     });
     else if (!prefill.amount) amt.focus();
 
-    $('#pay').onclick = () => confirmPay(st.to, parseFloat(amt.value), note.value.trim());
+    $('#pay').onclick = () => (st.to.link ? confirmLink(parseFloat(amt.value), note.value.trim(), st.to.name) : confirmPay(st.to, parseFloat(amt.value), note.value.trim()));
+    $('#vialink').onclick = () => { st.to = { link: true, name: '', address: '' }; renderTo(); valid(); amt.focus(); };
     $('#split').onclick = () => splitSheet(parseFloat(amt.value), note.value.trim(), st.to);
     $('#req').onclick = async () => {
       const b = $('#req'); b.disabled = true; b.innerHTML = '<span class="spin"></span>';
@@ -729,12 +784,13 @@
   async function lookup(handle) {
     try { const { user } = await api(`/u/${encodeURIComponent(handle.replace(/^@/, ''))}`, { auth: false }); S.people[user.address] = user; return user; } catch { return null; }
   }
-  function confirmPay(to, dollars, note, requestId, voiced = false) {
+  function confirmPay(to, dollars, note, requestId, voiced = false, draftId = null) {
     if (to.handle && S.acct.user && to.handle === S.acct.user.handle) { toast("You can't pay yourself.", true); return; }
-    const after = S.lamports != null ? usd(S.lamports) - dollars : null;
+    const after = S.cash != null ? usd(S.cash) - dollars : null;
     sheet(`<div class="confirm">${avatar(to, 'lg')}<div class="sub">Pay ${esc(who(to))}${to.handle ? ` · @${esc(to.handle)}` : ''}</div>
       <div class="big">${money(dollars)}</div>${note ? `<div class="note">${esc(note)}</div>` : ''}</div>
-      <div class="ledger"><div><span>From</span><b>Monyx balance</b></div>${after != null ? `<div><span>Balance after</span><b>${money(Math.max(0, after))}</b></div>` : ''}<div><span>Fee</span><b>Free</b></div></div>
+      <div class="ledger"><div><span>From</span><b>Monyx balance</b></div>${after != null ? `<div><span>Balance after</span><b>${money(Math.max(0, after))}</b></div>` : ''}<div><span>Network fee</span><b>Paid by Monyx</b></div></div>
+      ${draftId ? `<div class="voiced">${ICON.spark}<span>Drafted by your assistant. Check it, then tap Pay.</span></div>` : ''}
       ${voiced ? `<div class="voiced">${ICON.mic}<span>Filled in by voice. Check it, then tap Pay.</span></div>` : ''}
       ${to.unknown ? `<div class="warn">${'This account isn’t on Monyx. Payments can’t be undone, so double-check the number.'}</div>` : ''}
       <button class="btn btn-dark" id="go">Pay ${money(dollars)}</button>`, (el, close) => {
@@ -743,8 +799,9 @@
         try {
           const sig = await send(to.address, dollars, note);
           if (requestId) api(`/requests/${requestId}`, { method: 'POST', body: { action: 'paid', sig } }).catch(() => {}).then(loadRequests);
+          if (draftId) api(`${PAPI}/drafts/${draftId}`, { method: 'POST', body: { action: 'paid', sig } }).catch(() => {});
           close();
-          S.feed.unshift({ sig, time: Math.floor(Date.now() / 1000), ok: true, with: to.address, note, lamports: -toLamports(dollars) });
+          S.feed.unshift({ sig, time: Math.floor(Date.now() / 1000), ok: true, with: to.address, note, amount: -toUnits(dollars) });
           S.people[to.address] = S.people[to.address] || to;
           success(`You paid ${esc(first(to))} ${money(dollars)}`, note, sig);
           if (voiced) say(`Done. You paid ${first(to)} ${spoken(dollars)}.`);
@@ -760,10 +817,12 @@
     show(`<section class="steps"><div class="body" style="display:grid;place-items:center;text-align:center"><div class="done">
       <div class="tick"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
       <h2>${title}</h2>${note ? `<p class="sub">${esc(note)}</p>` : ''}${extra ? `<p class="sub">${extra}</p>` : ''}
+      ${sig && S.lastMs ? `<p class="speed">Arrived in ${(S.lastMs / 1000).toFixed(1)}s · no fee</p>` : ''}
       ${sig ? `<p class="receipt"><a href="https://explorer.solana.com/tx/${sig}?cluster=devnet" target="_blank" rel="noopener">View receipt</a></p>` : ''}
     </div></div><div class="foot"><button class="btn btn-dark" id="done">Done</button></div></section>`);
     $('#done').onclick = () => (location.hash = back);
     history.replaceState(null, '', '#done');
+    S.lastMs = null;
   }
 
   function scanCode(onCode) {
@@ -785,28 +844,30 @@
     return close;
   }
 
-  /* add money */
+  /* add money: test dollars straight from Monyx, no faucet needed */
   async function addMoney() {
-    let claimed = true;
-    try { claimed = (await api('/me')).bonusClaimed; } catch {}
-    sheet(`<h2>Add money</h2><p class="sub">Monyx is in test mode, so money is free to add and has no real value.</p>
-      ${claimed ? '' : `<button class="btn btn-dark" id="bonus" style="margin:16px 0 4px">Claim your welcome bonus</button>`}
-      <h3>Get free test money</h3>
-      <div class="steplist"><div>Copy your account number<button class="btn btn-light btn-sm" id="cpa">Copy</button></div>
-      <div>Open the test-money site<a class="btn btn-light btn-sm" href="https://faucet.solana.com" target="_blank" rel="noopener">Open</a></div>
-      <div>Paste it, pick Devnet, and request</div></div>
-      <p class="sub" style="font-size:14px">It shows up here within a minute.</p>
+    sheet(`<h2>Add money</h2><p class="sub">Monyx is in test mode, so dollars are free. They're test USDC with no real value.</p>
+      <button class="btn btn-dark" id="topup" style="margin:18px 0 6px">Add free test dollars</button>
+      <p class="fine" id="tnote" style="text-align:center">$10 the first time, then $5 a day.</p>
       <h3>Or get paid by a friend</h3>
-      <button class="btn btn-light" id="share">Share my pay link</button>`, (el, close) => {
+      <button class="btn btn-light" id="share">Share my pay link</button>
+      <details class="more"><summary>Need more for testing?</summary>
+        <p class="sub" style="font-size:14px">Circle gives out free test USDC. Copy your account number, open the faucet, choose <b>Solana Devnet</b>, and paste it.</p>
+        <div class="btn-row"><button class="btn btn-light btn-sm" id="cpa" style="width:100%">Copy account number</button><a class="btn btn-light btn-sm" style="width:100%" href="https://faucet.circle.com" target="_blank" rel="noopener">Open faucet</a></div>
+      </details>`, (el, close) => {
       $('#cpa', el).onclick = () => copy(S.acct.address, 'Account number copied');
       $('#share', el).onclick = () => { close(); shareLink(); };
-      const b = $('#bonus', el);
-      if (b) b.onclick = async () => {
-        b.disabled = true; b.innerHTML = '<span class="spin"></span>Claiming';
+      const b = $('#topup', el), note = $('#tnote', el);
+      b.onclick = async () => {
+        b.disabled = true; b.innerHTML = '<span class="spin"></span>Adding';
         try {
-          const r = await api('/bonus', { method: 'POST' });
-          if (r.status === 'sent') { close(); toast(`${money(usd(r.lamports))} added. Enjoy!`); refreshBalance(); loadFeed(); }
-          else { b.textContent = r.status === 'bank_empty' ? 'Bonuses are paused right now' : r.status === 'limit' ? 'Bonus limit reached for today' : 'Already claimed'; }
+          const r = await api(PAPI + '/topup', { method: 'POST' });
+          if (r.status === 'sent') { close(); toast(`${money(r.usd)} added. Enjoy!`); say(`Added ${spoken(r.usd)}.`); refreshBalance(); loadFeed(); return; }
+          b.disabled = false; b.textContent = 'Add free test dollars';
+          note.textContent = r.status === 'wait' ? `You've had today's test dollars. More ${r.next ? `after ${new Date(r.next).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'tomorrow'}.`
+            : r.status === 'bank_empty' ? 'Free dollars are paused while Monyx refills. Use the Circle faucet below.'
+            : r.status === 'limit' ? 'That’s the limit for today on this network.' : 'That didn’t work. Try again in a minute.';
+          note.style.color = 'var(--bad)';
         } catch (e) { b.disabled = false; b.textContent = 'Try again'; showError(e); }
       };
     });
@@ -833,20 +894,24 @@
       </div>
       <h3>Account</h3>
       <div class="list menu">
-        ${row('add', ICON.plus, 'Add money', 'Free test money')}
+        ${row('add', ICON.plus, 'Add money', 'Free test dollars')}
+        ${row('ai', ICON.spark, 'AI assistant', 'Connect Grok Bot to draft payments')}
+        ${row('links', ICON.link, 'Pay links', 'Money you sent with a link')}
         ${S.acct.mode === 'key' ? row('key', ICON.key, 'Recovery key', 'Back up or move to a new device') : ''}
         ${row('guide', ICON.book, 'How Monyx works', 'A plain-language guide')}
         ${row('details', ICON.info, 'Account details', 'For the curious')}
         ${row('pro', ICON.tools, 'Monyx Pro', 'Wallet tracer and developer tools')}
         ${row('out', ICON.out, 'Log out', '')}
       </div>
-      <p class="fine" style="margin-top:22px">Monyx · monyx.pro</p>`, { tabs: true, tab: 'me' });
+      <p class="fine" style="margin-top:22px">Monyx · <a href="about/">About</a> · <a href="privacy/">Privacy</a> · <a href="terms/">Terms</a></p>`, { tabs: true, tab: 'me' });
     $('#share').onclick = shareLink;
     $('#tTalk').onchange = (e) => { S.voice.talk = e.target.checked; store.set('monyx.talkback', S.voice.talk); if (S.voice.talk) say('Okay, I’ll talk back.'); else stopSpeaking(); };
     $('#tAnn').onchange = (e) => { S.voice.announce = e.target.checked; store.set('monyx.announce', S.voice.announce); if (S.voice.announce) say('I’ll read new payments out loud.', { force: true }); };
     $('#avEdit').onclick = () => (u.avatar ? photoMenu() : pickPhoto());
     $('#copy').onclick = () => { store.set('monyx.shared', true); copy(payLink(u.handle), 'Link copied'); };
     $('[data-r="add"]').onclick = addMoney;
+    $('[data-r="ai"]').onclick = assistantSheet;
+    $('[data-r="links"]').onclick = linksSheet;
     const k = $('[data-r="key"]'); if (k) k.onclick = showKey;
     $('[data-r="details"]').onclick = details;
     $('[data-r="guide"]').onclick = () => (location.href = 'documentation/');
@@ -910,7 +975,8 @@
   const row = (id, ico, t, s) => `<button class="item" data-r="${id}"><span class="ico">${ico}</span><div class="mid"><div class="t">${t}</div>${s ? `<div class="s">${s}</div>` : ''}</div>${ICON.chev}</button>`;
   function showKey() {
     const key = recoveryKey();
-    sheet(`<h2>Recovery key</h2><p class="sub">Use this to log in on another device. Anyone who has it can spend your balance.</p>
+    sheet(`<h2>Recovery key</h2><p class="sub">Use this to log in on another device.</p>
+      <div class="warn strong">${ICON.info.replace('<svg', '<svg width="18" height="18" style="flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8"')}<span><b>Anyone who has this key can take all your money.</b> Monyx will never ask for it. Don't paste it into any website, chat or form, and don't screenshot it.</span></div>
       <div class="keybox" id="kb">${esc(key)}</div><p class="fine" style="margin-top:8px">Tap to reveal</p>
       <button class="btn btn-dark" id="cp" style="margin-top:8px">Copy key</button>`, (el) => {
       $('#kb', el).onclick = (e) => e.currentTarget.classList.toggle('show');
@@ -923,7 +989,8 @@
         <div class="kv" style="display:block"><b>Account number</b>${esc(S.acct.address)}</div>
         <div><span>Network</span><b>Solana devnet (test)</b></div>
         <div><span>Held by</span><b>${S.acct.mode === 'phantom' ? 'Phantom wallet' : 'This browser'}</b></div>
-        <div><span>Rate</span><b>1 SOL = ${money(S.price)}</b></div>
+        <div><span>Money</span><b>USDC (digital dollars)</b></div>
+        <div><span>Network fees</span><b>Paid by Monyx</b></div>
       </div>
       <div class="btn-row"><button class="btn btn-light btn-sm" id="cpa" style="width:100%">Copy number</button><a class="btn btn-light btn-sm" style="width:100%" href="https://explorer.solana.com/address/${S.acct.address}?cluster=devnet" target="_blank" rel="noopener">Explorer</a></div>`, (el) => {
       $('#cpa', el).onclick = () => copy(S.acct.address, 'Account number copied');
@@ -936,7 +1003,7 @@
       $('#yes', el).onclick = async () => {
         api('/logout', { method: 'POST' }).catch(() => {});
         store.del(`monyx.feed.${S.acct.address}`); store.del('monyx.acct');
-        S.acct = null; S.kp = null; S.feed = []; S.lamports = null; S.requests = { incoming: [], outgoing: [] };
+        S.acct = null; S.kp = null; S.feed = []; S.cash = null; S.requests = { incoming: [], outgoing: [] };
         close(); location.hash = '';
       };
     });
@@ -945,9 +1012,8 @@
   /* ───────── invest ───────── */
   async function loadMarkets() {
     try {
-      const m = await api('/markets', { auth: false });
+      const m = await api(PAPI + '/markets', { auth: false });
       S.markets = m; store.set('monyx.markets', m);
-      if (m.solPrice > 0) { S.price = m.solPrice; store.set('monyx.price', m.solPrice); }
     } catch {}
     return S.markets;
   }
@@ -959,7 +1025,7 @@
     remove(sig) { store.set('monyx.pendingBuys', this.list().filter((p) => p.sig !== sig)); },
     async settle() {
       for (const p of this.list()) {
-        try { await api('/trade/buy', { method: 'POST', body: { asset: p.asset, sig: p.sig } }); this.remove(p.sig); }
+        try { await api(PAPI + '/trade/buy', { method: 'POST', body: { asset: p.asset, sig: p.sig } }); this.remove(p.sig); }
         catch (e) { if (['used', 'stale', 'mismatch'].includes(e.code) || Date.now() - p.t > 3600_000) this.remove(p.sig); }
       }
     },
@@ -967,14 +1033,8 @@
   async function loadPortfolio() {
     if (!S.acct || !S.acct.token) return null;
     if (pendingBuys.list().length) await pendingBuys.settle();
-    try { S.port = await api('/portfolio'); } catch (e) { if (e.status === 401) relogin(); }
+    try { S.port = await api(PAPI + '/portfolio'); } catch (e) { if (e.status === 401) relogin(); }
     return S.port;
-  }
-  async function bankAddress() {
-    if (S.bankAddr) return S.bankAddr;
-    const b = await api('/bank', { auth: false });
-    S.bankAddr = b.address; store.set('monyx.bank', b.address);
-    return b.address;
   }
   const coin = (a, size = '') => `<div class="av coin ${size}" style="background:${esc(a.color)}">${esc(a.symbol.slice(0, 4))}</div>`;
   const pct = (v) => (v == null ? '' : `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(2)}%`);
@@ -1071,17 +1131,17 @@
     });
   }
   function buySheet(a) {
-    const cash = S.lamports != null ? Math.max(0, usd(S.lamports - 20000)) : 0;
+    const cash = S.cash != null ? Math.max(0, usd(S.cash)) : 0;
     amountSheet({
       title: `Buy ${esc(a.name)}`, sub: `Paid from your Monyx cash. 1 ${esc(a.symbol)} = ${fmtPrice(a.price)}`,
       max: cash, maxLabel: 'All cash', cta: `Buy ${esc(a.symbol)}`,
       preview: (v) => `You'll get about ${fmtQty(v / a.price, a.symbol)}`,
       async onGo(v, _all, close) {
-        const sig = await send(await bankAddress(), v, `Buy ${a.symbol}`);
+        const sig = await send(await bankAddr(), v, `Buy ${a.symbol}`);
         pendingBuys.add(a.id, sig);
         let r, tries = 0;
         while (!r) {
-          try { r = await api('/trade/buy', { method: 'POST', body: { asset: a.id, sig } }); }
+          try { r = await api(PAPI + '/trade/buy', { method: 'POST', body: { asset: a.id, sig } }); }
           catch (e) {
             if (e.code === 'used') { pendingBuys.remove(sig); break; }
             if (++tries >= 3) { close(); toast("Your payment went through. We're still adding the coins and will finish next time you open Monyx.", false, 7000); return; }
@@ -1102,7 +1162,7 @@
       max: h.value, maxLabel: 'Sell all', cta: `Sell ${esc(a.symbol)}`,
       preview: (v) => `You'll sell about ${fmtQty(v / a.price, a.symbol)}`,
       async onGo(v, all, close) {
-        const r = await api('/trade/sell', { method: 'POST', body: { asset: a.id, usd: v, all } });
+        const r = await api(PAPI + '/trade/sell', { method: 'POST', body: { asset: a.id, usd: v, all } });
         close(); refreshBalance(); loadPortfolio(); S.feed = [];
         success(`You sold ${money(r.usd)} of ${esc(a.name)}`, 'The money is back in your balance.', r.signature, null, '#invest');
       },
@@ -1142,7 +1202,7 @@
       go.onclick = async () => {
         go.disabled = true; go.innerHTML = '<span class="spin"></span>Swapping';
         try {
-          const r = await api('/trade/swap', { method: 'POST', body: { from: st.from.id, to: st.to.id, usd: parseFloat(amt.value), all } });
+          const r = await api(PAPI + '/trade/swap', { method: 'POST', body: { from: st.from.id, to: st.to.id, usd: parseFloat(amt.value), all } });
           close(); loadPortfolio();
           success(`Swapped ${money(r.usd)}`, `${fmtQty(r.qtyFrom, r.from)} → ${fmtQty(r.qtyTo, r.to)}`, null, null, '#invest');
         } catch (e) { go.disabled = false; go.textContent = 'Swap'; showError(e); }
@@ -1316,9 +1376,9 @@
     const v = window.MonyxVoice.parse(text);
     const me = S.acct.user.name.split(' ')[0];
     if (v.intent === 'balance') {
-      if (S.lamports == null) await refreshBalance();
+      if (S.cash == null) await refreshBalance();
       if (!S.port) await loadPortfolio();
-      const cash = S.lamports != null ? usd(Math.max(0, S.lamports)) : 0;
+      const cash = S.cash != null ? usd(Math.max(0, S.cash)) : 0;
       const crypto = S.port ? S.port.total : 0;
       const line = `You have ${money(cash)}${crypto > 0 ? `, plus ${money(crypto)} in crypto` : ''}.`;
       setStatus({ big: money(cash), text: crypto > 0 ? `plus ${money(crypto)} in crypto` : 'in your Monyx balance' });
@@ -1331,8 +1391,8 @@
       if (!recent.length) { setStatus({ text: 'No payments yet.' }); say('No payments yet.', { force: true }); return; }
       const lines = recent.map((f) => {
         const p = S.people[f.with]; const n = p && !p.unknown ? (p.bank ? 'Monyx' : first(p)) : 'Someone';
-        const amt = usd(Math.abs(f.lamports)); const note = p && p.bank ? '' : plainNote(f.note);
-        return f.lamports > 0 ? `${n} sent you ${spoken(amt)}${note ? ` for ${note}` : ''}` : `You paid ${n} ${spoken(amt)}${note ? ` for ${note}` : ''}`;
+        const amt = usd(Math.abs(f.amount)); const note = p && p.bank ? '' : plainNote(f.note);
+        return f.amount > 0 ? `${n} sent you ${spoken(amt)}${note ? ` for ${note}` : ''}` : `You paid ${n} ${spoken(amt)}${note ? ` for ${note}` : ''}`;
       });
       setStatus({ list: recent });
       say(lines.join('. ') + '.', { force: true });
@@ -1351,7 +1411,16 @@
     }
     if (v.people.length > 1) throw userError(v.intent === 'request' ? 'To ask several people, try “split 60 with Maya and Jordan”.' : 'One person at a time. Who should I pay first?');
     setStatus({ text: `Looking for ${v.people[0]}…` });
-    const to = await personFor(v.people[0]);
+    let to;
+    try { to = await personFor(v.people[0]); }
+    catch (e) {
+      // Not on Monyx? Paying them still works: send a link.
+      if (v.intent === 'pay' && v.amount && /couldn't find/.test(e.message)) {
+        const name = v.people[0].replace(/\b\w/g, (c) => c.toUpperCase());
+        return { go: () => { confirmLink(v.amount, v.note, name); say(`${name} isn't on Monyx yet, so I'll make a link you can text them.`); } };
+      }
+      throw e;
+    }
     if (!to) return 'cancel';
     if (v.intent === 'request') {
       if (!v.amount) return { go: () => { history.replaceState(null, '', '#pay'); screenPay({ to: to.handle, note: v.note }); toast(`How much should ${esc(first(to))} send you?`); } };
@@ -1405,7 +1474,7 @@
       const setState = (st) => { orb.className = 'orb ' + st; };
       const setStatus = (o) => {
         vres.innerHTML = o.big ? `<div class="big">${o.big}</div><div class="s">${esc(o.text || '')}</div>`
-          : o.list ? `<div class="list">${o.list.map((f) => { const p = S.people[f.with] || { address: f.with, unknown: true }; const inc = f.lamports > 0; return `<div class="item">${avatar(p, 'sm')}<div class="mid"><div class="t">${inc ? `${esc(who(p))} paid you` : `You paid ${esc(who(p))}`}</div><div class="s">${esc(f.note || when(f.time))}</div></div><span class="amt ${inc ? 'in' : ''}">${money(usd(f.lamports), inc)}</span></div>`; }).join('')}</div>`
+          : o.list ? `<div class="list">${o.list.map((f) => { const p = S.people[f.with] || { address: f.with, unknown: true }; const inc = f.amount > 0; return `<div class="item">${avatar(p, 'sm')}<div class="mid"><div class="t">${inc ? `${esc(who(p))} paid you` : `You paid ${esc(who(p))}`}</div><div class="s">${esc(f.note || when(f.time))}</div></div><span class="amt ${inc ? 'in' : ''}">${money(usd(f.amount), inc)}</span></div>`; }).join('')}</div>`
           : `<div class="s">${esc(o.text || '')}</div>`;
       };
       const run = async (text) => {
@@ -1502,11 +1571,12 @@
   function announceFeed(fresh) {
     if (!S.voice.feedSeen) { S.voice.feedSeen = true; return; }
     const now = Date.now() / 1000;
-    const inc = fresh.filter((f) => f.ok && f.lamports > 0 && f.with && now - (f.time || 0) < 900);
+    const inc = fresh.filter((f) => f.ok && f.amount > 0 && f.with && now - (f.time || 0) < 900 && !announced.has(f.sig) && !(S.people[f.with] || {}).bank);
+    inc.forEach((f) => announced.add(f.sig));
     if (!inc.length) return;
     const lines = inc.slice(0, 2).map((f) => {
       const p = S.people[f.with]; const n = p && !p.unknown ? (p.bank ? 'Monyx' : first(p)) : 'Someone';
-      return { html: `<b>${esc(n)}</b> sent you <b>${money(usd(f.lamports))}</b>${f.note ? ` · ${esc(f.note)}` : ''}`, text: `${n} sent you ${spoken(usd(f.lamports))}${f.note ? ` for ${plainNote(f.note)}` : ''}.` };
+      return { html: `<b>${esc(n)}</b> sent you <b>${money(usd(f.amount))}</b>${f.note ? ` · ${esc(f.note)}` : ''}`, text: `${n} sent you ${spoken(usd(f.amount))}${f.note ? ` for ${plainNote(f.note)}` : ''}.` };
     });
     toast(lines.map((l) => l.html).join('<br>'), false, 5000);
     if (S.voice.announce) say(lines.map((l) => l.text).join(' '));
@@ -1521,6 +1591,205 @@
     say(`${r.from.name.split(' ')[0]} is asking you for ${spoken(r.usd)}${r.note ? ` for ${plainNote(r.note)}` : ''}.`);
   }
 
+  /* ───────── pay with a link: for people who aren't on Monyx ─────────
+     The money moves into a brand-new one-off account. Its key goes into the
+     link (after the #, so it never reaches any server). Whoever opens the
+     link can move the money to their own Monyx account; until then the
+     sender can cancel and get it back. */
+  const links = {
+    all: () => store.get('monyx.links', []),
+    add(l) { store.set('monyx.links', [l, ...this.all()].slice(0, 50)); },
+    get: (escrow) => store.get('monyx.links', []).find((l) => l.escrow === escrow),
+  };
+  const linkUrl = (secret) => `${SITE}#claim/${secret}`;
+  function rememberLinkPeople() {
+    for (const l of links.all()) S.people[l.escrow] = { address: l.escrow, name: l.label ? `Link for ${l.label}` : 'Pay link', link: true };
+  }
+  function confirmLink(dollars, note, label) {
+    const after = S.cash != null ? usd(S.cash) - dollars : null;
+    sheet(`<div class="confirm"><div class="av lg linkav">${ICON.link}</div><div class="sub">Send with a link${label ? ` · for ${esc(label)}` : ''}</div>
+      <div class="big">${money(dollars)}</div>${note ? `<div class="note">${esc(note)}</div>` : ''}</div>
+      <div class="ledger"><div><span>Who can claim it</span><b>Anyone with the link</b></div>${after != null ? `<div><span>Balance after</span><b>${money(Math.max(0, after))}</b></div>` : ''}<div><span>Network fee</span><b>Paid by Monyx</b></div></div>
+      <p class="fine">They tap the link, make a free account, and the money is theirs. You can cancel any time before they claim it.</p>
+      <button class="btn btn-dark" id="go">Create ${money(dollars)} link</button>`, (el, close) => {
+      $('#go', el).onclick = async (e) => {
+        const b = e.currentTarget; b.disabled = true; b.innerHTML = '<span class="spin"></span>Creating link';
+        try {
+          const kp = W().Keypair.generate();
+          const escrow = kp.publicKey.toBase58();
+          const secret = b58enc(kp.secretKey);
+          // Keep the key before any money moves, so it can always be cancelled.
+          links.add({ escrow, secret, usd: dollars, note, label, t: Date.now() });
+          const sig = await send(escrow, dollars, note || 'Monyx pay link');
+          await api(PAPI + '/claims', { method: 'POST', body: { escrow, sig, note, label } }).catch(async (err) => {
+            await new Promise((s) => setTimeout(s, 1500)); // the payment log can lag a moment
+            return api(PAPI + '/claims', { method: 'POST', body: { escrow, sig, note, label } }).catch(() => { throw err; });
+          });
+          close(); rememberLinkPeople(); refreshBalance();
+          linkReady(dollars, note, label, secret);
+        } catch (err) { b.disabled = false; b.textContent = `Create ${money(dollars)} link`; showError(err, 6000); }
+      };
+    });
+  }
+  function linkReady(dollars, note, label, secret) {
+    const url = linkUrl(secret);
+    const text = `${S.acct.user.name.split(' ')[0]} sent you ${money(dollars)}${note ? ` for ${plainNote(note)}` : ''} on Monyx. Tap to claim it:`;
+    show(`<section class="steps"><div class="body" style="display:grid;place-items:center;text-align:center"><div class="done">
+      <div class="tick">${ICON.link}</div>
+      <h2>Your ${money(dollars)} link is ready</h2>
+      <p class="sub">Send it to ${label ? esc(label) : 'them'} however you like: text, email, chat. Treat it like cash: anyone who opens it can claim the money.</p>
+      ${S.lastMs ? `<p class="speed">Money moved in ${(S.lastMs / 1000).toFixed(1)}s · no fee</p>` : ''}
+    </div></div><div class="foot"><button class="btn btn-dark" id="sh">Share link</button><button class="btn btn-text" id="cp">Copy link</button><button class="btn btn-text" id="done">Done</button></div></section>`);
+    $('#sh').onclick = async () => { if (navigator.share) { try { await navigator.share({ title: 'Monyx', text, url }); return; } catch {} } copy(`${text} ${url}`, 'Link copied'); };
+    $('#cp').onclick = () => copy(url, 'Link copied');
+    $('#done').onclick = () => (location.hash = '#home');
+    history.replaceState(null, '', '#done');
+  }
+  function claimKey(secret) { try { const kp = keypairFrom(Array.from(b58dec(secret))); return kp; } catch { return null; } }
+  async function claimInfo(escrow) { try { return await api(`${PAPI}/claims/${escrow}`, { auth: false }); } catch { return null; } }
+  function linkIntro(info, signedIn) {
+    // Someone opened a pay link before having an account.
+    const f = info.from;
+    show(`<section class="welcome intro">
+      <div class="brand">${LOGO}</div>
+      <div class="introcard">${avatar(f, 'lg')}
+        <h1>${esc(f.name.split(' ')[0])} sent you ${money(info.usd)}</h1>
+        ${info.note ? `<p class="note">${esc(info.note)}</p>` : ''}
+        <p class="sub">Monyx is a free app for sending money to friends. Make an account in under a minute and it's yours.</p>
+      </div>
+      <div class="cta">
+        <button class="btn btn-dark" id="goSignup">Create account &amp; claim</button>
+        <button class="btn btn-text" id="goLogin">I already have an account</button>
+      </div>
+      <p class="fine">Monyx is in test mode: these are test dollars with no real value. <a href="documentation/">How it works</a></p>
+    </section>`);
+    $('#goSignup').onclick = () => startSignup();
+    $('#goLogin').onclick = () => (location.hash = '#login');
+    void signedIn;
+  }
+  function payIntro(u, amount) {
+    show(`<section class="welcome intro">
+      <div class="brand">${LOGO}</div>
+      <div class="introcard">${avatar(u, 'lg')}
+        <h1>Pay ${esc(u.name)}${amount ? ` ${money(amount)}` : ''}</h1>
+        <p class="sub">@${esc(u.handle)} uses Monyx to get paid. Create a free account or log in, and we'll bring you right back here to pay.</p>
+      </div>
+      <div class="cta">
+        <button class="btn btn-dark" id="goSignup">Create account to pay</button>
+        <button class="btn btn-text" id="goLogin">I already have an account</button>
+      </div>
+      <p class="fine">Monyx is in test mode: balances are test dollars with no real value. <a href="documentation/">How it works</a></p>
+    </section>`);
+    $('#goSignup').onclick = () => startSignup();
+    $('#goLogin').onclick = () => (location.hash = '#login');
+  }
+  async function claimLink(secret) {
+    const kp = claimKey(secret);
+    if (!kp) { toast('That link is broken. Ask them to send it again.', true); location.hash = '#home'; return; }
+    const escrow = kp.publicKey.toBase58();
+    if (!$('#feed')) screenHome();
+    const info = await claimInfo(escrow);
+    if (!info) { toast('That link isn’t valid.', true); history.replaceState(null, '', '#home'); return; }
+    const mine = info.from.handle === S.acct.user.handle;
+    if (info.status !== 'open') {
+      sheet(`<h2>${info.status === 'returned' ? 'This link was cancelled' : 'Already claimed'}</h2><p class="sub">${info.status === 'returned' ? `${esc(info.from.name)} took this money back.` : 'Someone already claimed this link. If that wasn’t you, ask the sender.'}</p>`);
+      history.replaceState(null, '', '#home'); return;
+    }
+    sheet(`<div class="confirm">${avatar(info.from, 'lg')}<div class="sub">${mine ? 'Your link' : `From ${esc(info.from.name)}`}</div>
+      <div class="big">${money(info.usd)}</div>${info.note ? `<div class="note">${esc(info.note)}</div>` : ''}</div>
+      <button class="btn btn-dark" id="go">${mine ? 'Cancel link and take it back' : `Claim ${money(info.usd)}`}</button>`, (el, close) => {
+      $('#go', el).onclick = async (e) => {
+        const b = e.currentTarget; b.disabled = true; b.innerHTML = '<span class="spin"></span>Moving the money';
+        try {
+          const units = await usdcOf(escrow);
+          if (!units) throw userError('This link is empty. It may have just been claimed.');
+          const r = await usdcSend({ owner: escrow, signer: kp, to: S.acct.address, units, note: mine ? 'Link cancelled' : (info.note || 'Claimed link'), closeEscrow: true });
+          S.lastMs = r.ms || null;
+          S.people[escrow] = { ...info.from, address: escrow, link: true, name: mine ? 'Cancelled link' : info.from.name };
+          close(); refreshBalance(); store.del('monyx.pending');
+          success(mine ? `${money(info.usd)} is back in your balance` : `${money(info.usd)} from ${esc(info.from.name.split(' ')[0])} is yours`, info.note, r.sig);
+          if (!mine) say(`${info.from.name.split(' ')[0]} sent you ${spoken(info.usd)}. It's in your balance.`);
+        } catch (err) { b.disabled = false; b.textContent = 'Try again'; showError(err, 6000); }
+      };
+    });
+    history.replaceState(null, '', '#home');
+  }
+  async function linksSheet() {
+    let server = [];
+    try { server = (await api(PAPI + '/claims')).claims; } catch {}
+    const local = new Map(links.all().map((l) => [l.escrow, l]));
+    sheet(`<h2>Pay links</h2><p class="sub">Money you sent with a link. Open links can be cancelled from this device.</p>
+      <div class="list" style="margin-top:12px">${server.length ? server.map((c) => `<div class="item"><div class="av sm linkav">${ICON.link}</div><div class="mid"><div class="t">${money(c.usd)}${c.label ? ` for ${esc(c.label)}` : ''}</div><div class="s">${c.status === 'open' ? 'Waiting to be claimed' : c.status === 'returned' ? 'Cancelled' : `Claimed${c.by ? ` by ${esc(c.by.name)}` : ''}`} · ${when(Date.parse(c.at) / 1000)}</div></div>${c.status === 'open' && local.has(c.escrow) ? `<button class="btn btn-text btn-sm" data-s="${esc(local.get(c.escrow).secret)}">Share</button><button class="btn btn-text btn-sm" data-c="${esc(local.get(c.escrow).secret)}">Cancel</button>` : ''}</div>`).join('') : '<div class="empty">No links yet. On the pay screen, tap “Send with a link”.</div>'}</div>`, (el, close) => {
+      $$('[data-c]', el).forEach((b) => (b.onclick = () => { close(); claimLink(b.dataset.c); }));
+      $$('[data-s]', el).forEach((b) => (b.onclick = () => copy(linkUrl(b.dataset.s), 'Link copied')));
+    });
+  }
+
+  /* ───────── assistant drafts (Grok Bot) ─────────
+     An assistant can draft a payment; it shows up here and only moves when you tap. */
+  async function loadDrafts() {
+    if (!S.acct || !S.acct.token) return;
+    try { S.drafts = (await api(PAPI + '/drafts')).drafts; paintDrafts(); } catch {}
+  }
+  function paintDrafts() {
+    const el = $('#drafts'); if (!el) return;
+    if (!S.drafts.length) { el.innerHTML = ''; return; }
+    el.innerHTML = `<h3>Waiting for your OK</h3>` + S.drafts.map((d) => `<div class="req draft">
+      <div class="row"><div class="av sm bot">${ICON.spark}</div><div><div class="t"><b>${esc(d.from)}</b> wants to pay <b>${esc(d.to ? d.to.name : 'someone')}</b> <b>${money(d.usd)}</b></div><div class="s">${esc(d.reason || d.note || 'No note')} · ${when(Date.parse(d.at) / 1000)}</div></div></div>
+      <div class="btn-row"><button class="btn btn-light btn-sm" data-no="${d.id}" style="width:100%">Dismiss</button><button class="btn btn-dark btn-sm" data-ok="${d.id}" style="width:100%">Review</button></div></div>`).join('');
+    $$('[data-ok]', el).forEach((b) => (b.onclick = () => { const d = S.drafts.find((x) => x.id === b.dataset.ok); confirmPay(d.to, d.usd, d.note || '', null, false, d.id); }));
+    $$('[data-no]', el).forEach((b) => (b.onclick = async () => { b.disabled = true; await api(`${PAPI}/drafts/${b.dataset.no}`, { method: 'POST', body: { action: 'dismiss' } }).catch(() => {}); loadDrafts(); }));
+  }
+  async function assistantSheet() {
+    let keys = [];
+    try { keys = (await api(PAPI + '/agent-keys')).keys; } catch {}
+    sheet(`<h2>AI assistant</h2><p class="sub">Connect Grok Bot (or any AI assistant) to Monyx. It can check your balance and activity, ask friends for money, and <b>draft</b> payments. It can never send money: every draft waits for your tap here.</p>
+      ${keys.length ? `<div class="list" style="margin-top:12px">${keys.map((k) => `<div class="item"><div class="av sm bot">${ICON.spark}</div><div class="mid"><div class="t">${esc(k.label)}</div><div class="s">Drafts up to ${money(Number(k.weekly_usd))}/week · ${k.last_used_at ? `used ${when(Date.parse(k.last_used_at) / 1000)}` : 'not used yet'}</div></div><button class="btn btn-text btn-sm" data-rv="${k.id}">Remove</button></div>`).join('')}</div>` : ''}
+      <h3>Connect a new assistant</h3>
+      <label class="field"><input id="lbl" maxlength="30" value="Grok Bot" aria-label="Assistant name"></label>
+      <label class="field prefix" style="margin-top:8px"><span style="font-size:15px;white-space:nowrap">Per week $</span><input id="lim" inputmode="numeric" value="50" style="padding-left:6px" aria-label="Weekly draft limit in dollars"></label>
+      <button class="btn btn-dark" id="mk" style="margin-top:12px">Create key</button>
+      <div id="out"></div>
+      <p class="fine" style="margin-top:12px"><a href="grok-bot/" target="_blank" rel="noopener">How to set up Grok Bot</a></p>`, (el) => {
+      $$('[data-rv]', el).forEach((b) => (b.onclick = async () => { b.disabled = true; await api(`${PAPI}/agent-keys/${b.dataset.rv}/revoke`, { method: 'POST' }).catch(() => {}); b.closest('.item').remove(); toast('Assistant removed'); }));
+      $('#mk', el).onclick = async (e) => {
+        const b = e.currentTarget; b.disabled = true;
+        try {
+          const r = await api(PAPI + '/agent-keys', { method: 'POST', body: { label: $('#lbl', el).value.trim() || 'Grok Bot', weekly_usd: parseInt($('#lim', el).value, 10) || 50 } });
+          $('#out', el).innerHTML = `<div class="warn strong" style="margin-top:12px">${ICON.info.replace('<svg', '<svg width="18" height="18" style="flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8"')}<span>Copy this key now; you won't see it again. Paste it only into your assistant's Monyx credential field. It can't send money, but it can see your activity.</span></div><div class="keybox show">${esc(r.key)}</div><button class="btn btn-light btn-sm" id="cpk" style="margin-top:8px;width:100%">Copy key</button>`;
+          $('#cpk', el).onclick = () => copy(r.key, 'Assistant key copied');
+          b.textContent = 'Key created';
+        } catch (err) { b.disabled = false; showError(err); }
+      };
+    });
+  }
+
+  /* ───────── live "you got paid" ─────────
+     Payments Monyx relays, and anything QuickNode Streams sees arrive from
+     outside, show up in the inbox within a few seconds. */
+  const announced = new Set();
+  let inboxPrimed = false;
+  async function pollInbox() {
+    if (!S.acct || !S.acct.token || document.hidden) return;
+    try {
+      const r = await api(`${PAPI}/inbox?since=${S.inboxAt}`);
+      const fresh = r.payments.filter((p) => !announced.has(p.sig));
+      fresh.forEach((p) => announced.add(p.sig));
+      if (fresh.length) S.inboxAt = Math.max(S.inboxAt, ...fresh.map((p) => p.at - 1));
+      if (!inboxPrimed) { inboxPrimed = true; return; }
+      const incoming = fresh.filter((p) => p.from !== S.acct.address);
+      if (!incoming.length) return;
+      await resolvePeople(incoming.map((p) => p.from).filter(Boolean));
+      const lines = incoming.slice(0, 2).map((p) => {
+        const who_ = S.people[p.from]; const n = who_ && !who_.unknown ? (who_.bank ? 'Monyx' : first(who_)) : 'Someone';
+        return { html: `<b>${esc(n)}</b> sent you <b>${money(p.usd)}</b>${p.note && !(who_ && who_.bank) ? ` · ${esc(p.note)}` : ''}`, text: `${n} sent you ${spoken(p.usd)}${p.note && !(who_ && who_.bank) ? ` for ${plainNote(p.note)}` : ''}.`, bank: who_ && who_.bank };
+      });
+      const notable = lines.filter((l) => !l.bank);
+      if (notable.length) { toast(notable.map((l) => l.html).join('<br>'), false, 5000); if (S.voice.announce) say(notable.map((l) => l.text).join(' ')); }
+      refreshBalance(); if ($('#feed')) loadFeed();
+    } catch (e) { if (e.status === 401) relogin(); }
+  }
+
   /* ───────── routing ───────── */
   async function route() {
     const h = location.hash.slice(1);
@@ -1529,8 +1798,16 @@
     if (view === 'pay' && a && !signedIn) {
       store.set('monyx.pending', '#' + h);
       const u = await lookup(a);
-      screenWelcome(u ? `<div class="banner">${avatar(u, 'sm')}<span>Create an account or log in to pay <b>${esc(u.name)}</b>${b ? ` ${money(parseFloat(b))}` : ''}.</span></div>` : '');
+      if (u) payIntro(u, b && parseFloat(b) > 0 ? parseFloat(b) : 0);
+      else screenWelcome(`<div class="banner"><span>That pay link is for @${esc(a)}, who isn't on Monyx yet.</span></div>`);
       return;
+    }
+    if (view === 'claim' && a) {
+      if (signedIn) return claimLink(a);
+      store.set('monyx.pending', '#' + h);
+      const kp = claimKey(a); const info = kp && (await claimInfo(kp.publicKey.toBase58()));
+      if (info && info.status === 'open') return linkIntro(info);
+      return screenWelcome(`<div class="banner"><span>${info ? 'That link was already claimed.' : 'That link isn’t valid.'}</span></div>`);
     }
     if (!signedIn) {
       if (view === 'login') return screenLogin();
@@ -1551,10 +1828,12 @@
     if (S.acct && S.acct.mode === 'key' && S.acct.secret) { try { S.kp = keypairFrom(S.acct.secret); } catch { S.acct = null; } }
     if (S.acct && !S.acct.token) { S.acct = null; S.kp = null; store.del('monyx.acct'); } // signup interrupted before the account existed
     window.addEventListener('hashchange', route);
-    loadPrice().then(() => { paintBalance(); paintFeed(); });
+    rememberLinkPeople();
+    // Broken profile photos fall back to initials. (Delegated, so no inline handlers: the CSP forbids them.)
+    document.addEventListener('error', (e) => { if (e.target && e.target.matches && e.target.matches('img[data-fallback]')) e.target.remove(); }, true);
     route();
-    setInterval(() => { if (S.acct && S.acct.token && !document.hidden) { refreshBalance(); if ($('#feed')) { loadFeed(); loadRequests(); } } }, 20000);
-    setInterval(loadPrice, 120000);
+    setInterval(() => { if (S.acct && S.acct.token && !document.hidden) { refreshBalance(); if ($('#feed')) { loadFeed(); loadRequests(); loadDrafts(); } } }, 20000);
+    setInterval(pollInbox, 4000); pollInbox();
     loadMarkets();
     checkVoice();
     if (S.acct && S.acct.token) api('/me').then((r) => { S.acct.user = r.user; saveAcct(); }).catch((e) => { if (e.status === 401) relogin(); });

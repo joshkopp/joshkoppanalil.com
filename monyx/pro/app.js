@@ -622,7 +622,11 @@ print(pull("pulse", net="mainnet"))`,
       if (S.mode === 'builtin') store.del('monyx.pro.key');
       forget();
     };
-    $('#exportKey').onclick = () => copy(JSON.stringify(Array.from(S.kp.secretKey)), 'Secret key copied. Keep it private.');
+    $('#exportKey').onclick = () => {
+      // Exporting a key is the one action that can lose someone everything, so make them mean it.
+      if (!window.confirm('Copy your secret key?\n\nAnyone who has this key can take everything in this wallet. Monyx will never ask for it. Only paste it into a wallet you trust, and never into a website, chat or form.')) return;
+      copy(JSON.stringify(Array.from(S.kp.secretKey)), 'Secret key copied. Keep it private.');
+    };
     $('#myAddr').onclick = () => copy(S.pubkey, 'Address copied');
     $('#whoBtn').onclick = () => (location.hash = '#wallet');
     $('#refreshAct').onclick = () => { refreshBalance(); loadActivity(); };
