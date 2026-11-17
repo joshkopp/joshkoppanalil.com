@@ -6,6 +6,7 @@
 (() => {
   'use strict';
   const API = 'https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/monyx';
+  const VAPI = API + '-voice';
   const RPC = 'https://api.devnet.solana.com';
   const MEMO = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
   const SITE = location.origin + location.pathname.replace(/index\.html$/, '');
@@ -43,6 +44,8 @@
     tools: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/></svg>',
     split: '<svg viewBox="0 0 24 24"><path d="M12 3v7M12 10 5 17M12 10l7 7M5 17v4M19 17v4"/></svg>',
     swap: '<svg viewBox="0 0 24 24"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>',
+    mic: '<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>',
+    speaker: '<svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>',
   };
 
   /* ───────── money ───────── */
@@ -52,6 +55,7 @@
     feed: [], people: store.get('monyx.people', {}), requests: { incoming: [], outgoing: [] },
     markets: store.get('monyx.markets', null), port: null, bankAddr: store.get('monyx.bank', null),
     signup: null, timers: [],
+    voice: { server: store.get('monyx.voiceServer', null), talk: store.get('monyx.talkback', true), announce: store.get('monyx.announce', true), feedSeen: false, reqSeen: null },
   };
   const usd = (lamports) => (lamports / L) * S.price;
   const toLamports = (dollars) => Math.round((dollars / S.price) * L);
@@ -132,7 +136,7 @@
     const headers = { 'content-type': 'application/json' };
     if (auth && S.acct && S.acct.token) headers.authorization = `Bearer ${S.acct.token}`;
     let r;
-    try { r = await fetch(API + path, { method, headers, body: body ? JSON.stringify(body) : undefined }); }
+    try { r = await fetch(/^https:/.test(path) ? path : API + path, { method, headers, body: body ? JSON.stringify(body) : undefined }); }
     catch { throw userError(OFFLINE, { status: 0 }); }
     const j = await r.json().catch(() => ({}));
     if (!r.ok) {
@@ -212,6 +216,7 @@
       store.set(cacheKey, S.feed);
       await resolvePeople(S.feed.map((f) => f.with).filter(Boolean));
       paintFeed(); paintPeople();
+      announceFeed([...got.values()]);
     } catch { paintFeed(); }
   }
   function toEntry(tx, s, me) {
@@ -246,7 +251,7 @@
   }
   async function loadRequests() {
     if (!S.acct || !S.acct.token) return;
-    try { S.requests = await api('/requests'); paintRequests(); }
+    try { S.requests = await api('/requests'); paintRequests(); announceRequests(); }
     catch (e) { if (e.status === 401) relogin(); }
   }
 
@@ -281,11 +286,12 @@
     clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), ms);
   }
   async function copy(text, msg = 'Copied') { try { await navigator.clipboard.writeText(text); toast(msg); } catch { toast("Couldn't copy", true); } }
-  function sheet(html, onMount) {
+  function sheet(html, onMount, onClose) {
     const wrap = document.createElement('div');
     wrap.className = 'sheet-wrap';
     wrap.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div>`;
-    const close = () => { wrap.remove(); document.removeEventListener('keydown', onKey); };
+    let closed = false;
+    const close = () => { if (closed) return; closed = true; wrap.remove(); document.removeEventListener('keydown', onKey); onClose && onClose(); };
     const onKey = (e) => { if (e.key === 'Escape') close(); };
     wrap.addEventListener('click', (e) => { if (e.target === wrap) close(); });
     document.addEventListener('keydown', onKey);
@@ -310,10 +316,10 @@
       <div class="brand">${LOGO}</div>
       <div class="art"><div class="stage">
         <div class="bubble b1"><div class="av sm" style="background:#e0574f">MA</div><div><b>Maya paid you</b><span>🍕 Friday pizza</span></div><span class="amt in">+$14.00</span></div>
-        <div class="bubble b2"><div class="av sm" style="background:#2f80ed">JR</div><div><b>You paid Jordan</b><span>🎟️ concert tickets</span></div><span class="amt">$42.50</span></div>
+        <div class="bubble b2 say"><span class="mic">${ICON.mic}</span><div><b>“Pay Jordan 42.50 for tickets”</b><span>Ready to send · tap to confirm</span></div></div>
       </div></div>
-      <h1>Pay anyone<br>by name.</h1>
-      <p class="sub">Split dinner, pay back a friend, chip in for a gift. Type their @username and you're done. No bank details, no fees.</p>
+      <h1>Just say<br>who to pay.</h1>
+      <p class="sub">Tell Monyx “send Maya 20 for pizza” and it’s ready to go. Split dinner, ask for money back, hear when you get paid. No bank details, no fees.</p>
       ${banner || ''}
       <div class="cta">
         <button class="btn btn-dark" id="goSignup">Create your account</button>
@@ -518,12 +524,14 @@
         <a class="cryptorow" id="cryptoRow" href="#invest" hidden><span>Crypto</span><b id="cryptoVal"></b>${ICON.chev}</a>
         <div class="btn-row"><button class="btn btn-light" id="add">Add money</button><a class="btn btn-dark" href="#pay">Pay or request</a></div>
       </section>
+      <button class="talkbar" id="talk"><span class="mic">${ICON.mic}</span><span class="mid"><b>Just say it</b><span>“Send Maya $20 for pizza”</span></span></button>
       <div id="start"></div>
       <div id="reqs"></div>
       <div id="ppl"></div>
       <h3 class="hrow"><span>Activity</span><a href="#activity">See all</a></h3>
       <div class="list" id="feed" data-limit="6"><div class="item"><div class="mid"><div class="skeleton" style="width:70%"></div></div></div><div class="item"><div class="mid"><div class="skeleton" style="width:50%"></div></div></div></div>`, { tabs: true, tab: 'home' });
     $('#add').onclick = addMoney;
+    $('#talk').onclick = talk;
     paintBalance(); paintRequests(); paintPeople(); if (S.feed.length) paintFeed();
     refreshBalance(); loadFeed(); loadRequests();
     loadPortfolio().then(paintCryptoRow);
@@ -620,7 +628,7 @@
   /* pay / request */
   function screenPay(prefill = {}) {
     const st = { to: null, note: prefill.note || '' };
-    show(`<div class="payhead"><button class="x" id="close" aria-label="Close">${ICON.x}</button><b>Pay or request</b><span style="width:32px"></span></div>
+    show(`<div class="payhead"><button class="x" id="close" aria-label="Close">${ICON.x}</button><b>Pay or request</b><button class="x mic" id="vmic" aria-label="Say it instead">${ICON.mic}</button></div>
       <div class="amountin"><span>$</span><input id="amt" inputmode="decimal" autocomplete="off" placeholder="0" value="${prefill.amount || ''}" aria-label="Amount in dollars"></div>
       <div class="avail" id="avail"></div>
       <div class="to" id="toBox"></div>
@@ -651,6 +659,7 @@
     note.oninput = () => { st.note = note.value; };
     $$('.emojis button').forEach((b) => (b.onclick = () => { note.value = b.dataset.e + (note.value && !note.value.startsWith(b.dataset.e) ? ' ' + note.value : ''); st.note = note.value; note.focus(); }));
     $('#close').onclick = () => (location.hash = '#home');
+    $('#vmic').onclick = talk;
     size(); refreshBalance().then(valid);
 
     const renderTo = () => {
@@ -720,12 +729,13 @@
   async function lookup(handle) {
     try { const { user } = await api(`/u/${encodeURIComponent(handle.replace(/^@/, ''))}`, { auth: false }); S.people[user.address] = user; return user; } catch { return null; }
   }
-  function confirmPay(to, dollars, note, requestId) {
+  function confirmPay(to, dollars, note, requestId, voiced = false) {
     if (to.handle && S.acct.user && to.handle === S.acct.user.handle) { toast("You can't pay yourself.", true); return; }
     const after = S.lamports != null ? usd(S.lamports) - dollars : null;
     sheet(`<div class="confirm">${avatar(to, 'lg')}<div class="sub">Pay ${esc(who(to))}${to.handle ? ` · @${esc(to.handle)}` : ''}</div>
       <div class="big">${money(dollars)}</div>${note ? `<div class="note">${esc(note)}</div>` : ''}</div>
       <div class="ledger"><div><span>From</span><b>Monyx balance</b></div>${after != null ? `<div><span>Balance after</span><b>${money(Math.max(0, after))}</b></div>` : ''}<div><span>Fee</span><b>Free</b></div></div>
+      ${voiced ? `<div class="voiced">${ICON.mic}<span>Filled in by voice. Check it, then tap Pay.</span></div>` : ''}
       ${to.unknown ? `<div class="warn">${'This account isn’t on Monyx. Payments can’t be undone, so double-check the number.'}</div>` : ''}
       <button class="btn btn-dark" id="go">Pay ${money(dollars)}</button>`, (el, close) => {
       $('#go', el).onclick = async (e) => {
@@ -737,6 +747,7 @@
           S.feed.unshift({ sig, time: Math.floor(Date.now() / 1000), ok: true, with: to.address, note, lamports: -toLamports(dollars) });
           S.people[to.address] = S.people[to.address] || to;
           success(`You paid ${esc(first(to))} ${money(dollars)}`, note, sig);
+          if (voiced) say(`Done. You paid ${first(to)} ${spoken(dollars)}.`);
           refreshBalance();
         } catch (err) {
           b.disabled = false; b.textContent = `Pay ${money(dollars)}`;
@@ -815,6 +826,11 @@
       <section class="profile"><button class="avedit" id="avEdit" aria-label="Change profile photo">${avatar(u, 'lg')}<span class="badge">${ICON.camera}</span></button><div class="name">${esc(u.name)}</div><div class="handle">@${esc(u.handle)}</div></section>
       <section class="qrcard"><div class="qr">${qrSvg(payLink(u.handle))}</div><p>Friends can scan this to pay you</p>
         <div class="btn-row"><button class="btn btn-dark btn-sm" id="share" style="width:100%">Share link</button><button class="btn btn-light btn-sm" id="copy" style="width:100%">Copy link</button></div></section>
+      <h3>Voice</h3>
+      <div class="list menu">
+        <label class="item toggle"><span class="ico">${ICON.mic}</span><div class="mid"><div class="t">Monyx talks back</div><div class="s">Hear confirmations out loud</div></div><input type="checkbox" id="tTalk" ${S.voice.talk ? 'checked' : ''}><i class="sw"></i></label>
+        <label class="item toggle"><span class="ico">${ICON.speaker}</span><div class="mid"><div class="t">Read payments aloud</div><div class="s">“Maya sent you $14 for pizza”</div></div><input type="checkbox" id="tAnn" ${S.voice.announce ? 'checked' : ''}><i class="sw"></i></label>
+      </div>
       <h3>Account</h3>
       <div class="list menu">
         ${row('add', ICON.plus, 'Add money', 'Free test money')}
@@ -826,6 +842,8 @@
       </div>
       <p class="fine" style="margin-top:22px">Monyx · monyx.pro</p>`, { tabs: true, tab: 'me' });
     $('#share').onclick = shareLink;
+    $('#tTalk').onchange = (e) => { S.voice.talk = e.target.checked; store.set('monyx.talkback', S.voice.talk); if (S.voice.talk) say('Okay, I’ll talk back.'); else stopSpeaking(); };
+    $('#tAnn').onchange = (e) => { S.voice.announce = e.target.checked; store.set('monyx.announce', S.voice.announce); if (S.voice.announce) say('I’ll read new payments out loud.', { force: true }); };
     $('#avEdit').onclick = () => (u.avatar ? photoMenu() : pickPhoto());
     $('#copy').onclick = () => { store.set('monyx.shared', true); copy(payLink(u.handle), 'Link copied'); };
     $('[data-r="add"]').onclick = addMoney;
@@ -1156,7 +1174,7 @@
   /* ───────── split a bill ───────── */
   function splitSheet(total, note, preset) {
     if (!(total > 0)) { toast('Enter the total first, then split it.'); $('#amt') && $('#amt').focus(); return; }
-    const st = { people: preset && preset.handle && !preset.bank ? [preset] : [], me: true };
+    const st = { people: (Array.isArray(preset) ? preset : [preset]).filter((p) => p && p.handle && !p.bank), me: true };
     sheet(`<h2>Split ${money(total)}</h2><p class="sub">We'll send everyone a request for their share.</p>
       <label class="field prefix" style="margin-top:14px"><span style="font-size:15px">Add</span><input id="sq" autocapitalize="off" spellcheck="false" placeholder="Name or @username" style="padding-left:8px"></label>
       <div id="sres"></div><div class="list" id="sppl" style="margin-top:12px"></div>
@@ -1197,6 +1215,312 @@
     });
   }
 
+  /* ───────── voice: talk to pay ─────────
+     Tap the mic and say it: "send Maya 20 for pizza". ElevenLabs (through the
+     monyx server, which holds the key) turns speech into text; voice-parse.js
+     turns text into a payment; the normal confirm sheet still needs a tap.
+     Without ElevenLabs we fall back to the browser's own speech recognition. */
+  const BrowserSR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const canRecord = () => !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+  const voiceMode = () => (S.voice.server && canRecord() ? 'eleven' : BrowserSR ? 'browser' : S.voice.server == null && canRecord() ? 'eleven' : null);
+  async function checkVoice() {
+    try { const { on } = await api(VAPI + '/status', { auth: false }); S.voice.server = !!on; store.set('monyx.voiceServer', S.voice.server); } catch {}
+  }
+  let audioEl = null; const sayCache = new Map();
+  function stopSpeaking() {
+    if (audioEl) { audioEl.pause(); audioEl = null; }
+    if (window.speechSynthesis) speechSynthesis.cancel();
+  }
+  function browserSay(text) {
+    if (!window.speechSynthesis) return;
+    const u = new SpeechSynthesisUtterance(text); u.rate = 1.04; u.lang = 'en-US';
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }
+  // Read something aloud. Quietly does nothing if talk-back is off or audio is blocked.
+  async function say(text, { force = false } = {}) {
+    if (!text || (!S.voice.talk && !force)) return;
+    stopSpeaking();
+    if (S.voice.server && S.acct && S.acct.token) {
+      try {
+        let b64 = sayCache.get(text);
+        if (!b64) { b64 = (await api(VAPI + '/say', { method: 'POST', body: { text } })).audio; if (sayCache.size > 30) sayCache.clear(); sayCache.set(text, b64); }
+        audioEl = new Audio('data:audio/mpeg;base64,' + b64);
+        await audioEl.play(); return;
+      } catch (e) { if (e && e.code === 'voice_off') { S.voice.server = false; store.set('monyx.voiceServer', false); } }
+    }
+    try { browserSay(text); } catch {}
+  }
+  // Dollars said the way people say them: $20 → "20 dollars", $12.50 → "12 dollars and 50 cents".
+  const spoken = (v) => {
+    const d = Math.floor(v + 1e-9), c = Math.round((v - d) * 100);
+    if (!d) return `${c} cents`;
+    return `${d.toLocaleString('en-US')} dollar${d === 1 ? '' : 's'}${c ? ` and ${c} cents` : ''}`;
+  };
+  const plainNote = (n) => { const t = (n || '').replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, ''); return /^[A-Z][a-z]/.test(t) ? t[0].toLowerCase() + t.slice(1) : t; };
+  const knownPeople = () => {
+    const seen = new Set(); const list = [];
+    for (const p of Object.values(S.people)) if (p && !p.unknown && !p.bank && p.handle && p.handle !== S.acct.user.handle && !seen.has(p.handle)) { seen.add(p.handle); list.push(p); }
+    return list;
+  };
+  const norm = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  function near(a, b) { // edit distance ≤ 1, for "jordon" → "jordan"
+    if (Math.abs(a.length - b.length) > 1 || a.length < 4) return a === b;
+    let i = 0, j = 0, e = 0;
+    while (i < a.length && j < b.length) {
+      if (a[i] === b[j]) { i++; j++; continue; }
+      if (++e > 1) return false;
+      if (a.length > b.length) i++; else if (b.length > a.length) j++; else { i++; j++; }
+    }
+    return e + (a.length - i) + (b.length - j) <= 1;
+  }
+  // Find who they meant: friends first (people you've paid or been paid by), then everyone on Monyx.
+  async function findPerson(name) {
+    const n = norm(name), first1 = norm(name.split(' ')[0]);
+    const score = (p) => {
+      const h = norm(p.handle), full = norm(p.name), f = norm(p.name.split(' ')[0]);
+      if (h === n || full === n) return 3;
+      if (f === n || (name.includes(' ') && f === first1 && full.startsWith(n.slice(0, f.length + 1)))) return 2;
+      if (near(h, n) || near(f, n) || near(full, n)) return 1;
+      return 0;
+    };
+    const mine = knownPeople().map((p) => [p, score(p)]).filter((x) => x[1]).sort((a, b) => b[1] - a[1]);
+    if (mine.length && (mine.length === 1 || mine[0][1] > mine[1][1])) return { one: mine[0][0] };
+    let others = [];
+    try {
+      const { users } = await api(`/search?q=${encodeURIComponent(name.replace(/\s+/g, ' ').slice(0, 30))}`, { auth: false });
+      others = users.filter((u) => u.handle !== S.acct.user.handle);
+    } catch {}
+    const all = [...mine.map((x) => x[0])];
+    for (const u of others) if (!all.some((p) => p.handle === u.handle)) all.push(u);
+    const exact = all.filter((p) => norm(p.handle) === n || norm(p.name) === n);
+    if (exact.length === 1) return { one: exact[0] };
+    if (all.length === 1) return { one: all[0] };
+    return { many: all.slice(0, 6) };
+  }
+  function choosePerson(name, list) {
+    return new Promise((resolve) => {
+      sheet(`<h2>Which ${esc(name.replace(/\b\w/g, (c) => c.toUpperCase()))}?</h2><p class="sub">A few people match. Pick the right one.</p>
+        <div class="list" style="margin-top:12px">${list.map((u, i) => `<button class="item" data-i="${i}">${avatar(u)}<div class="mid"><div class="t">${esc(u.name)}</div><div class="s">@${esc(u.handle)}</div></div>${ICON.chev}</button>`).join('')}</div>`,
+      (el, close) => $$('[data-i]', el).forEach((b) => (b.onclick = () => { const u = list[+b.dataset.i]; resolve(u); close(); })), () => resolve(null));
+    });
+  }
+  async function personFor(name) {
+    const r = await findPerson(name);
+    if (r.one) return r.one;
+    if (r.many && r.many.length) { say(`Which ${name}?`); return await choosePerson(name, r.many); }
+    throw userError(`I couldn't find anyone called “${name}” on Monyx.`);
+  }
+
+  // Act on a sentence. Anything that moves money ends at a screen that needs a tap.
+  async function doVoice(text, setStatus) {
+    const v = window.MonyxVoice.parse(text);
+    const me = S.acct.user.name.split(' ')[0];
+    if (v.intent === 'balance') {
+      if (S.lamports == null) await refreshBalance();
+      if (!S.port) await loadPortfolio();
+      const cash = S.lamports != null ? usd(Math.max(0, S.lamports)) : 0;
+      const crypto = S.port ? S.port.total : 0;
+      const line = `You have ${money(cash)}${crypto > 0 ? `, plus ${money(crypto)} in crypto` : ''}.`;
+      setStatus({ big: money(cash), text: crypto > 0 ? `plus ${money(crypto)} in crypto` : 'in your Monyx balance' });
+      say(`You have ${spoken(cash)}${crypto > 0 ? `, plus ${spoken(crypto)} in crypto` : ''}.`, { force: true });
+      return line;
+    }
+    if (v.intent === 'activity') {
+      if (!S.feed.length) await loadFeed();
+      const recent = S.feed.filter((f) => f.ok && f.with).slice(0, 3);
+      if (!recent.length) { setStatus({ text: 'No payments yet.' }); say('No payments yet.', { force: true }); return; }
+      const lines = recent.map((f) => {
+        const p = S.people[f.with]; const n = p && !p.unknown ? (p.bank ? 'Monyx' : first(p)) : 'Someone';
+        const amt = usd(Math.abs(f.lamports)); const note = p && p.bank ? '' : plainNote(f.note);
+        return f.lamports > 0 ? `${n} sent you ${spoken(amt)}${note ? ` for ${note}` : ''}` : `You paid ${n} ${spoken(amt)}${note ? ` for ${note}` : ''}`;
+      });
+      setStatus({ list: recent });
+      say(lines.join('. ') + '.', { force: true });
+      return;
+    }
+    if (v.intent === 'unknown' || (!v.people.length && v.intent !== 'unknown')) {
+      if (v.intent !== 'unknown' && !v.people.length) throw userError(v.intent === 'split' ? 'Who should I split it with? Try “split 60 with Maya and Jordan”.' : `Who should I ${v.intent === 'request' ? 'ask' : 'pay'}? Try saying their name.`);
+      throw userError('I can send, request, split, or check your balance. Try “send Maya 20 for pizza”.');
+    }
+    if (v.intent === 'split') {
+      if (!v.amount) throw userError('How much was it? Try “split 60 with Maya and Jordan”.');
+      setStatus({ text: 'Finding everyone…' });
+      const ppl = [];
+      for (const n of v.people) { const p = await personFor(n); if (!p) return 'cancel'; if (!ppl.some((x) => x.handle === p.handle)) ppl.push(p); }
+      return { go: () => { splitSheet(v.amount, v.note, ppl); say(`Splitting ${spoken(v.amount)} with ${ppl.map(first).join(' and ')}. Check it, then tap send.`); } };
+    }
+    if (v.people.length > 1) throw userError(v.intent === 'request' ? 'To ask several people, try “split 60 with Maya and Jordan”.' : 'One person at a time. Who should I pay first?');
+    setStatus({ text: `Looking for ${v.people[0]}…` });
+    const to = await personFor(v.people[0]);
+    if (!to) return 'cancel';
+    if (v.intent === 'request') {
+      if (!v.amount) return { go: () => { history.replaceState(null, '', '#pay'); screenPay({ to: to.handle, note: v.note }); toast(`How much should ${esc(first(to))} send you?`); } };
+      return { go: () => { confirmRequest(to, v.amount, v.note); say(`Ask ${first(to)} for ${spoken(v.amount)}${v.note ? ` for ${plainNote(v.note)}` : ''}?`); } };
+    }
+    // pay
+    if (!v.amount) return { go: () => { history.replaceState(null, '', '#pay'); screenPay({ to: to.handle, note: v.note }); say(`How much should I send ${first(to)}?`); } };
+    if (v.amount > 10000) throw userError('That’s over the $10,000 limit for one payment.');
+    return { go: () => { confirmPay(to, v.amount, v.note, null, true); say(`Pay ${first(to)} ${spoken(v.amount)}${v.note ? ` for ${plainNote(v.note)}` : ''}? Tap pay to send it.`); } };
+  }
+  function confirmRequest(to, dollars, note) {
+    sheet(`<div class="confirm">${avatar(to, 'lg')}<div class="sub">Request from ${esc(who(to))} · @${esc(to.handle)}</div>
+      <div class="big">${money(dollars)}</div>${note ? `<div class="note">${esc(note)}</div>` : ''}</div>
+      <div class="voiced">${ICON.mic}<span>Filled in by voice. Check it, then tap to send.</span></div>
+      <button class="btn btn-dark" id="go">Request ${money(dollars)}</button>`, (el, close) => {
+      $('#go', el).onclick = async (e) => {
+        const b = e.currentTarget; b.disabled = true; b.innerHTML = '<span class="spin"></span>Sending';
+        try {
+          await api('/requests', { method: 'POST', body: { to: to.handle, usd: dollars, note } });
+          close();
+          success(`Requested ${money(dollars)} from ${esc(first(to))}`, note, null, `We'll let ${esc(first(to))} know next time they open Monyx.`);
+          say(`Done. I asked ${first(to)} for ${spoken(dollars)}.`);
+        } catch (err) { b.disabled = false; b.textContent = `Request ${money(dollars)}`; showError(err); }
+      };
+    });
+  }
+
+  const EXAMPLES = ['Send Maya $20 for pizza', 'Split $60 with Maya and Jordan for dinner', 'Request $15 from Jordan', 'What’s my balance?', 'Who paid me?'];
+  function talk() {
+    if (!S.acct || !S.acct.token) return;
+    stopSpeaking();
+    const mode = voiceMode();
+    let rec = null, stream = null, ctx = null, raf = 0, sr = null, done = false, timer = 0;
+    const cleanup = () => {
+      done = true; cancelAnimationFrame(raf); clearTimeout(timer);
+      try { rec && rec.state !== 'inactive' && rec.stop(); } catch {}
+      try { sr && sr.abort(); } catch {}
+      if (stream) stream.getTracks().forEach((t) => t.stop());
+      if (ctx) ctx.close().catch(() => {});
+    };
+    sheet(`<div class="talk">
+        <button class="orb" id="orb" aria-label="Start or stop listening">${ICON.mic}<i></i><i></i><i></i></button>
+        <div class="heard" id="heard">${mode ? 'Tap the mic and say what you want to do' : 'Voice isn’t available in this browser. Type it below.'}</div>
+        <div class="said" id="said"></div>
+        <div class="vres" id="vres"></div>
+      </div>
+      <div class="tries" id="tries">${EXAMPLES.map((x) => `<button>${esc(x)}</button>`).join('')}</div>
+      <form class="field typeit" id="typeit"><input id="tq" placeholder="Or type it: send Maya 20 for pizza" autocomplete="off" enterkeyhint="go" aria-label="Type a command"><button class="go" aria-label="Go">${ICON.chev}</button></form>
+      <p class="fine">You always tap to confirm before money moves.</p>`, (el, close) => {
+      const orb = $('#orb', el), heard = $('#heard', el), said = $('#said', el), vres = $('#vres', el);
+      const setState = (st) => { orb.className = 'orb ' + st; };
+      const setStatus = (o) => {
+        vres.innerHTML = o.big ? `<div class="big">${o.big}</div><div class="s">${esc(o.text || '')}</div>`
+          : o.list ? `<div class="list">${o.list.map((f) => { const p = S.people[f.with] || { address: f.with, unknown: true }; const inc = f.lamports > 0; return `<div class="item">${avatar(p, 'sm')}<div class="mid"><div class="t">${inc ? `${esc(who(p))} paid you` : `You paid ${esc(who(p))}`}</div><div class="s">${esc(f.note || when(f.time))}</div></div><span class="amt ${inc ? 'in' : ''}">${money(usd(f.lamports), inc)}</span></div>`; }).join('')}</div>`
+          : `<div class="s">${esc(o.text || '')}</div>`;
+      };
+      const run = async (text) => {
+        cleanup(); setState('thinking');
+        said.textContent = `“${text}”`; heard.textContent = 'Got it'; vres.innerHTML = '';
+        $('#tries', el).hidden = true;
+        try {
+          const r = await doVoice(text, setStatus);
+          setState('');
+          if (r === 'cancel') { close(); return; }
+          if (r && r.go) { close(); r.go(); return; }
+          heard.textContent = typeof r === 'string' ? '' : 'Here you go';
+        } catch (e) {
+          setState('');
+          heard.textContent = friendly(e);
+          say(friendly(e).replace(/[“”]/g, ''));
+          $('#tries', el).hidden = false;
+        }
+      };
+      const fail = (msg) => { cleanup(); setState(''); heard.textContent = msg; $('#tries', el).hidden = false; };
+
+      async function startEleven() {
+        try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+        catch { return fail('Monyx needs the microphone. Allow it in your browser, or type below.'); }
+        if (done) return cleanup();
+        const type = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg'].find((t) => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || '';
+        rec = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+        const parts = [];
+        rec.ondataavailable = (e) => e.data && e.data.size && parts.push(e.data);
+        rec.onstop = async () => {
+          if (stream) stream.getTracks().forEach((t) => t.stop());
+          if (done) return; // closed, or they typed instead
+          if (!heardSpeech) return fail('I didn’t hear anything. Tap the mic and try again.');
+          setState('thinking'); heard.textContent = 'Listening back…';
+          const blob = new Blob(parts, { type: rec.mimeType || type || 'audio/webm' });
+          try {
+            const hints = knownPeople().flatMap((p) => [p.name, p.handle]).slice(0, 50);
+            const { text } = await api(VAPI + '/listen', { method: 'POST', body: { audio: b64(new Uint8Array(await blob.arrayBuffer())), mime: blob.type, hints } });
+            if (!text) return fail('I didn’t catch that. Try again.');
+            run(text);
+          } catch (e) {
+            if (e.code === 'voice_off') { S.voice.server = false; store.set('monyx.voiceServer', false); if (BrowserSR) { setState(''); heard.textContent = 'Tap the mic and try once more'; return; } }
+            fail(friendly(e));
+          }
+        };
+        // Stop by itself once they've said something and gone quiet.
+        let heardSpeech = false, quietSince = 0; const t0 = performance.now();
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const an = ctx.createAnalyser(); an.fftSize = 512; ctx.createMediaStreamSource(stream).connect(an);
+        const buf = new Uint8Array(an.fftSize);
+        const tick = () => {
+          if (done || rec.state === 'inactive') return;
+          an.getByteTimeDomainData(buf);
+          let sum = 0; for (const x of buf) sum += (x - 128) ** 2;
+          const level = Math.sqrt(sum / buf.length) / 128;
+          orb.style.setProperty('--lv', Math.min(1, level * 6).toFixed(2));
+          const now = performance.now();
+          if (level > 0.035) { heardSpeech = true; quietSince = 0; } else if (heardSpeech && !quietSince) quietSince = now;
+          if ((heardSpeech && quietSince && now - quietSince > 1300) || now - t0 > 12000 || (!heardSpeech && now - t0 > 7000)) { rec.stop(); return; }
+          raf = requestAnimationFrame(tick);
+        };
+        rec.start(); setState('on'); heard.textContent = 'Listening… say it like you’d tell a friend';
+        raf = requestAnimationFrame(tick);
+      }
+      function startBrowser() {
+        sr = new BrowserSR(); sr.lang = 'en-US'; sr.interimResults = true; sr.maxAlternatives = 1;
+        let final = '';
+        sr.onresult = (e) => {
+          let interim = ''; final = '';
+          for (const r of e.results) (r.isFinal ? (final += r[0].transcript) : (interim += r[0].transcript));
+          said.textContent = `“${(final + interim).trim()}”`;
+        };
+        sr.onerror = (e) => fail(e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'Monyx needs the microphone. Allow it in your browser, or type below.' : e.error === 'no-speech' ? 'I didn’t hear anything. Tap the mic and try again.' : 'I couldn’t hear that. Try again, or type it.');
+        sr.onend = () => { if (done) return; const txt = final.trim() || said.textContent.replace(/[“”]/g, '').trim(); if (txt) run(txt); else fail('I didn’t hear anything. Tap the mic and try again.'); };
+        try { sr.start(); setState('on'); heard.textContent = 'Listening… say it like you’d tell a friend'; } catch { fail('I couldn’t start the microphone. Type it below.'); }
+      }
+      const start = () => {
+        done = false; said.textContent = ''; vres.innerHTML = ''; $('#tries', el).hidden = true;
+        const m = voiceMode();
+        if (m === 'eleven') startEleven(); else if (m === 'browser') startBrowser(); else fail('Voice isn’t available in this browser. Type it below.');
+      };
+      orb.onclick = () => {
+        if (orb.classList.contains('on')) { if (rec && rec.state === 'recording') rec.stop(); else if (sr) sr.stop(); return; }
+        if (orb.classList.contains('thinking')) return;
+        start();
+      };
+      $$('#tries button', el).forEach((b) => (b.onclick = () => run(b.textContent.replace(/’/g, "'"))));
+      $('#typeit', el).onsubmit = (e) => { e.preventDefault(); const v = $('#tq', el).value.trim(); if (v) run(v); };
+      if (mode) start();
+    }, cleanup);
+  }
+
+  // Receiving: read new money and new requests aloud as they arrive.
+  function announceFeed(fresh) {
+    if (!S.voice.feedSeen) { S.voice.feedSeen = true; return; }
+    const now = Date.now() / 1000;
+    const inc = fresh.filter((f) => f.ok && f.lamports > 0 && f.with && now - (f.time || 0) < 900);
+    if (!inc.length) return;
+    const lines = inc.slice(0, 2).map((f) => {
+      const p = S.people[f.with]; const n = p && !p.unknown ? (p.bank ? 'Monyx' : first(p)) : 'Someone';
+      return { html: `<b>${esc(n)}</b> sent you <b>${money(usd(f.lamports))}</b>${f.note ? ` · ${esc(f.note)}` : ''}`, text: `${n} sent you ${spoken(usd(f.lamports))}${f.note ? ` for ${plainNote(f.note)}` : ''}.` };
+    });
+    toast(lines.map((l) => l.html).join('<br>'), false, 5000);
+    if (S.voice.announce) say(lines.map((l) => l.text).join(' '));
+  }
+  function announceRequests() {
+    const ids = new Set((S.requests.incoming || []).map((r) => r.id));
+    if (S.voice.reqSeen === null) { S.voice.reqSeen = ids; return; }
+    const fresh = (S.requests.incoming || []).filter((r) => !S.voice.reqSeen.has(r.id));
+    S.voice.reqSeen = ids;
+    if (!fresh.length || !S.voice.announce) return;
+    const r = fresh[0];
+    say(`${r.from.name.split(' ')[0]} is asking you for ${spoken(r.usd)}${r.note ? ` for ${plainNote(r.note)}` : ''}.`);
+  }
+
   /* ───────── routing ───────── */
   async function route() {
     const h = location.hash.slice(1);
@@ -1232,6 +1556,7 @@
     setInterval(() => { if (S.acct && S.acct.token && !document.hidden) { refreshBalance(); if ($('#feed')) { loadFeed(); loadRequests(); } } }, 20000);
     setInterval(loadPrice, 120000);
     loadMarkets();
+    checkVoice();
     if (S.acct && S.acct.token) api('/me').then((r) => { S.acct.user = r.user; saveAcct(); }).catch((e) => { if (e.status === 401) relogin(); });
   }
   boot();

@@ -337,3 +337,60 @@ button.item:first-child { border-top: 0; }
 .avedit .badge svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: round; }
 .avedit:hover .badge { background: var(--brand-hover); }
 .avprev { width: 140px; height: 140px; border-radius: 50%; object-fit: cover; display: block; margin: 8px auto 0; box-shadow: 0 0 0 4px var(--card), 0 12px 30px -12px rgba(20, 19, 26, .35); }
+
+/* ── voice: talk to pay ── */
+.talkbar { display: flex; align-items: center; gap: 14px; width: 100%; margin-top: 12px; padding: 12px 16px 12px 12px; border: 0; border-radius: 18px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); text-align: left; color: var(--ink); cursor: pointer; transition: box-shadow .15s, transform .1s; }
+.talkbar:hover { box-shadow: inset 0 0 0 1px var(--brand); }
+.talkbar:active { transform: scale(.99); }
+.talkbar .mic, .art .say .mic { width: 44px; height: 44px; border-radius: 50%; background: var(--brand-soft); color: var(--brand-ink); display: grid; place-items: center; flex-shrink: 0; }
+.talkbar .mic svg, .art .say .mic svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.talkbar b { display: block; font-size: 16px; font-weight: 600; }
+.talkbar .mid span { font-size: 14px; color: var(--mute); }
+.art .say .mic { width: 36px; height: 36px; }
+.art .say .mic svg { width: 18px; height: 18px; }
+.payhead .mic svg { stroke: var(--brand); }
+
+.talk { text-align: center; padding: 8px 0 6px; }
+.orb { --lv: 0; position: relative; width: 104px; height: 104px; margin: 4px auto 18px; border: 0; border-radius: 50%; background: var(--brand); color: #fff; display: grid; place-items: center; cursor: pointer; box-shadow: 0 16px 36px -16px rgba(91, 71, 240, .7); transition: transform .15s; }
+.orb:active { transform: scale(.96); }
+.orb svg { width: 40px; height: 40px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; position: relative; z-index: 2; }
+.orb i { position: absolute; inset: 0; border-radius: 50%; background: var(--brand); opacity: 0; z-index: 0; pointer-events: none; }
+.orb.on i { opacity: .16; transform: scale(calc(1 + var(--lv) * .55)); transition: transform .08s linear; }
+.orb.on i:nth-child(3) { opacity: .1; transform: scale(calc(1 + var(--lv) * .9)); }
+.orb.on i:nth-child(4) { opacity: .06; transform: scale(calc(1.06 + var(--lv) * 1.25)); }
+.orb.on { animation: breathe 1.6s ease-in-out infinite; }
+.orb.thinking { background: var(--brand-ink); }
+.orb.thinking svg { animation: pulse 1s ease-in-out infinite; }
+@keyframes breathe { 50% { box-shadow: 0 16px 44px -10px rgba(91, 71, 240, .85); } }
+@keyframes pulse { 50% { opacity: .35; } }
+.heard { font-size: 17px; font-weight: 600; min-height: 24px; padding: 0 10px; }
+.said { font-size: 15px; color: var(--mute); margin-top: 6px; min-height: 20px; padding: 0 10px; }
+.vres { margin-top: 10px; }
+.vres .big { font-size: 48px; font-weight: 700; letter-spacing: -.045em; font-variant-numeric: tabular-nums; }
+.vres .s { color: var(--mute); font-size: 14px; }
+.vres .list { text-align: left; margin-top: 6px; }
+.tries { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 18px 0 14px; }
+.tries[hidden] { display: none; }
+.tries button { border: 0; background: var(--card); box-shadow: inset 0 0 0 1px var(--line2); border-radius: 99px; padding: 8px 13px; font-size: 14px; color: var(--ink2); cursor: pointer; }
+.tries button:hover { box-shadow: inset 0 0 0 1px var(--brand); color: var(--ink); }
+.typeit { display: flex; align-items: center; gap: 6px; padding-right: 6px; margin-top: 8px; }
+.typeit input { height: 48px; font-size: 16px; }
+.typeit .go { width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--brand); color: #fff; display: grid; place-items: center; flex-shrink: 0; cursor: pointer; }
+.typeit .go svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.talk + .tries + .typeit + .fine, .typeit + .fine { margin-top: 12px; text-align: center; }
+.voiced { display: flex; align-items: center; gap: 10px; background: var(--brand-soft); color: var(--brand-ink); border-radius: 14px; padding: 11px 14px; font-size: 14px; margin: 0 0 14px; }
+.voiced svg { width: 18px; height: 18px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* switches in the Me tab */
+.item.toggle { cursor: pointer; }
+.item.toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+.item.toggle .sw { width: 46px; height: 28px; border-radius: 99px; background: var(--line2); position: relative; flex-shrink: 0; transition: background .18s; }
+.item.toggle .sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: transform .18s; }
+.item.toggle input:checked + .sw { background: var(--brand); }
+.item.toggle input:checked + .sw::after { transform: translateX(18px); }
+.item.toggle input:focus-visible + .sw { outline: 2px solid var(--brand); outline-offset: 2px; }
+@media (prefers-color-scheme: dark) {
+  .talkbar .mic, .art .say .mic, .voiced { color: #c9c1ff; }
+}
+@media (prefers-reduced-motion: reduce) { .orb.on, .orb.thinking svg { animation: none; } }
+.payhead .mic { margin: 0 -8px 0 0; }

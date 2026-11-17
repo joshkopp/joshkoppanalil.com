@@ -109,6 +109,7 @@ footer .bar { height: auto; padding: 28px 24px; }
 <nav class="toc" aria-label="On this page">
   <p>On this page</p>
   <a href="#basics">The basics</a>
+  <a href="#voice">Talk to pay</a>
   <a href="#account">Your account</a>
   <a href="#paying">Paying &amp; requesting</a>
   <a href="#split">Splitting a bill</a>
@@ -123,10 +124,10 @@ footer .bar { height: auto; padding: 28px 24px; }
 <main>
   <p class="kicker">Guide</p>
   <h1>How Monyx works</h1>
-  <p class="lede">Monyx lets you send money to anyone using their @username, the way you'd text a friend. This page explains every part of it in plain language. You don't need to know anything about crypto.</p>
+  <p class="lede">Monyx is the money app you can talk to. Say “send Maya 20 for pizza” and it's ready to go, or type their @username the way you'd text a friend. This page explains every part of it in plain language. You don't need to know anything about crypto.</p>
 
   <div class="cards">
-    <div class="card"><div class="ico"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div><b>Pay by name</b>Type @maya, pick an amount, done. No bank details.</div>
+    <div class="card"><div class="ico"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></div><b>Just say it</b>“Send Maya 20 for pizza.” Monyx fills it in, you tap to confirm.</div>
     <div class="card"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3v7M12 10 5 17M12 10l7 7"/></svg></div><b>Split anything</b>Dinner, rent, tickets. Everyone gets a request for their share.</div>
     <div class="card"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 18l5-6 4 3 7-9M15 6h5v5"/></svg></div><b>Buy crypto</b>Start with $1. Buy, sell or swap nine coins at live prices.</div>
   </div>
@@ -136,7 +137,23 @@ footer .bar { height: auto; padding: 28px 24px; }
   <p>You never see any of that. Monyx turns long account numbers into usernames, shows everything in dollars, and handles the technical parts for you.</p>
   <div class="note"><span class="dot"></span><p><strong>The one thing to remember:</strong> your money lives in <em>your</em> account, which only you control. Monyx can't move it, freeze it, or spend it. That's also why your recovery key matters so much (more on that below).</p></div>
 
-  <h2 id="account"><span class="n">02</span>Your account</h2>
+  <h2 id="voice"><span class="n">02</span>Talk to pay</h2>
+  <p>Tap <strong>Just say it</strong> on the home screen (or the mic on the pay screen) and say what you want, the way you'd tell a friend. Monyx works out who, how much and what for, and shows you the payment, ready to send.</p>
+  <table>
+    <tr><th>Say</th><th>What happens</th></tr>
+    <tr><td>“Send Maya 20 for pizza”</td><td>A $20 payment to Maya with the note 🍕 Pizza, waiting for your tap</td></tr>
+    <tr><td>“Request 15 from Jordan for coffee”</td><td>A $15 request to Jordan, waiting for your tap</td></tr>
+    <tr><td>“Split 60 with Maya and Jordan for dinner”</td><td>The split screen with both of them added</td></tr>
+    <tr><td>“What's my balance?”</td><td>Monyx tells you, out loud</td></tr>
+    <tr><td>“Who paid me?”</td><td>Your last few payments, read out loud</td></tr>
+  </table>
+  <div class="note"><span class="dot"></span><p><strong>Voice never sends money by itself.</strong> It only fills in the payment. You always see the person's name, photo and the amount, and nothing moves until you tap Pay. If Monyx mishears, you lose a tap, not your money.</p></div>
+  <h3>Hearing when you get paid</h3>
+  <p>With <strong>Read payments aloud</strong> on (in the Me tab), Monyx says it when money arrives: “Maya sent you 14 dollars for pizza.” It also tells you when someone asks you for money. Turn off <strong>Monyx talks back</strong> if you'd rather read than listen.</p>
+  <h3>How it works</h3>
+  <p>Your voice is turned into text by <strong>ElevenLabs</strong>, a speech company, and Monyx's replies are spoken by an ElevenLabs voice. To help with names, Monyx sends along the names of people you've paid before. Recordings aren't saved by Monyx. If voice isn't switched on, Monyx uses your browser's own speech recognition instead, and you can always type the same sentence.</p>
+
+  <h2 id="account"><span class="n">03</span>Your account</h2>
   <h3>Signing up</h3>
   <p>Signing up takes three steps: your name, an @username, and saving your recovery key. There's no password and no email.</p>
   <h3>What actually happens</h3>
@@ -147,7 +164,7 @@ footer .bar { height: auto; padding: 28px 24px; }
   <h3>Logging in</h3>
   <p>To log in, your device proves it holds the key by signing a short message ("Sign in to Monyx", plus the time). Monyx checks the signature and lets you in for 30 days. The key itself is never sent anywhere. If you already use a <strong>Phantom</strong> crypto wallet, you can log in with that instead.</p>
 
-  <h2 id="paying"><span class="n">03</span>Paying &amp; requesting</h2>
+  <h2 id="paying"><span class="n">04</span>Paying &amp; requesting</h2>
   <p>Tap the purple <strong>+</strong> button, type an amount, choose who it's for, and add a note if you want.</p>
   <div class="flow">
     <div class="step"><b>You confirm</b>Your device signs the payment with your key</div>
@@ -171,18 +188,18 @@ footer .bar { height: auto; padding: 28px 24px; }
   <h3>Payments are final</h3>
   <p>Like handing someone cash, a payment can't be reversed once it's sent. If you pay the wrong person, ask them to send it back.</p>
 
-  <h2 id="split"><span class="n">04</span>Splitting a bill</h2>
+  <h2 id="split"><span class="n">05</span>Splitting a bill</h2>
   <p>On the pay screen, type the total and tap <strong>Split a bill with friends</strong>. Add people and choose whether to include yourself, and Monyx works out each share.</p>
   <p>Say dinner was <strong>$60</strong> for three people including you. Each share is $20, so your two friends each get a request for $20 and you collect $40.</p>
 
-  <h2 id="adding"><span class="n">05</span>Adding money</h2>
+  <h2 id="adding"><span class="n">06</span>Adding money</h2>
   <p>New accounts get a <strong>welcome bonus</strong> to try things out. After that, tap <strong>Add money</strong> on the home screen:</p>
   <ul>
     <li><strong>Get free test money:</strong> copy your account number, open the free test-money site, and paste it in. It shows up within a minute.</li>
     <li><strong>Get paid by a friend:</strong> share your pay link or QR code.</li>
   </ul>
 
-  <h2 id="crypto"><span class="n">06</span>Buying crypto</h2>
+  <h2 id="crypto"><span class="n">07</span>Buying crypto</h2>
   <p>The <strong>Invest</strong> tab has nine popular coins: Bitcoin, Ethereum, USD Coin, XRP, Dogecoin, Cardano, Chainlink, Avalanche and Litecoin. Prices are live and update every minute.</p>
   <table>
     <tr><th>Action</th><th>What happens</th></tr>
@@ -193,12 +210,13 @@ footer .bar { height: auto; padding: 28px 24px; }
   <p>Coin prices go up and down, so the dollar value of what you own changes over time. The Invest tab shows how much it moved today.</p>
   <div class="note"><span class="dot"></span><p><strong>How it differs from payments:</strong> your cash sits in your own account, but the coins you buy are recorded and kept by Monyx, the way a brokerage app holds stock for you. That's what makes buying and swapping instant.</p></div>
 
-  <h2 id="safety"><span class="n">07</span>Safety &amp; privacy</h2>
+  <h2 id="safety"><span class="n">08</span>Safety &amp; privacy</h2>
   <h3>What Monyx knows</h3>
   <ul>
     <li>Your name, username and account number</li>
     <li>Payment requests you send and receive</li>
     <li>Your crypto trades and balances</li>
+    <li>When you use voice: the sentence you said, long enough to understand it. Recordings aren't kept.</li>
   </ul>
   <h3>What Monyx never has</h3>
   <ul>
@@ -209,18 +227,18 @@ footer .bar { height: auto; padding: 28px 24px; }
   <h3>When something goes wrong</h3>
   <p>If a payment fails, Monyx tells you in plain words: "Nothing was sent," or "We couldn't confirm it yet, check your activity." If a crypto purchase goes through but doesn't get recorded straight away, Monyx remembers it and finishes it the next time you open the app.</p>
 
-  <h2 id="test"><span class="n">08</span>Test mode</h2>
+  <h2 id="test"><span class="n">09</span>Test mode</h2>
   <p>Monyx is in <strong>test mode</strong> right now, which is why you'll see a yellow "Test mode" tag. Everything works for real, but it runs on Solana's test network, so the money is play money with no value. You can't cash it out and you can't lose real money. It's a safe way to try everything.</p>
   <p>Your balance is held in Solana's own currency (SOL) and shown in dollars at the live price, so the dollar figure can shift slightly even when you haven't done anything.</p>
 
-  <h2 id="pro"><span class="n">09</span>Monyx Pro</h2>
+  <h2 id="pro"><span class="n">10</span>Monyx Pro</h2>
   <p>For the curious and for developers. Open it from the Me tab.</p>
   <ul>
     <li><strong>Wallet tracer:</strong> enter any account number to see who it's sent money to and received money from, drawn as a map you can click through.</li>
     <li><strong>API market:</strong> data services that software and AI agents can pay for one request at a time, a fraction of a cent each, with no sign-up. The agent asks, gets a price, pays, and gets the answer. Developer instructions are in <a href="../llms.txt">llms.txt</a>.</li>
   </ul>
 
-  <h2 id="faq"><span class="n">10</span>Questions</h2>
+  <h2 id="faq"><span class="n">11</span>Questions</h2>
   <details><summary>Does Monyx charge fees?</summary><div><p>No. The Solana network charges a tiny fee per payment, a fraction of a cent, and in test mode that's play money too.</p></div></details>
   <details><summary>I lost my recovery key. Can you help?</summary><div><p>If you're still logged in on a device, open the Me tab, tap <strong>Recovery key</strong> and save it now. If you've lost both the key and your logged-in device, the account can't be recovered. Nobody holds a copy, including us.</p></div></details>
   <details><summary>Someone asked for my recovery key. Should I give it?</summary><div><p>Never. Anyone with it can empty your account. Monyx will never ask for it.</p></div></details>
