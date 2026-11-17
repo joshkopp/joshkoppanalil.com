@@ -286,3 +286,9 @@ dialog menu { display: flex; justify-content: flex-end; gap: 8px; padding: 0; ma
   .console { position: static; }
   .actions { flex-wrap: wrap; }
 }
+
+/* ── Theme: ice blue, square, drafted (matches the app) ── */
+:root, :root:root { color-scheme: light; --ink: #fff; --ink2: #fff; --ink3: #DEEBF7; --line: rgba(158,202,225,.7); --line2: #9ECAE1; --bone: #12395c; --bone2: #2c5270; --mute: #3d5d78; --dim: #4a6580; --sig: #276c9f; --sig-ink: #1a4d75; --in: #1d7a4f; --bad: #9b2c22; --tok: #4a6580; --mono: "JetBrains Mono", "Geist Mono", ui-monospace, monospace; }
+@media (prefers-color-scheme: dark) { :root, :root:root { --ink: #fff; --ink2: #fff; --ink3: #DEEBF7; --line: rgba(158,202,225,.7); --line2: #9ECAE1; --bone: #12395c; --bone2: #2c5270; --mute: #3d5d78; --dim: #4a6580; --sig: #276c9f; --sig-ink: #1a4d75; --in: #1d7a4f; --bad: #9b2c22; --tok: #4a6580; } }
+*, *::before, *::after { border-radius: 0 !important; }
+::selection { background: #3182BD; color: #fff; }

@@ -17,7 +17,7 @@
   const MEMO = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
   const SITE = location.origin + location.pathname.replace(/index\.html$/, '');
   // The mark: a violet tile with a white "m". Simple enough to read at favicon size.
-  const MARK = '<svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M10 21v-7.2a3 3 0 0 1 6 0V21m0-7.2a3 3 0 0 1 6 0V21"/></svg>';
+  const MARK = '<svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="0"/><path d="M10 21v-7.2a3 3 0 0 1 6 0V21m0-7.2a3 3 0 0 1 6 0V21"/></svg>';
   const LOGO = `<span class="logo">${MARK}monyx</span>`;
   const U = 1e6; // USDC has 6 decimals
   const W = () => window.solanaWeb3;
