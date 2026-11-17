@@ -9,9 +9,9 @@
   const RPC = 'https://api.devnet.solana.com';
   const MEMO = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
   const SITE = location.origin + location.pathname.replace(/index\.html$/, '');
-  // The mark: a cut gem in jade (money + onyx). Facet lines are drawn in a darker stroke.
-  const GEM = '<svg class="gem" viewBox="0 0 24 24" aria-hidden="true"><path class="g-fill" d="M7 4h10l4 5-9 11L3 9z"/><path class="g-line" d="M3 9h18M7 4l3 5 2 11 2-11 3-5M10 9l2-5 2 5"/></svg>';
-  const LOGO = `<span class="logo">${GEM}monyx</span>`;
+  // The mark: a violet tile with a white "m". Simple enough to read at favicon size.
+  const MARK = '<svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M10 21v-7.2a3 3 0 0 1 6 0V21m0-7.2a3 3 0 0 1 6 0V21"/></svg>';
+  const LOGO = `<span class="logo">${MARK}monyx</span>`;
   const L = 1e9;
   const FEE = 10_000;
   const W = () => window.solanaWeb3;
@@ -36,6 +36,7 @@
     key: '<svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l3 3"/></svg>',
     link: '<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
     info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+    check: '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
     book: '<svg viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/></svg>',
     out: '<svg viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/></svg>',
     tools: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/></svg>',
@@ -247,11 +248,11 @@
   }
 
   /* ───────── pieces ───────── */
-  // Gemstone tones that read well on onyx: amethyst, jade, garnet, sapphire, topaz, teal, amber, slate.
-  const PALETTE = ['#4b3b7a', '#1f6a50', '#7a3341', '#2b5585', '#7a5b22', '#2c6670', '#6d4a32', '#474859'];
+  // Mid-tone colours that carry white initials in both light and dark mode.
+  const PALETTE = ['#7c5cf5', '#14a37a', '#e0574f', '#2f80ed', '#d68a12', '#1aa0b8', '#c2507a', '#5f6b7d'];
   function avatar(p, size = '') {
     if (!p) return `<div class="av ${size} addr">?</div>`;
-    if (p.bank) return `<div class="av ${size} bank">${GEM}</div>`;
+    if (p.bank) return `<div class="av ${size} bank">${MARK}</div>`;
     if (p.unknown || !p.name) return `<div class="av ${size} addr">#</div>`;
     let h = 2166136261; for (const c of p.handle || p.name) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; // FNV-1a spreads similar names across colours
     const ini = p.name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
@@ -304,8 +305,8 @@
     show(`<section class="welcome">
       <div class="brand">${LOGO}</div>
       <div class="art"><div class="stage">
-        <div class="bubble b1"><div class="av sm" style="background:#7a3341">MA</div><div><b>Maya paid you</b><span>🍕 Friday pizza</span></div><span class="amt in">+$14.00</span></div>
-        <div class="bubble b2"><div class="av sm" style="background:#2b5585">JR</div><div><b>You paid Jordan</b><span>🎟️ concert tickets</span></div><span class="amt">$42.50</span></div>
+        <div class="bubble b1"><div class="av sm" style="background:#e0574f">MA</div><div><b>Maya paid you</b><span>🍕 Friday pizza</span></div><span class="amt in">+$14.00</span></div>
+        <div class="bubble b2"><div class="av sm" style="background:#2f80ed">JR</div><div><b>You paid Jordan</b><span>🎟️ concert tickets</span></div><span class="amt">$42.50</span></div>
       </div></div>
       <h1>Pay anyone<br>by name.</h1>
       <p class="sub">Split dinner, pay back a friend, chip in for a gift. Type their @username and you're done. No bank details, no fees.</p>
@@ -508,11 +509,12 @@
     const u = S.acct.user;
     show(`<header class="top"><a class="me" href="#me">${avatar(u, 'sm')}<span>Hi, ${esc(u.name.split(' ')[0])}</span></a><span class="pill"><i></i>Test mode</span></header>
       <section class="balance">
-        <div class="label"><span>Balance</span>${GEM}</div>
+        <div class="label"><span>Balance</span><span class="cur">USD</span></div>
         <div class="amount" id="bal"><div class="skeleton" style="width:60%;height:44px;border-radius:12px"></div></div>
         <a class="cryptorow" id="cryptoRow" href="#invest" hidden><span>Crypto</span><b id="cryptoVal"></b>${ICON.chev}</a>
         <div class="btn-row"><button class="btn btn-light" id="add">Add money</button><a class="btn btn-dark" href="#pay">Pay or request</a></div>
       </section>
+      <div id="start"></div>
       <div id="reqs"></div>
       <div id="ppl"></div>
       <h3 class="hrow"><span>Activity</span><a href="#activity">See all</a></h3>
@@ -532,6 +534,26 @@
     const v = usd(S.lamports);
     const [d, c] = v.toFixed(2).split('.');
     el.innerHTML = `<small>$</small>${Number(d).toLocaleString('en-US')}<span class="cents">.${c}</span>`;
+    paintStart();
+  }
+  // Get-started checklist: three first steps for a brand-new account.
+  // Each one ticks itself off from real activity and the card hides once all
+  // three are done, or when the person dismisses it.
+  function paintStart() {
+    const el = $('#start'); if (!el) return;
+    if (store.get('monyx.startHidden')) { el.innerHTML = ''; return; }
+    const steps = [
+      { t: 'Add money', s: 'Get free test money to try things out', done: S.lamports > 0, go: addMoney },
+      { t: 'Send your first payment', s: 'Pay a friend by their @username', done: S.feed.some((f) => f.lamports < 0 && f.with && !(S.people[f.with] || {}).bank), go: () => (location.hash = '#pay') },
+      { t: 'Share your pay link', s: 'So friends can pay you', done: !!store.get('monyx.shared'), go: shareLink },
+    ];
+    const n = steps.filter((x) => x.done).length;
+    if (n === steps.length) { store.set('monyx.startHidden', true); el.innerHTML = ''; return; }
+    el.innerHTML = `<section class="start"><div class="start-h"><div><b>Get started</b><span>${n} of ${steps.length} done</span></div><button class="x" id="startX" aria-label="Hide">${ICON.x}</button></div>
+      <div class="bar"><i style="width:${(n / steps.length) * 100}%"></i></div>
+      ${steps.map((x, i) => `<button class="srow ${x.done ? 'ok' : ''}" data-i="${i}"><span class="ck">${x.done ? ICON.check : i + 1}</span><span class="mid"><b>${x.t}</b><span>${x.s}</span></span>${x.done ? '' : ICON.chev}</button>`).join('')}</section>`;
+    $('#startX').onclick = () => { store.set('monyx.startHidden', true); el.innerHTML = ''; };
+    $$('.srow', el).forEach((b) => (b.onclick = () => { const x = steps[+b.dataset.i]; if (!x.done) x.go(); }));
   }
   function paintPeople() {
     const el = $('#ppl'); if (!el) return;
@@ -545,6 +567,7 @@
     $$('.person', el).forEach((b) => (b.onclick = () => (location.hash = `#pay/${b.dataset.h}`)));
   }
   function paintFeed() {
+    paintStart();
     const el = $('#feed'); if (!el) return;
     if (!S.feed.length) { el.innerHTML = `<div class="empty">Nothing here yet.<br>Pay a friend, or share your link from the Me tab to get paid.</div>`; return; }
     el.innerHTML = S.feed.slice(0, +(el.dataset.limit || 100)).map((f) => {
@@ -773,6 +796,7 @@
     });
   }
   async function shareLink() {
+    store.set('monyx.shared', true);
     const url = payLink(S.acct.user.handle);
     const text = `Pay me on Monyx: @${S.acct.user.handle}`;
     if (navigator.share) { try { await navigator.share({ title: 'Monyx', text, url }); return; } catch {} }
@@ -797,7 +821,7 @@
       </div>
       <p class="fine" style="margin-top:22px">Monyx · monyx.pro</p>`, { tabs: true, tab: 'me' });
     $('#share').onclick = shareLink;
-    $('#copy').onclick = () => copy(payLink(u.handle), 'Link copied');
+    $('#copy').onclick = () => { store.set('monyx.shared', true); copy(payLink(u.handle), 'Link copied'); };
     $('[data-r="add"]').onclick = addMoney;
     const k = $('[data-r="key"]'); if (k) k.onclick = showKey;
     $('[data-r="details"]').onclick = details;

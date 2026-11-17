@@ -41,6 +41,19 @@
       return `<span class="j-n">${m}</span>`;
     });
   }
+  // Errors: show our own messages, turn everything else into a plain sentence.
+  // Server messages are already user-facing, so errors built from them are marked safe.
+  const OWN = /^(Holds |The public RPC|This RPC refused|That is not|Pick a wallet|Agent wallet is short|Address copied|Transaction failed onchain|upstream kept failing)/;
+  const safeErr = (m) => Object.assign(new Error(m), { safe: true });
+  function msg(e) {
+    const m = String((e && e.message) || '');
+    if (e && e.safe) return m;
+    if (/user rejected|rejected the request/i.test(m)) return 'Cancelled.';
+    if (/failed to fetch|networkerror|load failed|aborted/i.test(m)) return "Can't reach the network right now. Try again in a moment.";
+    if (OWN.test(m)) return m;
+    console.error('[monyx pro]', e);
+    return 'Something went wrong. Please try again.';
+  }
   let toastT;
   function toast(html, err = false, ms = 3200) {
     const t = $('#toast'); t.innerHTML = html; t.className = 'toast' + (err ? ' err' : ''); t.hidden = false;
@@ -164,7 +177,7 @@
         if (s.err) what += ' · failed';
         return `<li><span class="glyph">${g}</span><div><div class="what">${esc(what)}</div><div class="when"><a href="${txUrl(s.signature)}" target="_blank" rel="noopener">${short(s.signature, 6)}</a> · ${ago(s.blockTime)}</div></div><span class="amt ${d > 0 ? 'up' : d < 0 ? 'down' : ''}">${d > 0 ? '+' : ''}${fmtSol(d, 5)}</span></li>`;
       }).join('');
-    } catch (e) { ol.innerHTML = `<li class="muted">${esc(e.message)}</li>`; }
+    } catch (e) { ol.innerHTML = `<li class="muted">${esc(msg(e))}</li>`; }
   }
   async function loadHoldings() {
     const ul = $('#holdings');
@@ -194,7 +207,7 @@
           const sig = await transfer(mainSigner(), to, Math.round(amt * LAMPORTS));
           toast(`Sent. <a href="${txUrl(sig)}" target="_blank" rel="noopener">View</a>`, false, 6000);
           d.hidden = true; refreshBalance(); loadActivity();
-        } catch (e) { toast(esc(e.message), true, 6000); }
+        } catch (e) { toast(esc(msg(e)), true, 6000); }
         finally { b.disabled = false; b.textContent = 'Send'; }
       };
     } else if (kind === 'receive') {
@@ -233,7 +246,7 @@
       const miss = rep.timeline.filter((t) => !t.parsed).length;
       status(rep.scanned ? `${rep.scanned} transactions scanned${miss ? `, ${miss} could not be fetched (RPC limits)` : ''}. <a href="${addrUrl(address, net)}" target="_blank" rel="noopener">Explorer</a>` : 'No transactions found for this address on ' + net + '.');
       paintSamples();
-    } catch (e) { status(esc(e.message), true); }
+    } catch (e) { status(esc(msg(e)), true); }
   }
   function status(html, err = false) { const s = $('#traceStatus'); s.innerHTML = html; s.className = 'status' + (err ? ' err' : ''); }
   function paintHops() {
@@ -325,7 +338,7 @@
       $('#catalog').innerHTML = cat.apis.map((a) => `<div class="api" data-name="${a.name}"><div><b>${esc(a.title)}</b> <span class="path">/api/${a.name}</span></div><span class="price">${a.priceSol} SOL</span><p>${esc(a.summary)}</p></div>`).join('');
       if (!S.sel) selectApi(cat.apis.find((a) => a.name === 'profile') || cat.apis[0]);
       else $$('.api').forEach((el) => el.classList.toggle('on', el.dataset.name === S.sel.name));
-    } catch (e) { $('#catalog').innerHTML = `<div class="api"><p>Market unreachable: ${esc(e.message)}</p></div>`; }
+    } catch (e) { $('#catalog').innerHTML = `<div class="api"><p>Couldn't load the market. ${esc(msg(e))}</p></div>`; }
     loadKpis('#marketKpis');
   }
   async function loadKpis(sel) {
@@ -362,13 +375,13 @@
     log('req', `GET /api/${api}${url.includes('?') ? '?' + url.split('?')[1] : ''}`);
     const r1 = await fetch(url);
     const q = await r1.json();
-    if (r1.status !== 402) { log('bad', `${r1.status} ${esc(q.message || q.error)}`, q); throw new Error(q.message || 'request refused'); }
+    if (r1.status !== 402) { log('bad', `${r1.status} ${esc(q.message || q.error)}`, q); throw safeErr(q.message || 'The market refused that request.'); }
     const acc = q.accepts[0];
     log('402', `402 Payment Required · ${acc.extra.sol} SOL to ${short(acc.payTo)} · ref ${short(acc.extra.reference)}`, q);
     const payLi = log('pay', `<span class="spin"></span>Signing transfer of ${acc.extra.sol} SOL with reference attached…`);
     let sig;
     try { sig = await transfer(signer, acc.payTo, acc.extra.lamports, acc.extra.reference); }
-    catch (e) { payLi.querySelector('.line').innerHTML = esc(e.message); payLi.querySelector('.tag').className = 'tag bad'; throw e; }
+    catch (e) { payLi.querySelector('.line').innerHTML = esc(msg(e)); payLi.querySelector('.tag').className = 'tag bad'; throw e; }
     payLi.querySelector('.line').innerHTML = `Paid · <a href="${txUrl(sig)}" target="_blank" rel="noopener">${short(sig, 8)}</a> <span class="muted">confirmed on devnet</span>`;
     for (let attempt = 0; attempt < 3; attempt++) {
       const reqLi = log('req', `<span class="spin"></span>GET /api/${api} · X-PAYMENT: ${short(sig, 6)}`);
@@ -379,7 +392,7 @@
       if (r2.ok) { log('200', `200 OK · ${Math.round(performance.now() - t0)} ms · receipt ${short(body.receipt.transaction, 6)}`, body.data); return { ...body, sig }; }
       log('bad', `${r2.status} ${esc(body.message)}`, body);
       if (r2.status === 502 && body.retriesLeft > 0) { await new Promise((s) => setTimeout(s, 1500)); continue; }
-      throw new Error(body.message);
+      throw safeErr(body.message || 'The market refused that request.');
     }
     throw new Error('upstream kept failing');
   }
@@ -438,7 +451,7 @@
       }
       writeBrief(target, net, out, price);
       log('note', 'Brief written.');
-    } catch (e) { toast(esc(e.message), true, 6000); }
+    } catch (e) { toast(esc(msg(e)), true, 6000); }
     finally { btn.disabled = false; paintAgent(); }
   }
   function writeBrief(target, net, o, price) {
@@ -668,7 +681,7 @@ print(pull("pulse", net="mainnet"))`,
     $('#fundAgent').onclick = async (e) => {
       const b = e.target; b.disabled = true;
       try { const sig = await transfer(mainSigner(), agentKp().publicKey.toBase58(), 0.003 * LAMPORTS); toast(`Agent funded. <a href="${txUrl(sig)}" target="_blank" rel="noopener">View</a>`, false, 5000); paintAgent(); refreshBalance(); }
-      catch (err) { toast(esc(err.message), true, 6000); }
+      catch (err) { toast(esc(msg(err)), true, 6000); }
       finally { b.disabled = false; }
     };
     $('#dropAgent').onclick = async (e) => {
