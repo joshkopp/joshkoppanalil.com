@@ -1,0 +1,7 @@
+Contact: https://github.com/joshkopp/monyx/issues
+Expires: 2027-11-17T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://monyx.pro/.well-known/security.txt
+Policy: https://monyx.pro/terms/
+# Monyx is a student project running on Solana devnet (test money only).
+# Please report security issues privately if you can; we read every report.

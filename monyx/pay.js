@@ -10,7 +10,7 @@
   const API = 'https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/monyx';
   const VAPI = API + '-voice';
   const PAPI = API + '-pay';
-  let RPC = store.get('monyx.rpc', 'https://api.devnet.solana.com'); // monyx-pay /info can point this at a faster endpoint
+  let RPC = 'https://api.devnet.solana.com'; // monyx-pay /info can point this at a faster endpoint (see loadInfo)
   const USDC = '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU'; // Circle's devnet USDC
   const TOKEN = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
   const ATA_PROGRAM = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
@@ -382,7 +382,7 @@
       <div class="hint" id="hint"></div>`,
       `<button class="btn btn-dark" id="next">Continue</button>`));
     const nm = $('#nm'), next = $('#next'), hint = $('#hint');
-    nm.oninput = () => { hint.textContent = ''; hint.className = 'hint'; };
+    nm.oninput = () => { hint.className = 'hint'; hint.textContent = nm.value.length >= 40 ? 'Names can be up to 40 characters.' : ''; };
     nm.focus();
     nm.onkeydown = (e) => { if (e.key === 'Enter') next.click(); };
     $('#back').onclick = () => { location.hash = ''; };
@@ -579,7 +579,7 @@
         <a class="cryptorow" id="cryptoRow" href="#invest" hidden><span>Crypto</span><b id="cryptoVal"></b>${ICON.chev}</a>
         <div class="btn-row"><button class="btn btn-light" id="add">Add money</button><a class="btn btn-dark" href="#pay">Pay or request</a></div>
       </section>
-      <button class="talkbar" id="talk"><span class="mic">${ICON.mic}</span><span class="mid"><b>Just say it</b><span>“Send Maya $20 for pizza”</span></span></button>
+      <button class="talkbar" id="talk"><span class="mic">${ICON.mic}</span><span class="mid"><b>Just say it</b><span>“${esc(sampleCmd())}”</span></span></button>
       <div id="start"></div>
       <div id="drafts"></div>
       <div id="reqs"></div>
@@ -710,10 +710,14 @@
       $('#vialink').hidden = !!st.to;
     };
     amt.oninput = () => {
+      const before = amt.value;
       let v = amt.value.replace(/[^0-9.]/g, '');
       const parts = v.split('.'); if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
       if (v.includes('.')) v = v.split('.')[0] + '.' + v.split('.')[1].slice(0, 2);
       amt.value = v; size(); valid();
+      const av = $('#avail');
+      if (/-/.test(before)) { av.className = 'avail bad'; av.textContent = 'Amounts can’t be negative.'; }
+      else if (/\.\d{3}/.test(before)) { av.className = 'avail bad'; av.textContent = 'Dollars only go to 2 decimal places (cents).'; }
     };
     note.oninput = () => { st.note = note.value; };
     $$('.emojis button').forEach((b) => (b.onclick = () => { note.value = b.dataset.e + (note.value && !note.value.startsWith(b.dataset.e) ? ' ' + note.value : ''); st.note = note.value; note.focus(); }));
@@ -759,6 +763,7 @@
             const { users } = await api(`/search?q=${encodeURIComponent(v)}`, { auth: false });
             if (my !== seq) return;
             const list = users.filter((u) => u.handle !== S.acct.user.handle);
+            if (!list.length && users.some((u) => u.handle === S.acct.user.handle)) { res.innerHTML = '<div class="empty">That’s you! Share your pay link so friends can pay you.</div>'; return; }
             if (list.length) paint(list, 'People');
             else {
               res.innerHTML = `<div class="empty">No one called “${esc(v)}” on Monyx yet.<br><button class="btn btn-light btn-sm" id="nolink" style="margin-top:10px">Send ${esc(v)} a link instead</button></div>`;
@@ -801,13 +806,15 @@
   function confirmPay(to, dollars, note, requestId, voiced = false, draftId = null) {
     if ((to.handle && S.acct.user && to.handle === S.acct.user.handle) || to.address === S.acct.address) { toast("That's your own account. You can't pay yourself.", true); return; }
     const after = S.cash != null ? usd(S.cash) - dollars : null;
+    const short_ = after != null && after < -0.004;
     sheet(`<div class="confirm">${avatar(to, 'lg')}<div class="sub">Pay ${esc(who(to))}${to.handle ? ` · @${esc(to.handle)}` : ''}</div>
       <div class="big">${money(dollars)}</div>${note ? `<div class="note">${esc(note)}</div>` : ''}</div>
-      <div class="ledger"><div><span>From</span><b>Monyx balance</b></div>${after != null ? `<div><span>Balance after</span><b>${money(Math.max(0, after))}</b></div>` : ''}<div><span>Network fee</span><b>Paid by Monyx</b></div></div>
+      <div class="ledger"><div><span>From</span><b>Monyx balance</b></div>${after != null && after >= -0.004 ? `<div><span>Balance after</span><b>${money(Math.max(0, after))}</b></div>` : ''}<div><span>Network fee</span><b>Paid by Monyx</b></div></div>
       ${draftId ? `<div class="voiced">${ICON.spark}<span>Drafted by your assistant. Check it, then tap Pay.</span></div>` : ''}
       ${voiced ? `<div class="voiced">${ICON.mic}<span>Filled in by voice. Check it, then tap Pay.</span></div>` : ''}
       ${to.unknown ? `<div class="warn">${'This account isn’t on Monyx. Payments can’t be undone, so double-check the number.'}</div>` : ''}
-      <button class="btn btn-dark" id="go">Pay ${money(dollars)}</button>`, (el, close) => {
+      ${short_ ? `<div class="warn">You have ${money(usd(S.cash))}. Add ${money(dollars - usd(S.cash))} more to pay this.</div><button class="btn btn-dark" id="addm">Add money</button>` : `<button class="btn btn-dark" id="go">Pay ${money(dollars)}</button>`}`, (el, close) => {
+      if (short_) { $('#addm', el).onclick = () => { close(); addMoney(); }; return; }
       $('#go', el).onclick = async (e) => {
         const b = e.currentTarget; b.disabled = true; b.innerHTML = '<span class="spin"></span>Sending';
         try {
@@ -904,7 +911,7 @@
       <h3>Voice</h3>
       <div class="list menu">
         <label class="item toggle"><span class="ico">${ICON.mic}</span><div class="mid"><div class="t">Monyx talks back</div><div class="s">Hear confirmations out loud</div></div><input type="checkbox" id="tTalk" ${S.voice.talk ? 'checked' : ''}><i class="sw"></i></label>
-        <label class="item toggle"><span class="ico">${ICON.speaker}</span><div class="mid"><div class="t">Read payments aloud</div><div class="s">“Maya sent you $14 for pizza”</div></div><input type="checkbox" id="tAnn" ${S.voice.announce ? 'checked' : ''}><i class="sw"></i></label>
+        <label class="item toggle"><span class="ico">${ICON.speaker}</span><div class="mid"><div class="t">Read payments aloud</div><div class="s">“${esc((knownPeople()[0] || { name: 'Alex' }).name.split(' ')[0])} sent you $14 for pizza”</div></div><input type="checkbox" id="tAnn" ${S.voice.announce ? 'checked' : ''}><i class="sw"></i></label>
       </div>
       <h3>Account</h3>
       <div class="list menu">
@@ -1146,7 +1153,7 @@
         if (/-/.test(before)) { prev.className = 'avail bad'; prev.textContent = 'Amounts can’t be negative.'; }
         else if (/\.\d{3}/.test(before)) { prev.className = 'avail bad'; prev.textContent = 'Dollars only go to 2 decimal places (cents).'; }
       };
-      $$('[data-v]', el).forEach((b) => (b.onclick = () => { all = b.dataset.v === 'max'; amt.value = all ? (Math.floor(max * 100) / 100).toFixed(2) : b.dataset.v; upd(); }));
+      $$('[data-v]', el).forEach((b) => (b.onclick = () => { all = b.dataset.v === 'max'; amt.value = all ? (Math.round(max * 100) / 100).toFixed(2) : b.dataset.v; upd(); if (all) prev.textContent = `${maxLabel}: everything you have (${money(max)})`; }));
       upd(); amt.focus();
       go.onclick = async () => {
         go.disabled = true; go.innerHTML = '<span class="spin"></span>Working on it';
@@ -1426,11 +1433,11 @@
       return;
     }
     if (v.intent === 'unknown' || (!v.people.length && v.intent !== 'unknown')) {
-      if (v.intent !== 'unknown' && !v.people.length) throw userError(v.intent === 'split' ? 'Who should I split it with? Try “split 60 with Maya and Jordan”.' : `Who should I ${v.intent === 'request' ? 'ask' : 'pay'}? Try saying their name.`);
-      throw userError('I can send, request, split, or check your balance. Try “send Maya 20 for pizza”.');
+      if (v.intent !== 'unknown' && !v.people.length) throw userError(v.intent === 'split' ? 'Who should I split it with? Try “split 60 with” and their names.' : `Who should I ${v.intent === 'request' ? 'ask' : 'pay'}? Try saying their name.`);
+      throw userError(`I can send, request, split, or check your balance. Try “${sampleCmd()}”.`);
     }
     if (v.intent === 'split') {
-      if (!v.amount) throw userError('How much was it? Try “split 60 with Maya and Jordan”.');
+      if (!v.amount) throw userError('How much was it? Try “split 60 with” and their names.');
       setStatus({ text: 'Finding everyone…' });
       const ppl = [];
       for (const n of v.people) { const p = await personFor(n); if (!p) return 'cancel'; if (!ppl.some((x) => x.handle === p.handle)) ppl.push(p); }
@@ -1476,6 +1483,7 @@
     });
   }
 
+  const sampleCmd = () => { const f = knownPeople()[0]; return f ? `Send ${f.name.split(' ')[0]} $5 for coffee` : 'Send Mom $20 for her birthday'; };
   // Example commands use the person's real friends, so tapping one actually works.
   function examples() {
     const f = knownPeople().map((p) => p.name.split(' ')[0]);
@@ -1506,7 +1514,7 @@
         <div class="vres" id="vres"></div>
       </div>
       <div class="tries" id="tries">${examples().map((x) => `<button>${esc(x)}</button>`).join('')}</div>
-      <form class="field typeit" id="typeit"><input id="tq" placeholder="Or type it: send Maya 20 for pizza" autocomplete="off" enterkeyhint="go" aria-label="Type a command"><button class="go" aria-label="Go">${ICON.chev}</button></form>
+      <form class="field typeit" id="typeit"><input id="tq" placeholder="Or type it: ${esc(sampleCmd().replace('$', ''))}" autocomplete="off" enterkeyhint="go" aria-label="Type a command"><button class="go" aria-label="Go">${ICON.chev}</button></form>
       <p class="fine">You always tap to confirm before money moves.</p>`, (el, close) => {
       const orb = $('#orb', el), heard = $('#heard', el), said = $('#said', el), vres = $('#vres', el);
       const setState = (st) => { orb.className = 'orb ' + st; };
@@ -1868,6 +1876,7 @@
     if (S.acct && S.acct.mode === 'key' && S.acct.secret) { try { S.kp = keypairFrom(S.acct.secret); } catch { S.acct = null; } }
     if (S.acct && !S.acct.token) { S.acct = null; S.kp = null; store.del('monyx.acct'); } // signup interrupted before the account existed
     window.addEventListener('hashchange', route);
+    RPC = store.get('monyx.rpc', RPC);
     rememberLinkPeople();
     loadInfo();
     // Broken profile photos fall back to initials. (Delegated, so no inline handlers: the CSP forbids them.)
