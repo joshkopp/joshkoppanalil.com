@@ -83,7 +83,8 @@
 
     // ---- intent ----
     let intent = 'unknown';
-    if (/\b(balance|how much (money )?(do|have) i|how much is in my|how much have i got|what('s| is| do i have) in my (account|wallet))\b/.test(t)) intent = 'balance';
+    if (/\b(add|top up|load|deposit)\b.*\b(money|dollars|cash|funds|balance)\b|\btop ?up\b/.test(t) && !/\b(send|pay|request|split)\b/.test(t)) intent = 'topup';
+    else if (/\b(balance|how much (money )?(do|have) i|how much is in my|how much have i got|what('s| is| do i have) in my (account|wallet))\b/.test(t)) intent = 'balance';
     else if (/\b(who (paid|sent) me|what did i (get|receive)|did (anyone|anybody|someone) (pay|send)|recent (payments|activity|transactions)|read (me )?(my )?(payments|activity|transactions)|my (payments|activity|transactions)|any (new )?(payments|money))\b/.test(t)) intent = 'activity';
     else if (/\bsplit\b/.test(t)) intent = 'split';
     else if (/\b(request|ask|charge|bill|collect|invoice)\b|\bowes? me\b|\bget (\$?\d|[a-z]+ \$?\d).* from\b/.test(t)) intent = 'request';
@@ -103,6 +104,7 @@
     else if (pair && +pair[2] >= 10) amount = +pair[1] + +pair[2] / 100;
     else if (onlyCents) amount = +onlyCents[1] / 100;
     else if (bare) amount = +bare[1];
+    const negative = /(^|\s)-\s*\$?\d|\bminus \$?\d|\bnegative\b/.test(t);
     if (amount != null && !(amount > 0)) amount = null;
     if (amount != null) amount = Math.round(amount * 100) / 100;
 
@@ -127,13 +129,13 @@
       .replace(/\b(and|with|plus|also|between|among|to|from)\b/g, ' , ')
       .split(',');
     for (const c of chunks) {
-      const words = c.trim().split(/\s+/).filter((w) => w && !FILLER.has(w.replace(/^@/, '')) && !/^'s$/.test(w));
+      const words = c.trim().split(/\s+/).map((w) => w.replace(/^[-.']+|[-.']+$/g, '')).filter((w) => w && !FILLER.has(w.replace(/^@/, '')) && !/^'s$/.test(w) && w !== 'minus' && w !== 'negative');
       if (!words.length) continue;
       const name = words.join(' ').replace(/'s$/, '').replace(/^@/, '');
       if (name && !people.includes(name)) people.push(name);
     }
-    if (intent === 'balance' || intent === 'activity') people.length = 0;
-    return { intent, amount, people, note, text: raw };
+    if (intent === 'balance' || intent === 'activity' || intent === 'topup') people.length = 0;
+    return { intent, amount, people, note, negative, text: raw };
   }
 
   const api = { parse, wordsToDigits };

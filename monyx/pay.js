@@ -399,7 +399,9 @@
     let t, seq = 0;
     const check = async () => {
       const v = hd.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+      const stripped = v !== hd.value.toLowerCase();
       if (v !== hd.value) hd.value = v;
+      if (stripped) { hint.className = 'hint bad'; hint.textContent = 'Usernames can only use letters, numbers and _.'; }
       su.handle = v; su.avail = false;
       if (v.length < 3) { hint.className = 'hint'; hint.textContent = 'At least 3 letters or numbers.'; return; }
       const my = ++seq;
@@ -450,14 +452,16 @@
     const key = recoveryKey();
     show(stepShell(3, `<h2>Save your recovery key</h2>
       <p class="sub">It's the only way back into your account if you switch phones or clear your browser. We can't reset it for you.</p>
-      <div class="keybox" id="kb" title="Tap to reveal">${esc(key)}</div>
+      <div class="keybox" id="kb" title="Tap to reveal" role="button" tabindex="0">Tap to reveal</div>
       <div class="btn-row" style="margin-top:10px"><button class="btn btn-light btn-sm" id="cp" style="width:100%">Copy</button><button class="btn btn-light btn-sm" id="dl" style="width:100%">Download</button></div>
       <div class="warn">${ICON.info.replace('<svg', '<svg width="18" height="18" style="flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8"')}<span>Anyone with this key can spend your balance. Never share it, not even with Monyx.</span></div>
       <label class="check"><input type="checkbox" id="ok"><span>I saved my recovery key somewhere safe.</span></label>
       <div class="hint" id="hint" aria-live="polite"></div>`,
       `<button class="btn btn-dark" id="next">Continue</button>`, false));
-    $('#kb').onclick = (e) => e.currentTarget.classList.toggle('show');
-    $('#cp').onclick = () => { $('#kb').classList.add('show'); copy(key, 'Recovery key copied'); };
+    const kb = $('#kb');
+    const reveal = (on) => { kb.classList.toggle('show', on); kb.textContent = on ? key : 'Tap to reveal'; };
+    kb.onclick = () => reveal(!kb.classList.contains('show'));
+    $('#cp').onclick = () => { reveal(true); copy(key, 'Recovery key copied'); };
     $('#dl').onclick = () => {
       const blob = new Blob([`Monyx recovery key for @${S.acct.user.handle}\n\n${key}\n\nKeep this private. Anyone with it can spend your balance.\nTo log in on a new device, open ${SITE} and choose "I already have an account".\n`], { type: 'text/plain' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `monyx-recovery-${S.acct.user.handle}.txt`; a.click();
@@ -738,7 +742,10 @@
         clearTimeout(t);
         const v = q.value.trim();
         if (!v) { paint(recent(), 'Recent'); return; }
-        if (isAddr(v)) { paint([S.people[v] && !S.people[v].unknown ? S.people[v] : { address: v, unknown: true }], 'Send to account'); return; }
+        if (isAddr(v)) {
+          if (v === S.acct.address) { res.innerHTML = '<div class="empty">That’s your own account number.</div>'; return; }
+          st.to = S.people[v] && !S.people[v].unknown ? S.people[v] : { address: v, unknown: true }; renderTo(); valid(); return;
+        }
         t = setTimeout(async () => {
           const my = ++seq;
           try {
@@ -785,7 +792,7 @@
     try { const { user } = await api(`/u/${encodeURIComponent(handle.replace(/^@/, ''))}`, { auth: false }); S.people[user.address] = user; return user; } catch { return null; }
   }
   function confirmPay(to, dollars, note, requestId, voiced = false, draftId = null) {
-    if (to.handle && S.acct.user && to.handle === S.acct.user.handle) { toast("You can't pay yourself.", true); return; }
+    if ((to.handle && S.acct.user && to.handle === S.acct.user.handle) || to.address === S.acct.address) { toast("That's your own account. You can't pay yourself.", true); return; }
     const after = S.cash != null ? usd(S.cash) - dollars : null;
     sheet(`<div class="confirm">${avatar(to, 'lg')}<div class="sub">Pay ${esc(who(to))}${to.handle ? ` · @${esc(to.handle)}` : ''}</div>
       <div class="big">${money(dollars)}</div>${note ? `<div class="note">${esc(note)}</div>` : ''}</div>
@@ -977,9 +984,10 @@
     const key = recoveryKey();
     sheet(`<h2>Recovery key</h2><p class="sub">Use this to log in on another device.</p>
       <div class="warn strong">${ICON.info.replace('<svg', '<svg width="18" height="18" style="flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8"')}<span><b>Anyone who has this key can take all your money.</b> Monyx will never ask for it. Don't paste it into any website, chat or form, and don't screenshot it.</span></div>
-      <div class="keybox" id="kb">${esc(key)}</div><p class="fine" style="margin-top:8px">Tap to reveal</p>
+      <div class="keybox" id="kb" role="button" tabindex="0">Tap to reveal</div>
       <button class="btn btn-dark" id="cp" style="margin-top:8px">Copy key</button>`, (el) => {
-      $('#kb', el).onclick = (e) => e.currentTarget.classList.toggle('show');
+      const kb = $('#kb', el);
+      kb.onclick = () => { const on = !kb.classList.contains('show'); kb.classList.toggle('show', on); kb.textContent = on ? key : 'Tap to reveal'; };
       $('#cp', el).onclick = () => copy(key, 'Recovery key copied');
     });
   }
@@ -1104,23 +1112,33 @@
     });
   }
   // Shared dollar-amount sheet for buy and sell.
-  function amountSheet({ title, sub, max, maxLabel, cta, preview, onGo }) {
+  function amountSheet({ title, sub, max, maxLabel, cta, preview, onGo, min = 1, belowMin = '' }) {
     sheet(`<h2>${title}</h2><p class="sub">${sub}</p>
       <div class="amountin" style="padding:14px 0 6px"><span>$</span><input id="amt" inputmode="decimal" autocomplete="off" placeholder="0"></div>
       <div class="avail" id="prev" style="margin:0 0 14px"></div>
-      <div class="emojis" style="justify-content:center;margin-bottom:16px">${[10, 25, 50, 100].map((v) => `<button data-v="${v}">$${v}</button>`).join('')}${max > 0 ? `<button data-v="max">${maxLabel}</button>` : ''}</div>
+      <div class="emojis" style="justify-content:center;margin-bottom:16px">${[5, 10, 25, 50, 100].filter((v) => v < max).slice(0, 4).map((v) => `<button data-v="${v}">$${v}</button>`).join('')}${max > 0 ? `<button data-v="max">${maxLabel}</button>` : ''}</div>
       <button class="btn btn-dark" id="go" disabled>${cta}</button>`, (el, close) => {
       const amt = $('#amt', el), go = $('#go', el), prev = $('#prev', el);
       let all = false;
       const upd = () => {
         const v = parseFloat(amt.value);
         amt.style.width = Math.max(1, (amt.value || '0').length + 0.2) + 'ch';
-        const ok = v >= 1 && v <= max + 0.005;
+        const tooSmall = v > 0 && v < min;
+        const ok = v >= min && v <= max + 0.005;
         go.disabled = !ok;
-        prev.className = 'avail' + (v > max + 0.005 ? ' bad' : '');
-        prev.textContent = v > max + 0.005 ? `You have ${money(max)} available` : v > 0 ? preview(v) : `${money(max)} available · $1 minimum`;
+        prev.className = 'avail' + (v > max + 0.005 || tooSmall ? ' bad' : '');
+        prev.textContent = v > max + 0.005 ? `You have ${money(max)} available`
+          : tooSmall ? (belowMin || `The smallest amount is ${money(min)}.`)
+          : v > 0 ? preview(v) : `${money(max)} available · ${money(min)} minimum`;
       };
-      amt.oninput = () => { all = false; amt.value = amt.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1').replace(/(\.\d\d).+/, '$1'); upd(); };
+      amt.oninput = () => {
+        all = false;
+        const before = amt.value;
+        amt.value = amt.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1').replace(/(\.\d\d).+/, '$1');
+        upd();
+        if (/-/.test(before)) { prev.className = 'avail bad'; prev.textContent = 'Amounts can’t be negative.'; }
+        else if (/\.\d{3}/.test(before)) { prev.className = 'avail bad'; prev.textContent = 'Dollars only go to 2 decimal places (cents).'; }
+      };
       $$('[data-v]', el).forEach((b) => (b.onclick = () => { all = b.dataset.v === 'max'; amt.value = all ? (Math.floor(max * 100) / 100).toFixed(2) : b.dataset.v; upd(); }));
       upd(); amt.focus();
       go.onclick = async () => {
@@ -1159,7 +1177,8 @@
     const h = holdingOf(a.id); if (!h) return;
     amountSheet({
       title: `Sell ${esc(a.name)}`, sub: `Money goes back to your Monyx cash. You own ${esc(fmtQty(h.qty, a.symbol))}.`,
-      max: h.value, maxLabel: 'Sell all', cta: `Sell ${esc(a.symbol)}`,
+      max: h.value, maxLabel: 'Sell all', cta: `Sell ${esc(a.symbol)}`, min: 0.5,
+      belowMin: 'The smallest sale is $0.50. You can swap a small amount into another coin instead.',
       preview: (v) => `You'll sell about ${fmtQty(v / a.price, a.symbol)}`,
       async onGo(v, all, close) {
         const r = await api(PAPI + '/trade/sell', { method: 'POST', body: { asset: a.id, usd: v, all } });
@@ -1374,7 +1393,8 @@
   // Act on a sentence. Anything that moves money ends at a screen that needs a tap.
   async function doVoice(text, setStatus) {
     const v = window.MonyxVoice.parse(text);
-    const me = S.acct.user.name.split(' ')[0];
+    if (v.negative) throw userError('Amounts have to be more than $0. Try “send Jordan 5 for coffee”.');
+    if (v.intent === 'topup') return { go: () => { addMoney(); } };
     if (v.intent === 'balance') {
       if (S.cash == null) await refreshBalance();
       if (!S.port) await loadPortfolio();
@@ -1409,12 +1429,13 @@
       for (const n of v.people) { const p = await personFor(n); if (!p) return 'cancel'; if (!ppl.some((x) => x.handle === p.handle)) ppl.push(p); }
       return { go: () => { splitSheet(v.amount, v.note, ppl); say(`Splitting ${spoken(v.amount)} with ${ppl.map(first).join(' and ')}. Check it, then tap send.`); } };
     }
-    if (v.people.length > 1) throw userError(v.intent === 'request' ? 'To ask several people, try “split 60 with Maya and Jordan”.' : 'One person at a time. Who should I pay first?');
+    if (v.people.length > 1) throw userError(v.intent === 'request' ? 'To ask several people, try “split 60 between” and their names.' : 'One person at a time. Who should I pay first?');
     setStatus({ text: `Looking for ${v.people[0]}…` });
     let to;
     try { to = await personFor(v.people[0]); }
     catch (e) {
       // Not on Monyx? Paying them still works: send a link.
+      if (v.intent === 'request' && /couldn't find/.test(e.message)) throw userError(`I couldn't find “${v.people[0]}” on Monyx. Check the spelling, or send them a pay link so they can join.`);
       if (v.intent === 'pay' && v.amount && /couldn't find/.test(e.message)) {
         const name = v.people[0].replace(/\b\w/g, (c) => c.toUpperCase());
         return { go: () => { confirmLink(v.amount, v.note, name); say(`${name} isn't on Monyx yet, so I'll make a link you can text them.`); } };
@@ -1448,7 +1469,17 @@
     });
   }
 
-  const EXAMPLES = ['Send Maya $20 for pizza', 'Split $60 with Maya and Jordan for dinner', 'Request $15 from Jordan', 'What’s my balance?', 'Who paid me?'];
+  // Example commands use the person's real friends, so tapping one actually works.
+  function examples() {
+    const f = knownPeople().map((p) => p.name.split(' ')[0]);
+    const a = f[0], b = f[1];
+    return [
+      a ? `Send ${a} $5 for coffee` : 'Send Mom $20 for her birthday',
+      a && b ? `Split $30 with ${a} and ${b} for pizza` : a ? `Request $10 from ${a}` : 'Who paid me?',
+      'What’s my balance?',
+      a ? 'Who paid me?' : 'Add money',
+    ];
+  }
   function talk() {
     if (!S.acct || !S.acct.token) return;
     stopSpeaking();
@@ -1467,7 +1498,7 @@
         <div class="said" id="said"></div>
         <div class="vres" id="vres"></div>
       </div>
-      <div class="tries" id="tries">${EXAMPLES.map((x) => `<button>${esc(x)}</button>`).join('')}</div>
+      <div class="tries" id="tries">${examples().map((x) => `<button>${esc(x)}</button>`).join('')}</div>
       <form class="field typeit" id="typeit"><input id="tq" placeholder="Or type it: send Maya 20 for pizza" autocomplete="off" enterkeyhint="go" aria-label="Type a command"><button class="go" aria-label="Go">${ICON.chev}</button></form>
       <p class="fine">You always tap to confirm before money moves.</p>`, (el, close) => {
       const orb = $('#orb', el), heard = $('#heard', el), said = $('#said', el), vres = $('#vres', el);
@@ -1824,6 +1855,8 @@
   }
 
   function boot() {
+    // Never run the pay screens inside someone else's page (clickjacking).
+    if (window.top !== window.self) { document.body.innerHTML = '<p style="padding:24px;font:16px system-ui">Monyx can only be used at <a href="https://monyx.pro" target="_top">monyx.pro</a>.</p>'; return; }
     S.acct = S.acct || store.get('monyx.acct');
     if (S.acct && S.acct.mode === 'key' && S.acct.secret) { try { S.kp = keypairFrom(S.acct.secret); } catch { S.acct = null; } }
     if (S.acct && !S.acct.token) { S.acct = null; S.kp = null; store.del('monyx.acct'); } // signup interrupted before the account existed
@@ -1834,6 +1867,7 @@
     route();
     setInterval(() => { if (S.acct && S.acct.token && !document.hidden) { refreshBalance(); if ($('#feed')) { loadFeed(); loadRequests(); loadDrafts(); } } }, 20000);
     setInterval(pollInbox, 4000); pollInbox();
+    setInterval(() => { if ($('#feed') && !document.hidden) paintFeed(); }, 60000); // keep "Just now" honest
     loadMarkets();
     checkVoice();
     if (S.acct && S.acct.token) api('/me').then((r) => { S.acct.user = r.user; saveAcct(); }).catch((e) => { if (e.status === 401) relogin(); });

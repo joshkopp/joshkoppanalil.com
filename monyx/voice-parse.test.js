@@ -25,6 +25,9 @@ const cases=[
 ['request a couple bucks from maya','request',2,['maya'],''],
 ['charge sam 20','request',20,['sam'],''],
 ['What is the weather','unknown',null,['what is weather'],''],
+['pay maya -5','pay',null,['maya'],''],
+['add money','topup',null,[],''],
+['top up my balance','topup',null,[],''],
 ];
 let bad=0;
 for(const [s,i,a,p,n] of cases){const r=parse(s);const ok=r.intent===i&&r.amount===a&&JSON.stringify(r.people)===JSON.stringify(p)&&r.note===n;if(!ok){bad++;console.log('FAIL',JSON.stringify(s),'→',JSON.stringify(r));}}
