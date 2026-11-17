@@ -40,6 +40,7 @@
     scan: '<svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"/></svg>',
     plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
     key: '<svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l3 3"/></svg>',
+    lock: '<svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>',
     spark: '<svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>',
     link: '<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
     info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
@@ -454,13 +455,14 @@
       }
     };
   }
-  function recoveryKey() { return b58enc(Uint8Array.from(S.acct.secret)); }
+  function recoveryKey() { return b58enc(Uint8Array.from(S.acct.secret || S.secretMem)); }
   function stepKey() {
     const key = recoveryKey();
     show(stepShell(3, `<h2>Save your recovery key</h2>
       <p class="sub">It's the only way back into your account if you switch phones or clear your browser. We can't reset it for you.</p>
       <div class="keybox" id="kb" title="Tap to reveal" role="button" tabindex="0">Tap to reveal</div>
-      <div class="btn-row" style="margin-top:10px"><button class="btn btn-light btn-sm" id="cp" style="width:100%">Copy</button><button class="btn btn-light btn-sm" id="dl" style="width:100%">Download</button></div>
+      <button class="btn btn-dark btn-sm" id="pm" style="margin-top:10px;width:100%">Save to my password manager</button>
+      <div class="btn-row" style="margin-top:8px"><button class="btn btn-light btn-sm" id="cp" style="width:100%">Copy</button><button class="btn btn-light btn-sm" id="dl" style="width:100%">Download</button></div>
       <div class="warn">${ICON.info.replace('<svg', '<svg width="18" height="18" style="flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8"')}<span>Anyone with this key can spend your balance. Never share it, not even with Monyx.</span></div>
       <label class="check"><input type="checkbox" id="ok"><span>I saved my recovery key somewhere safe.</span></label>
       <div class="hint" id="hint" aria-live="polite"></div>`,
@@ -469,6 +471,7 @@
     const reveal = (on) => { kb.classList.toggle('show', on); kb.textContent = on ? key : 'Tap to reveal'; };
     kb.onclick = () => reveal(!kb.classList.contains('show'));
     $('#cp').onclick = () => { reveal(true); copy(key, 'Recovery key copied'); };
+    $('#pm').onclick = async () => { await saveToPasswordManager(key); };
     $('#dl').onclick = () => {
       const blob = new Blob([`Monyx recovery key for @${S.acct.user.handle}\n\n${key}\n\nKeep this private. Anyone with it can spend your balance.\nTo log in on a new device, open ${SITE} and choose "I already have an account".\n`], { type: 'text/plain' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `monyx-recovery-${S.acct.user.handle}.txt`; a.click();
@@ -488,8 +491,14 @@
       <h2>You're in, ${esc(S.acct.user.name.split(' ')[0])}.</h2>
       <p class="sub">${got ? `We added <b style="color:var(--ink)">${money(b.usd)}</b> in test dollars so you can try it out.` : 'Add money from your home screen whenever you’re ready.'}</p>
       <p class="sub">Friends can pay you at <b style="color:var(--ink)">@${esc(S.acct.user.handle)}</b>.</p></div>
-    </div><div class="foot"><button class="btn btn-dark" id="go">Go to Monyx</button></div></section>`);
+    </div><div class="foot"><button class="btn btn-dark" id="go">Go to Monyx</button>${S.acct.mode === 'key' && passkeysPossible() ? '<button class="btn btn-text" id="pk">Lock Monyx with Face ID or a fingerprint</button>' : ''}</div></section>`);
     $('#go').onclick = () => { const p = store.get('monyx.pending'); store.del('monyx.pending'); location.hash = p || '#home'; };
+    const pk = $('#pk');
+    if (pk) pk.onclick = async () => {
+      pk.disabled = true;
+      try { await enablePasskeyLock(); pk.textContent = 'Locked with your passkey ✓'; }
+      catch (err) { pk.disabled = false; showError(err, 6000); }
+    };
     S.signup = null;
   }
 
@@ -497,13 +506,21 @@
     show(`<section class="steps">
       <div class="topline"><button class="back" id="back" aria-label="Back">${ICON.back}</button><span></span><span></span></div>
       <div class="body"><h2>Welcome back</h2><p class="sub">Paste the recovery key you saved when you signed up.</p>
-        <label class="field" style="margin-top:22px"><textarea id="rk" rows="3" spellcheck="false" autocapitalize="off" placeholder="Your recovery key"></textarea></label>
+        <form id="lf" autocomplete="on">
+          <label class="field"><input name="username" id="lu" autocomplete="username" placeholder="@username (optional)" aria-label="Username, optional"></label>
+          <label class="field" style="margin-top:12px"><input type="password" id="rk" name="password" autocomplete="current-password" spellcheck="false" autocapitalize="off" placeholder="Your recovery key" aria-label="Recovery key"><button type="button" class="showk" id="showk">Show</button></label>
+        </form>
+        <p class="fine" style="margin-top:8px">Saved it in a password manager? It can fill this in for you.</p>
         <div class="hint" id="hint"></div></div>
       <div class="foot"><button class="btn btn-dark" id="go" disabled>Log in</button>
         <button class="btn btn-text" id="ph">Use a Phantom wallet instead</button></div>
     </section>`);
     const rk = $('#rk'), go = $('#go'), hint = $('#hint');
     go.disabled = false;
+    $('#lf').onsubmit = (e) => { e.preventDefault(); go.click(); };
+    $('#showk').onclick = () => { const v = rk.type === 'password'; rk.type = v ? 'text' : 'password'; $('#showk').textContent = v ? 'Hide' : 'Show'; };
+        // Chrome can hand over a saved Monyx key directly.
+    if (window.PasswordCredential) navigator.credentials.get({ password: true, mediation: 'optional' }).then((c) => { if (c && c.password && !rk.value) { rk.value = c.password; if (c.id) $('#lu').value = c.id; } }).catch(() => {});
     rk.oninput = () => { hint.textContent = ''; };
     $('#back').onclick = () => (location.hash = '');
     go.onclick = async () => {
@@ -514,6 +531,7 @@
       go.disabled = true; go.innerHTML = '<span class="spin"></span>Logging in';
       S.kp = kp;
       S.acct = { mode: 'key', secret: Array.from(kp.secretKey), address: kp.publicKey.toBase58(), token: null, user: null };
+      vault.del(); S.secretMem = null;
       try {
         const r = await api('/login', { method: 'POST', auth: false, body: await proof(S.acct.address) });
         S.acct.token = r.token; S.acct.user = r.user; saveAcct();
@@ -919,6 +937,7 @@
         ${row('ai', ICON.spark, 'AI assistant', 'Connect Grok Bot to draft payments')}
         ${row('links', ICON.link, 'Pay links', 'Money you sent with a link')}
         ${S.acct.mode === 'key' ? row('key', ICON.key, 'Recovery key', 'Back up or move to a new device') : ''}
+        ${S.acct.mode === 'key' && passkeysPossible() ? row('lock', ICON.lock, vault.get() ? 'Passkey lock is on' : 'Lock with a passkey', vault.get() ? 'Face ID or fingerprint opens Monyx' : 'Face ID or fingerprint to open Monyx') : ''}
         ${row('guide', ICON.book, 'How Monyx works', 'A plain-language guide')}
         ${row('details', ICON.info, 'Account details', 'For the curious')}
         ${row('pro', ICON.tools, 'Monyx Pro', 'Wallet tracer and developer tools')}
@@ -934,10 +953,27 @@
     $('[data-r="ai"]').onclick = assistantSheet;
     $('[data-r="links"]').onclick = linksSheet;
     const k = $('[data-r="key"]'); if (k) k.onclick = showKey;
+    const lk = $('[data-r="lock"]'); if (lk) lk.onclick = lockSheet;
     $('[data-r="details"]').onclick = details;
     $('[data-r="guide"]').onclick = () => (location.href = 'documentation/');
     $('[data-r="pro"]').onclick = () => (location.href = 'pro/');
     $('[data-r="out"]').onclick = logout;
+  }
+  function lockSheet() {
+    const on = !!vault.get();
+    sheet(`<h2>${on ? 'Passkey lock is on' : 'Lock with a passkey'}</h2>
+      <p class="sub">${on ? 'Your account key is stored encrypted on this device. Monyx opens with Face ID, your fingerprint or your device PIN.' : 'Encrypt your account key on this device so Monyx only opens with Face ID, your fingerprint or your device PIN. Anyone who gets into your browser storage sees only scrambled data.'}</p>
+      <p class="fine">Keep your recovery key saved too. It's how you get in on a new device.</p>
+      <button class="btn btn-dark" id="lkgo" style="margin-top:14px">${on ? 'Turn off passkey lock' : 'Set up passkey'}</button>`, (el, close) => {
+      $('#lkgo', el).onclick = async (e) => {
+        const b = e.currentTarget; b.disabled = true;
+        try {
+          if (on) { disablePasskeyLock(); toast('Passkey lock turned off'); }
+          else { await enablePasskeyLock(); toast('Locked. Monyx now opens with your passkey.'); }
+          close(); screenMe();
+        } catch (err) { b.disabled = false; showError(err, 6000); }
+      };
+    });
   }
   /* ───────── profile photo ───────── */
   function photoMenu() {
@@ -1025,6 +1061,7 @@
       $('#yes', el).onclick = async () => {
         api('/logout', { method: 'POST' }).catch(() => {});
         store.del(`monyx.feed.${S.acct.address}`); store.del('monyx.acct');
+        vault.del(); S.secretMem = null;
         S.acct = null; S.kp = null; S.feed = []; S.cash = null; S.requests = { incoming: [], outgoing: [] };
         close(); location.hash = '';
       };
@@ -1765,9 +1802,9 @@
     try { server = (await api(PAPI + '/claims')).claims; } catch {}
     const local = new Map(links.all().map((l) => [l.escrow, l]));
     sheet(`<h2>Pay links</h2><p class="sub">Money you sent with a link. Open links can be cancelled from this device.</p>
-      <div class="list" style="margin-top:12px">${server.length ? server.map((c) => `<div class="item"><div class="av sm linkav">${ICON.link}</div><div class="mid"><div class="t">${money(c.usd)}${c.label ? ` for ${esc(c.label)}` : ''}</div><div class="s">${c.status === 'open' ? 'Waiting to be claimed' : c.status === 'returned' ? 'Cancelled' : `Claimed${c.by ? ` by ${esc(c.by.name)}` : ''}`} · ${when(Date.parse(c.at) / 1000)}</div></div>${c.status === 'open' && local.has(c.escrow) ? `<button class="btn btn-text btn-sm" data-s="${esc(local.get(c.escrow).secret)}">Share</button><button class="btn btn-text btn-sm" data-c="${esc(local.get(c.escrow).secret)}">Cancel</button>` : ''}</div>`).join('') : '<div class="empty">No links yet. On the pay screen, tap “Send with a link”.</div>'}</div>`, (el, close) => {
-      $$('[data-c]', el).forEach((b) => (b.onclick = () => { close(); claimLink(b.dataset.c); }));
-      $$('[data-s]', el).forEach((b) => (b.onclick = () => copy(linkUrl(b.dataset.s), 'Link copied')));
+      <div class="list" style="margin-top:12px">${server.length ? server.map((c) => `<div class="item"><div class="av sm linkav">${ICON.link}</div><div class="mid"><div class="t">${money(c.usd)}${c.label ? ` for ${esc(c.label)}` : ''}</div><div class="s">${c.status === 'open' ? 'Waiting to be claimed' : c.status === 'returned' ? 'Cancelled' : `Claimed${c.by ? ` by ${esc(c.by.name)}` : ''}`} · ${when(Date.parse(c.at) / 1000)}</div></div>${c.status === 'open' && local.has(c.escrow) ? `<button class="btn btn-text btn-sm" data-s="${esc(c.escrow)}">Share</button><button class="btn btn-text btn-sm" data-c="${esc(c.escrow)}">Cancel</button>` : ''}</div>`).join('') : '<div class="empty">No links yet. On the pay screen, tap “Send with a link”.</div>'}</div>`, (el, close) => {
+      $$('[data-c]', el).forEach((b) => (b.onclick = () => { close(); claimLink(local.get(b.dataset.c).secret); }));
+      $$('[data-s]', el).forEach((b) => (b.onclick = () => copy(linkUrl(local.get(b.dataset.s).secret), 'Link copied')));
     });
   }
 
@@ -1836,11 +1873,103 @@
     } catch (e) { if (e.status === 401) relogin(); }
   }
 
+  /* ───────── protecting the key: passkey lock + password manager ─────────
+     Turn on "Lock with a passkey" and the account key is encrypted (AES-GCM)
+     with a key derived from the passkey's PRF output. Browser storage then
+     holds only ciphertext; opening Monyx needs Face ID, a fingerprint or the
+     device PIN. The recovery key always works as a way back in. */
+  const b64d = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+  const vault = { get: () => store.get('monyx.vault'), set: (v) => store.set('monyx.vault', v), del: () => store.del('monyx.vault') };
+  const passkeysPossible = () => !!(window.PublicKeyCredential && navigator.credentials && window.isSecureContext);
+  const rand = (n) => crypto.getRandomValues(new Uint8Array(n));
+  async function vaultKey(prf, salt) {
+    const base = await crypto.subtle.importKey('raw', prf, 'HKDF', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt, info: new TextEncoder().encode('monyx vault v1') }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  }
+  const NO_PRF = "This device's passkeys can't lock Monyx yet. Your recovery key still protects your account.";
+  async function passkeyPrf(credId, salt) {
+    const a = await navigator.credentials.get({ publicKey: { challenge: rand(32), allowCredentials: [{ type: 'public-key', id: credId }], userVerification: 'required', extensions: { prf: { eval: { first: salt } } } } });
+    const r = a.getClientExtensionResults().prf;
+    if (!r || !r.results || !r.results.first) throw userError(NO_PRF);
+    return new Uint8Array(r.results.first);
+  }
+  async function enablePasskeyLock() {
+    const secret = S.acct.secret || S.secretMem;
+    if (!secret) throw userError('Unlock Monyx first.');
+    const salt = rand(32), u = S.acct.user;
+    let cred;
+    try {
+      cred = await navigator.credentials.create({ publicKey: {
+        rp: { name: 'Monyx' }, user: { id: rand(16), name: `@${u.handle}`, displayName: u.name }, challenge: rand(32),
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+        authenticatorSelection: { residentKey: 'preferred', userVerification: 'required' },
+        extensions: { prf: { eval: { first: salt } } } } });
+    } catch (e) { if (/NotAllowed|abort/i.test(String(e.name || e))) throw userError('Passkey setup was cancelled.'); throw userError(NO_PRF); }
+    const ext = cred.getClientExtensionResults().prf;
+    if (!ext || ext.enabled === false) throw userError(NO_PRF);
+    const id = new Uint8Array(cred.rawId);
+    const prf = ext.results && ext.results.first ? new Uint8Array(ext.results.first) : await passkeyPrf(id, salt);
+    const key = await vaultKey(prf, salt), iv = rand(12);
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, Uint8Array.from(secret)));
+    // Prove we can decrypt before throwing away the plain copy.
+    const back = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct));
+    if (b58enc(back) !== b58enc(Uint8Array.from(secret))) throw userError(NO_PRF);
+    vault.set({ id: b64(id), salt: b64(salt), iv: b64(iv), ct: b64(ct), address: S.acct.address });
+    S.secretMem = Array.from(secret); delete S.acct.secret; saveAcct();
+  }
+  function disablePasskeyLock() {
+    if (!S.secretMem) return;
+    S.acct.secret = S.secretMem; saveAcct(); vault.del();
+  }
+  async function unlockWithPasskey() {
+    const v = vault.get();
+    const salt = b64d(v.salt);
+    const key = await vaultKey(await passkeyPrf(b64d(v.id), salt), salt);
+    const secret = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64d(v.iv) }, key, b64d(v.ct)));
+    S.secretMem = Array.from(secret); S.kp = keypairFrom(S.secretMem);
+  }
+  const isLocked = () => !!(S.acct && S.acct.mode === 'key' && !S.acct.secret && !S.kp && vault.get());
+  function screenUnlock() {
+    const u = S.acct.user || {};
+    show(`<section class="welcome intro">
+      <div class="brand">${LOGO}</div>
+      <div class="introcard">${avatar(u, 'lg')}<h1>Welcome back${u.name ? `, ${esc(u.name.split(' ')[0])}` : ''}</h1>
+        <p class="sub">Monyx is locked with your passkey. Unlock with Face ID, your fingerprint or your device PIN.</p></div>
+      <div class="cta"><button class="btn btn-dark" id="un">Unlock</button>
+        <button class="btn btn-text" id="rk">Use my recovery key instead</button></div>
+      <p class="fine" id="uh"></p>
+    </section>`);
+    $('#un').onclick = async (e) => {
+      const b = e.currentTarget; b.disabled = true;
+      try { await unlockWithPasskey(); route(); }
+      catch (err) { b.disabled = false; $('#uh').textContent = err.safe ? err.message : 'That didn’t unlock. Try again, or use your recovery key.'; }
+    };
+    $('#rk').onclick = () => { location.hash = '#login'; screenLogin(); };
+  }
+  // Save the recovery key in the browser's password manager (iCloud Keychain,
+  // Google Password Manager, 1Password…), filed under @username.
+  async function saveToPasswordManager(key) {
+    const id = `@${S.acct.user.handle}`;
+    if (window.PasswordCredential) {
+      try { await navigator.credentials.store(new PasswordCredential({ id, password: key, name: `Monyx ${id}` })); toast('Saved to your password manager'); return true; } catch {}
+    }
+    // Safari and Firefox offer to save when a login form is submitted.
+    const f = document.createElement('form');
+    f.style.cssText = 'position:fixed;left:-9999px;top:0';
+    f.innerHTML = '<input name="username" autocomplete="username"><input type="password" name="password" autocomplete="new-password"><button>Save</button>';
+    f.elements.username.value = id; f.elements.password.value = key;
+    f.onsubmit = (e) => { e.preventDefault(); setTimeout(() => f.remove(), 2000); };
+    document.body.append(f); f.requestSubmit();
+    toast('If your browser offers to save a password, tap Save.', false, 5000);
+    return false;
+  }
+
   /* ───────── routing ───────── */
   async function route() {
     const h = location.hash.slice(1);
     const [view, a, b, c] = h.split('/');
     const signedIn = !!(S.acct && S.acct.user && S.acct.token);
+    if (signedIn && isLocked() && view !== 'login' && view !== 'claim') return screenUnlock();
     if (view === 'pay' && a && !signedIn) {
       store.set('monyx.pending', '#' + h);
       const u = await lookup(a);
@@ -1874,6 +2003,7 @@
     if (window.top !== window.self) { document.body.innerHTML = '<p style="padding:24px;font:16px system-ui">Monyx can only be used at <a href="https://monyx.pro" target="_top">monyx.pro</a>.</p>'; return; }
     S.acct = S.acct || store.get('monyx.acct');
     if (S.acct && S.acct.mode === 'key' && S.acct.secret) { try { S.kp = keypairFrom(S.acct.secret); } catch { S.acct = null; } }
+    if (S.acct && S.acct.mode === 'key' && !S.acct.secret && !vault.get()) S.acct.token = null; // no key anywhere: start over
     if (S.acct && !S.acct.token) { S.acct = null; S.kp = null; store.del('monyx.acct'); } // signup interrupted before the account existed
     window.addEventListener('hashchange', route);
     RPC = store.get('monyx.rpc', RPC);
