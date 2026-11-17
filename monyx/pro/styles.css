@@ -288,6 +288,6 @@ dialog menu { display: flex; justify-content: flex-end; gap: 8px; padding: 0; ma
 }
 
 /* ── Theme: pastel green (matches the app) ── */
-:root, :root:root { color-scheme: light; --ink: #F4F8F5; --ink2: #fff; --ink3: #EAF4ED; --line: rgba(13,42,29,.08); --line2: rgba(13,42,29,.15); --bone: #0D2A1D; --bone2: #2E4A3C; --mute: #556E61; --dim: #7D9387; --sig: #1B7347; --sig-ink: #155C38; --in: #1B7347; --bad: #B3261E; --tok: #7D9387; }
-@media (prefers-color-scheme: dark) { :root, :root:root { --ink: #F4F8F5; --ink2: #fff; --ink3: #EAF4ED; --line: rgba(13,42,29,.08); --line2: rgba(13,42,29,.15); --bone: #0D2A1D; --bone2: #2E4A3C; --mute: #556E61; --dim: #7D9387; --sig: #1B7347; --sig-ink: #155C38; --in: #1B7347; --bad: #B3261E; --tok: #7D9387; } }
-::selection { background: #B9EDCB; color: #0D2A1D; }
+:root, :root:root { color-scheme: light; --ink: #F6F9F3; --ink2: #fff; --ink3: #EDF4E8; --line: rgba(13,42,29,.08); --line2: rgba(13,42,29,.15); --bone: #0D2A1D; --bone2: #2E4A3C; --mute: #556E61; --dim: #7D9387; --sig: #3E6B30; --sig-ink: #2F5424; --in: #3E6B30; --bad: #B3261E; --tok: #7D9387; }
+@media (prefers-color-scheme: dark) { :root, :root:root { --ink: #F6F9F3; --ink2: #fff; --ink3: #EDF4E8; --line: rgba(13,42,29,.08); --line2: rgba(13,42,29,.15); --bone: #0D2A1D; --bone2: #2E4A3C; --mute: #556E61; --dim: #7D9387; --sig: #3E6B30; --sig-ink: #2F5424; --in: #3E6B30; --bad: #B3261E; --tok: #7D9387; } }
+::selection { background: #CEE4C3; color: #0D2A1D; }

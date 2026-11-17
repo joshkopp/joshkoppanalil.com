@@ -95,8 +95,8 @@ pre { background: var(--card); box-shadow: inset 0 0 0 1px var(--line); border-r
 .updated { color: var(--faint); font-size: 14px; }
 
 /* ── Theme: pastel green, big-payments-app style (matches the app) ── */
-:root, :root:root { color-scheme: light; --bg: #fff; --card: #fff; --card2: #EAF4ED; --ink: #0D2A1D; --ink2: #2E4A3C; --mute: #556E61; --faint: #7D9387; --line: rgba(13,42,29,.08); --line2: rgba(13,42,29,.14); --brand: #1B7347; --brand-ink: #155C38; --brand-soft: #DDF4E5; --green: #1B7347; --amber: #8A5A00; --amber-soft: #FDF3E1; --pastel: #B9EDCB; --pastel-2: #A3E3B9; --mint: #EEF8F1; }
-@media (prefers-color-scheme: dark) { :root, :root:root { --bg: #fff; --card: #fff; --card2: #EAF4ED; --ink: #0D2A1D; --ink2: #2E4A3C; --mute: #556E61; --faint: #7D9387; --line: rgba(13,42,29,.08); --line2: rgba(13,42,29,.14); --brand: #1B7347; --brand-ink: #155C38; --brand-soft: #DDF4E5; --green: #1B7347; --amber: #8A5A00; --amber-soft: #FDF3E1; } }
+:root, :root:root { color-scheme: light; --bg: #fff; --card: #fff; --card2: #EDF4E8; --ink: #0D2A1D; --ink2: #2E4A3C; --mute: #556E61; --faint: #7D9387; --line: rgba(13,42,29,.08); --line2: rgba(13,42,29,.14); --brand: #3E6B30; --brand-ink: #2F5424; --brand-soft: #E6F1DF; --green: #3E6B30; --amber: #8A5A00; --amber-soft: #FDF3E1; --pastel: #CEE4C3; --pastel-2: #BBD6AD; --mint: #EFF5EA; }
+@media (prefers-color-scheme: dark) { :root, :root:root { --bg: #fff; --card: #fff; --card2: #EDF4E8; --ink: #0D2A1D; --ink2: #2E4A3C; --mute: #556E61; --faint: #7D9387; --line: rgba(13,42,29,.08); --line2: rgba(13,42,29,.14); --brand: #3E6B30; --brand-ink: #2F5424; --brand-soft: #E6F1DF; --green: #3E6B30; --amber: #8A5A00; --amber-soft: #FDF3E1; } }
 ::selection { background: var(--pastel); color: var(--ink); }
 .mk rect { fill: var(--pastel); } .mk path { stroke: var(--ink); }
 header { background: rgba(255,255,255,.92); }

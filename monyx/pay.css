@@ -419,28 +419,28 @@ details.more .btn-row { margin-top: 10px; }
 /* ════════════════════════════════════════════════════════════════════
    Theme: pastel green, big-payments-app style.
    White and soft-mint surfaces, rounded cards, pill buttons, bold tight
-   headings. Pastel green (#B9EDCB) fills primary buttons and the balance
-   card with dark green-black text on top (13:1). Deep green #1B7347 is the
+   headings. Pastel green (#CEE4C3) fills primary buttons and the balance
+   card with dark green-black text on top (13:1). Deep green #3E6B30 is the
    only green used for text and icons on white (5.6:1). Light only.
    ════════════════════════════════════════════════════════════════════ */
 :root, :root:root {
   color-scheme: light;
-  --bg: #F4F8F5; --card: #ffffff; --card2: #EAF4ED; --sheet: #F4F8F5;
+  --bg: #F6F9F3; --card: #ffffff; --card2: #EDF4E8; --sheet: #F6F9F3;
   --ink: #0D2A1D; --ink2: #2E4A3C; --mute: #556E61; --faint: #7D9387;
   --line: rgba(13, 42, 29, .07); --line2: rgba(13, 42, 29, .14);
-  --pastel: #B9EDCB; --pastel-2: #A3E3B9; --mint: #DDF4E5;
-  --brand: #1B7347; --brand-hover: #155C38; --brand-soft: #DDF4E5; --brand-ink: #155C38;
-  --green: #1B7347; --red: #B3261E; --amber: #8A5A00; --amber-soft: #FDF3E1;
-  --sk: #E3EEE7; --radius: 24px;
+  --pastel: #CEE4C3; --pastel-2: #BBD6AD; --mint: #E6F1DF;
+  --brand: #3E6B30; --brand-hover: #2F5424; --brand-soft: #E6F1DF; --brand-ink: #2F5424;
+  --green: #3E6B30; --red: #B3261E; --amber: #8A5A00; --amber-soft: #FDF3E1;
+  --sk: #E4EDDD; --radius: 24px;
   --shadow: 0 1px 2px rgba(13, 42, 29, .04), 0 10px 30px -16px rgba(13, 42, 29, .18);
 }
 @media (prefers-color-scheme: dark) {
   :root, :root:root {
-    --bg: #F4F8F5; --card: #ffffff; --card2: #EAF4ED; --sheet: #F4F8F5;
+    --bg: #F6F9F3; --card: #ffffff; --card2: #EDF4E8; --sheet: #F6F9F3;
     --ink: #0D2A1D; --ink2: #2E4A3C; --mute: #556E61; --faint: #7D9387;
     --line: rgba(13, 42, 29, .07); --line2: rgba(13, 42, 29, .14);
-    --brand: #1B7347; --brand-hover: #155C38; --brand-soft: #DDF4E5; --brand-ink: #155C38;
-    --green: #1B7347; --red: #B3261E; --amber: #8A5A00; --amber-soft: #FDF3E1; --sk: #E3EEE7;
+    --brand: #3E6B30; --brand-hover: #2F5424; --brand-soft: #E6F1DF; --brand-ink: #2F5424;
+    --green: #3E6B30; --red: #B3261E; --amber: #8A5A00; --amber-soft: #FDF3E1; --sk: #E4EDDD;
   }
 }
 html, body { background: var(--bg); }
@@ -468,7 +468,7 @@ h3 { font-size: 17px; font-weight: 700; letter-spacing: -.02em; }
 .req.draft { box-shadow: inset 0 0 0 2px var(--pastel-2), var(--shadow); }
 
 /* Balance card: a pastel green panel with dark text and a soft circle. */
-.balance { background: var(--pastel); color: var(--ink); box-shadow: 0 18px 40px -22px rgba(27, 115, 71, .55); }
+.balance { background: var(--pastel); color: var(--ink); box-shadow: 0 18px 40px -22px rgba(62, 107, 48, .55); }
 .balance::after { background: rgba(255, 255, 255, .35); }
 .balance .label { color: var(--ink2); }
 .balance .label .cur, .balance .amount small, .balance .amount .cents { color: var(--ink2); }
@@ -483,7 +483,7 @@ h3 { font-size: 17px; font-weight: 700; letter-spacing: -.02em; }
 /* Tab bar: white with a pastel round pay button. */
 .tabbar { background: rgba(255, 255, 255, .94); }
 .tabbar a.on { color: var(--ink); }
-.tabbar .tab-pay, .tabbar .tab-pay.on { background: var(--pastel); color: var(--ink); box-shadow: 0 10px 24px -10px rgba(27, 115, 71, .6), 0 0 0 5px #fff; }
+.tabbar .tab-pay, .tabbar .tab-pay.on { background: var(--pastel); color: var(--ink); box-shadow: 0 10px 24px -10px rgba(62, 107, 48, .6), 0 0 0 5px #fff; }
 
 /* Success tick and voice orb in the same green family. */
 .tick { background: var(--pastel); }
@@ -513,7 +513,7 @@ h3 { font-size: 17px; font-weight: 700; letter-spacing: -.02em; }
 .tabbar a { height: 54px; align-content: center; border-radius: 999px; color: var(--mute); font-size: 10.5px; font-weight: 600; transition: background .2s, color .2s, box-shadow .2s; }
 .tabbar a.on { color: var(--ink); background: rgba(255, 255, 255, .7); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), 0 6px 14px -8px rgba(13, 42, 29, .35); }
 .tabbar a:active { transform: scale(.94); }
-.tabbar .tab-pay, .tabbar .tab-pay.on { border-radius: 50%; width: 54px; height: 54px; margin: 0; justify-self: center; background: var(--pastel); color: var(--ink); box-shadow: inset 0 1px 1px rgba(255, 255, 255, .8), 0 8px 18px -8px rgba(27, 115, 71, .7); }
+.tabbar .tab-pay, .tabbar .tab-pay.on { border-radius: 50%; width: 54px; height: 54px; margin: 0; justify-self: center; background: var(--pastel); color: var(--ink); box-shadow: inset 0 1px 1px rgba(255, 255, 255, .8), 0 8px 18px -8px rgba(62, 107, 48, .7); }
 .tabbar .tab-pay.on { background: var(--ink); color: var(--pastel); }
 .tabbar .tab-pay i { font-style: normal; font-weight: 800; font-size: 27px; line-height: 1; letter-spacing: -.04em; }
 .tabbar .tab-pay span { display: none; }
