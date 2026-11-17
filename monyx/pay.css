@@ -417,123 +417,79 @@ details.more .btn-row { margin-top: 10px; }
 #lf .field input { height: 52px; }
 
 /* ════════════════════════════════════════════════════════════════════
-   Theme: ice blue, square, drafted.
-   Palette #DEEBF7 ice, #9ECAE1 mid, #3182BD strong. #3182BD is 4.15:1 on
-   white, so text, links and button fills use a same-hue navy (#276c9f) that
-   passes AA. Square corners, 1px blue rules, monospace small caps for labels,
-   and a grid that hangs over the top of the page. Light only, by design.
+   Theme: pastel green, big-payments-app style.
+   White and soft-mint surfaces, rounded cards, pill buttons, bold tight
+   headings. Pastel green (#B9EDCB) fills primary buttons and the balance
+   card with dark green-black text on top (13:1). Deep green #1B7347 is the
+   only green used for text and icons on white (5.6:1). Light only.
    ════════════════════════════════════════════════════════════════════ */
 :root, :root:root {
   color-scheme: light;
-  --bg: #ffffff; --card: #ffffff; --card2: #DEEBF7; --sheet: #ffffff;
-  --ink: #12395c; --ink2: #2c5270; --mute: #3d5d78; --faint: #4a6580;
-  --line: rgba(158, 202, 225, .7); --line2: #9ECAE1;
-  --ice: #DEEBF7; --mid: #9ECAE1; --accent: #3182BD;
-  --brand: #276c9f; --brand-hover: #1a4d75; --brand-soft: #DEEBF7; --brand-ink: #1a4d75;
-  --green: #1d7a4f; --red: #9b2c22; --amber: #7a4e00; --amber-soft: #fdf3e1;
-  --sk: #DEEBF7; --shadow: none; --radius: 0;
-  --mono: "JetBrains Mono", "Geist Mono", ui-monospace, Menlo, monospace;
-  --hand: "Caveat", "Segoe Script", cursive;
+  --bg: #F4F8F5; --card: #ffffff; --card2: #EAF4ED; --sheet: #F4F8F5;
+  --ink: #0D2A1D; --ink2: #2E4A3C; --mute: #556E61; --faint: #7D9387;
+  --line: rgba(13, 42, 29, .07); --line2: rgba(13, 42, 29, .14);
+  --pastel: #B9EDCB; --pastel-2: #A3E3B9; --mint: #DDF4E5;
+  --brand: #1B7347; --brand-hover: #155C38; --brand-soft: #DDF4E5; --brand-ink: #155C38;
+  --green: #1B7347; --red: #B3261E; --amber: #8A5A00; --amber-soft: #FDF3E1;
+  --sk: #E3EEE7; --radius: 24px;
+  --shadow: 0 1px 2px rgba(13, 42, 29, .04), 0 10px 30px -16px rgba(13, 42, 29, .18);
 }
 @media (prefers-color-scheme: dark) {
   :root, :root:root {
-    --bg: #ffffff; --card: #ffffff; --card2: #DEEBF7; --sheet: #ffffff;
-    --ink: #12395c; --ink2: #2c5270; --mute: #3d5d78; --faint: #4a6580;
-    --line: rgba(158, 202, 225, .7); --line2: #9ECAE1;
-    --brand: #276c9f; --brand-hover: #1a4d75; --brand-soft: #DEEBF7; --brand-ink: #1a4d75;
-    --green: #1d7a4f; --red: #9b2c22; --amber: #7a4e00; --amber-soft: #fdf3e1; --sk: #DEEBF7;
+    --bg: #F4F8F5; --card: #ffffff; --card2: #EAF4ED; --sheet: #F4F8F5;
+    --ink: #0D2A1D; --ink2: #2E4A3C; --mute: #556E61; --faint: #7D9387;
+    --line: rgba(13, 42, 29, .07); --line2: rgba(13, 42, 29, .14);
+    --brand: #1B7347; --brand-hover: #155C38; --brand-soft: #DDF4E5; --brand-ink: #155C38;
+    --green: #1B7347; --red: #B3261E; --amber: #8A5A00; --amber-soft: #FDF3E1; --sk: #E3EEE7;
   }
-  .talkbar .mic, .art .say .mic, .voiced { color: var(--brand-ink); }
 }
-html, body { background: var(--bg); color: var(--ink2); }
-body { letter-spacing: -.01em; }
-/* Square everything except true circles (spinners, status dots). */
-*, *::before, *::after { border-radius: 0 !important; }
-.spin, .pill i, .dot, .item.toggle .sw::after { border-radius: 50% !important; }
-::selection { background: var(--accent); color: #fff; }
-:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
+html, body { background: var(--bg); }
+::selection { background: var(--pastel); color: var(--ink); }
 
-/* The drafting grid, fading out a third of the way down. */
-body::before {
-  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background-color: color-mix(in srgb, var(--ice) 55%, transparent);
-  background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
-  background-size: 64px 64px;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 22%, transparent 55%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 22%, transparent 55%);
-  animation: grid-drift 32s linear infinite; opacity: .8;
-}
-@keyframes grid-drift { to { background-position: 64px 64px; } }
-.shell, .toast { position: relative; z-index: 1; }
-.sheet-wrap { z-index: 30; background: rgba(18, 57, 92, .35); }
+/* Headings: heavy and tight. Section labels stay sentence case. */
+h1, .welcome h1, .introcard h1 { font-weight: 800; letter-spacing: -.055em; color: var(--ink); }
+h3 { font-size: 17px; font-weight: 700; letter-spacing: -.02em; }
+.hrow a { color: var(--brand); font-weight: 600; }
 
-/* Logo tile uses the strong blue. */
-.mark rect { fill: var(--accent); }
+/* Pill buttons. Primary is pastel green with dark text; secondary is outlined. */
+.btn { border-radius: 999px; font-weight: 700; height: 54px; }
+.btn-sm { border-radius: 999px; }
+.btn-dark { background: var(--pastel); color: var(--ink); }
+.btn-dark:hover { background: var(--pastel-2); }
+.btn-light { background: #fff; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.btn-light:hover { background: var(--mint); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.btn-text { color: var(--brand); }
 
-/* Labels: monospace small caps in navy. */
-h3, .hrow > span, .kicker, .sec-label {
-  font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--brand);
-}
-.hrow a { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
-.pill { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; border: 1px solid currentColor; padding: 4px 8px; }
-.balance .label, .balance .label .cur, .cryptorow > span { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
-.fine, .avail, .speed { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; }
-.speed { text-transform: uppercase; border: 1px solid currentColor; background: #e8f4ee; }
+/* Cards and fields. */
+.list, .req, .ledger, .qrcard, .start { box-shadow: var(--shadow); }
+.field { border-radius: 14px; box-shadow: inset 0 0 0 1.5px var(--line2); }
+.field:focus-within { box-shadow: inset 0 0 0 2px var(--ink); }
+.chip, .talkbar { border-radius: 18px; }
+.req.draft { box-shadow: inset 0 0 0 2px var(--pastel-2), var(--shadow); }
 
-/* Buttons: flat fills and 1px outlines. */
-.btn { border: 1px solid var(--brand); height: 50px; }
-.btn-dark { background: var(--brand); color: #fff; }
-.btn-dark:hover { background: var(--brand-hover); border-color: var(--brand-hover); }
-.btn-light { background: #fff; color: var(--ink); border-color: var(--line2); box-shadow: none; }
-.btn-light:hover { border-color: var(--brand); color: var(--brand); background: var(--ice); box-shadow: none; }
-.btn-text { border-color: transparent; }
+/* Balance card: a pastel green panel with dark text and a soft circle. */
+.balance { background: var(--pastel); color: var(--ink); box-shadow: 0 18px 40px -22px rgba(27, 115, 71, .55); }
+.balance::after { background: rgba(255, 255, 255, .35); }
+.balance .label { color: var(--ink2); }
+.balance .label .cur, .balance .amount small, .balance .amount .cents { color: var(--ink2); }
+.balance .btn-dark { background: var(--ink); color: #fff; }
+.balance .btn-dark:hover { background: #1d4532; }
+.balance .btn-light { background: rgba(255, 255, 255, .6); color: var(--ink); box-shadow: none; }
+.balance .btn-light:hover { background: #fff; }
+.balance .up, .balance .down { color: var(--ink); background: rgba(255, 255, 255, .55); }
+.balance .skeleton { background: rgba(13, 42, 29, .1); }
+.cryptorow { background: rgba(255, 255, 255, .45) !important; color: var(--ink); }
 
-/* Cards, lists and fields: white with a 1px mid-blue rule. */
-.list, .req, .talkbar, .chip, .ledger, .qrcard, .start, .field, .keybox, .warn, .voiced, .introcard .note, .swapbox, .confirm .note, .tries button, .emojis button, .results .list {
-  box-shadow: none !important; border: 1px solid var(--line2);
-}
-.list .item + .item { border-top: 1px solid var(--line); }
-.field:focus-within { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand) !important; }
-.talkbar:hover, .tries button:hover, .emojis button:hover { border-color: var(--brand); background: var(--ice); }
-.req.draft { border-color: var(--brand); box-shadow: 3px 4px 0 var(--mid) !important; }
+/* Tab bar: white with a pastel round pay button. */
+.tabbar { background: rgba(255, 255, 255, .94); }
+.tabbar a.on { color: var(--ink); }
+.tabbar .tab-pay, .tabbar .tab-pay.on { background: var(--pastel); color: var(--ink); box-shadow: 0 10px 24px -10px rgba(27, 115, 71, .6), 0 0 0 5px #fff; }
 
-/* The balance card: navy block with a hard offset shadow, like a sticky note. */
-.balance { background: var(--brand); box-shadow: 4px 5px 0 var(--mid); border: 1px solid var(--brand-hover); }
-.balance::after { display: none; }
-.balance .btn-dark { background: #fff; color: var(--brand-hover); border-color: #fff; }
-.balance .btn-dark:hover { background: var(--ice); }
-.balance .btn-light { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .55); }
-.balance .btn-light:hover { background: rgba(255, 255, 255, .12); color: #fff; }
-.cryptorow { border: 1px solid rgba(255, 255, 255, .35); background: transparent !important; }
-
-/* Avatars: square tiles. */
-.av { border: 1px solid rgba(18, 57, 92, .12); }
-.av.bank, .av.linkav, .av.bot { border-color: var(--line2); }
-
-/* Tab bar: a ruled strip; the pay button is a square stamp. */
-.tabbar { background: color-mix(in srgb, #fff 94%, transparent); border-top: 1px solid var(--line2); }
-.tabbar a span { font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; }
-.tabbar a.on { color: var(--brand); }
-.tabbar .tab-pay { background: var(--brand); box-shadow: 3px 4px 0 var(--mid), 0 0 0 5px #fff; }
-
-/* Sheets slide up as plain white panels with a top rule. */
-.sheet { border-top: 1px solid var(--line2); box-shadow: 0 -6px 0 var(--ice); }
-.sheet .grab { background: var(--mid); height: 3px; }
-
-/* Voice orb: a square stamp that pulses. */
-.orb, .orb.thinking { box-shadow: 4px 5px 0 var(--mid); }
-.orb.thinking { background: var(--brand-hover); }
-.orb i { background: var(--accent); }
-@keyframes breathe { 50% { box-shadow: 6px 7px 0 var(--mid); } }
-
-/* Welcome: big tight headline, mono kicker, a handwritten aside. */
-.welcome h1, .introcard h1 { letter-spacing: -.05em; color: var(--ink); }
-.welcome .bubble { box-shadow: 3px 4px 0 var(--mid) !important; border: 1px solid var(--line2); background: #fff; }
-.hand { font-family: var(--hand); font-weight: 600; font-size: 22px; color: var(--ink); transform: rotate(-3deg); display: inline-block; margin: 6px 0 0 4px; }
-
-/* Ticks and the success tick. */
-.tick { background: var(--brand); box-shadow: 4px 5px 0 var(--mid); }
+/* Success tick and voice orb in the same green family. */
+.tick { background: var(--pastel); }
+.tick svg { stroke: var(--ink); }
+.orb { background: var(--pastel); color: var(--ink); }
+.orb.thinking { background: var(--pastel-2); }
 .check input { accent-color: var(--brand); }
-.item.toggle .sw { background: var(--mid); }
-.item.toggle input:checked + .sw { background: var(--brand); }
-@media (prefers-reduced-motion: reduce) { body::before { animation: none; } }
+.mark rect { fill: var(--pastel); } .mark path { stroke: var(--ink); }
+.cryptorow span { color: var(--ink2); } .cryptorow .chev { stroke: var(--ink2); }

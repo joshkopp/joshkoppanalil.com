@@ -287,8 +287,7 @@ dialog menu { display: flex; justify-content: flex-end; gap: 8px; padding: 0; ma
   .actions { flex-wrap: wrap; }
 }
 
-/* ── Theme: ice blue, square, drafted (matches the app) ── */
-:root, :root:root { color-scheme: light; --ink: #fff; --ink2: #fff; --ink3: #DEEBF7; --line: rgba(158,202,225,.7); --line2: #9ECAE1; --bone: #12395c; --bone2: #2c5270; --mute: #3d5d78; --dim: #4a6580; --sig: #276c9f; --sig-ink: #1a4d75; --in: #1d7a4f; --bad: #9b2c22; --tok: #4a6580; --mono: "JetBrains Mono", "Geist Mono", ui-monospace, monospace; }
-@media (prefers-color-scheme: dark) { :root, :root:root { --ink: #fff; --ink2: #fff; --ink3: #DEEBF7; --line: rgba(158,202,225,.7); --line2: #9ECAE1; --bone: #12395c; --bone2: #2c5270; --mute: #3d5d78; --dim: #4a6580; --sig: #276c9f; --sig-ink: #1a4d75; --in: #1d7a4f; --bad: #9b2c22; --tok: #4a6580; } }
-*, *::before, *::after { border-radius: 0 !important; }
-::selection { background: #3182BD; color: #fff; }
+/* ── Theme: pastel green (matches the app) ── */
+:root, :root:root { color-scheme: light; --ink: #F4F8F5; --ink2: #fff; --ink3: #EAF4ED; --line: rgba(13,42,29,.08); --line2: rgba(13,42,29,.15); --bone: #0D2A1D; --bone2: #2E4A3C; --mute: #556E61; --dim: #7D9387; --sig: #1B7347; --sig-ink: #155C38; --in: #1B7347; --bad: #B3261E; --tok: #7D9387; }
+@media (prefers-color-scheme: dark) { :root, :root:root { --ink: #F4F8F5; --ink2: #fff; --ink3: #EAF4ED; --line: rgba(13,42,29,.08); --line2: rgba(13,42,29,.15); --bone: #0D2A1D; --bone2: #2E4A3C; --mute: #556E61; --dim: #7D9387; --sig: #1B7347; --sig-ink: #155C38; --in: #1B7347; --bad: #B3261E; --tok: #7D9387; } }
+::selection { background: #B9EDCB; color: #0D2A1D; }
