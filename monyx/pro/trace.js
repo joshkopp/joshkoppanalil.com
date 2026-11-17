@@ -1,4 +1,4 @@
-// Keel tracer engine. Pure functions over Solana JSON-RPC, no DOM.
+// Monyx tracer engine. Pure functions over Solana JSON-RPC, no DOM.
 // Mirrors the `trace` API in meter/index.ts so the free in-app tracer and the
 // paid endpoint agree on every number.
 (function (root) {
@@ -19,7 +19,7 @@
     'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 'USDC',
     'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 'USDT',
     'So11111111111111111111111111111111111111112': 'Wrapped SOL',
-    '4DJ1z4aUMe4VLg9qxaCHmfNhFKqyCaP7RC6dQBJFQvuw': 'Keel treasury',
+    '4DJ1z4aUMe4VLg9qxaCHmfNhFKqyCaP7RC6dQBJFQvuw': 'Monyx treasury',
   };
   const label = (a) => PROGRAMS[a] || null;
   const keyStr = (k) => (typeof k === 'string' ? k : k.pubkey);
@@ -147,5 +147,5 @@
   }
 
   const api = { rpc, getTx, trace, analyze, flows, label, pool, sol };
-  if (typeof module !== 'undefined') module.exports = api; else root.KeelTrace = api;
+  if (typeof module !== 'undefined') module.exports = api; else root.MonyxTrace = api;
 })(typeof window !== 'undefined' ? window : globalThis);

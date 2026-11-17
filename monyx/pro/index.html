@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monyx Pro: wallet tracer and agent API market</title>
+<meta name="description" content="A Solana wallet with a built-in wallet tracer and an API market where agents pay devnet SOL per request over HTTP 402.">
+<link rel="icon" href="../favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Martian+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=2">
+<link rel="alternate" type="text/plain" href="../llms.txt" title="Agent instructions">
+</head>
+<body>
+<div class="frame">
+
+  <aside class="rail">
+    <a class="mark" href="#wallet"><span class="mark-k">monyx</span><span class="mark-sub">pro</span></a>
+    <nav class="nav" id="nav">
+      <a href="#wallet" data-view="wallet"><i>01</i>Wallet</a>
+      <a href="#trace" data-view="trace"><i>02</i>Tracer</a>
+      <a href="#market" data-view="market"><i>03</i>Market</a>
+      <a href="#agents" data-view="agents"><i>04</i>Agents</a>
+      <a href="#ledger" data-view="ledger"><i>05</i>Ledger</a>
+    </nav>
+    <div class="rail-foot">
+      <div class="tick"><span>SOL</span><b id="tickPrice">—</b><em id="tickChg"></em></div>
+      <div class="tick"><span>Slot</span><b id="tickSlot">—</b></div>
+      <button class="ghost tiny" id="rpcBtn">RPC settings</button>
+      <a class="ghost tiny" href="../" style="text-align:center;text-decoration:none">← Monyx app</a>
+    </div>
+  </aside>
+
+  <header class="top">
+    <div class="crumb" id="crumb">Wallet</div>
+    <div class="who">
+      <span class="dot" id="whoDot"></span>
+      <button class="chip" id="whoBtn">No wallet</button>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- WALLET -->
+    <section class="view" id="v-wallet">
+      <div class="empty" id="walletEmpty">
+        <h2 class="display">A wallet that can see where money goes.</h2>
+        <p class="lede">Monyx Pro holds devnet SOL, traces any address on mainnet or devnet, and runs a market where software agents pay per API call. Pick a key to start.</p>
+        <div class="choose">
+          <button class="pick" id="useBuiltin">
+            <b>Create a Monyx key</b>
+            <span>A fresh devnet keypair kept in this browser. Nothing to install.</span>
+          </button>
+          <button class="pick" id="usePhantom">
+            <b>Connect Phantom</b>
+            <span>Signs with your extension. Set Phantom to devnet.</span>
+          </button>
+          <label class="pick" for="importKey">
+            <b>Import a key</b>
+            <span>Paste a secret key as a JSON byte array.</span>
+            <textarea id="importKey" rows="2" placeholder="[12,34, …]"></textarea>
+          </label>
+        </div>
+      </div>
+
+      <div class="wallet" id="walletFull" hidden>
+        <div class="hero">
+          <div class="label">Balance · devnet</div>
+          <div class="bal"><span id="balSol">0</span><small>SOL</small></div>
+          <div class="usd" id="balUsd">—</div>
+          <button class="addr" id="myAddr" title="Copy address"></button>
+        </div>
+        <div class="actions">
+          <button data-act="send"><svg viewBox="0 0 16 16"><path d="M3 13 13 3M6 3h7v7"/></svg>Send</button>
+          <button data-act="receive"><svg viewBox="0 0 16 16"><path d="M13 3 3 13M10 13H3V6"/></svg>Receive</button>
+          <button data-act="airdrop"><svg viewBox="0 0 16 16"><path d="M8 2v9M4 7l4 4 4-4M3 14h10"/></svg>Get SOL</button>
+          <button data-act="traceme"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="2"/><circle cx="8" cy="8" r="6"/></svg>Trace me</button>
+        </div>
+        <div class="drawer" id="drawer" hidden></div>
+
+        <div class="cols">
+          <div class="panel">
+            <div class="ph"><h3>Activity</h3><button class="ghost tiny" id="refreshAct">Refresh</button></div>
+            <ol class="activity" id="activity"><li class="muted">Loading…</li></ol>
+          </div>
+          <div class="panel">
+            <div class="ph"><h3>Holdings</h3></div>
+            <ul class="holdings" id="holdings"></ul>
+            <div class="ph"><h3>Key</h3></div>
+            <dl class="kv" id="keyInfo"></dl>
+            <div class="row gap">
+              <button class="ghost tiny" id="exportKey" hidden>Copy secret key</button>
+              <button class="ghost tiny danger" id="forget">Disconnect</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRACER -->
+    <section class="view" id="v-trace" hidden>
+      <form class="query" id="traceForm" autocomplete="off">
+        <input id="traceAddr" spellcheck="false" placeholder="Any Solana address">
+        <div class="seg" id="traceNet"><button type="button" data-net="mainnet" class="on">Mainnet</button><button type="button" data-net="devnet">Devnet</button></div>
+        <select id="traceLimit" title="Transactions to scan"><option>15</option><option selected>25</option><option>40</option></select>
+        <button class="primary" type="submit">Trace</button>
+      </form>
+      <div class="samples" id="traceSamples"></div>
+      <div class="hops" id="hops"></div>
+
+      <div class="trace" id="traceOut" hidden>
+        <div class="graph-wrap">
+          <svg id="graph" viewBox="0 0 640 640" role="img" aria-label="Counterparty flow graph"></svg>
+          <div class="legend"><span class="k in"></span>sent to target <span class="k out"></span>received from target <span class="k tok"></span>tokens only</div>
+          <div class="tip" id="tip" hidden></div>
+        </div>
+        <div class="side">
+          <div class="stats" id="traceStats"></div>
+          <div class="ph"><h3>Counterparties</h3><span class="muted small">click to follow</span></div>
+          <ol class="ranks" id="ranks"></ol>
+        </div>
+        <div class="wide panel">
+          <div class="ph"><h3>Timeline</h3><span class="muted small" id="tlNote"></span></div>
+          <svg id="timeline" viewBox="0 0 1000 120" preserveAspectRatio="none"></svg>
+          <div class="programs" id="programs"></div>
+        </div>
+      </div>
+      <div class="status" id="traceStatus"></div>
+    </section>
+
+    <!-- MARKET -->
+    <section class="view" id="v-market" hidden>
+      <div class="intro">
+        <div>
+          <h2 class="display sm">Data by the pull.</h2>
+          <p class="lede">Every endpoint answers with <code>402 Payment Required</code> and a quote. Pay the quote in devnet SOL, repeat the call with the signature, get the data. No keys, no accounts, no subscriptions.</p>
+        </div>
+        <div class="kpis" id="marketKpis"></div>
+      </div>
+      <div class="market">
+        <div class="catalog" id="catalog"></div>
+        <div class="console panel" id="console">
+          <div class="ph"><h3 id="cTitle">Pick an endpoint</h3><span class="price" id="cPrice"></span></div>
+          <form id="cForm" class="params"></form>
+          <ol class="exchange" id="exchange"></ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- AGENTS -->
+    <section class="view" id="v-agents" hidden>
+      <div class="intro">
+        <div>
+          <h2 class="display sm">Hand an agent a budget.</h2>
+          <p class="lede">The agent holds its own key. It reads the catalog, decides what it needs, and pays for each pull out of what you funded. Watch it spend.</p>
+        </div>
+      </div>
+      <div class="cols">
+        <div class="panel">
+          <div class="ph"><h3>Agent wallet</h3><span class="muted small" id="agentAddr"></span></div>
+          <div class="meter"><div class="meter-bar"><i id="meterFill"></i></div><div class="meter-row"><span id="agentBal">— SOL</span><span id="agentSpent">spent 0</span></div></div>
+          <div class="row gap">
+            <button class="ghost tiny" id="fundAgent">Fund 0.003 from my wallet</button>
+            <button class="ghost tiny" id="dropAgent">Faucet for agent</button>
+          </div>
+          <form class="task" id="agentForm" autocomplete="off">
+            <label>Task</label>
+            <div class="taskline"><span>Brief me on</span><input id="agentTarget" spellcheck="false" placeholder="address"><div class="seg" id="agentNet"><button type="button" data-net="mainnet" class="on">Mainnet</button><button type="button" data-net="devnet">Devnet</button></div></div>
+            <button class="primary" type="submit" id="agentRun">Run agent</button>
+          </form>
+          <ol class="exchange" id="agentLog"></ol>
+        </div>
+        <div class="panel">
+          <div class="ph"><h3>Brief</h3></div>
+          <article class="brief" id="brief"><p class="muted">The agent's write-up lands here, with every figure traced to the pull that paid for it.</p></article>
+        </div>
+      </div>
+      <div class="panel docs">
+        <div class="ph"><h3>Plug in your own agent</h3><span class="muted small"><a href="../llms.txt">llms.txt</a> · <a id="catLink" target="_blank" rel="noopener">catalog.json</a></span></div>
+        <div class="tabs" id="docTabs"><button class="on" data-doc="curl">curl</button><button data-doc="js">JavaScript</button><button data-doc="py">Python</button></div>
+        <pre class="code" id="docCode"></pre>
+      </div>
+    </section>
+
+    <!-- LEDGER -->
+    <section class="view" id="v-ledger" hidden>
+      <div class="intro">
+        <div>
+          <h2 class="display sm">Every pull, onchain.</h2>
+          <p class="lede">Receipts are written only after the meter reads the payment off devnet. Each one links to its transaction.</p>
+        </div>
+        <div class="kpis" id="ledgerKpis"></div>
+      </div>
+      <div class="cols">
+        <div class="panel"><div class="ph"><h3>Recent receipts</h3><button class="ghost tiny" id="refreshLedger">Refresh</button></div><table class="table" id="ledgerTable"></table></div>
+        <div class="panel"><div class="ph"><h3>By endpoint</h3></div><div class="bars" id="ledgerBars"></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<dialog id="dlg"><form method="dialog" id="dlgBody"></form></dialog>
+<div class="toast" id="toast" hidden></div>
+
+<script src="../vendor/buffer.js?v=8"></script>
+<script src="../vendor/solana-web3.js?v=8"></script>
+<script src="../vendor/qrcode.js"></script>
+<script src="trace.js?v=2"></script>
+<script src="app.js?v=2"></script>
+</body>
+</html>

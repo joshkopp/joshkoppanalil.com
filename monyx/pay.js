@@ -1,4 +1,4 @@
-// Keel: pay anyone by @username.
+// Monyx: pay anyone by @username, and buy, sell and swap crypto.
 // Every account is a Solana devnet keypair held in this browser (or Phantom).
 // Amounts are shown in dollars, converted at the live SOL price. The keelpay
 // edge function maps usernames to accounts and stores requests; it never
@@ -8,7 +8,8 @@
   const API = 'https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/keelpay';
   const RPC = 'https://api.devnet.solana.com';
   const MEMO = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
-  const SITE = 'https://joshkoppanalil.com/keel/';
+  const SITE = location.origin + location.pathname.replace(/index\.html$/, '');
+  const LOGO = '<span class="logo"><i></i>monyx</span>';
   const L = 1e9;
   const FEE = 10_000;
   const W = () => window.solanaWeb3;
@@ -35,13 +36,16 @@
     info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
     out: '<svg viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/></svg>',
     tools: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/></svg>',
+    split: '<svg viewBox="0 0 24 24"><path d="M12 3v7M12 10 5 17M12 10l7 7M5 17v4M19 17v4"/></svg>',
+    swap: '<svg viewBox="0 0 24 24"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>',
   };
 
   /* ───────── money ───────── */
   const S = {
-    acct: store.get('keelpay.acct'),       // { mode, secret?, address, token, user }
-    kp: null, price: store.get('keelpay.price', 150), lamports: null,
-    feed: [], people: store.get('keelpay.people', {}), requests: { incoming: [], outgoing: [] },
+    acct: store.get('monyx.acct'),       // { mode, secret?, address, token, user }
+    kp: null, price: store.get('monyx.price', 150), lamports: null,
+    feed: [], people: store.get('monyx.people', {}), requests: { incoming: [], outgoing: [] },
+    markets: store.get('monyx.markets', null), port: null, bankAddr: store.get('monyx.bank', null),
     signup: null, timers: [],
   };
   const usd = (lamports) => (lamports / L) * S.price;
@@ -54,7 +58,7 @@
     try {
       const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
       const p = (await r.json()).solana.usd;
-      if (p > 0) { S.price = p; store.set('keelpay.price', p); }
+      if (p > 0) { S.price = p; store.set('monyx.price', p); }
     } catch {}
   }
 
@@ -99,7 +103,7 @@
   }
   async function proof(address) {
     const ts = Date.now();
-    const sig = await signText(`Sign in to Keel\n\nAccount: ${address}\nTime: ${ts}`);
+    const sig = await signText(`Sign in to Monyx\n\nAccount: ${address}\nTime: ${ts}`);
     return { address, ts, sig };
   }
 
@@ -112,7 +116,7 @@
     if (!r.ok) { const e = new Error(j.message || `Something went wrong (${r.status})`); e.code = j.error; e.status = r.status; throw e; }
     return j;
   }
-  function saveAcct() { store.set('keelpay.acct', S.acct); }
+  function saveAcct() { store.set('monyx.acct', S.acct); }
 
   /* ───────── chain ───────── */
   async function rpc(method, params, tries = 4) {
@@ -153,7 +157,7 @@
   async function loadFeed() {
     if (!S.acct) return;
     const me = S.acct.address;
-    const cacheKey = `keelpay.feed.${me}`;
+    const cacheKey = `monyx.feed.${me}`;
     if (!S.feed.length) S.feed = store.get(cacheKey, []);
     try {
       const sigs = await rpc('getSignaturesForAddress', [me, { limit: 25 }]);
@@ -198,7 +202,7 @@
     try {
       const { users } = await api(`/resolve?a=${need.join(',')}`, { auth: false });
       for (const a of need) S.people[a] = users[a] || { address: a, unknown: true };
-      store.set('keelpay.people', S.people);
+      store.set('monyx.people', S.people);
     } catch {}
   }
   async function loadRequests() {
@@ -217,7 +221,7 @@
     const ini = p.name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
     return `<div class="av ${size}" style="background:${PALETTE[h % PALETTE.length]}">${esc(ini)}</div>`;
   }
-  const who = (p) => (p && !p.unknown ? (p.bank ? 'Keel' : p.name) : (p ? short(p.address) : 'Someone'));
+  const who = (p) => (p && !p.unknown ? (p.bank ? 'Monyx' : p.name) : (p ? short(p.address) : 'Someone'));
   const first = (p) => (p && !p.unknown && !p.bank ? p.name.split(' ')[0] : who(p));
   function when(t) {
     if (!t) return 'Pending';
@@ -261,7 +265,7 @@
 
   function screenWelcome(banner) {
     show(`<section class="welcome">
-      <div class="brand">Keel</div>
+      <div class="brand">${LOGO}</div>
       <div class="art"><div class="stage">
         <div class="bubble b1"><div class="av sm" style="background:#f4d6b2">MA</div><div><b>Maya paid you</b><span>🍕 Friday pizza</span></div><span class="amt in">+$14.00</span></div>
         <div class="bubble b2"><div class="av sm" style="background:#d5dcf6">JR</div><div><b>You paid Jordan</b><span>🎟️ concert tickets</span></div><span class="amt">$42.50</span></div>
@@ -273,7 +277,7 @@
         <button class="btn btn-dark" id="goSignup">Create your account</button>
         <button class="btn btn-text" id="goLogin">I already have an account</button>
       </div>
-      <p class="fine">Keel is in test mode. Balances are play money with no real value.</p>
+      <p class="fine">Monyx is in test mode. Balances are play money with no real value.</p>
     </section>`);
     $('#goSignup').onclick = () => startSignup();
     $('#goLogin').onclick = () => (location.hash = '#login');
@@ -363,14 +367,14 @@
       <p class="sub">It's the only way back into your account if you switch phones or clear your browser. We can't reset it for you.</p>
       <div class="keybox" id="kb" title="Tap to reveal">${esc(key)}</div>
       <div class="btn-row" style="margin-top:10px"><button class="btn btn-light btn-sm" id="cp" style="width:100%">Copy</button><button class="btn btn-light btn-sm" id="dl" style="width:100%">Download</button></div>
-      <div class="warn">${ICON.info.replace('<svg', '<svg width="18" height="18" style="flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8"')}<span>Anyone with this key can spend your balance. Never share it, not even with Keel.</span></div>
+      <div class="warn">${ICON.info.replace('<svg', '<svg width="18" height="18" style="flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8"')}<span>Anyone with this key can spend your balance. Never share it, not even with Monyx.</span></div>
       <label class="check"><input type="checkbox" id="ok"><span>I saved my recovery key somewhere safe.</span></label>`,
       `<button class="btn btn-dark" id="next" disabled>Continue</button>`, false));
     $('#kb').onclick = (e) => e.currentTarget.classList.toggle('show');
     $('#cp').onclick = () => { $('#kb').classList.add('show'); copy(key, 'Recovery key copied'); };
     $('#dl').onclick = () => {
-      const blob = new Blob([`Keel recovery key for @${S.acct.user.handle}\n\n${key}\n\nKeep this private. Anyone with it can spend your balance.\nTo log in on a new device, open ${SITE} and choose "I already have an account".\n`], { type: 'text/plain' });
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `keel-recovery-${S.acct.user.handle}.txt`; a.click();
+      const blob = new Blob([`Monyx recovery key for @${S.acct.user.handle}\n\n${key}\n\nKeep this private. Anyone with it can spend your balance.\nTo log in on a new device, open ${SITE} and choose "I already have an account".\n`], { type: 'text/plain' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `monyx-recovery-${S.acct.user.handle}.txt`; a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     };
     $('#ok').onchange = (e) => ($('#next').disabled = !e.target.checked);
@@ -384,8 +388,8 @@
       <h2>You're in, ${esc(S.acct.user.name.split(' ')[0])}.</h2>
       <p class="sub">${got ? `We added <b style="color:var(--ink)">${money(usd(b.lamports))}</b> to your balance so you can try it out.` : 'Add money from your home screen whenever you’re ready.'}</p>
       <p class="sub">Friends can pay you at <b style="color:var(--ink)">@${esc(S.acct.user.handle)}</b>.</p></div>
-    </div><div class="foot"><button class="btn btn-dark" id="go">Go to Keel</button></div></section>`);
-    $('#go').onclick = () => { const p = store.get('keelpay.pending'); store.del('keelpay.pending'); location.hash = p || '#home'; };
+    </div><div class="foot"><button class="btn btn-dark" id="go">Go to Monyx</button></div></section>`);
+    $('#go').onclick = () => { const p = store.get('monyx.pending'); store.del('monyx.pending'); location.hash = p || '#home'; };
     S.signup = null;
   }
 
@@ -403,14 +407,14 @@
     $('#back').onclick = () => (location.hash = '');
     go.onclick = async () => {
       let kp;
-      try { kp = parseRecovery(rk.value); } catch { hint.className = 'hint bad'; hint.textContent = "That doesn't look like a Keel recovery key."; return; }
+      try { kp = parseRecovery(rk.value); } catch { hint.className = 'hint bad'; hint.textContent = "That doesn't look like a Monyx recovery key."; return; }
       go.disabled = true; go.innerHTML = '<span class="spin"></span>Logging in';
       S.kp = kp;
       S.acct = { mode: 'key', secret: Array.from(kp.secretKey), address: kp.publicKey.toBase58(), token: null, user: null };
       try {
         const r = await api('/login', { method: 'POST', auth: false, body: await proof(S.acct.address) });
         S.acct.token = r.token; S.acct.user = r.user; saveAcct();
-        location.hash = store.get('keelpay.pending') || '#home'; store.del('keelpay.pending');
+        location.hash = store.get('monyx.pending') || '#home'; store.del('monyx.pending');
       } catch (e) {
         go.disabled = false; go.textContent = 'Log in';
         if (e.code === 'no_account') { S.acct = null; toast('No account yet for that key. Let’s make one.'); startSignup(kp); return; }
@@ -438,7 +442,7 @@
     } catch (e) { S.acct = null; toast(esc(e.message || 'Phantom connection cancelled'), true); }
   }
   function phantomSignup(address) {
-    show(stepShell(2, `<h2>Set up Keel</h2><p class="sub">Your Phantom wallet will hold your balance. Pick a name and username.</p>
+    show(stepShell(2, `<h2>Set up Monyx</h2><p class="sub">Your Phantom wallet will hold your balance. Pick a name and username.</p>
       <label class="field" style="margin-top:22px"><input id="nm" placeholder="First and last name" maxlength="40"></label>
       <label class="field prefix" style="margin-top:10px"><span>@</span><input id="hd" autocapitalize="off" spellcheck="false" maxlength="20" placeholder="username"></label>
       <div class="hint" id="hint"></div>`, `<button class="btn btn-dark" id="next">Create account</button>`));
@@ -469,15 +473,22 @@
       <section class="balance">
         <div class="label"><span>Balance</span></div>
         <div class="amount" id="bal"><div class="skeleton" style="width:60%;height:44px;border-radius:12px"></div></div>
+        <a class="cryptorow" id="cryptoRow" href="#invest" hidden><span>Crypto</span><b id="cryptoVal"></b>${ICON.chev}</a>
         <div class="btn-row"><button class="btn btn-light" id="add">Add money</button><a class="btn btn-dark" href="#pay">Pay or request</a></div>
       </section>
       <div id="reqs"></div>
       <div id="ppl"></div>
-      <h3>Activity</h3>
-      <div class="list" id="feed"><div class="item"><div class="mid"><div class="skeleton" style="width:70%"></div></div></div><div class="item"><div class="mid"><div class="skeleton" style="width:50%"></div></div></div></div>`, { tabs: true, tab: 'home' });
+      <h3 class="hrow"><span>Activity</span><a href="#activity">See all</a></h3>
+      <div class="list" id="feed" data-limit="6"><div class="item"><div class="mid"><div class="skeleton" style="width:70%"></div></div></div><div class="item"><div class="mid"><div class="skeleton" style="width:50%"></div></div></div></div>`, { tabs: true, tab: 'home' });
     $('#add').onclick = addMoney;
     paintBalance(); paintRequests(); paintPeople(); if (S.feed.length) paintFeed();
     refreshBalance(); loadFeed(); loadRequests();
+    loadPortfolio().then(paintCryptoRow);
+  }
+  function paintCryptoRow() {
+    const r = $('#cryptoRow'); if (!r || !S.port) return;
+    r.hidden = !(S.port.total > 0);
+    $('#cryptoVal').textContent = money(S.port.total);
   }
   function paintBalance() {
     const el = $('#bal'); if (!el || S.lamports == null) return;
@@ -499,13 +510,20 @@
   function paintFeed() {
     const el = $('#feed'); if (!el) return;
     if (!S.feed.length) { el.innerHTML = `<div class="empty">Nothing here yet.<br>Pay a friend, or share your link from the Me tab to get paid.</div>`; return; }
-    el.innerHTML = S.feed.map((f) => {
+    el.innerHTML = S.feed.slice(0, +(el.dataset.limit || 100)).map((f) => {
       const p = S.people[f.with] || (f.with ? { address: f.with, unknown: true } : null);
       const incoming = f.lamports > 0;
-      const title = !f.with ? 'Account activity' : p && p.bank ? (incoming ? '<b>Keel</b> sent you a welcome bonus' : 'Paid <b>Keel</b>') : incoming ? `<b>${esc(who(p))}</b> paid you` : `You paid <b>${esc(who(p))}</b>`;
+      const title = !f.with ? 'Account activity' : p && p.bank ? bankTitle(f, incoming) : incoming ? `<b>${esc(who(p))}</b> paid you` : `You paid <b>${esc(who(p))}</b>`;
       const sub = [f.note && !(p && p.bank) ? esc(f.note) : '', when(f.time)].filter(Boolean).join(' · ');
       return `<a class="item" href="#tx/${f.sig}">${avatar(p)}<div class="mid"><div class="t">${title}</div><div class="s">${sub}${f.ok ? '' : ' · Failed'}</div></div><div class="amt ${incoming ? 'in' : ''}">${money(usd(f.lamports), true)}</div></a>`;
     }).join('');
+  }
+  function bankTitle(f, incoming) {
+    const n = f.note || '';
+    if (/welcome/i.test(n)) return '<b>Monyx</b> welcome bonus';
+    if (/^Sold /.test(n)) return `Sold <b>${esc(n.slice(5))}</b>`;
+    if (/^Buy /.test(n)) return `Bought <b>${esc(n.slice(4))}</b>`;
+    return incoming ? '<b>Monyx</b> paid you' : 'Paid <b>Monyx</b>';
   }
   function paintRequests() {
     const el = $('#reqs'); if (!el) return;
@@ -543,6 +561,7 @@
       <div class="to" id="toBox"></div>
       <label class="field" style="margin-top:10px"><input id="note" maxlength="80" placeholder="What's it for?" value="${esc(st.note)}"></label>
       <div class="emojis">${['🍕 Food', '🏠 Rent', '☕ Coffee', '🚗 Ride', '🎁 Gift', '🎟️ Tickets'].map((e) => `<button data-e="${e}">${e}</button>`).join('')}</div>
+      <button class="splitlink" id="split">${ICON.split} Split a bill with friends</button>
       <div class="payfoot"><div class="btn-row"><button class="btn btn-light" id="req" disabled>Request</button><button class="btn btn-dark" id="pay" disabled>Pay</button></div></div>`, { tabs: false });
     const amt = $('#amt'), note = $('#note');
     const size = () => { amt.style.width = Math.max(1, (amt.value || '0').length + 0.2) + 'ch'; };
@@ -586,7 +605,7 @@
         return list.slice(0, 5);
       };
       const paint = (users, title) => {
-        res.innerHTML = users.length ? `<h3 style="margin-top:14px">${title}</h3><div class="list">${users.map((u, i) => `<button class="item" data-i="${i}">${avatar(u)}<div class="mid"><div class="t">${esc(who(u))}</div><div class="s">${u.handle ? '@' + esc(u.handle) : 'Not on Keel · ' + esc(short(u.address))}</div></div></button>`).join('')}</div>` : '';
+        res.innerHTML = users.length ? `<h3 style="margin-top:14px">${title}</h3><div class="list">${users.map((u, i) => `<button class="item" data-i="${i}">${avatar(u)}<div class="mid"><div class="t">${esc(who(u))}</div><div class="s">${u.handle ? '@' + esc(u.handle) : 'Not on Monyx · ' + esc(short(u.address))}</div></div></button>`).join('')}</div>` : '';
         $$('.item', res).forEach((b) => (b.onclick = () => { st.to = users[+b.dataset.i]; renderTo(); }));
       };
       paint(recent(), 'Recent');
@@ -611,7 +630,7 @@
         if (m) { lookup(m[1]).then((u) => { if (u) { st.to = u; if (m[2] && !amt.value) { amt.value = m[2]; size(); } renderTo(); } }); return; }
         const a = txt.replace(/^solana:/, '').split('?')[0];
         if (isAddr(a)) { st.to = S.people[a] && !S.people[a].unknown ? S.people[a] : { address: a, unknown: true }; renderTo(); return; }
-        toast("That code isn't a Keel link.", true);
+        toast("That code isn't a Monyx link.", true);
       });
       if (!prefill.to) q.focus();
     };
@@ -624,11 +643,12 @@
     else if (!prefill.amount) amt.focus();
 
     $('#pay').onclick = () => confirmPay(st.to, parseFloat(amt.value), note.value.trim());
+    $('#split').onclick = () => splitSheet(parseFloat(amt.value), note.value.trim(), st.to);
     $('#req').onclick = async () => {
       const b = $('#req'); b.disabled = true; b.innerHTML = '<span class="spin"></span>';
       try {
         await api('/requests', { method: 'POST', body: { to: st.to.handle, usd: parseFloat(amt.value), note: note.value.trim() } });
-        success(`Requested ${money(parseFloat(amt.value))} from ${esc(first(st.to))}`, note.value.trim(), null, `We'll let ${esc(first(st.to))} know next time they open Keel.`);
+        success(`Requested ${money(parseFloat(amt.value))} from ${esc(first(st.to))}`, note.value.trim(), null, `We'll let ${esc(first(st.to))} know next time they open Monyx.`);
       } catch (e) { toast(esc(e.message), true); b.disabled = false; b.textContent = 'Request'; }
     };
   }
@@ -640,8 +660,8 @@
     const after = S.lamports != null ? usd(S.lamports) - dollars : null;
     sheet(`<div class="confirm">${avatar(to, 'lg')}<div class="sub">Pay ${esc(who(to))}${to.handle ? ` · @${esc(to.handle)}` : ''}</div>
       <div class="big">${money(dollars)}</div>${note ? `<div class="note">${esc(note)}</div>` : ''}</div>
-      <div class="ledger"><div><span>From</span><b>Keel balance</b></div>${after != null ? `<div><span>Balance after</span><b>${money(Math.max(0, after))}</b></div>` : ''}<div><span>Fee</span><b>Free</b></div></div>
-      ${to.unknown ? `<div class="warn">${'This account isn’t on Keel. Payments can’t be undone, so double-check the number.'}</div>` : ''}
+      <div class="ledger"><div><span>From</span><b>Monyx balance</b></div>${after != null ? `<div><span>Balance after</span><b>${money(Math.max(0, after))}</b></div>` : ''}<div><span>Fee</span><b>Free</b></div></div>
+      ${to.unknown ? `<div class="warn">${'This account isn’t on Monyx. Payments can’t be undone, so double-check the number.'}</div>` : ''}
       <button class="btn btn-dark" id="go">Pay ${money(dollars)}</button>`, (el, close) => {
       $('#go', el).onclick = async (e) => {
         const b = e.currentTarget; b.disabled = true; b.innerHTML = '<span class="spin"></span>Sending';
@@ -660,19 +680,19 @@
       };
     });
   }
-  function success(title, note, sig, extra) {
+  function success(title, note, sig, extra, back = '#home') {
     show(`<section class="steps"><div class="body" style="display:grid;place-items:center;text-align:center"><div class="done">
       <div class="tick"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
       <h2>${title}</h2>${note ? `<p class="sub">${esc(note)}</p>` : ''}${extra ? `<p class="sub">${extra}</p>` : ''}
       ${sig ? `<p class="receipt"><a href="https://explorer.solana.com/tx/${sig}?cluster=devnet" target="_blank" rel="noopener">View receipt</a></p>` : ''}
     </div></div><div class="foot"><button class="btn btn-dark" id="done">Done</button></div></section>`);
-    $('#done').onclick = () => (location.hash = '#home');
-    if (location.hash !== '#done') history.replaceState(null, '', '#done');
+    $('#done').onclick = () => (location.hash = back);
+    history.replaceState(null, '', '#done');
   }
 
   function scanCode(onCode) {
     let stream, stop = false;
-    const close = sheet(`<h2>Scan a Keel code</h2><p class="sub">Point your camera at a friend's code from their Me tab.</p><div class="cam"><video id="vid" playsinline muted></video></div><button class="btn btn-text" id="cx" style="margin-top:10px">Cancel</button>`, async (el, cl) => {
+    const close = sheet(`<h2>Scan a Monyx code</h2><p class="sub">Point your camera at a friend's code from their Me tab.</p><div class="cam"><video id="vid" playsinline muted></video></div><button class="btn btn-text" id="cx" style="margin-top:10px">Cancel</button>`, async (el, cl) => {
       $('#cx', el).onclick = cl;
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
@@ -693,7 +713,7 @@
   async function addMoney() {
     let claimed = true;
     try { claimed = (await api('/me')).bonusClaimed; } catch {}
-    sheet(`<h2>Add money</h2><p class="sub">Keel is in test mode, so money is free to add and has no real value.</p>
+    sheet(`<h2>Add money</h2><p class="sub">Monyx is in test mode, so money is free to add and has no real value.</p>
       ${claimed ? '' : `<button class="btn btn-dark" id="bonus" style="margin:16px 0 4px">Claim your welcome bonus</button>`}
       <h3>Get free test money</h3>
       <div class="steplist"><div>Copy your account number<button class="btn btn-light btn-sm" id="cpa">Copy</button></div>
@@ -717,8 +737,8 @@
   }
   async function shareLink() {
     const url = payLink(S.acct.user.handle);
-    const text = `Pay me on Keel: @${S.acct.user.handle}`;
-    if (navigator.share) { try { await navigator.share({ title: 'Keel', text, url }); return; } catch {} }
+    const text = `Pay me on Monyx: @${S.acct.user.handle}`;
+    if (navigator.share) { try { await navigator.share({ title: 'Monyx', text, url }); return; } catch {} }
     copy(url, 'Your pay link is copied');
   }
 
@@ -734,10 +754,10 @@
         ${row('add', ICON.plus, 'Add money', 'Free test money')}
         ${S.acct.mode === 'key' ? row('key', ICON.key, 'Recovery key', 'Back up or move to a new device') : ''}
         ${row('details', ICON.info, 'Account details', 'For the curious')}
-        ${row('pro', ICON.tools, 'Keel Pro', 'Wallet tracer and developer tools')}
+        ${row('pro', ICON.tools, 'Monyx Pro', 'Wallet tracer and developer tools')}
         ${row('out', ICON.out, 'Log out', '')}
       </div>
-      <p class="fine" style="margin-top:22px">Keel · made by Josh Koppanalil</p>`, { tabs: true, tab: 'me' });
+      <p class="fine" style="margin-top:22px">Monyx · monyx.pro</p>`, { tabs: true, tab: 'me' });
     $('#share').onclick = shareLink;
     $('#copy').onclick = () => copy(payLink(u.handle), 'Link copied');
     $('[data-r="add"]').onclick = addMoney;
@@ -757,7 +777,7 @@
     });
   }
   function details() {
-    sheet(`<h2>Account details</h2><p class="sub">Keel runs on Solana, a public payment network. You never need any of this, but it's here if you want it.</p>
+    sheet(`<h2>Account details</h2><p class="sub">Monyx runs on Solana, a public payment network. You never need any of this, but it's here if you want it.</p>
       <div class="ledger">
         <div class="kv" style="display:block"><b>Account number</b>${esc(S.acct.address)}</div>
         <div><span>Network</span><b>Solana devnet (test)</b></div>
@@ -774,9 +794,261 @@
       $('#no', el).onclick = close;
       $('#yes', el).onclick = async () => {
         api('/logout', { method: 'POST' }).catch(() => {});
-        store.del(`keelpay.feed.${S.acct.address}`); store.del('keelpay.acct');
+        store.del(`monyx.feed.${S.acct.address}`); store.del('monyx.acct');
         S.acct = null; S.kp = null; S.feed = []; S.lamports = null; S.requests = { incoming: [], outgoing: [] };
         close(); location.hash = '';
+      };
+    });
+  }
+
+  /* ───────── invest ───────── */
+  async function loadMarkets() {
+    try {
+      const m = await api('/markets', { auth: false });
+      S.markets = m; store.set('monyx.markets', m);
+      if (m.solPrice > 0) { S.price = m.solPrice; store.set('monyx.price', m.solPrice); }
+    } catch {}
+    return S.markets;
+  }
+  async function loadPortfolio() {
+    if (!S.acct || !S.acct.token) return null;
+    try { S.port = await api('/portfolio'); } catch (e) { if (e.status === 401) relogin(); }
+    return S.port;
+  }
+  async function bankAddress() {
+    if (S.bankAddr) return S.bankAddr;
+    const b = await api('/bank', { auth: false });
+    S.bankAddr = b.address; store.set('monyx.bank', b.address);
+    return b.address;
+  }
+  const coin = (a, size = '') => `<div class="av coin ${size}" style="background:${esc(a.color)}">${esc(a.symbol.slice(0, 4))}</div>`;
+  const pct = (v) => (v == null ? '' : `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(2)}%`);
+  const fmtPrice = (p) => (p >= 1 ? money(p) : '$' + Number(p).toPrecision(3));
+  const fmtQty = (q, sym) => `${q >= 1 ? q.toLocaleString('en-US', { maximumFractionDigits: 4 }) : Number(q).toPrecision(4).replace(/0+$/, '').replace(/\.$/, '')} ${sym}`;
+  function spark(arr, w = 72, h = 28, strokeW = 1.6) {
+    if (!arr || arr.length < 2) return '';
+    const min = Math.min(...arr), max = Math.max(...arr), span = max - min || 1;
+    const pts = arr.map((v, i) => `${((i / (arr.length - 1)) * w).toFixed(1)},${(h - 2 - ((v - min) / span) * (h - 4)).toFixed(1)}`).join(' ');
+    const up = arr[arr.length - 1] >= arr[0];
+    return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" width="${w}" height="${h}" aria-hidden="true"><polyline fill="none" stroke="${up ? 'var(--green)' : 'var(--red)'}" stroke-width="${strokeW}" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" points="${pts}"/></svg>`;
+  }
+  const holdingOf = (id) => (S.port && S.port.holdings.find((h) => h.id === id)) || null;
+  const assetById = (id) => (S.markets && S.markets.assets.find((a) => a.id === id)) || null;
+
+  function screenInvest() {
+    show(`<header class="top"><b>Invest</b><span class="pill"><i></i>Test mode</span></header>
+      <section class="balance">
+        <div class="label"><span>Your crypto</span><span id="pvchg"></span></div>
+        <div class="amount" id="pv"><div class="skeleton" style="width:50%;height:44px;border-radius:12px"></div></div>
+        <div class="btn-row"><button class="btn btn-light" id="swapBtn">${ICON.swap.replace('<svg', '<svg width="18" height="18" style="fill:none;stroke:currentColor;stroke-width:1.8"')}Swap</button><button class="btn btn-dark" id="buyBtn">Buy crypto</button></div>
+      </section>
+      <div id="holdings"></div>
+      <h3>Markets</h3>
+      <div class="list" id="mkts">${'<div class="item"><div class="mid"><div class="skeleton" style="width:60%"></div></div></div>'.repeat(4)}</div>
+      <p class="fine" style="margin-top:16px">Prices from CoinGecko, refreshed every minute.<br>Test mode: trades use play money.</p>`, { tabs: true, tab: 'invest' });
+    $('#buyBtn').onclick = () => pickAsset('What do you want to buy?', null, buySheet);
+    $('#swapBtn').onclick = () => swapSheet();
+    paintInvest();
+    Promise.all([loadMarkets(), loadPortfolio(), refreshBalance()]).then(paintInvest);
+  }
+  function paintInvest() {
+    const pv = $('#pv'); if (!pv) return;
+    if (S.port) {
+      const [d, c] = S.port.total.toFixed(2).split('.');
+      pv.innerHTML = `<small>$</small>${Number(d).toLocaleString('en-US')}<span class="cents">.${c}</span>`;
+      const day = S.port.holdings.reduce((a, h) => a + (h.change24h != null ? h.value - h.value / (1 + h.change24h / 100) : 0), 0);
+      $('#pvchg').innerHTML = S.port.total > 0 ? `<span class="${day >= 0 ? 'up' : 'down'}">${day >= 0 ? '+' : '−'}${money(Math.abs(day))} today</span>` : '';
+      $('#holdings').innerHTML = S.port.holdings.length ? `<h3>Your coins</h3><div class="list">${S.port.holdings.map((h) => `<button class="item" data-a="${esc(h.id)}">${coin(h)}<div class="mid"><div class="t">${esc(h.name)}</div><div class="s">${esc(fmtQty(h.qty, h.symbol))}</div></div><div style="text-align:right"><div class="amt">${money(h.value)}</div><div class="s ${h.change24h >= 0 ? 'up' : 'down'}">${pct(h.change24h)}</div></div></button>`).join('')}</div>`
+        : `<div class="hint" style="text-align:center;margin:14px 0 0">You don't own any crypto yet. Start with as little as $1.</div>`;
+    }
+    if (S.markets) {
+      $('#mkts').innerHTML = S.markets.assets.map((a) => `<button class="item" data-a="${esc(a.id)}">${coin(a)}<div class="mid"><div class="t">${esc(a.name)}</div><div class="s">${esc(a.symbol)}</div></div>${spark(a.spark)}<div style="text-align:right;min-width:84px"><div class="amt">${fmtPrice(a.price)}</div><div class="s ${a.change24h >= 0 ? 'up' : 'down'}">${pct(a.change24h)}</div></div></button>`).join('');
+    }
+    $$('[data-a]').forEach((b) => (b.onclick = () => assetSheet(assetById(b.dataset.a) || holdingOf(b.dataset.a))));
+  }
+  function assetSheet(a) {
+    if (!a) return;
+    const h = holdingOf(a.id);
+    sheet(`<div class="assethead">${coin(a, 'md')}<div><div class="t">${esc(a.name)}</div><div class="s">${esc(a.symbol)}</div></div></div>
+      <div class="big" style="font-size:40px;font-weight:600;letter-spacing:-.03em;margin-top:14px">${fmtPrice(a.price)}</div>
+      <div class="${a.change24h >= 0 ? 'up' : 'down'}" style="font-size:14px;font-weight:500">${pct(a.change24h)} today</div>
+      <div class="bigspark">${spark(a.spark, 320, 110, 2.2)}</div><div class="fine" style="text-align:left;margin:-4px 0 14px">Past 7 days</div>
+      ${h ? `<div class="ledger"><div><span>You own</span><b>${esc(fmtQty(h.qty, a.symbol))}</b></div><div><span>Worth</span><b>${money(h.value)}</b></div></div>` : ''}
+      <div class="btn-row">${h ? `<button class="btn btn-light" id="sell">Sell</button>` : `<button class="btn btn-light" id="swap">Swap into ${esc(a.symbol)}</button>`}<button class="btn btn-dark" id="buy">Buy</button></div>
+      ${h ? `<button class="btn btn-text" id="swap" style="margin-top:4px">Swap ${esc(a.symbol)} for another coin</button>` : ''}`, (el, close) => {
+      $('#buy', el).onclick = () => { close(); buySheet(a); };
+      const sl = $('#sell', el); if (sl) sl.onclick = () => { close(); sellSheet(a); };
+      $('#swap', el).onclick = () => { close(); h ? swapSheet(a.id) : swapSheet(null, a.id); };
+    });
+  }
+  function pickAsset(title, only, cb) {
+    const list = only || (S.markets ? S.markets.assets : []);
+    if (!list.length) { toast('Prices are still loading.', true); return; }
+    sheet(`<h2>${title}</h2><div class="list" style="margin-top:14px">${list.map((a, i) => `<button class="item" data-i="${i}">${coin(a)}<div class="mid"><div class="t">${esc(a.name)}</div><div class="s">${a.qty != null ? esc(fmtQty(a.qty, a.symbol)) : esc(a.symbol)}</div></div><div class="amt">${a.value != null ? money(a.value) : fmtPrice(a.price)}</div></button>`).join('')}</div>`, (el, close) => {
+      $$('[data-i]', el).forEach((b) => (b.onclick = () => { close(); cb(list[+b.dataset.i]); }));
+    });
+  }
+  // Shared dollar-amount sheet for buy and sell.
+  function amountSheet({ title, sub, max, maxLabel, cta, preview, onGo }) {
+    sheet(`<h2>${title}</h2><p class="sub">${sub}</p>
+      <div class="amountin" style="padding:14px 0 6px"><span>$</span><input id="amt" inputmode="decimal" autocomplete="off" placeholder="0"></div>
+      <div class="avail" id="prev" style="margin:0 0 14px"></div>
+      <div class="emojis" style="justify-content:center;margin-bottom:16px">${[10, 25, 50, 100].map((v) => `<button data-v="${v}">$${v}</button>`).join('')}${max > 0 ? `<button data-v="max">${maxLabel}</button>` : ''}</div>
+      <button class="btn btn-dark" id="go" disabled>${cta}</button>`, (el, close) => {
+      const amt = $('#amt', el), go = $('#go', el), prev = $('#prev', el);
+      let all = false;
+      const upd = () => {
+        const v = parseFloat(amt.value);
+        amt.style.width = Math.max(1, (amt.value || '0').length + 0.2) + 'ch';
+        const ok = v >= 1 && v <= max + 0.005;
+        go.disabled = !ok;
+        prev.className = 'avail' + (v > max + 0.005 ? ' bad' : '');
+        prev.textContent = v > max + 0.005 ? `You have ${money(max)} available` : v > 0 ? preview(v) : `${money(max)} available · $1 minimum`;
+      };
+      amt.oninput = () => { all = false; amt.value = amt.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1').replace(/(\.\d\d).+/, '$1'); upd(); };
+      $$('[data-v]', el).forEach((b) => (b.onclick = () => { all = b.dataset.v === 'max'; amt.value = all ? (Math.floor(max * 100) / 100).toFixed(2) : b.dataset.v; upd(); }));
+      upd(); amt.focus();
+      go.onclick = async () => {
+        go.disabled = true; go.innerHTML = '<span class="spin"></span>Working on it';
+        try { await onGo(parseFloat(amt.value), all, close); }
+        catch (e) { go.disabled = false; go.textContent = cta; toast(esc(/User rejected/i.test(e.message) ? 'Cancelled' : e.message), true, 5000); }
+      };
+    });
+  }
+  function buySheet(a) {
+    const cash = S.lamports != null ? Math.max(0, usd(S.lamports - 20000)) : 0;
+    amountSheet({
+      title: `Buy ${esc(a.name)}`, sub: `Paid from your Monyx cash. 1 ${esc(a.symbol)} = ${fmtPrice(a.price)}`,
+      max: cash, maxLabel: 'All cash', cta: `Buy ${esc(a.symbol)}`,
+      preview: (v) => `You'll get about ${fmtQty(v / a.price, a.symbol)}`,
+      async onGo(v, _all, close) {
+        const sig = await send(await bankAddress(), v, `Buy ${a.symbol}`);
+        let r, tries = 0;
+        while (!r) {
+          try { r = await api('/trade/buy', { method: 'POST', body: { asset: a.id, sig } }); }
+          catch (e) { if (++tries >= 3) throw new Error(`Your payment went through but we couldn't record it yet. Contact support with this receipt: ${sig.slice(0, 12)}…`); await new Promise((s) => setTimeout(s, 1500)); }
+        }
+        close(); refreshBalance(); loadPortfolio(); S.feed = [];
+        success(`You bought ${money(r.usd)} of ${esc(a.name)}`, fmtQty(r.qty, r.symbol), sig, null, '#invest');
+      },
+    });
+  }
+  function sellSheet(a) {
+    const h = holdingOf(a.id); if (!h) return;
+    amountSheet({
+      title: `Sell ${esc(a.name)}`, sub: `Money goes back to your Monyx cash. You own ${esc(fmtQty(h.qty, a.symbol))}.`,
+      max: h.value, maxLabel: 'Sell all', cta: `Sell ${esc(a.symbol)}`,
+      preview: (v) => `You'll sell about ${fmtQty(v / a.price, a.symbol)}`,
+      async onGo(v, all, close) {
+        const r = await api('/trade/sell', { method: 'POST', body: { asset: a.id, usd: v, all } });
+        close(); refreshBalance(); loadPortfolio(); S.feed = [];
+        success(`You sold ${money(r.usd)} of ${esc(a.name)}`, 'The money is back in your balance.', r.signature, null, '#invest');
+      },
+    });
+  }
+  function swapSheet(fromId, toId) {
+    const owned = S.port ? S.port.holdings : [];
+    if (!owned.length) { toast('Buy some crypto first, then you can swap it.'); return; }
+    const st = { from: owned.find((h) => h.id === fromId) || owned[0], to: null };
+    st.to = assetById(toId) || (S.markets.assets.find((x) => x.id !== st.from.id && x.id === 'usd-coin') || S.markets.assets.find((x) => x.id !== st.from.id));
+    if (st.to && st.to.id === st.from.id) st.to = S.markets.assets.find((x) => x.id !== st.from.id);
+    sheet(`<h2>Swap</h2><p class="sub">Trade one coin for another at today's price. No fees.</p>
+      <div class="swapbox"><button class="swaprow" id="sf"></button><button class="swapflip" id="flip" aria-label="Flip">${ICON.swap}</button><button class="swaprow" id="stt"></button></div>
+      <div class="amountin" style="padding:14px 0 6px"><span>$</span><input id="amt" inputmode="decimal" autocomplete="off" placeholder="0"></div>
+      <div class="avail" id="prev" style="margin:0 0 14px"></div>
+      <div class="emojis" style="justify-content:center;margin-bottom:16px"><button data-v="half">Half</button><button data-v="max">All</button></div>
+      <button class="btn btn-dark" id="go" disabled>Swap</button>`, (el, close) => {
+      const amt = $('#amt', el), go = $('#go', el), prev = $('#prev', el);
+      let all = false;
+      const row = (a, label, sub) => `<span class="lbl">${label}</span>${coin(a, 'sm')}<span class="mid"><b>${esc(a.name)}</b><span class="s">${sub}</span></span>${ICON.chev}`;
+      const paint = () => {
+        $('#sf', el).innerHTML = row(st.from, 'From', `${money(st.from.value)} available`);
+        $('#stt', el).innerHTML = row(st.to, 'To', fmtPrice(st.to.price));
+        const v = parseFloat(amt.value);
+        amt.style.width = Math.max(1, (amt.value || '0').length + 0.2) + 'ch';
+        const ok = v > 0 && v <= st.from.value + 0.005;
+        go.disabled = !ok;
+        prev.className = 'avail' + (v > st.from.value + 0.005 ? ' bad' : '');
+        prev.textContent = v > st.from.value + 0.005 ? `You have ${money(st.from.value)} of ${st.from.symbol}` : v > 0 ? `${fmtQty(v / st.from.price, st.from.symbol)} → about ${fmtQty(v / st.to.price, st.to.symbol)}` : ' ';
+      };
+      $('#sf', el).onclick = () => pickAsset('Swap from', owned, (h) => { st.from = h; if (st.to.id === h.id) st.to = S.markets.assets.find((x) => x.id !== h.id); amt.value = ''; paint(); });
+      $('#stt', el).onclick = () => pickAsset('Swap to', S.markets.assets.filter((x) => x.id !== st.from.id), (x) => { st.to = x; paint(); });
+      $('#flip', el).onclick = () => { const h = holdingOf(st.to.id); if (!h) { toast(`You don't own any ${st.to.symbol} yet.`); return; } const f = st.from; st.from = h; st.to = assetById(f.id) || f; amt.value = ''; paint(); };
+      amt.oninput = () => { all = false; amt.value = amt.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1').replace(/(\.\d\d).+/, '$1'); paint(); };
+      $$('[data-v]', el).forEach((b) => (b.onclick = () => { all = b.dataset.v === 'max'; amt.value = (Math.floor((all ? st.from.value : st.from.value / 2) * 100) / 100).toFixed(2); paint(); }));
+      paint(); amt.focus();
+      go.onclick = async () => {
+        go.disabled = true; go.innerHTML = '<span class="spin"></span>Swapping';
+        try {
+          const r = await api('/trade/swap', { method: 'POST', body: { from: st.from.id, to: st.to.id, usd: parseFloat(amt.value), all } });
+          close(); loadPortfolio();
+          success(`Swapped ${money(r.usd)}`, `${fmtQty(r.qtyFrom, r.from)} → ${fmtQty(r.qtyTo, r.to)}`, null, null, '#invest');
+        } catch (e) { go.disabled = false; go.textContent = 'Swap'; toast(esc(e.message), true); }
+      };
+    });
+  }
+
+  /* ───────── activity ───────── */
+  function screenActivity(tab = 'pay') {
+    show(`<header class="top"><b>Activity</b><span class="pill"><i></i>Test mode</span></header>
+      <div class="seg" id="seg"><button data-t="pay" class="${tab === 'pay' ? 'on' : ''}">Payments</button><button data-t="trade" class="${tab === 'trade' ? 'on' : ''}">Crypto</button></div>
+      <div class="list" id="${tab === 'pay' ? 'feed' : 'trades'}" data-limit="100" style="margin-top:14px"><div class="item"><div class="mid"><div class="skeleton" style="width:60%"></div></div></div></div>`, { tabs: true, tab: 'activity' });
+    $$('#seg button').forEach((b) => (b.onclick = () => screenActivity(b.dataset.t)));
+    if (tab === 'pay') { if (S.feed.length) paintFeed(); loadFeed(); }
+    else Promise.all([loadMarkets(), loadPortfolio()]).then(paintTrades);
+  }
+  function paintTrades() {
+    const el = $('#trades'); if (!el || !S.port) return;
+    const name = (id) => (id === 'cash' ? 'cash' : (assetById(id) || { symbol: id }).symbol);
+    if (!S.port.trades.length) { el.innerHTML = `<div class="empty">No trades yet.<br><a href="#invest">Buy your first crypto</a></div>`; return; }
+    el.innerHTML = S.port.trades.map((t) => {
+      const a = assetById(t.kind === 'sell' ? t.asset_from : t.asset_to) || { symbol: '?', color: '#999' };
+      const title = t.kind === 'buy' ? `Bought <b>${esc(name(t.asset_to))}</b>` : t.kind === 'sell' ? `Sold <b>${esc(name(t.asset_from))}</b>` : `Swapped <b>${esc(name(t.asset_from))}</b> for <b>${esc(name(t.asset_to))}</b>`;
+      const sub = t.kind === 'sell' ? fmtQty(Number(t.qty_from), name(t.asset_from)) : fmtQty(Number(t.qty_to), name(t.asset_to));
+      return `<div class="item">${coin(a)}<div class="mid"><div class="t">${title}</div><div class="s">${esc(sub)} · ${when(Date.parse(t.created_at) / 1000)}</div></div><div class="amt ${t.kind === 'sell' ? 'in' : ''}">${t.kind === 'swap' ? money(Number(t.usd)) : money(Number(t.usd) * (t.kind === 'sell' ? 1 : -1), true)}</div></div>`;
+    }).join('');
+  }
+
+  /* ───────── split a bill ───────── */
+  function splitSheet(total, note, preset) {
+    if (!(total > 0)) { toast('Enter the total first, then split it.'); $('#amt') && $('#amt').focus(); return; }
+    const st = { people: preset && preset.handle && !preset.bank ? [preset] : [], me: true };
+    sheet(`<h2>Split ${money(total)}</h2><p class="sub">We'll send everyone a request for their share.</p>
+      <label class="field prefix" style="margin-top:14px"><span style="font-size:15px">Add</span><input id="sq" autocapitalize="off" spellcheck="false" placeholder="Name or @username" style="padding-left:8px"></label>
+      <div id="sres"></div><div class="list" id="sppl" style="margin-top:12px"></div>
+      <label class="check" style="margin:14px 2px"><input type="checkbox" id="sme" checked><span>Include me in the split</span></label>
+      <div class="ledger" id="sum"></div>
+      <button class="btn btn-dark" id="go" disabled>Send requests</button>`, (el, close) => {
+      const share = () => Math.round((total / (st.people.length + (st.me ? 1 : 0))) * 100) / 100;
+      const paint = () => {
+        $('#sppl', el).innerHTML = st.people.map((p, i) => `<div class="item">${avatar(p, 'sm')}<div class="mid"><div class="t">${esc(p.name)}</div><div class="s">@${esc(p.handle)}</div></div><span class="amt">${money(share())}</span><button class="x" data-rm="${i}" aria-label="Remove">${ICON.x}</button></div>`).join('');
+        $('#sppl', el).style.display = st.people.length ? '' : 'none';
+        $$('[data-rm]', el).forEach((b) => (b.onclick = () => { st.people.splice(+b.dataset.rm, 1); paint(); }));
+        const n = st.people.length;
+        $('#sum', el).innerHTML = `<div><span>Each person pays</span><b>${n ? money(share()) : '—'}</b></div><div><span>You collect</span><b>${n ? money(share() * n) : '—'}</b></div>`;
+        const go = $('#go', el); go.disabled = !n; go.textContent = n ? `Request ${money(share())} from ${n} ${n === 1 ? 'person' : 'people'}` : 'Add people to split with';
+      };
+      $('#sme', el).onchange = (e) => { st.me = e.target.checked; paint(); };
+      let t;
+      $('#sq', el).oninput = (e) => {
+        clearTimeout(t); const v = e.target.value.trim();
+        if (!v) { $('#sres', el).innerHTML = ''; return; }
+        t = setTimeout(async () => {
+          try {
+            const { users } = await api(`/search?q=${encodeURIComponent(v)}`, { auth: false });
+            const list = users.filter((u) => u.handle !== S.acct.user.handle && !st.people.some((p) => p.handle === u.handle));
+            $('#sres', el).innerHTML = list.length ? `<div class="list" style="margin-top:8px">${list.map((u, i) => `<button class="item" data-i="${i}">${avatar(u, 'sm')}<div class="mid"><div class="t">${esc(u.name)}</div><div class="s">@${esc(u.handle)}</div></div>${ICON.plus.replace('<svg', '<svg width="18" height="18" style="fill:none;stroke:currentColor;stroke-width:2"')}</button>`).join('')}</div>` : `<div class="hint">No one called “${esc(v)}” on Monyx yet.</div>`;
+            $$('[data-i]', $('#sres', el)).forEach((b) => (b.onclick = () => { st.people.push(list[+b.dataset.i]); $('#sq', el).value = ''; $('#sres', el).innerHTML = ''; paint(); }));
+          } catch {}
+        }, 220);
+      };
+      paint();
+      $('#go', el).onclick = async (e) => {
+        const b = e.currentTarget; b.disabled = true; b.innerHTML = '<span class="spin"></span>Sending';
+        const each = share(); let sent = 0;
+        for (const p of st.people) { try { await api('/requests', { method: 'POST', body: { to: p.handle, usd: each, note: note || 'Split' } }); sent++; } catch {} }
+        close();
+        success(`Split sent to ${sent} ${sent === 1 ? 'person' : 'people'}`, note, null, `Each owes you ${money(each)}. You'll see it here when they pay.`);
       };
     });
   }
@@ -787,7 +1059,7 @@
     const [view, a, b, c] = h.split('/');
     const signedIn = !!(S.acct && S.acct.user && S.acct.token);
     if (view === 'pay' && a && !signedIn) {
-      store.set('keelpay.pending', '#' + h);
+      store.set('monyx.pending', '#' + h);
       const u = await lookup(a);
       screenWelcome(u ? `<div class="banner">${avatar(u, 'sm')}<span>Create an account or log in to pay <b>${esc(u.name)}</b>${b ? ` ${money(parseFloat(b))}` : ''}.</span></div>` : '');
       return;
@@ -799,19 +1071,24 @@
     }
     if (view === 'pay') return screenPay({ to: a, amount: b && parseFloat(b) > 0 ? parseFloat(b).toFixed(2).replace(/\.00$/, '') : '', note: c ? decodeURIComponent(c) : '' });
     if (view === 'me') return screenMe();
+    if (view === 'invest') return screenInvest();
+    if (view === 'activity') return screenActivity();
     if (view === 'tx') { if (!$('#feed')) screenHome(); return txDetail(a); }
     if (view !== 'home') history.replaceState(null, '', '#home');
     screenHome();
   }
 
   function boot() {
+    try { for (const k of Object.keys(localStorage)) if (k.startsWith('keelpay.') && localStorage.getItem('monyx.' + k.slice(8)) == null) localStorage.setItem('monyx.' + k.slice(8), localStorage.getItem(k)); } catch {}
+    S.acct = S.acct || store.get('monyx.acct');
     if (S.acct && S.acct.mode === 'key' && S.acct.secret) { try { S.kp = keypairFrom(S.acct.secret); } catch { S.acct = null; } }
-    if (S.acct && !S.acct.token) { S.acct = null; S.kp = null; store.del('keelpay.acct'); } // signup interrupted before the account existed
+    if (S.acct && !S.acct.token) { S.acct = null; S.kp = null; store.del('monyx.acct'); } // signup interrupted before the account existed
     window.addEventListener('hashchange', route);
     loadPrice().then(() => { paintBalance(); paintFeed(); });
     route();
     setInterval(() => { if (S.acct && S.acct.token && !document.hidden) { refreshBalance(); if ($('#feed')) { loadFeed(); loadRequests(); } } }, 20000);
     setInterval(loadPrice, 120000);
+    loadMarkets();
   }
   boot();
 })();

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f4f0">
+<title>Monyx: pay anyone by name</title>
+<meta name="description" content="Monyx: send and request money with a username, and buy, sell and swap crypto. No account numbers, no fees. Currently in test mode.">
+<link rel="icon" href="favicon.svg">
+<link rel="canonical" href="https://monyx.pro/">
+<meta property="og:title" content="Monyx: pay anyone by name">
+<meta property="og:description" content="Send money with a @username. Buy, sell and swap crypto. No fees.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pay.css?v=3">
+</head>
+<body>
+<div class="shell">
+  <main id="app" aria-live="polite"></main>
+  <nav class="tabbar" id="tabbar" hidden>
+    <a href="#home" data-tab="home"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
+    <a href="#invest" data-tab="invest"><svg viewBox="0 0 24 24"><path d="M4 18l5-6 4 3 7-9M15 6h5v5"/></svg><span>Invest</span></a>
+    <a href="#pay" data-tab="pay" class="tab-pay" aria-label="Pay or request"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></a>
+    <a href="#activity" data-tab="activity"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg><span>Activity</span></a>
+    <a href="#me" data-tab="me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg><span>Me</span></a>
+  </nav>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="vendor/buffer.js"></script>
+<script src="vendor/solana-web3.js"></script>
+<script src="vendor/qrcode.js"></script>
+<script src="pay.js?v=3"></script>
+</body>
+</html>

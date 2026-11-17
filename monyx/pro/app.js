@@ -6,7 +6,7 @@
   const DEFAULT_RPC = { mainnet: 'https://solana-rpc.publicnode.com', devnet: 'https://api.devnet.solana.com' };
   const TREASURY = '4DJ1z4aUMe4VLg9qxaCHmfNhFKqyCaP7RC6dQBJFQvuw';
   const LAMPORTS = 1e9;
-  const T = window.KeelTrace;
+  const T = window.MonyxTrace;
   const W = () => window.solanaWeb3;
 
   const $ = (s, el = document) => el.querySelector(s);
@@ -104,7 +104,7 @@
   }
   async function usePhantom(silent = false) {
     const p = phantom();
-    if (!p) { if (!silent) { toast('Phantom not found. <a href="https://phantom.app" target="_blank" rel="noopener">Install it</a> or use a Keel key.', true, 5000); } return; }
+    if (!p) { if (!silent) { toast('Phantom not found. <a href="https://phantom.app" target="_blank" rel="noopener">Install it</a> or use a Monyx key.', true, 5000); } return; }
     try {
       const r = await p.connect(silent ? { onlyIfTrusted: true } : undefined);
       S.mode = 'phantom'; S.phantom = p; S.pubkey = r.publicKey.toString();
@@ -123,7 +123,7 @@
     $('#walletEmpty').hidden = true; $('#walletFull').hidden = false;
     $('#myAddr').textContent = S.pubkey;
     $('#exportKey').hidden = S.mode !== 'builtin';
-    $('#keyInfo').innerHTML = `<dt>type</dt><dd>${S.mode === 'builtin' ? 'Keel key, stored in this browser' : 'Phantom extension'}</dd><dt>address</dt><dd>${esc(S.pubkey)}</dd><dt>network</dt><dd>devnet</dd>`;
+    $('#keyInfo').innerHTML = `<dt>type</dt><dd>${S.mode === 'builtin' ? 'Monyx key, stored in this browser' : 'Phantom extension'}</dd><dt>address</dt><dd>${esc(S.pubkey)}</dd><dt>network</dt><dd>devnet</dd>`;
     refreshBalance(); loadActivity(); loadHoldings(); paintSamples();
   }
   function paintWho() {
@@ -158,7 +158,7 @@
         const inn = f.sol.find((m) => m.to === S.pubkey && m.from !== S.pubkey);
         const hasRef = out && out.to === TREASURY && tx.transaction.message.accountKeys.length > 3;
         let what = 'Contract call', g = '◇';
-        if (hasRef) { what = 'API pull · Keel market'; g = '⌁'; }
+        if (hasRef) { what = 'API pull · Monyx market'; g = '⌁'; }
         else if (out) { what = `Sent to ${name(out.to)}`; g = '↗'; }
         else if (inn) { what = `Received from ${name(inn.from)}`; g = '↙'; }
         if (s.err) what += ' · failed';
@@ -207,7 +207,7 @@
   /* ───────────────────────── tracer ───────────────────────── */
   const TR = { net: 'mainnet', hops: [], report: null };
   function paintSamples() {
-    const s = [['Keel treasury', TREASURY, 'devnet']];
+    const s = [['Monyx treasury', TREASURY, 'devnet']];
     if (S.pubkey) s.unshift(['My wallet', S.pubkey, 'devnet']);
     const recent = store.get('keel.recent', []);
     $('#traceSamples').innerHTML = '<span>Try</span>' + [...s, ...recent.slice(0, 3).map((r) => [name(r.a), r.a, r.n])]
@@ -596,7 +596,7 @@ print(pull("pulse", net="mainnet"))`,
   function wire() {
     $('#useBuiltin').onclick = () => {
       if (typeof solanaWeb3 === 'undefined') return toast('Solana library failed to load. Refresh.', true);
-      useBuiltin(W().Keypair.generate()); toast('Keel key created. Hit Get SOL to fund it from the devnet faucet.', false, 4500);
+      useBuiltin(W().Keypair.generate()); toast('Monyx key created. Hit Get SOL to fund it from the devnet faucet.', false, 4500);
     };
     $('#usePhantom').onclick = () => usePhantom(false);
     $('#importKey').addEventListener('click', (e) => e.stopPropagation());
