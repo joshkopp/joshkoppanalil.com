@@ -1153,7 +1153,7 @@
         if (/-/.test(before)) { prev.className = 'avail bad'; prev.textContent = 'Amounts can’t be negative.'; }
         else if (/\.\d{3}/.test(before)) { prev.className = 'avail bad'; prev.textContent = 'Dollars only go to 2 decimal places (cents).'; }
       };
-      $$('[data-v]', el).forEach((b) => (b.onclick = () => { all = b.dataset.v === 'max'; amt.value = all ? (Math.round(max * 100) / 100).toFixed(2) : b.dataset.v; upd(); if (all) prev.textContent = `${maxLabel}: everything you have (${money(max)})`; }));
+      $$('[data-v]', el).forEach((b) => (b.onclick = () => { all = b.dataset.v === 'max'; amt.value = all ? (Math.round(max * 100) / 100).toFixed(2) : b.dataset.v; upd(); if (all && !go.disabled) prev.textContent = `${maxLabel}: everything you have (${money(max)})`; }));
       upd(); amt.focus();
       go.onclick = async () => {
         go.disabled = true; go.innerHTML = '<span class="spin"></span>Working on it';
