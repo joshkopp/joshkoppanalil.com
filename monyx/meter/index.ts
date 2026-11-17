@@ -14,7 +14,7 @@
 // valid payment, the same signature can be replayed up to 3 times to retry.
 //
 // Free routes: GET /catalog, GET /ledger.
-// Deployed as the Supabase edge function "keel" (name kept so existing agent URLs keep working).
+// Deployed as the Supabase edge function "monyx-market".
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const PAY_RPC = "https://api.devnet.solana.com";
@@ -383,11 +383,11 @@ const canon = (p: Record<string, string>) => JSON.stringify(Object.keys(p).sort(
 
 async function quote(api: Api, params: Record<string, string>, resource: string) {
   const since = new Date(Date.now() - 60_000).toISOString();
-  const { count } = await db.from("keel_quotes").select("*", { count: "exact", head: true }).gte("created_at", since);
+  const { count } = await db.from("monyx_quotes").select("*", { count: "exact", head: true }).gte("created_at", since);
   if ((count ?? 0) > MAX_QUOTES_PER_MIN) return fail("Too many quotes this minute. Slow down.", 429, "rate_limited");
   const reference = randomReference();
   const expires = new Date(Date.now() + QUOTE_TTL_S * 1000);
-  const { error } = await db.from("keel_quotes").insert({ reference, api: api.name, params: JSON.parse(canon(params)), lamports: api.lamports, expires_at: expires.toISOString() });
+  const { error } = await db.from("monyx_quotes").insert({ reference, api: api.name, params: JSON.parse(canon(params)), lamports: api.lamports, expires_at: expires.toISOString() });
   if (error) return oops("quote", error);
   return json({
     x402Version: 1,
@@ -408,12 +408,12 @@ async function quote(api: Api, params: Record<string, string>, resource: string)
 async function settle(api: Api, params: Record<string, string>, sig: string) {
   if (!SIG.test(sig)) return { err: fail("X-PAYMENT must be a transaction signature", 400, "invalid_payment") };
   // Replay of an already-verified payment: only allowed to retry an unserved pull.
-  const { data: prior } = await db.from("keel_receipts").select("*").eq("sig", sig).maybeSingle();
+  const { data: prior } = await db.from("monyx_receipts").select("*").eq("sig", sig).maybeSingle();
   if (prior) {
     if (prior.served) return { err: fail("This payment has already bought its pull.", 409, "payment_spent") };
     if (prior.api !== api.name) return { err: fail(`This payment was for ${prior.api}.`, 409, "payment_mismatch") };
     if (prior.attempts >= MAX_ATTEMPTS) return { err: fail("Retry limit reached for this payment.", 409, "payment_spent") };
-    const { data: q } = await db.from("keel_quotes").select("params").eq("reference", prior.reference).single();
+    const { data: q } = await db.from("monyx_quotes").select("params").eq("reference", prior.reference).single();
     if (canon(q!.params) !== canon(params)) return { err: fail("Params differ from the quoted request.", 409, "payment_mismatch") };
     return { receipt: prior };
   }
@@ -425,7 +425,7 @@ async function settle(api: Api, params: Record<string, string>, sig: string) {
   if (!tx) return { err: fail("Payment transaction not found on devnet yet. Wait for confirmation and retry.", 402, "payment_not_found") };
   if (tx.meta.err) return { err: fail("Payment transaction failed onchain.", 402, "invalid_payment") };
   const keys: string[] = tx.transaction.message.accountKeys.map(keyStr);
-  const { data: quotes } = await db.from("keel_quotes").select("*").in("reference", keys).is("paid_sig", null);
+  const { data: quotes } = await db.from("monyx_quotes").select("*").in("reference", keys).is("paid_sig", null);
   const q = quotes?.[0];
   if (!q) return { err: fail("No open quote referenced by this transaction. Request a fresh quote.", 402, "invalid_payment") };
   if (q.api !== api.name) return { err: fail(`That quote was for ${q.api}.`, 409, "payment_mismatch") };
@@ -436,9 +436,9 @@ async function settle(api: Api, params: Record<string, string>, sig: string) {
   if (received < q.lamports) return { err: fail(`Treasury received ${received} lamports; ${q.lamports} required.`, 402, "underpaid") };
   const payer = keys[0];
   // Burn the quote first; the unique constraints make double-spend impossible.
-  const { data: burned } = await db.from("keel_quotes").update({ paid_sig: sig }).eq("reference", q.reference).is("paid_sig", null).select();
+  const { data: burned } = await db.from("monyx_quotes").update({ paid_sig: sig }).eq("reference", q.reference).is("paid_sig", null).select();
   if (!burned?.length) return { err: fail("Quote already settled.", 409, "payment_spent") };
-  const { data: receipt, error } = await db.from("keel_receipts").insert({ sig, reference: q.reference, api: api.name, payer, lamports: received }).select().single();
+  const { data: receipt, error } = await db.from("monyx_receipts").insert({ sig, reference: q.reference, api: api.name, payer, lamports: received }).select().single();
   if (error) return { err: fail("Payment already used.", 409, "payment_spent") };
   return { receipt };
 }
@@ -447,20 +447,20 @@ async function settle(api: Api, params: Record<string, string>, sig: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   const url = new URL(req.url);
-  const path = url.pathname.replace(/^.*?\/keel/, "") || "/";
+  const path = url.pathname.replace(/^.*?\/monyx-market/, "") || "/";
   try {
     if (path === "/" || path === "/catalog") {
       return json({
         name: "Monyx API Market", version: 1,
         payment: { protocol: "x402-style HTTP 402", network: "solana-devnet", asset: "SOL", payTo: PAY_TO, header: "X-PAYMENT" },
-        base: `${url.origin}/functions/v1/keel/api/`,
-        apis: APIS.map((a) => ({ name: a.name, title: a.title, summary: a.summary, priceLamports: a.lamports, priceSol: a.lamports / 1e9, params: a.params, example: a.example, url: `${url.origin}/functions/v1/keel/api/${a.name}` })),
+        base: `${url.origin}/functions/v1/monyx-market/api/`,
+        apis: APIS.map((a) => ({ name: a.name, title: a.title, summary: a.summary, priceLamports: a.lamports, priceSol: a.lamports / 1e9, params: a.params, example: a.example, url: `${url.origin}/functions/v1/monyx-market/api/${a.name}` })),
       });
     }
     if (path === "/ledger") {
-      const { data } = await db.from("keel_receipts").select("sig, api, payer, lamports, served, created_at").order("created_at", { ascending: false }).limit(40);
-      const { count } = await db.from("keel_receipts").select("*", { count: "exact", head: true });
-      const { data: all } = await db.from("keel_receipts").select("lamports, api, payer").limit(5000);
+      const { data } = await db.from("monyx_receipts").select("sig, api, payer, lamports, served, created_at").order("created_at", { ascending: false }).limit(40);
+      const { count } = await db.from("monyx_receipts").select("*", { count: "exact", head: true });
+      const { data: all } = await db.from("monyx_receipts").select("lamports, api, payer").limit(5000);
       const byApi: Record<string, number> = {};
       for (const r of all ?? []) byApi[r.api] = (byApi[r.api] ?? 0) + 1;
       return json({
@@ -508,7 +508,7 @@ Deno.serve(async (req) => {
     const s = await settle(api, params, payment.trim());
     if (s.err) return s.err;
     const r = s.receipt!;
-    await db.from("keel_receipts").update({ attempts: r.attempts + 1 }).eq("sig", r.sig);
+    await db.from("monyx_receipts").update({ attempts: r.attempts + 1 }).eq("sig", r.sig);
     const started = Date.now();
     let data: unknown;
     try { data = await api.run(params); }
@@ -518,7 +518,7 @@ Deno.serve(async (req) => {
       console.error(`[monyx-meter] ${api.name}:`, e);
       return json({ error: "upstream_failed", message: "The data source didn't respond.", retriesLeft, note: retriesLeft > 0 ? "Your payment is held. Repeat the same request with the same X-PAYMENT to retry." : "Retries exhausted." }, 502);
     }
-    await db.from("keel_receipts").update({ served: true }).eq("sig", r.sig);
+    await db.from("monyx_receipts").update({ served: true }).eq("sig", r.sig);
     const receipt = { success: true, transaction: r.sig, network: "solana-devnet", payer: r.payer, lamports: Number(r.lamports) };
     return json({ api: api.name, ms: Date.now() - started, receipt, data }, 200, { "X-PAYMENT-RESPONSE": btoa(JSON.stringify(receipt)) });
   } catch (e) {

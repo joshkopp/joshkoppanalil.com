@@ -1,11 +1,11 @@
 // Monyx: pay anyone by @username, and buy, sell and swap crypto.
 // Every account is a Solana devnet keypair held in this browser (or Phantom).
-// Amounts are shown in dollars, converted at the live SOL price. The keelpay
+// Amounts are shown in dollars, converted at the live SOL price. The monyx
 // edge function maps usernames to accounts and stores requests; it never
 // holds anyone's money.
 (() => {
   'use strict';
-  const API = 'https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/keelpay';
+  const API = 'https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/monyx';
   const RPC = 'https://api.devnet.solana.com';
   const MEMO = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
   const SITE = location.origin + location.pathname.replace(/index\.html$/, '');
@@ -36,6 +36,7 @@
     key: '<svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l3 3"/></svg>',
     link: '<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
     info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+    camera: '<svg viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6L16.5 7h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.5" r="3.5"/></svg>',
     check: '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
     book: '<svg viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/></svg>',
     out: '<svg viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/></svg>',
@@ -81,7 +82,7 @@
     for (const c of s) { if (c === '1') out.unshift(0); else break; }
     return Uint8Array.from(out);
   }
-  const b64 = (u8) => btoa(String.fromCharCode(...u8));
+  const b64 = (u8) => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode(...u8.subarray(i, i + 0x8000)); return btoa(s); };
   const b64url = (u8) => b64(u8).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
   /* ───────── keys & signing ───────── */
@@ -233,8 +234,10 @@
     return { sig: s.signature, time: s.blockTime, ok: !s.err, with: withAddr, note, lamports: delta + fee };
   }
   async function resolvePeople(addresses) {
-    const need = [...new Set(addresses)].filter((a) => !S.people[a]);
+    const fresh = Date.now() - store.get('monyx.peopleAt', 0) < 600_000;
+    const need = [...new Set(addresses)].filter((a) => !fresh || !S.people[a]);
     if (!need.length) return;
+    if (!fresh) store.set('monyx.peopleAt', Date.now());
     try {
       const { users } = await api(`/resolve?a=${need.join(',')}`, { auth: false });
       for (const a of need) S.people[a] = users[a] || { address: a, unknown: true };
@@ -256,7 +259,8 @@
     if (p.unknown || !p.name) return `<div class="av ${size} addr">#</div>`;
     let h = 2166136261; for (const c of p.handle || p.name) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; // FNV-1a spreads similar names across colours
     const ini = p.name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
-    return `<div class="av ${size}" style="background:${PALETTE[h % PALETTE.length]}">${esc(ini)}</div>`;
+    const photo = p.avatar ? `<img src="${esc(p.avatar)}" alt="" loading="lazy" onerror="this.remove()">` : '';
+    return `<div class="av ${size}" style="background:${PALETTE[h % PALETTE.length]}">${esc(ini)}${photo}</div>`;
   }
   const who = (p) => (p && !p.unknown ? (p.bank ? 'Monyx' : p.name) : (p ? short(p.address) : 'Someone'));
   const first = (p) => (p && !p.unknown && !p.bank ? p.name.split(' ')[0] : who(p));
@@ -546,6 +550,7 @@
       { t: 'Add money', s: 'Get free test money to try things out', done: S.lamports > 0, go: addMoney },
       { t: 'Send your first payment', s: 'Pay a friend by their @username', done: S.feed.some((f) => f.lamports < 0 && f.with && !(S.people[f.with] || {}).bank), go: () => (location.hash = '#pay') },
       { t: 'Share your pay link', s: 'So friends can pay you', done: !!store.get('monyx.shared'), go: shareLink },
+      { t: 'Add a profile photo', s: 'So friends know it’s really you', done: !!S.acct.user.avatar, go: () => { location.hash = '#me'; setTimeout(pickPhoto, 50); } },
     ];
     const n = steps.filter((x) => x.done).length;
     if (n === steps.length) { store.set('monyx.startHidden', true); el.innerHTML = ''; return; }
@@ -807,7 +812,7 @@
   function screenMe() {
     const u = S.acct.user;
     show(`<header class="top"><b>Me</b><span class="pill"><i></i>Test mode</span></header>
-      <section class="profile">${avatar(u, 'lg')}<div class="name">${esc(u.name)}</div><div class="handle">@${esc(u.handle)}</div></section>
+      <section class="profile"><button class="avedit" id="avEdit" aria-label="Change profile photo">${avatar(u, 'lg')}<span class="badge">${ICON.camera}</span></button><div class="name">${esc(u.name)}</div><div class="handle">@${esc(u.handle)}</div></section>
       <section class="qrcard"><div class="qr">${qrSvg(payLink(u.handle))}</div><p>Friends can scan this to pay you</p>
         <div class="btn-row"><button class="btn btn-dark btn-sm" id="share" style="width:100%">Share link</button><button class="btn btn-light btn-sm" id="copy" style="width:100%">Copy link</button></div></section>
       <h3>Account</h3>
@@ -821,6 +826,7 @@
       </div>
       <p class="fine" style="margin-top:22px">Monyx · monyx.pro</p>`, { tabs: true, tab: 'me' });
     $('#share').onclick = shareLink;
+    $('#avEdit').onclick = () => (u.avatar ? photoMenu() : pickPhoto());
     $('#copy').onclick = () => { store.set('monyx.shared', true); copy(payLink(u.handle), 'Link copied'); };
     $('[data-r="add"]').onclick = addMoney;
     const k = $('[data-r="key"]'); if (k) k.onclick = showKey;
@@ -828,6 +834,60 @@
     $('[data-r="guide"]').onclick = () => (location.href = 'documentation/');
     $('[data-r="pro"]').onclick = () => (location.href = 'pro/');
     $('[data-r="out"]').onclick = logout;
+  }
+  /* ───────── profile photo ───────── */
+  function photoMenu() {
+    sheet(`<h2>Profile photo</h2><p class="sub">Friends see it when they pay you.</p>
+      <div style="display:grid;gap:10px;margin-top:18px"><button class="btn btn-dark" id="ph-new">Choose a new photo</button><button class="btn btn-light" id="ph-rm">Remove photo</button></div>`, (el, close) => {
+      $('#ph-new', el).onclick = () => { close(); pickPhoto(); };
+      $('#ph-rm', el).onclick = async (e) => {
+        e.currentTarget.disabled = true;
+        try { const r = await api('/avatar', { method: 'POST', body: { remove: true } }); S.acct.user = r.user; saveAcct(); close(); toast('Photo removed'); screenMe(); }
+        catch (err) { e.currentTarget.disabled = false; showError(err); }
+      };
+    });
+  }
+  function pickPhoto() {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*';
+    input.onchange = async () => {
+      const f = input.files && input.files[0]; if (!f) return;
+      try { previewPhoto(await squarePhoto(f)); } catch (e) { showError(e); }
+    };
+    input.click();
+  }
+  // Centre-crop to a 320px square JPEG on the device, so uploads are small (~25 KB)
+  // and every photo looks the same in its circle.
+  async function squarePhoto(file, size = 320) {
+    let img;
+    try { img = await createImageBitmap(file); }
+    catch {
+      img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file); })
+        .catch(() => { throw userError("That photo couldn't be opened. Try another one."); });
+    }
+    const w = img.width, h = img.height, side = Math.min(w, h);
+    if (!side) throw userError("That photo couldn't be opened. Try another one.");
+    const c = document.createElement('canvas'); c.width = c.height = size;
+    const ctx = c.getContext('2d'); ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, (w - side) / 2, (h - side) / 2, side, side, 0, 0, size, size);
+    const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.86));
+    if (!blob) throw userError("That photo couldn't be opened. Try another one.");
+    return blob;
+  }
+  function previewPhoto(blob) {
+    const url = URL.createObjectURL(blob);
+    sheet(`<div class="confirm"><img class="avprev" src="${url}" alt="Your new profile photo"><h2 style="margin-top:14px">Looking good</h2><p class="sub">This is how friends will see you.</p></div>
+      <div style="display:grid;gap:10px"><button class="btn btn-dark" id="ph-save">Use this photo</button><button class="btn btn-text" id="ph-again">Choose another</button></div>`, (el, close) => {
+      $('#ph-again', el).onclick = () => { close(); pickPhoto(); };
+      $('#ph-save', el).onclick = async (e) => {
+        const b = e.currentTarget; b.disabled = true; b.innerHTML = '<span class="spin"></span>Saving';
+        try {
+          const r = await api('/avatar', { method: 'POST', body: { image: b64(new Uint8Array(await blob.arrayBuffer())) } });
+          S.acct.user = r.user; saveAcct(); URL.revokeObjectURL(url); close(); toast('Profile photo updated');
+          if (location.hash === '#me') screenMe();
+        } catch (err) { b.disabled = false; b.textContent = 'Use this photo'; showError(err); }
+      };
+    });
   }
   const row = (id, ico, t, s) => `<button class="item" data-r="${id}"><span class="ico">${ico}</span><div class="mid"><div class="t">${t}</div>${s ? `<div class="s">${s}</div>` : ''}</div>${ICON.chev}</button>`;
   function showKey() {
@@ -1163,7 +1223,6 @@
   }
 
   function boot() {
-    try { for (const k of Object.keys(localStorage)) if (k.startsWith('keelpay.') && localStorage.getItem('monyx.' + k.slice(8)) == null) localStorage.setItem('monyx.' + k.slice(8), localStorage.getItem(k)); } catch {}
     S.acct = S.acct || store.get('monyx.acct');
     if (S.acct && S.acct.mode === 'key' && S.acct.secret) { try { S.kp = keypairFrom(S.acct.secret); } catch { S.acct = null; } }
     if (S.acct && !S.acct.token) { S.acct = null; S.kp = null; store.del('monyx.acct'); } // signup interrupted before the account existed
@@ -1173,6 +1232,7 @@
     setInterval(() => { if (S.acct && S.acct.token && !document.hidden) { refreshBalance(); if ($('#feed')) { loadFeed(); loadRequests(); } } }, 20000);
     setInterval(loadPrice, 120000);
     loadMarkets();
+    if (S.acct && S.acct.token) api('/me').then((r) => { S.acct.user = r.user; saveAcct(); }).catch((e) => { if (e.status === 401) relogin(); });
   }
   boot();
 })();

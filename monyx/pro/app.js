@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const METER = 'https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/keel';
+  const METER = 'https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/monyx-market';
   // api.mainnet-beta refuses browser origins (403); PublicNode's free endpoint
   // allows CORS and parallel reads. The meter's /rpc relay is the fallback.
   const DEFAULT_RPC = { mainnet: 'https://solana-rpc.publicnode.com', devnet: 'https://api.devnet.solana.com' };
@@ -30,7 +30,7 @@
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
     del(k) { try { localStorage.removeItem(k); } catch {} },
   };
-  const rpcUrl = (net) => store.get(`keel.rpc.${net}`) || DEFAULT_RPC[net];
+  const rpcUrl = (net) => store.get(`monyx.pro.rpc.${net}`) || DEFAULT_RPC[net];
   const conn = () => new (W().Connection)(rpcUrl('devnet'), 'confirmed');
 
   function hl(obj) {
@@ -64,7 +64,7 @@
   }
 
   /* ───────────────────────── state ───────────────────────── */
-  const S = { mode: null, kp: null, pubkey: null, phantom: null, bal: null, price: null, catalog: null, sel: null, agentKp: null, agentSpent: store.get('keel.agentSpent', 0) };
+  const S = { mode: null, kp: null, pubkey: null, phantom: null, bal: null, price: null, catalog: null, sel: null, agentKp: null, agentSpent: store.get('monyx.pro.agentSpent', 0) };
 
   /* ───────────────────────── signing ───────────────────────── */
   const phantom = () => (window.phantom && window.phantom.solana) || (window.solana && window.solana.isPhantom ? window.solana : null);
@@ -112,7 +112,7 @@
 
   function useBuiltin(kp) {
     S.mode = 'builtin'; S.kp = kp; S.pubkey = kp.publicKey.toBase58();
-    store.set('keel.key', Array.from(kp.secretKey)); store.set('keel.mode', 'builtin');
+    store.set('monyx.pro.key', Array.from(kp.secretKey)); store.set('monyx.pro.mode', 'builtin');
     walletReady();
   }
   async function usePhantom(silent = false) {
@@ -121,12 +121,12 @@
     try {
       const r = await p.connect(silent ? { onlyIfTrusted: true } : undefined);
       S.mode = 'phantom'; S.phantom = p; S.pubkey = r.publicKey.toString();
-      store.set('keel.mode', 'phantom'); walletReady();
+      store.set('monyx.pro.mode', 'phantom'); walletReady();
     } catch { if (!silent) toast('Connection cancelled.', true); }
   }
   function forget() {
     if (S.mode === 'phantom' && S.phantom) S.phantom.disconnect().catch(() => {});
-    store.del('keel.mode');
+    store.del('monyx.pro.mode');
     Object.assign(S, { mode: null, kp: null, pubkey: null, phantom: null, bal: null });
     paintWho(); $('#walletEmpty').hidden = false; $('#walletFull').hidden = true;
   }
@@ -222,7 +222,7 @@
   function paintSamples() {
     const s = [['Monyx treasury', TREASURY, 'devnet']];
     if (S.pubkey) s.unshift(['My wallet', S.pubkey, 'devnet']);
-    const recent = store.get('keel.recent', []);
+    const recent = store.get('monyx.pro.recent', []);
     $('#traceSamples').innerHTML = '<span>Try</span>' + [...s, ...recent.slice(0, 3).map((r) => [name(r.a), r.a, r.n])]
       .map(([l, a, n]) => `<button data-a="${a}" data-n="${n}">${esc(l)}<span class="muted"> · ${n}</span></button>`).join('');
   }
@@ -239,8 +239,8 @@
     try {
       const rep = await T.trace(rpcUrl(net), address, limit, (d, n) => { const p = $('#prog'); if (p && n) p.style.width = `${(d / n) * 100}%`; });
       rep.network = net; TR.report = rep;
-      const rec = store.get('keel.recent', []).filter((r) => r.a !== address);
-      rec.unshift({ a: address, n: net }); store.set('keel.recent', rec.slice(0, 6));
+      const rec = store.get('monyx.pro.recent', []).filter((r) => r.a !== address);
+      rec.unshift({ a: address, n: net }); store.set('monyx.pro.recent', rec.slice(0, 6));
       $('#traceOut').hidden = false;
       renderGraph(rep); renderStats(rep); renderRanks(rep); renderTimeline(rep);
       const miss = rep.timeline.filter((t) => !t.parsed).length;
@@ -410,9 +410,9 @@
   /* ───────────────────────── agent ───────────────────────── */
   function agentKp() {
     if (S.agentKp) return S.agentKp;
-    const saved = store.get('keel.agent');
+    const saved = store.get('monyx.pro.agent');
     S.agentKp = saved ? keypairFrom(saved) : W().Keypair.generate();
-    if (!saved) store.set('keel.agent', Array.from(S.agentKp.secretKey));
+    if (!saved) store.set('monyx.pro.agent', Array.from(S.agentKp.secretKey));
     return S.agentKp;
   }
   async function paintAgent() {
@@ -440,7 +440,7 @@
       log('plan', `Catalog has ${cat.apis.length} endpoints. To brief on ${esc(short(target, 6))} I need network state, a price, a profile and a trace. Worst case ${(budget / LAMPORTS).toFixed(5)} SOL with fees; I hold ${fmtSol(bal, 5)}.`);
       if (bal * LAMPORTS < budget) throw new Error('Agent wallet is short. Fund it from your wallet or from the devnet faucet.');
       const out = {};
-      const spend = (name) => { S.agentSpent += price[name] / LAMPORTS; store.set('keel.agentSpent', S.agentSpent); paintAgent(); };
+      const spend = (name) => { S.agentSpent += price[name] / LAMPORTS; store.set('monyx.pro.agentSpent', S.agentSpent); paintAgent(); };
       out.pulse = await pull('pulse', { net }, signer, log); spend('pulse');
       out.price = await pull('price', {}, signer, log); spend('price');
       out.profile = await pull('profile', { address: target, net }, signer, log); spend('profile');
@@ -593,13 +593,13 @@ print(pull("pulse", net="mainnet"))`,
   function rpcDialog() {
     const d = $('#dlg');
     $('#dlgBody').innerHTML = `<h3>RPC endpoints</h3><p>The public endpoints rate-limit. Paste a Helius, Triton or QuickNode URL to trace faster. Stored only in this browser.</p>
-      <label class="label">Mainnet</label><input id="rpcM" value="${esc(store.get('keel.rpc.mainnet') || '')}" placeholder="${DEFAULT_RPC.mainnet}">
-      <label class="label" style="display:block;margin-top:12px">Devnet</label><input id="rpcD" value="${esc(store.get('keel.rpc.devnet') || '')}" placeholder="${DEFAULT_RPC.devnet}">
+      <label class="label">Mainnet</label><input id="rpcM" value="${esc(store.get('monyx.pro.rpc.mainnet') || '')}" placeholder="${DEFAULT_RPC.mainnet}">
+      <label class="label" style="display:block;margin-top:12px">Devnet</label><input id="rpcD" value="${esc(store.get('monyx.pro.rpc.devnet') || '')}" placeholder="${DEFAULT_RPC.devnet}">
       <menu><button class="ghost" value="cancel">Cancel</button><button class="primary" value="ok" id="rpcSave">Save</button></menu>`;
     $('#rpcSave').onclick = () => {
       const m = $('#rpcM').value.trim(), dv = $('#rpcD').value.trim();
-      m ? store.set('keel.rpc.mainnet', m) : store.del('keel.rpc.mainnet');
-      dv ? store.set('keel.rpc.devnet', dv) : store.del('keel.rpc.devnet');
+      m ? store.set('monyx.pro.rpc.mainnet', m) : store.del('monyx.pro.rpc.mainnet');
+      dv ? store.set('monyx.pro.rpc.devnet', dv) : store.del('monyx.pro.rpc.devnet');
       toast('RPC saved');
     };
     d.showModal();
@@ -619,7 +619,7 @@ print(pull("pulse", net="mainnet"))`,
     });
     $('#forget').onclick = () => {
       if (S.mode === 'builtin' && !confirm('Disconnecting keeps the key in this browser only if you reconnect from the same device. Copy it first if it matters. Continue?')) return;
-      if (S.mode === 'builtin') store.del('keel.key');
+      if (S.mode === 'builtin') store.del('monyx.pro.key');
       forget();
     };
     $('#exportKey').onclick = () => copy(JSON.stringify(Array.from(S.kp.secretKey)), 'Secret key copied. Keep it private.');
@@ -713,7 +713,7 @@ print(pull("pulse", net="mainnet"))`,
   function boot() {
     wire();
     if (typeof solanaWeb3 !== 'undefined') {
-      const mode = store.get('keel.mode'); const key = store.get('keel.key');
+      const mode = store.get('monyx.pro.mode'); const key = store.get('monyx.pro.key');
       if (mode === 'builtin' && key) { try { useBuiltin(keypairFrom(key)); } catch {} }
       else if (mode === 'phantom') setTimeout(() => usePhantom(true), 300);
     }

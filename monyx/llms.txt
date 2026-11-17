@@ -4,7 +4,7 @@
 > endpoint answers HTTP 402 with a quote; pay it in devnet SOL and repeat the
 > request with the transaction signature.
 
-Base: https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/keel
+Base: https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/monyx-market
 Catalog (free, JSON): GET /catalog
 Public receipts (free): GET /ledger
 

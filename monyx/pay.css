@@ -327,3 +327,13 @@ button.item:first-child { border-top: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ── profile photos ── */
+.av { position: relative; }
+.av img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.avedit { position: relative; display: block; margin: 0 auto 12px; padding: 0; border: 0; background: none; border-radius: 50%; }
+.avedit .av { margin: 0; }
+.avedit .badge { position: absolute; right: -2px; bottom: -2px; width: 30px; height: 30px; border-radius: 50%; background: var(--brand); color: #fff; display: grid; place-items: center; box-shadow: 0 0 0 3px var(--bg); }
+.avedit .badge svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: round; }
+.avedit:hover .badge { background: var(--brand-hover); }
+.avprev { width: 140px; height: 140px; border-radius: 50%; object-fit: cover; display: block; margin: 8px auto 0; box-shadow: 0 0 0 4px var(--card), 0 12px 30px -12px rgba(20, 19, 26, .35); }
