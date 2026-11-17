@@ -26,7 +26,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Geist:wght@400;500;600;650;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="pay.css?v=14">
+<link rel="stylesheet" href="pay.css?v=15">
 </head>
 <body>
 <div class="shell">
@@ -41,10 +41,11 @@
       </section>
     </noscript>
   </main>
-  <nav class="tabbar" id="tabbar" hidden>
+  <nav class="tabbar" id="tabbar" aria-label="Main" hidden>
+    <a class="tabbrand" href="#home" aria-label="Monyx home"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M10 21v-7.2a3 3 0 0 1 6 0V21m0-7.2a3 3 0 0 1 6 0V21"/></svg><b>monyx</b></a>
     <a href="#home" data-tab="home"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
     <a href="#invest" data-tab="invest"><svg viewBox="0 0 24 24"><path d="M4 18l5-6 4 3 7-9M15 6h5v5"/></svg><span>Invest</span></a>
-    <a href="#pay" data-tab="pay" class="tab-pay" aria-label="Pay or request"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></a>
+    <a href="#pay" data-tab="pay" class="tab-pay" aria-label="Pay or request"><i aria-hidden="true">$</i><span>Pay or request</span></a>
     <a href="#activity" data-tab="activity"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg><span>Activity</span></a>
     <a href="#me" data-tab="me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg><span>Me</span></a>
   </nav>
@@ -55,6 +56,6 @@
 <script src="vendor/solana-web3.js?v=1" defer></script>
 <script src="vendor/qrcode.js?v=1" defer></script>
 <script src="voice-parse.js?v=2" defer></script>
-<script src="pay.js?v=13" defer></script>
+<script src="pay.js?v=14" defer></script>
 </body>
 </html>

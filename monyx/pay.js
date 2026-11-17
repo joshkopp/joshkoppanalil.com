@@ -334,8 +334,11 @@
   function qrSvg(text) { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); }
 
   /* ───────── screens ───────── */
-  function show(html, { tabs = false, tab = '' } = {}) {
+  function show(html, { tabs = false, tab = '', pad = false } = {}) {
     document.querySelectorAll('.sheet-wrap').forEach((w) => w.remove()); // a new screen closes any open sheet
+    if (S.padKey) { document.removeEventListener('keydown', S.padKey); S.padKey = null; }
+    document.body.classList.toggle('has-tabs', !!tabs);
+    document.body.classList.toggle('padmode', !!pad);
     app.innerHTML = `<div class="screen">${html}</div>`;
     $('#tabbar').hidden = !tabs;
     $$('#tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.tab === tab));
@@ -700,6 +703,64 @@
     history.replaceState(null, '', '#home');
   }
 
+  /* money pad: the Cash App-style keypad behind the $ tab */
+  function screenPad() {
+    let v = S.padV || '';
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'];
+    show(`<div class="pad">
+      <div class="padtop"><button class="x mic" id="vmic" aria-label="Say who to pay instead">${ICON.mic}</button><span class="padcur">USD</span><span class="x" aria-hidden="true"></span></div>
+      <div class="padmid"><div class="padamt" id="padamt" role="status" aria-live="polite" aria-label="Amount"><span class="d">$</span><span id="padv">0</span></div>
+      <div class="padsub" id="padsub">&nbsp;</div><div class="padhint">Type an amount with your keyboard, then press Enter</div></div>
+      <div class="keypad" role="group" aria-label="Keypad">${keys.map((k) => `<button class="key" data-k="${k}" aria-label="${k === 'del' ? 'Delete' : k === '.' ? 'Decimal point' : k}">${k === 'del' ? '<svg viewBox="0 0 24 24"><path d="M9 6h11v12H9l-5-6z"/><path d="M12.5 9.5l5 5M17.5 9.5l-5 5"/></svg>' : k}</button>`).join('')}</div>
+      <div class="padact"><button class="btn padbtn" id="padreq">Request</button><button class="btn padbtn" id="padpay">Pay</button></div>
+    </div>`, { tabs: true, tab: 'pay', pad: true });
+    const amtEl = $('#padamt'), vEl = $('#padv'), sub = $('#padsub');
+    const shake = () => { amtEl.classList.remove('shake'); void amtEl.offsetWidth; amtEl.classList.add('shake'); navigator.vibrate && navigator.vibrate(30); };
+    const paint = () => {
+      const txt = v || '0';
+      vEl.textContent = txt.replace(/^(\d+)/, (d) => Number(d).toLocaleString('en-US'));
+      amtEl.dataset.len = Math.min(9, txt.length);
+      amtEl.classList.toggle('zero', !v || +v === 0);
+      S.padV = v;
+      if (S.cash != null) {
+        const have = usd(Math.max(0, S.cash)); const n = parseFloat(v) || 0;
+        sub.textContent = n > have ? `You have ${money(have)}. You can still request it.` : `${money(have)} available`;
+        sub.classList.toggle('bad', n > have);
+      }
+    };
+    const press = (k) => {
+      let next = v;
+      if (k === 'del') next = v.slice(0, -1);
+      else if (k === '.') { if (v.includes('.')) return shake(); next = (v || '0') + '.'; }
+      else if (v === '0') next = k;
+      else if (v.includes('.') && v.split('.')[1].length >= 2) return shake();
+      else next = v + k;
+      if (parseFloat(next) > 10000) { sub.textContent = 'You can send up to $10,000 at a time.'; sub.classList.add('bad'); return shake(); }
+      v = next; paint();
+    };
+    const go = (mode) => {
+      const n = parseFloat(v);
+      if (!(n > 0)) return shake();
+      if (mode === 'pay' && S.cash != null && n > usd(S.cash)) { shake(); toast(`You have ${money(usd(Math.max(0, S.cash)))}. Add money first, or request it instead.`, true); return; }
+      location.hash = `#send/${n.toFixed(2).replace(/\.00$/, '')}${mode === 'request' ? '/r' : ''}`;
+    };
+    $$('.key').forEach((b) => (b.onclick = () => { press(b.dataset.k); navigator.vibrate && navigator.vibrate(6); }));
+    $('#padpay').onclick = () => go('pay');
+    $('#padreq').onclick = () => go('request');
+    $('#vmic').onclick = talk;
+    S.padKey = (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || document.querySelector('.sheet-wrap')) return;
+      const t = e.target; if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+      let k = null;
+      if (/^[0-9]$/.test(e.key)) k = e.key; else if (e.key === '.' || e.key === ',') k = '.'; else if (e.key === 'Backspace' || e.key === 'Delete') k = 'del';
+      if (k) { e.preventDefault(); press(k); const b = $(`.key[data-k="${k}"]`); if (b) { b.classList.add('down'); setTimeout(() => b.classList.remove('down'), 120); } return; }
+      if (e.key === 'Enter') { e.preventDefault(); go(e.shiftKey ? 'request' : 'pay'); }
+      if (e.key === 'Escape') { v = ''; paint(); }
+    };
+    document.addEventListener('keydown', S.padKey);
+    paint(); refreshBalance().then(paint);
+  }
+
   /* pay / request */
   function screenPay(prefill = {}) {
     const st = { to: null, note: prefill.note || '' };
@@ -739,7 +800,8 @@
     };
     note.oninput = () => { st.note = note.value; };
     $$('.emojis button').forEach((b) => (b.onclick = () => { note.value = b.dataset.e + (note.value && !note.value.startsWith(b.dataset.e) ? ' ' + note.value : ''); st.note = note.value; note.focus(); }));
-    $('#close').onclick = () => (location.hash = '#home');
+    $('#close').onclick = () => (location.hash = prefill.fromPad ? '#pay' : '#home');
+    if (prefill.mode === 'request') { $('#req').className = 'btn btn-dark'; $('#pay').className = 'btn btn-light'; $('#req').parentNode.append($('#req')); }
     $('#vmic').onclick = talk;
     size(); refreshBalance().then(valid);
 
@@ -853,6 +915,7 @@
     });
   }
   function success(title, note, sig, extra, back = '#home') {
+    S.padV = '';
     show(`<section class="steps"><div class="body" style="display:grid;place-items:center;text-align:center"><div class="done">
       <div class="tick"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
       <h2>${title}</h2>${note ? `<p class="sub">${esc(note)}</p>` : ''}${extra ? `<p class="sub">${extra}</p>` : ''}
@@ -1989,6 +2052,8 @@
       if (view === 'signup') { if (!S.signup) S.signup = { step: 1, name: '', handle: '', kp: null }; return S.signup.step === 1 ? stepName() : undefined; }
       return screenWelcome();
     }
+    if (view === 'pay' && !a) return screenPad();
+    if (view === 'send') return screenPay({ amount: a && parseFloat(a) > 0 ? a : '', mode: b === 'r' ? 'request' : 'pay', fromPad: true });
     if (view === 'pay') return screenPay({ to: a, amount: b && parseFloat(b) > 0 ? parseFloat(b).toFixed(2).replace(/\.00$/, '') : '', note: c ? decodeURIComponent(c) : '' });
     if (view === 'me') return screenMe();
     if (view === 'invest') return screenInvest();
