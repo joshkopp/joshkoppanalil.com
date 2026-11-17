@@ -1,4 +1,4 @@
-// Keel meter — a pay-per-pull API market for agents, settled in devnet SOL.
+// Monyx meter — a pay-per-pull API market for agents, settled in devnet SOL.
 //
 // Protocol (x402-style):
 //   1. GET /api/<name>?params            -> 402 Payment Required + a quote.
@@ -14,7 +14,7 @@
 // valid payment, the same signature can be replayed up to 3 times to retry.
 //
 // Free routes: GET /catalog, GET /ledger.
-// Deployed as the Supabase edge function "keel".
+// Deployed as the Supabase edge function "keel" (name kept so existing agent URLs keep working).
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const PAY_RPC = "https://api.devnet.solana.com";
@@ -45,6 +45,10 @@ const json = (body: unknown, status = 200, extra: Record<string, string> = {}) =
     headers: { ...cors, "Content-Type": "application/json", ...extra },
   });
 const fail = (message: string, status = 400, error = "bad_request") => json({ error, message }, status);
+const oops = (where: string, e: unknown) => {
+  console.error(`[monyx-meter] ${where}:`, e);
+  return fail("Something went wrong on our end. Please try again.", 500, "server_error");
+};
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
   auth: { persistSession: false },
@@ -68,7 +72,7 @@ const LABELS: Record<string, string> = {
   "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": "USDC",
   "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB": "USDT",
   "So11111111111111111111111111111111111111112": "Wrapped SOL",
-  [PAY_TO]: "Keel treasury",
+  [PAY_TO]: "Monyx treasury",
 };
 const label = (a: string) => LABELS[a] ?? null;
 
@@ -343,7 +347,7 @@ const APIS: Api[] = [
           const owner = owners.value[i]?.data?.parsed?.info?.owner ?? null;
           return { tokenAccount: a.address, owner, ownerLabel: owner ? label(owner) : null, amount: Number(a.uiAmount), pct: +(Number(a.uiAmount) / total * 100).toFixed(3) };
         });
-      } catch (e) { holderNote = `holder ranking unavailable from the public RPC for this mint (${(e as Error).message})`; }
+      } catch { holderNote = "Holder ranking isn't available for this token right now."; }
       const top = (n: number) => +holders.slice(0, n).reduce((a, h) => a + h.pct, 0).toFixed(2);
       return {
         mint, label: label(mint), network: netOf(p), program: info.value.owner === "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb" ? "token-2022" : "spl-token",
@@ -384,7 +388,7 @@ async function quote(api: Api, params: Record<string, string>, resource: string)
   const reference = randomReference();
   const expires = new Date(Date.now() + QUOTE_TTL_S * 1000);
   const { error } = await db.from("keel_quotes").insert({ reference, api: api.name, params: JSON.parse(canon(params)), lamports: api.lamports, expires_at: expires.toISOString() });
-  if (error) return fail(error.message, 500, "server_error");
+  if (error) return oops("quote", error);
   return json({
     x402Version: 1,
     error: "payment_required",
@@ -447,7 +451,7 @@ Deno.serve(async (req) => {
   try {
     if (path === "/" || path === "/catalog") {
       return json({
-        name: "Keel API Market", version: 1,
+        name: "Monyx API Market", version: 1,
         payment: { protocol: "x402-style HTTP 402", network: "solana-devnet", asset: "SOL", payTo: PAY_TO, header: "X-PAYMENT" },
         base: `${url.origin}/functions/v1/keel/api/`,
         apis: APIS.map((a) => ({ name: a.name, title: a.title, summary: a.summary, priceLamports: a.lamports, priceSol: a.lamports / 1e9, params: a.params, example: a.example, url: `${url.origin}/functions/v1/keel/api/${a.name}` })),
@@ -466,7 +470,7 @@ Deno.serve(async (req) => {
         byApi, recent: data ?? [],
       });
     }
-    // Read-only RPC relay for the Keel web app. Public mainnet RPC refuses
+    // Read-only RPC relay for the Monyx Pro web app. Public mainnet RPC refuses
     // browser origins, so the free in-app tracer reads through here. Only
     // plain read methods are relayed; the processed APIs stay paid.
     const rp = path.match(/^\/rpc\/(mainnet|devnet)$/);
@@ -510,13 +514,15 @@ Deno.serve(async (req) => {
     try { data = await api.run(params); }
     catch (e) {
       const retriesLeft = MAX_ATTEMPTS - (r.attempts + 1);
-      return json({ error: "upstream_failed", message: (e as Error).message, retriesLeft, note: retriesLeft > 0 ? "Your payment is held. Repeat the same request with the same X-PAYMENT to retry." : "Retries exhausted." }, 502);
+      if (e instanceof UserError) return fail(e.message, 400, "bad_request");
+      console.error(`[monyx-meter] ${api.name}:`, e);
+      return json({ error: "upstream_failed", message: "The data source didn't respond.", retriesLeft, note: retriesLeft > 0 ? "Your payment is held. Repeat the same request with the same X-PAYMENT to retry." : "Retries exhausted." }, 502);
     }
     await db.from("keel_receipts").update({ served: true }).eq("sig", r.sig);
     const receipt = { success: true, transaction: r.sig, network: "solana-devnet", payer: r.payer, lamports: Number(r.lamports) };
     return json({ api: api.name, ms: Date.now() - started, receipt, data }, 200, { "X-PAYMENT-RESPONSE": btoa(JSON.stringify(receipt)) });
   } catch (e) {
     if (e instanceof UserError) return fail(e.message, 400, "bad_request");
-    return fail((e as Error).message, 500, "server_error");
+    return oops(path, e);
   }
 });

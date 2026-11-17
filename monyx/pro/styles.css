@@ -29,7 +29,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .rail { grid-row: 1 / 3; border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 18px 0; position: sticky; top: 0; height: 100vh; }
 .mark { display: flex; align-items: baseline; gap: 8px; padding: 0 22px 26px; text-decoration: none; }
 .mark-k { font: italic 32px/1 var(--serif); letter-spacing: -.01em; }
-.mark-sub { font: 400 9px var(--mono); text-transform: uppercase; letter-spacing: .14em; color: var(--sig); }
+.mark-sub { font: 400 9px var(--mono); text-transform: uppercase; letter-spacing: .14em; color: #3ddc97; }
 .nav { display: flex; flex-direction: column; }
 .nav a { display: flex; gap: 14px; align-items: baseline; padding: 9px 22px; text-decoration: none; color: var(--mute); border-left: 2px solid transparent; transition: color .15s; }
 .nav a i { font: normal 400 10px var(--mono); color: var(--dim); }

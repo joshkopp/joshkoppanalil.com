@@ -9,7 +9,9 @@
   const RPC = 'https://api.devnet.solana.com';
   const MEMO = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
   const SITE = location.origin + location.pathname.replace(/index\.html$/, '');
-  const LOGO = '<span class="logo"><i></i>monyx</span>';
+  // The mark: a cut gem in jade (money + onyx). Facet lines are drawn in a darker stroke.
+  const GEM = '<svg class="gem" viewBox="0 0 24 24" aria-hidden="true"><path class="g-fill" d="M7 4h10l4 5-9 11L3 9z"/><path class="g-line" d="M3 9h18M7 4l3 5 2 11 2-11 3-5M10 9l2-5 2 5"/></svg>';
+  const LOGO = `<span class="logo">${GEM}monyx</span>`;
   const L = 1e9;
   const FEE = 10_000;
   const W = () => window.solanaWeb3;
@@ -108,12 +110,33 @@
   }
 
   /* ───────── server ───────── */
+  /* ───────── errors ─────────
+     Users only ever see messages written for them. Anything else (network
+     failures, wallet internals, blockchain errors) becomes one plain sentence. */
+  const GENERIC = 'Something went wrong. Please try again.';
+  const OFFLINE = "Can't reach Monyx right now. Check your connection and try again.";
+  function userError(message, extra = {}) { const e = new Error(message); e.safe = true; return Object.assign(e, extra); }
+  function friendly(e) {
+    if (e && e.safe) return e.message;
+    const m = String((e && e.message) || '');
+    if (/user rejected|rejected the request|declined|cancel/i.test(m)) return 'Cancelled.';
+    if (/failed to fetch|networkerror|load failed|network request/i.test(m)) return OFFLINE;
+    return GENERIC;
+  }
+  const showError = (e, ms = 4500) => toast(esc(friendly(e)), true, ms);
+
   async function api(path, { method = 'GET', body, auth = true } = {}) {
     const headers = { 'content-type': 'application/json' };
     if (auth && S.acct && S.acct.token) headers.authorization = `Bearer ${S.acct.token}`;
-    const r = await fetch(API + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    let r;
+    try { r = await fetch(API + path, { method, headers, body: body ? JSON.stringify(body) : undefined }); }
+    catch { throw userError(OFFLINE, { status: 0 }); }
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) { const e = new Error(j.message || `Something went wrong (${r.status})`); e.code = j.error; e.status = r.status; throw e; }
+    if (!r.ok) {
+      // The server only sends user-facing text; still, never show a 5xx's detail.
+      const msg = r.status >= 500 && r.status !== 503 ? GENERIC : (j.message || GENERIC);
+      throw userError(msg, { code: j.error, status: r.status });
+    }
     return j;
   }
   function saveAcct() { store.set('monyx.acct', S.acct); }
@@ -138,19 +161,30 @@
     const conn = new Connection(RPC, 'confirmed');
     const from = new PublicKey(S.acct.address);
     const lamports = toLamports(dollars);
-    const have = await conn.getBalance(from);
-    if (have < lamports + FEE) throw new Error(`You have ${money(usd(have))}. Add money to send ${money(dollars)}.`);
-    const tx = new Transaction().add(SystemProgram.transfer({ fromPubkey: from, toPubkey: new PublicKey(toAddress), lamports }));
-    if (note) tx.add(new TransactionInstruction({ programId: new PublicKey(MEMO), keys: [], data: Buffer.from(note.slice(0, 80), 'utf8') }));
-    const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash('confirmed');
-    tx.recentBlockhash = blockhash; tx.feePayer = from;
-    let signed;
-    if (S.acct.mode === 'phantom') signed = await phantom().signTransaction(tx);
-    else { tx.sign(S.kp); signed = tx; }
-    const sig = await conn.sendRawTransaction(signed.serialize());
-    const res = await conn.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
-    if (res.value && res.value.err) throw new Error('The payment failed. Nothing was sent.');
-    return sig;
+    let sig = null;
+    try {
+      const have = await conn.getBalance(from);
+      if (have < lamports + FEE) throw userError(`You have ${money(usd(have))}. Add money to send ${money(dollars)}.`);
+      const tx = new Transaction().add(SystemProgram.transfer({ fromPubkey: from, toPubkey: new PublicKey(toAddress), lamports }));
+      if (note) tx.add(new TransactionInstruction({ programId: new PublicKey(MEMO), keys: [], data: Buffer.from(note.slice(0, 80), 'utf8') }));
+      const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash('confirmed');
+      tx.recentBlockhash = blockhash; tx.feePayer = from;
+      let signed;
+      if (S.acct.mode === 'phantom') signed = await phantom().signTransaction(tx);
+      else { tx.sign(S.kp); signed = tx; }
+      sig = await conn.sendRawTransaction(signed.serialize());
+      const res = await conn.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
+      if (res.value && res.value.err) throw userError("The payment didn't go through. Nothing was sent.");
+      return sig;
+    } catch (e) {
+      if (e.safe) throw e;
+      console.error('[monyx] send:', e);
+      if (/user rejected|rejected the request|declined/i.test(String(e.message))) throw userError('Payment cancelled.');
+      // Once it's been broadcast we can't say "nothing was sent" for sure.
+      if (sig) throw userError("We couldn't confirm the payment yet. Check your activity in a minute before trying again.");
+      if (/failed to fetch|network/i.test(String(e.message))) throw userError(OFFLINE);
+      throw userError("The payment didn't go through. Nothing was sent.");
+    }
   }
 
   // Activity: read recent transactions and turn them into "who, how much, why".
@@ -212,12 +246,13 @@
   }
 
   /* ───────── pieces ───────── */
-  const PALETTE = ['#f4d6b2', '#cde5d3', '#d5dcf6', '#f3cdd4', '#e4dbf4', '#d3e9ef', '#efe1b4', '#e7d5c7'];
+  // Gemstone tones that read well on onyx: amethyst, jade, garnet, sapphire, topaz, teal, amber, slate.
+  const PALETTE = ['#4b3b7a', '#1f6a50', '#7a3341', '#2b5585', '#7a5b22', '#2c6670', '#6d4a32', '#474859'];
   function avatar(p, size = '') {
     if (!p) return `<div class="av ${size} addr">?</div>`;
-    if (p.bank) return `<div class="av ${size} bank">K</div>`;
+    if (p.bank) return `<div class="av ${size} bank">${GEM}</div>`;
     if (p.unknown || !p.name) return `<div class="av ${size} addr">#</div>`;
-    let h = 0; for (const c of p.handle || p.name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    let h = 2166136261; for (const c of p.handle || p.name) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; // FNV-1a spreads similar names across colours
     const ini = p.name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
     return `<div class="av ${size}" style="background:${PALETTE[h % PALETTE.length]}">${esc(ini)}</div>`;
   }
@@ -257,6 +292,7 @@
 
   /* ───────── screens ───────── */
   function show(html, { tabs = false, tab = '' } = {}) {
+    document.querySelectorAll('.sheet-wrap').forEach((w) => w.remove()); // a new screen closes any open sheet
     app.innerHTML = `<div class="screen">${html}</div>`;
     $('#tabbar').hidden = !tabs;
     $$('#tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.tab === tab));
@@ -267,8 +303,8 @@
     show(`<section class="welcome">
       <div class="brand">${LOGO}</div>
       <div class="art"><div class="stage">
-        <div class="bubble b1"><div class="av sm" style="background:#f4d6b2">MA</div><div><b>Maya paid you</b><span>🍕 Friday pizza</span></div><span class="amt in">+$14.00</span></div>
-        <div class="bubble b2"><div class="av sm" style="background:#d5dcf6">JR</div><div><b>You paid Jordan</b><span>🎟️ concert tickets</span></div><span class="amt">$42.50</span></div>
+        <div class="bubble b1"><div class="av sm" style="background:#7a3341">MA</div><div><b>Maya paid you</b><span>🍕 Friday pizza</span></div><span class="amt in">+$14.00</span></div>
+        <div class="bubble b2"><div class="av sm" style="background:#2b5585">JR</div><div><b>You paid Jordan</b><span>🎟️ concert tickets</span></div><span class="amt">$42.50</span></div>
       </div></div>
       <h1>Pay anyone<br>by name.</h1>
       <p class="sub">Split dinner, pay back a friend, chip in for a gift. Type their @username and you're done. No bank details, no fees.</p>
@@ -355,8 +391,8 @@
         stepKey();
       } catch (e) {
         next.disabled = false; next.textContent = 'Create account';
-        hint.className = 'hint bad'; hint.textContent = e.message;
-        if (/Ed25519|not supported/i.test(e.message)) hint.textContent = 'This browser is too old to create a secure key. Try the latest Chrome, Safari or Firefox.';
+        hint.className = 'hint bad'; hint.textContent = friendly(e);
+        if (!e.safe && /Ed25519|not supported/i.test(String(e.message))) hint.textContent = 'This browser is too old to create a secure key. Try the latest Chrome, Safari or Firefox.';
       }
     };
   }
@@ -418,7 +454,7 @@
       } catch (e) {
         go.disabled = false; go.textContent = 'Log in';
         if (e.code === 'no_account') { S.acct = null; toast('No account yet for that key. Let’s make one.'); startSignup(kp); return; }
-        S.acct = null; hint.className = 'hint bad'; hint.textContent = e.message;
+        S.acct = null; hint.className = 'hint bad'; hint.textContent = e.status === 401 ? "That recovery key didn't work. Check it and try again." : friendly(e);
       }
     };
     $('#ph').onclick = loginPhantom;
@@ -439,7 +475,7 @@
         // Phantom users skip the recovery step: their wallet already has one.
         phantomSignup(address);
       }
-    } catch (e) { S.acct = null; toast(esc(e.message || 'Phantom connection cancelled'), true); }
+    } catch (e) { S.acct = null; showError(e); }
   }
   function phantomSignup(address) {
     show(stepShell(2, `<h2>Set up Monyx</h2><p class="sub">Your Phantom wallet will hold your balance. Pick a name and username.</p>
@@ -455,7 +491,7 @@
         const r = await api('/register', { method: 'POST', auth: false, body: { ...(await proof(address)), name: $('#nm').value, handle: $('#hd').value } });
         S.acct.token = r.token; S.acct.user = r.user; saveAcct();
         S.signup = { bonus: r.bonus }; stepDone();
-      } catch (e) { hint.className = 'hint bad'; hint.textContent = e.message; }
+      } catch (e) { hint.className = 'hint bad'; hint.textContent = friendly(e); }
     };
   }
   async function relogin() {
@@ -471,7 +507,7 @@
     const u = S.acct.user;
     show(`<header class="top"><a class="me" href="#me">${avatar(u, 'sm')}<span>Hi, ${esc(u.name.split(' ')[0])}</span></a><span class="pill"><i></i>Test mode</span></header>
       <section class="balance">
-        <div class="label"><span>Balance</span></div>
+        <div class="label"><span>Balance</span>${GEM}</div>
         <div class="amount" id="bal"><div class="skeleton" style="width:60%;height:44px;border-radius:12px"></div></div>
         <a class="cryptorow" id="cryptoRow" href="#invest" hidden><span>Crypto</span><b id="cryptoVal"></b>${ICON.chev}</a>
         <div class="btn-row"><button class="btn btn-light" id="add">Add money</button><a class="btn btn-dark" href="#pay">Pay or request</a></div>
@@ -534,8 +570,8 @@
         <div class="btn-row"><button class="btn btn-light btn-sm" data-dec="${r.id}" style="width:100%">Decline</button><button class="btn btn-dark btn-sm" data-pay="${r.id}" style="width:100%">Pay</button></div></div>`).join('') : '')
       + (outgoing.length ? `<h3>Waiting on</h3><div class="list">` + outgoing.map((r) => `<div class="item">${avatar(r.to, 'sm')}<div class="mid"><div class="t">${esc(r.to.name)} · ${money(r.usd)}</div><div class="s">${esc(r.note || 'No note')}</div></div><button class="btn btn-text btn-sm" data-can="${r.id}">Cancel</button></div>`).join('') + `</div>` : '');
     $$('[data-pay]', el).forEach((b) => (b.onclick = () => { const r = incoming.find((x) => x.id === b.dataset.pay); confirmPay(r.from, r.usd, r.note, r.id); }));
-    $$('[data-dec]', el).forEach((b) => (b.onclick = async () => { b.disabled = true; try { await api(`/requests/${b.dataset.dec}`, { method: 'POST', body: { action: 'decline' } }); toast('Request declined'); loadRequests(); } catch (e) { toast(esc(e.message), true); } }));
-    $$('[data-can]', el).forEach((b) => (b.onclick = async () => { b.disabled = true; try { await api(`/requests/${b.dataset.can}`, { method: 'POST', body: { action: 'cancel' } }); toast('Request cancelled'); loadRequests(); } catch (e) { toast(esc(e.message), true); } }));
+    $$('[data-dec]', el).forEach((b) => (b.onclick = async () => { b.disabled = true; try { await api(`/requests/${b.dataset.dec}`, { method: 'POST', body: { action: 'decline' } }); toast('Request declined'); loadRequests(); } catch (e) { b.disabled = false; showError(e); } }));
+    $$('[data-can]', el).forEach((b) => (b.onclick = async () => { b.disabled = true; try { await api(`/requests/${b.dataset.can}`, { method: 'POST', body: { action: 'cancel' } }); toast('Request cancelled'); loadRequests(); } catch (e) { b.disabled = false; showError(e); } }));
   }
 
   function txDetail(sig) {
@@ -649,7 +685,7 @@
       try {
         await api('/requests', { method: 'POST', body: { to: st.to.handle, usd: parseFloat(amt.value), note: note.value.trim() } });
         success(`Requested ${money(parseFloat(amt.value))} from ${esc(first(st.to))}`, note.value.trim(), null, `We'll let ${esc(first(st.to))} know next time they open Monyx.`);
-      } catch (e) { toast(esc(e.message), true); b.disabled = false; b.textContent = 'Request'; }
+      } catch (e) { showError(e); b.disabled = false; b.textContent = 'Request'; }
     };
   }
   async function lookup(handle) {
@@ -675,7 +711,7 @@
           refreshBalance();
         } catch (err) {
           b.disabled = false; b.textContent = `Pay ${money(dollars)}`;
-          toast(esc(/User rejected/i.test(err.message) ? 'Payment cancelled' : err.message), true, 5000);
+          showError(err, 6000);
         }
       };
     });
@@ -731,7 +767,7 @@
           const r = await api('/bonus', { method: 'POST' });
           if (r.status === 'sent') { close(); toast(`${money(usd(r.lamports))} added. Enjoy!`); refreshBalance(); loadFeed(); }
           else { b.textContent = r.status === 'bank_empty' ? 'Bonuses are paused right now' : r.status === 'limit' ? 'Bonus limit reached for today' : 'Already claimed'; }
-        } catch (e) { b.disabled = false; b.textContent = 'Try again'; toast(esc(e.message), true); }
+        } catch (e) { b.disabled = false; b.textContent = 'Try again'; showError(e); }
       };
     });
   }
@@ -810,8 +846,22 @@
     } catch {}
     return S.markets;
   }
+  // A buy is a payment plus a server call. If the call fails after the
+  // payment lands, the signature is kept here and finished on the next load.
+  const pendingBuys = {
+    list: () => store.get('monyx.pendingBuys', []),
+    add(asset, sig) { store.set('monyx.pendingBuys', [...this.list(), { asset, sig, t: Date.now() }]); },
+    remove(sig) { store.set('monyx.pendingBuys', this.list().filter((p) => p.sig !== sig)); },
+    async settle() {
+      for (const p of this.list()) {
+        try { await api('/trade/buy', { method: 'POST', body: { asset: p.asset, sig: p.sig } }); this.remove(p.sig); }
+        catch (e) { if (['used', 'stale', 'mismatch'].includes(e.code) || Date.now() - p.t > 3600_000) this.remove(p.sig); }
+      }
+    },
+  };
   async function loadPortfolio() {
     if (!S.acct || !S.acct.token) return null;
+    if (pendingBuys.list().length) await pendingBuys.settle();
     try { S.port = await api('/portfolio'); } catch (e) { if (e.status === 401) relogin(); }
     return S.port;
   }
@@ -911,7 +961,7 @@
       go.onclick = async () => {
         go.disabled = true; go.innerHTML = '<span class="spin"></span>Working on it';
         try { await onGo(parseFloat(amt.value), all, close); }
-        catch (e) { go.disabled = false; go.textContent = cta; toast(esc(/User rejected/i.test(e.message) ? 'Cancelled' : e.message), true, 5000); }
+        catch (e) { go.disabled = false; go.textContent = cta; showError(e, 6000); }
       };
     });
   }
@@ -923,11 +973,18 @@
       preview: (v) => `You'll get about ${fmtQty(v / a.price, a.symbol)}`,
       async onGo(v, _all, close) {
         const sig = await send(await bankAddress(), v, `Buy ${a.symbol}`);
+        pendingBuys.add(a.id, sig);
         let r, tries = 0;
         while (!r) {
           try { r = await api('/trade/buy', { method: 'POST', body: { asset: a.id, sig } }); }
-          catch (e) { if (++tries >= 3) throw new Error(`Your payment went through but we couldn't record it yet. Contact support with this receipt: ${sig.slice(0, 12)}…`); await new Promise((s) => setTimeout(s, 1500)); }
+          catch (e) {
+            if (e.code === 'used') { pendingBuys.remove(sig); break; }
+            if (++tries >= 3) { close(); toast("Your payment went through. We're still adding the coins and will finish next time you open Monyx.", false, 7000); return; }
+            await new Promise((s) => setTimeout(s, 1500));
+          }
         }
+        pendingBuys.remove(sig);
+        if (!r) { close(); loadPortfolio(); return; }
         close(); refreshBalance(); loadPortfolio(); S.feed = [];
         success(`You bought ${money(r.usd)} of ${esc(a.name)}`, fmtQty(r.qty, r.symbol), sig, null, '#invest');
       },
@@ -983,7 +1040,7 @@
           const r = await api('/trade/swap', { method: 'POST', body: { from: st.from.id, to: st.to.id, usd: parseFloat(amt.value), all } });
           close(); loadPortfolio();
           success(`Swapped ${money(r.usd)}`, `${fmtQty(r.qtyFrom, r.from)} → ${fmtQty(r.qtyTo, r.to)}`, null, null, '#invest');
-        } catch (e) { go.disabled = false; go.textContent = 'Swap'; toast(esc(e.message), true); }
+        } catch (e) { go.disabled = false; go.textContent = 'Swap'; showError(e); }
       };
     });
   }

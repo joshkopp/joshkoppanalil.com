@@ -31,6 +31,13 @@ const cors = {
 };
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
 const fail = (message: string, s = 400, error = "bad_request") => json({ error, message }, s);
+// Anything unexpected is logged here and shown to users as one plain sentence.
+// Internal details (database errors, RPC errors, stack traces) never leave the server.
+const OOPS = "Something went wrong on our end. Please try again.";
+const oops = (where: string, e: unknown, status = 500) => {
+  console.error(`[monyx] ${where}:`, e);
+  return fail(OOPS, status, "server_error");
+};
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
 const conn = new Connection(RPC, "confirmed");
@@ -105,7 +112,8 @@ async function giveBonus(user: any, ip: string) {
     return { status: "sent", signature, lamports: BONUS };
   } catch (e) {
     await db.from("keel_users").update({ bonus_sig: null }).eq("id", user.id);
-    return { status: "failed", message: (e as Error).message };
+    console.error("[monyx] bonus:", e);
+    return { status: "failed" };
   }
 }
 
@@ -156,7 +164,7 @@ Deno.serve(async (req) => {
   try {
     if (path === "/bank") {
       const kp = await bank();
-      return json({ address: kp.publicKey.toBase58(), sol: (await conn.getBalance(kp.publicKey).catch(() => 0)) / 1e9, bonusSol: BONUS / 1e9 });
+      return json({ address: kp.publicKey.toBase58(), bonusSol: BONUS / 1e9 });
     }
     if (path === "/markets") {
       const all = await markets();
@@ -266,13 +274,13 @@ Deno.serve(async (req) => {
       const have = Number(h?.qty || 0);
       const qty = body.all ? have : roundQty(Number(body.usd) / p);
       const usd = Math.round(qty * p * 100) / 100;
-      if (!(qty > 0) || qty > have + 1e-12) return fail(`You have ${(have * p).toFixed(2)} dollars of ${ASSETS[asset].sym}.`);
+      if (!(qty > 0) || qty > have + 1e-12) return fail(`You have $${(have * p).toFixed(2)} of ${ASSETS[asset].sym} to sell.`);
       if (usd < 0.5) return fail("The smallest sale is $0.50.");
       const lamports = Math.round((usd / sp) * 1e9);
       const kp = await bank();
       if ((await conn.getBalance(kp.publicKey)) - lamports < BANK_FLOOR) return fail("Selling is paused while Monyx tops up. Swaps still work.", 503, "bank_low");
       const { error: e1 } = await db.rpc("keel_adjust", { p_user: user.id, p_asset: asset, p_delta: -qty });
-      if (e1) return fail("You don't have that much to sell.");
+      if (e1) return fail("You don't have that much to sell.", 409, "insufficient");
       try {
         const t = new Transaction()
           .add(SystemProgram.transfer({ fromPubkey: kp.publicKey, toPubkey: new PublicKey(user.address), lamports }))
@@ -282,7 +290,8 @@ Deno.serve(async (req) => {
         return json({ asset, symbol: ASSETS[asset].sym, qty, usd, signature: sig });
       } catch (e) {
         await db.rpc("keel_adjust", { p_user: user.id, p_asset: asset, p_delta: qty });
-        return fail(`The sale didn't go through, nothing changed. (${(e as Error).message})`, 502, "upstream_failed");
+        console.error("[monyx] sell payout:", e);
+        return fail("The sale didn't go through. Nothing changed, so you can try again.", 502, "upstream_failed");
       }
     }
     if (path === "/trade/swap" && req.method === "POST") {
@@ -320,7 +329,7 @@ Deno.serve(async (req) => {
       const { count } = await db.from("keel_requests").select("*", { count: "exact", head: true }).eq("from_user", user.id).gte("created_at", new Date(Date.now() - 3600_000).toISOString());
       if ((count ?? 0) > 30) return fail("That's a lot of requests. Try again later.", 429, "rate_limited");
       const { data, error } = await db.from("keel_requests").insert({ from_user: user.id, to_user: to.id, usd, note: String(body.note || "").slice(0, 80) }).select().single();
-      if (error) return fail(error.message, 500, "server_error");
+      if (error) return oops("create request", error);
       return json({ id: data.id });
     }
     const rm = path.match(/^\/requests\/([0-9a-f-]{36})$/);
@@ -350,6 +359,7 @@ Deno.serve(async (req) => {
     }
     return fail("Unknown route.", 404, "not_found");
   } catch (e) {
-    return fail((e as Error).message, 500, "server_error");
+    if (e instanceof Error && /Prices are unavailable/.test(e.message)) return fail(e.message, 503, "prices_unavailable");
+    return oops(path, e);
   }
 });
