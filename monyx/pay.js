@@ -10,7 +10,7 @@
   const API = 'https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/monyx';
   const VAPI = API + '-voice';
   const PAPI = API + '-pay';
-  const RPC = 'https://api.devnet.solana.com';
+  let RPC = store.get('monyx.rpc', 'https://api.devnet.solana.com'); // monyx-pay /info can point this at a faster endpoint
   const USDC = '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU'; // Circle's devnet USDC
   const TOKEN = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
   const ATA_PROGRAM = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
@@ -173,8 +173,15 @@
     if (!S.acct) return;
     try { S.cash = await usdcOf(S.acct.address); paintBalance(); } catch {}
   }
+  async function loadInfo() {
+    try {
+      const i = await api(PAPI + '/info', { auth: false });
+      S.bankAddr = i.bank; store.set('monyx.bank2', i.bank);
+      if (i.rpc && /^https:\/\//.test(i.rpc)) { RPC = i.rpc; store.set('monyx.rpc', i.rpc); }
+    } catch {}
+  }
   async function bankAddr() {
-    if (!S.bankAddr) { const i = await api(PAPI + '/info', { auth: false }); S.bankAddr = i.bank; store.set('monyx.bank2', i.bank); }
+    if (!S.bankAddr) await loadInfo();
     return S.bankAddr;
   }
   // Build "owner sends USDC to someone", sign it, and hand it to Monyx, which
@@ -207,7 +214,7 @@
       const have = await usdcOf(S.acct.address);
       if (have < units) throw userError(`You have ${money(usd(have))}. Add money to send ${money(dollars)}.`);
       const r = await usdcSend({ owner: S.acct.address, signer: S.acct.mode === 'phantom' ? 'phantom' : S.kp, to: toAddress, units, note });
-      if (r.pending) throw userError("We couldn't confirm the payment yet. Check your activity in a minute before trying again.");
+      if (r.pending) throw userError("The network is busy, so your payment is still landing. Check Activity in a minute before trying again.");
       S.lastMs = r.ms || null;
       S.cash = Math.max(0, have - units); paintBalance();
       return r.sig;
@@ -855,7 +862,7 @@
   async function addMoney() {
     sheet(`<h2>Add money</h2><p class="sub">Monyx is in test mode, so dollars are free. They're test USDC with no real value.</p>
       <button class="btn btn-dark" id="topup" style="margin:18px 0 6px">Add free test dollars</button>
-      <p class="fine" id="tnote" style="text-align:center">$10 the first time, then $5 a day.</p>
+      <p class="fine" id="tnote" style="text-align:center">$5 the first time, then $2 a day.</p>
       <h3>Or get paid by a friend</h3>
       <button class="btn btn-light" id="share">Share my pay link</button>
       <details class="more"><summary>Need more for testing?</summary>
@@ -1862,6 +1869,7 @@
     if (S.acct && !S.acct.token) { S.acct = null; S.kp = null; store.del('monyx.acct'); } // signup interrupted before the account existed
     window.addEventListener('hashchange', route);
     rememberLinkPeople();
+    loadInfo();
     // Broken profile photos fall back to initials. (Delegated, so no inline handlers: the CSP forbids them.)
     document.addEventListener('error', (e) => { if (e.target && e.target.matches && e.target.matches('img[data-fallback]')) e.target.remove(); }, true);
     route();

@@ -21,14 +21,20 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { Buffer } from "node:buffer";
 import { Connection, Keypair, PublicKey, SystemProgram, Transaction, TransactionInstruction } from "npm:@solana/web3.js@1.95.3";
 
-const RPC = "https://api.devnet.solana.com";
+// The public devnet RPC rate-limits hard under load. Set SOLANA_RPC (e.g. a
+// QuickNode devnet endpoint) for the server, and PUBLIC_RPC for browsers.
+const RPC = Deno.env.get("SOLANA_RPC") || "https://api.devnet.solana.com";
+const PUBLIC_RPC = Deno.env.get("PUBLIC_RPC") || "https://api.devnet.solana.com";
 const USDC = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"); // Circle's devnet USDC
 const TOKEN = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 const ATA_PROGRAM = new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
 const MEMO = new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");
 const U = 1_000_000; // USDC has 6 decimals
 const MAX_PAYMENT = 10_000 * U;
-const WELCOME = 10 * U, DAILY = 5 * U, TOPUP_HOURS = 20, BANK_FLOOR_USDC = 2 * U;
+// Test-dollar amounts. Override with Supabase secrets (in dollars) without redeploying.
+const envUsd = (k: string, d: number) => Math.round((Number(Deno.env.get(k)) || d) * U);
+const WELCOME = envUsd("MONYX_WELCOME_USD", 5), DAILY = envUsd("MONYX_DAILY_USD", 2), BANK_FLOOR_USDC = envUsd("MONYX_BANK_FLOOR_USD", 0.5);
+const TOPUP_HOURS = 20;
 const RELAYS_PER_HOUR = 40, NEW_ACCOUNTS_PER_DAY = 15;
 const B58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
@@ -69,13 +75,17 @@ const memoIx = (text: string) => new TransactionInstruction({ programId: MEMO, k
 async function usdcOf(owner: PublicKey) {
   try { return Number((await conn.getTokenAccountBalance(ata(owner))).value.amount); } catch { return 0; }
 }
+// Wait for a transaction. Rate limits and network blips are retried with
+// backoff; only a real on-chain failure or a long timeout counts as failure.
 async function confirm(sig: string, ms = 40_000) {
-  const t0 = Date.now();
+  const t0 = Date.now(); let wait = 400;
   while (Date.now() - t0 < ms) {
-    const st = (await conn.getSignatureStatuses([sig])).value[0];
-    if (st?.err) throw new Error("failed on chain");
+    let st: any = null;
+    try { st = (await conn.getSignatureStatuses([sig])).value[0]; wait = 400; }
+    catch { wait = Math.min(wait * 2, 3000); }
+    if (st?.err) throw Object.assign(new Error("failed on chain"), { onchain: true });
     if (st && (st.confirmationStatus === "confirmed" || st.confirmationStatus === "finalized")) return;
-    await new Promise((r) => setTimeout(r, 400));
+    await new Promise((r) => setTimeout(r, wait));
   }
   throw new Error("not confirmed in time");
 }
@@ -239,7 +249,7 @@ Deno.serve(async (req) => {
     // ----- public -----
     if (path === "/info") {
       const kp = await bank();
-      return json({ bank: kp.publicKey.toBase58(), usdc: USDC.toBase58(), bankUsd: dollars(await usdcOf(kp.publicKey)) });
+      return json({ bank: kp.publicKey.toBase58(), usdc: USDC.toBase58(), bankUsd: dollars(await usdcOf(kp.publicKey)), rpc: PUBLIC_RPC });
     }
     if (path === "/markets") return json({ assets: await markets() });
     const cm = path.match(/^\/claims\/([1-9A-HJ-NP-Za-km-z]{32,44})$/);
@@ -288,14 +298,25 @@ Deno.serve(async (req) => {
       let sig: string;
       try { sig = await conn.sendRawTransaction(tx.serialize()); }
       catch (e) { console.error("[monyx-pay] send:", e); return fail("The payment didn't go through. Nothing was sent.", 409, "failed"); }
+      // Record it (payment log, inbox, claim status) once it's confirmed.
+      const finish = async () => {
+        await logPayment(sig, t.owner, t.to, t.units, t.note, "relay");
+        if (claim) {
+          const back = t.to === (await db.from("monyx_users").select("address").eq("id", claim.from_user).single()).data?.address;
+          await db.from("monyx_claims").update({ status: back ? "returned" : "claimed", claimed_by: t.to, claimed_at: new Date().toISOString(), claim_sig: sig }).eq("escrow", claim.escrow);
+        }
+      };
       try { await confirm(sig); }
-      catch (e) { console.error("[monyx-pay] confirm:", e); return json({ sig, pending: true }); }
-      const ms = Date.now() - t0;
-      await logPayment(sig, t.owner, t.to, t.units, t.note, "relay");
-      if (claim) {
-        const back = t.to === (await db.from("monyx_users").select("address").eq("id", claim.from_user).single()).data?.address;
-        await db.from("monyx_claims").update({ status: back ? "returned" : "claimed", claimed_by: t.to, claimed_at: new Date().toISOString(), claim_sig: sig }).eq("escrow", claim.escrow);
+      catch (e: any) {
+        if (e.onchain) { console.error("[monyx-pay] failed on chain:", sig); return fail("The payment didn't go through. Nothing was sent.", 409, "failed"); }
+        // Still landing: finish the bookkeeping in the background and tell the app it's pending.
+        console.error("[monyx-pay] slow confirm:", sig);
+        // @ts-ignore EdgeRuntime is provided by Supabase
+        EdgeRuntime.waitUntil(confirm(sig, 120_000).then(finish).catch((x) => console.error("[monyx-pay] never confirmed:", sig, x)));
+        return json({ sig, pending: true });
       }
+      const ms = Date.now() - t0;
+      await finish();
       return json({ sig, ms });
     }
 
@@ -377,7 +398,7 @@ Deno.serve(async (req) => {
     if (!user) return fail("Please sign in again.", 401, "unauthorized");
 
     if (path === "/topup" && req.method === "POST") {
-      // Free test dollars: $10 the first time, then $5 a day.
+      // Free test dollars: a welcome amount the first time, then a smaller one each day.
       const first = !user.last_topup_at;
       if (!first && Date.now() - new Date(user.last_topup_at).getTime() < TOPUP_HOURS * 3600_000) {
         const next = new Date(new Date(user.last_topup_at).getTime() + TOPUP_HOURS * 3600_000);

@@ -27,8 +27,13 @@ The backend stays on Supabase, so nothing changes when the domain does.
 ## Money setup (USDC on devnet)
 Dollars are Circle's devnet USDC (`4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`). The Monyx bank wallet
 (`9JBSMxHPKMDLyUMhwV2NzFNUikNoQfnJj82NyBoPNJRs`) pays every network fee in SOL and hands out test dollars in USDC, so it needs both:
-- **USDC:** go to https://faucet.circle.com, choose Solana Devnet and paste the bank address. That gives 20 USDC every 2 hours. Each new account takes $10, then $5 a day.
+- **USDC:** go to https://faucet.circle.com, choose Solana Devnet and paste the bank address. That gives 20 USDC every 2 hours. Each new account takes $5, then $2 a day (change with the secrets MONYX_WELCOME_USD and MONYX_DAILY_USD).
 - **SOL** for fees: https://faucet.solana.com. Each payment costs the bank about 0.000005 SOL, plus about 0.002 SOL the first time someone receives USDC.
+
+## Faster Solana RPC (recommended before judging)
+The free public devnet RPC rate-limits under load (we saw 429s in a live test). In QuickNode, create a **Solana Devnet** endpoint and add these Supabase secrets:
+- `SOLANA_RPC`: the endpoint URL, which the server uses to send and confirm payments
+- `PUBLIC_RPC`: the same URL, or a second endpoint, which browsers use for balances and activity (the app picks it up from `/monyx-pay/info`)
 
 ## QuickNode Streams (live "you got paid" for money from outside Monyx)
 1. Pick a long random string and add it as the Supabase secret `QN_STREAMS_KEY`.
