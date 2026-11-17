@@ -36,6 +36,7 @@
     key: '<svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l3 3"/></svg>',
     link: '<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
     info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+    book: '<svg viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/></svg>',
     out: '<svg viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/></svg>',
     tools: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/></svg>',
     split: '<svg viewBox="0 0 24 24"><path d="M12 3v7M12 10 5 17M12 10l7 7M5 17v4M19 17v4"/></svg>',
@@ -313,7 +314,7 @@
         <button class="btn btn-dark" id="goSignup">Create your account</button>
         <button class="btn btn-text" id="goLogin">I already have an account</button>
       </div>
-      <p class="fine">Monyx is in test mode. Balances are play money with no real value.</p>
+      <p class="fine">Monyx is in test mode. Balances are play money with no real value. <a href="documentation/">How it works</a></p>
     </section>`);
     $('#goSignup').onclick = () => startSignup();
     $('#goLogin').onclick = () => (location.hash = '#login');
@@ -789,6 +790,7 @@
       <div class="list menu">
         ${row('add', ICON.plus, 'Add money', 'Free test money')}
         ${S.acct.mode === 'key' ? row('key', ICON.key, 'Recovery key', 'Back up or move to a new device') : ''}
+        ${row('guide', ICON.book, 'How Monyx works', 'A plain-language guide')}
         ${row('details', ICON.info, 'Account details', 'For the curious')}
         ${row('pro', ICON.tools, 'Monyx Pro', 'Wallet tracer and developer tools')}
         ${row('out', ICON.out, 'Log out', '')}
@@ -799,6 +801,7 @@
     $('[data-r="add"]').onclick = addMoney;
     const k = $('[data-r="key"]'); if (k) k.onclick = showKey;
     $('[data-r="details"]').onclick = details;
+    $('[data-r="guide"]').onclick = () => (location.href = 'documentation/');
     $('[data-r="pro"]').onclick = () => (location.href = 'pro/');
     $('[data-r="out"]').onclick = logout;
   }

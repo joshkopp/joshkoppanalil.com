@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0b">
+<meta name="color-scheme" content="dark">
+<title>How Monyx works</title>
+<meta name="description" content="A plain-language guide to Monyx: your account, sending and requesting money, splitting bills, buying crypto, and what keeps it safe.">
+<link rel="canonical" href="https://monyx.pro/documentation/">
+<link rel="icon" href="../favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root { color-scheme: dark; --bg: #0a0a0b; --card: #131315; --card2: #1a1a1d; --ink: #f3f1ec; --ink2: #c8c5bd; --mute: #8d8a83; --faint: #5e5c57; --line: rgba(255,255,255,.07); --line2: rgba(255,255,255,.13); --jade: #3ddc97; --amber: #f2c46d; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+body { margin: 0; background: var(--bg); color: var(--ink2); font: 17px/1.65 "Geist", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+a { color: var(--ink); text-decoration-color: var(--faint); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--jade); }
+::selection { background: var(--jade); color: var(--bg); }
+.gem { width: 22px; height: 22px; flex-shrink: 0; } .gem .f { fill: var(--jade); } .gem .l { fill: none; stroke: rgba(0,0,0,.38); stroke-width: 1; stroke-linejoin: round; }
+
+header { position: sticky; top: 0; z-index: 5; background: rgba(10,10,11,.86); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+.bar { max-width: 1080px; margin: 0 auto; height: 64px; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; }
+.logo { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; font-weight: 600; font-size: 21px; letter-spacing: -.05em; }
+.logo small { font-size: 14px; font-weight: 500; color: var(--mute); letter-spacing: 0; margin-left: 6px; }
+.open { background: var(--ink); color: var(--bg); text-decoration: none; font-weight: 600; font-size: 14px; height: 38px; padding: 0 16px; border-radius: 12px; display: inline-flex; align-items: center; }
+.open:hover { background: #fff; }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 64px; }
+nav.toc { position: sticky; top: 96px; align-self: start; padding-top: 56px; font-size: 14px; }
+nav.toc p { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--faint); margin: 0 0 10px; }
+nav.toc a { display: block; color: var(--mute); text-decoration: none; padding: 5px 0 5px 12px; border-left: 1px solid var(--line); }
+nav.toc a:hover, nav.toc a.on { color: var(--ink); border-left-color: var(--jade); }
+
+main { padding: 56px 0 120px; max-width: 680px; }
+.kicker { color: var(--jade); font-size: 14px; font-weight: 500; margin: 0 0 12px; }
+h1 { color: var(--ink); font-size: clamp(36px, 6vw, 52px); line-height: 1.04; letter-spacing: -.045em; font-weight: 600; margin: 0 0 18px; }
+.lede { font-size: 20px; color: var(--ink2); margin: 0 0 32px; }
+h2 { color: var(--ink); font-size: 28px; letter-spacing: -.03em; font-weight: 600; line-height: 1.15; margin: 72px 0 14px; padding-top: 4px; }
+h2 .n { color: var(--faint); font-weight: 500; margin-right: 10px; font-variant-numeric: tabular-nums; }
+h3 { color: var(--ink); font-size: 18px; font-weight: 600; letter-spacing: -.015em; margin: 32px 0 6px; }
+p { margin: 0 0 16px; }
+strong { color: var(--ink); font-weight: 600; }
+code { font: 500 .86em "Geist Mono", monospace; color: var(--ink); background: var(--card2); padding: 2px 6px; border-radius: 6px; }
+ul { padding-left: 20px; margin: 0 0 16px; } li { margin: 6px 0; } li::marker { color: var(--faint); }
+
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 8px 0 8px; }
+.card { background: var(--card); border-radius: 18px; padding: 18px; box-shadow: inset 0 0 0 1px var(--line); font-size: 15px; line-height: 1.5; }
+.card b { display: block; color: var(--ink); font-size: 16px; margin-bottom: 4px; }
+.card .ico { width: 34px; height: 34px; border-radius: 10px; background: var(--card2); display: grid; place-items: center; margin-bottom: 12px; box-shadow: inset 0 0 0 1px var(--line); }
+.card .ico svg { width: 18px; height: 18px; fill: none; stroke: var(--ink2); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+.flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: center; gap: 8px; margin: 22px 0 24px; }
+.flow .step { background: var(--card); border-radius: 16px; padding: 14px; box-shadow: inset 0 0 0 1px var(--line); font-size: 14px; line-height: 1.45; text-align: center; min-height: 100%; }
+.flow .step b { display: block; color: var(--ink); font-size: 15px; margin-bottom: 2px; }
+.flow .arrow { color: var(--faint); font-size: 18px; }
+.flow .step.hi { box-shadow: inset 0 0 0 1px rgba(61,220,151,.35); }
+
+.note { display: flex; gap: 12px; background: var(--card); border-radius: 16px; padding: 16px 18px; margin: 22px 0; box-shadow: inset 0 0 0 1px var(--line); font-size: 15px; line-height: 1.55; }
+.note .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--jade); margin-top: 8px; flex-shrink: 0; }
+.note.warn { background: rgba(242,196,109,.06); box-shadow: inset 0 0 0 1px rgba(242,196,109,.16); }
+.note.warn .dot { background: var(--amber); }
+.note p:last-child { margin: 0; }
+
+table { width: 100%; border-collapse: collapse; margin: 14px 0 22px; font-size: 15px; }
+th { text-align: left; font-weight: 500; color: var(--mute); font-size: 13px; padding: 0 12px 10px 0; border-bottom: 1px solid var(--line2); }
+td { padding: 12px 12px 12px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+td:first-child { color: var(--ink); font-weight: 500; white-space: nowrap; }
+
+details { background: var(--card); border-radius: 16px; margin: 10px 0; box-shadow: inset 0 0 0 1px var(--line); }
+summary { cursor: pointer; list-style: none; padding: 16px 48px 16px 18px; color: var(--ink); font-weight: 500; position: relative; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; position: absolute; right: 18px; top: 13px; color: var(--mute); font-size: 22px; font-weight: 300; transition: transform .2s; }
+details[open] summary::after { transform: rotate(45deg); }
+details > div { padding: 0 18px 16px; font-size: 15px; }
+details > div p:last-child { margin: 0; }
+
+footer { border-top: 1px solid var(--line); color: var(--faint); font-size: 14px; }
+footer .bar { height: auto; padding: 28px 24px; }
+
+@media (max-width: 860px) {
+  .wrap { grid-template-columns: 1fr; gap: 0; }
+  nav.toc { display: none; }
+  main { padding-top: 36px; }
+  .cards { grid-template-columns: 1fr; gap: 8px; }
+  .card { display: grid; grid-template-columns: 34px 1fr; column-gap: 14px; padding: 14px 16px; }
+  .card .ico { margin: 0; grid-row: span 2; }
+  .card b { margin: 0; }
+  .lede { font-size: 18px; }
+  body { font-size: 16px; }
+  .flow { grid-template-columns: 1fr; }
+  .flow .arrow { transform: rotate(90deg); justify-self: center; }
+  td:first-child { white-space: normal; }
+}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <a class="logo" href="../"><svg class="gem" viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M7 4h10l4 5-9 11L3 9z"/><path class="l" d="M3 9h18M7 4l3 5 2 11 2-11 3-5M10 9l2-5 2 5"/></svg>monyx<small>Guide</small></a>
+  <a class="open" href="../">Open Monyx</a>
+</div></header>
+
+<div class="wrap">
+<nav class="toc" aria-label="On this page">
+  <p>On this page</p>
+  <a href="#basics">The basics</a>
+  <a href="#account">Your account</a>
+  <a href="#paying">Paying &amp; requesting</a>
+  <a href="#split">Splitting a bill</a>
+  <a href="#adding">Adding money</a>
+  <a href="#crypto">Buying crypto</a>
+  <a href="#safety">Safety &amp; privacy</a>
+  <a href="#test">Test mode</a>
+  <a href="#pro">Monyx Pro</a>
+  <a href="#faq">Questions</a>
+</nav>
+
+<main>
+  <p class="kicker">Guide</p>
+  <h1>How Monyx works</h1>
+  <p class="lede">Monyx lets you send money to anyone using their @username, the way you'd text a friend. This page explains every part of it in plain language. You don't need to know anything about crypto.</p>
+
+  <div class="cards">
+    <div class="card"><div class="ico"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div><b>Pay by name</b>Type @maya, pick an amount, done. No bank details.</div>
+    <div class="card"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3v7M12 10 5 17M12 10l7 7"/></svg></div><b>Split anything</b>Dinner, rent, tickets. Everyone gets a request for their share.</div>
+    <div class="card"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 18l5-6 4 3 7-9M15 6h5v5"/></svg></div><b>Buy crypto</b>Start with $1. Buy, sell or swap nine coins at live prices.</div>
+  </div>
+
+  <h2 id="basics"><span class="n">01</span>The basics</h2>
+  <p>Monyx is built on <strong>Solana</strong>, a public payment network that anyone can use, like the internet is for email. When you pay someone, the money moves from your account to theirs over that network in about a second.</p>
+  <p>You never see any of that. Monyx turns long account numbers into usernames, shows everything in dollars, and handles the technical parts for you.</p>
+  <div class="note"><span class="dot"></span><p><strong>The one thing to remember:</strong> your money lives in <em>your</em> account, which only you control. Monyx can't move it, freeze it, or spend it. That's also why your recovery key matters so much (more on that below).</p></div>
+
+  <h2 id="account"><span class="n">02</span>Your account</h2>
+  <h3>Signing up</h3>
+  <p>Signing up takes three steps: your name, an @username, and saving your recovery key. There's no password and no email.</p>
+  <h3>What actually happens</h3>
+  <p>When you sign up, your browser creates a private <strong>key</strong>: a long secret code that works like the only key to a safe. It never leaves your device. From it comes your <strong>account number</strong>, which is public, like a mailbox address. Monyx saves just three things: your name, your username, and which account number belongs to it.</p>
+  <h3>Your recovery key</h3>
+  <p>Your recovery key <em>is</em> that private key, written out so you can save it. You need it to log in on a new phone or after clearing your browser.</p>
+  <div class="note warn"><span class="dot"></span><p><strong>Monyx can't reset it.</strong> There's no "forgot password" because we never had it. If you lose your recovery key and your browser data, the account can't be recovered. And anyone who has it can spend your balance, so never share it, not even with someone claiming to be Monyx.</p></div>
+  <h3>Logging in</h3>
+  <p>To log in, your device proves it holds the key by signing a short message ("Sign in to Monyx", plus the time). Monyx checks the signature and lets you in for 30 days. The key itself is never sent anywhere. If you already use a <strong>Phantom</strong> crypto wallet, you can log in with that instead.</p>
+
+  <h2 id="paying"><span class="n">03</span>Paying &amp; requesting</h2>
+  <p>Tap the green <strong>+</strong> button, type an amount, choose who it's for, and add a note if you want.</p>
+  <div class="flow">
+    <div class="step"><b>You confirm</b>Your device signs the payment with your key</div>
+    <div class="arrow">→</div>
+    <div class="step hi"><b>The network</b>Solana moves the money in about a second</div>
+    <div class="arrow">→</div>
+    <div class="step"><b>They have it</b>It's in their account, ready to spend</div>
+  </div>
+  <p>Monyx isn't in the middle of the payment. It goes straight from your account to theirs, which is why it's fast and why Monyx doesn't charge a fee.</p>
+  <h3>Ways to find someone</h3>
+  <table>
+    <tr><th>Method</th><th>How it works</th></tr>
+    <tr><td>@username</td><td>Type their name or username and pick them from the list.</td></tr>
+    <tr><td>Pay link</td><td>Everyone has a link like <code>monyx.pro/#pay/maya</code>. Open it to pay them. A link can include an amount too.</td></tr>
+    <tr><td>QR code</td><td>Their code is on their Me tab. Tap the scan icon and point your camera at it.</td></tr>
+    <tr><td>Recent people</td><td>Anyone you've paid shows up on your home screen. Tap them to pay again.</td></tr>
+    <tr><td>Account number</td><td>You can also paste any Solana account number, even for someone not on Monyx. Double-check it first, because payments can't be undone.</td></tr>
+  </table>
+  <h3>Requests</h3>
+  <p>Tap <strong>Request</strong> instead of Pay and they'll see it on their home screen with <em>Pay</em> and <em>Decline</em> buttons. When they pay, Monyx checks the network to confirm the money really arrived, then marks the request paid. You can cancel a request you sent any time.</p>
+  <h3>Payments are final</h3>
+  <p>Like handing someone cash, a payment can't be reversed once it's sent. If you pay the wrong person, ask them to send it back.</p>
+
+  <h2 id="split"><span class="n">04</span>Splitting a bill</h2>
+  <p>On the pay screen, type the total and tap <strong>Split a bill with friends</strong>. Add people and choose whether to include yourself, and Monyx works out each share.</p>
+  <p>Say dinner was <strong>$60</strong> for three people including you. Each share is $20, so your two friends each get a request for $20 and you collect $40.</p>
+
+  <h2 id="adding"><span class="n">05</span>Adding money</h2>
+  <p>New accounts get a <strong>welcome bonus</strong> to try things out. After that, tap <strong>Add money</strong> on the home screen:</p>
+  <ul>
+    <li><strong>Get free test money:</strong> copy your account number, open the free test-money site, and paste it in. It shows up within a minute.</li>
+    <li><strong>Get paid by a friend:</strong> share your pay link or QR code.</li>
+  </ul>
+
+  <h2 id="crypto"><span class="n">06</span>Buying crypto</h2>
+  <p>The <strong>Invest</strong> tab has nine popular coins: Bitcoin, Ethereum, USD Coin, XRP, Dogecoin, Cardano, Chainlink, Avalanche and Litecoin. Prices are live and update every minute.</p>
+  <table>
+    <tr><th>Action</th><th>What happens</th></tr>
+    <tr><td>Buy</td><td>You pay from your Monyx cash, and Monyx adds the coin to your account at the live price. The smallest buy is $1.</td></tr>
+    <tr><td>Sell</td><td>Monyx takes the coin back and pays the cash into your balance.</td></tr>
+    <tr><td>Swap</td><td>Trade one coin straight for another at today's prices. Instant, no fee.</td></tr>
+  </table>
+  <p>Coin prices go up and down, so the dollar value of what you own changes over time. The Invest tab shows how much it moved today.</p>
+  <div class="note"><span class="dot"></span><p><strong>How it differs from payments:</strong> your cash sits in your own account, but the coins you buy are recorded and kept by Monyx, the way a brokerage app holds stock for you. That's what makes buying and swapping instant.</p></div>
+
+  <h2 id="safety"><span class="n">07</span>Safety &amp; privacy</h2>
+  <h3>What Monyx knows</h3>
+  <ul>
+    <li>Your name, username and account number</li>
+    <li>Payment requests you send and receive</li>
+    <li>Your crypto trades and balances</li>
+  </ul>
+  <h3>What Monyx never has</h3>
+  <ul>
+    <li>Your recovery key or private key</li>
+    <li>A password, email or bank details. We never ask for them.</li>
+  </ul>
+  <div class="note warn"><span class="dot"></span><p><strong>Payments are public.</strong> Solana is a public network, so anyone can look up an account number and see its payments, amounts and notes. They won't see your name unless they already know which account is yours. Keep anything private out of payment notes.</p></div>
+  <h3>When something goes wrong</h3>
+  <p>If a payment fails, Monyx tells you in plain words: "Nothing was sent," or "We couldn't confirm it yet, check your activity." If a crypto purchase goes through but doesn't get recorded straight away, Monyx remembers it and finishes it the next time you open the app.</p>
+
+  <h2 id="test"><span class="n">08</span>Test mode</h2>
+  <p>Monyx is in <strong>test mode</strong> right now, which is why you'll see a yellow "Test mode" tag. Everything works for real, but it runs on Solana's test network, so the money is play money with no value. You can't cash it out and you can't lose real money. It's a safe way to try everything.</p>
+  <p>Your balance is held in Solana's own currency (SOL) and shown in dollars at the live price, so the dollar figure can shift slightly even when you haven't done anything.</p>
+
+  <h2 id="pro"><span class="n">09</span>Monyx Pro</h2>
+  <p>For the curious and for developers. Open it from the Me tab.</p>
+  <ul>
+    <li><strong>Wallet tracer:</strong> enter any account number to see who it's sent money to and received money from, drawn as a map you can click through.</li>
+    <li><strong>API market:</strong> data services that software and AI agents can pay for one request at a time, a fraction of a cent each, with no sign-up. The agent asks, gets a price, pays, and gets the answer. Developer instructions are in <a href="../llms.txt">llms.txt</a>.</li>
+  </ul>
+
+  <h2 id="faq"><span class="n">10</span>Questions</h2>
+  <details><summary>Does Monyx charge fees?</summary><div><p>No. The Solana network charges a tiny fee per payment, a fraction of a cent, and in test mode that's play money too.</p></div></details>
+  <details><summary>I lost my recovery key. Can you help?</summary><div><p>If you're still logged in on a device, open the Me tab, tap <strong>Recovery key</strong> and save it now. If you've lost both the key and your logged-in device, the account can't be recovered. Nobody holds a copy, including us.</p></div></details>
+  <details><summary>Someone asked for my recovery key. Should I give it?</summary><div><p>Never. Anyone with it can empty your account. Monyx will never ask for it.</p></div></details>
+  <details><summary>Can I undo a payment?</summary><div><p>No, payments are final. Ask the person to send it back.</p></div></details>
+  <details><summary>Why did my balance change when I didn't do anything?</summary><div><p>Your balance is held in SOL and shown in dollars, so it moves a little with SOL's price. Crypto you own also changes value as prices move.</p></div></details>
+  <details><summary>Can I use Monyx on more than one device?</summary><div><p>Yes. On the new device, choose "I already have an account" and paste your recovery key.</p></div></details>
+  <details><summary>My friend isn't on Monyx. Can I still pay them?</summary><div><p>Send them your pay link. They'll see who's paying and can sign up in under a minute. If they already have a Solana account, you can also paste their account number.</p></div></details>
+</main>
+</div>
+
+<footer><div class="bar"><span>Monyx · monyx.pro · Test mode: balances are play money with no real value.</span><a href="../">Back to the app</a></div></footer>
+
+<script>
+// Highlight the section you're reading in the sidebar.
+(() => {
+  const links = [...document.querySelectorAll('nav.toc a')];
+  const ids = links.map((a) => a.getAttribute('href').slice(1));
+  const io = new IntersectionObserver((es) => es.forEach((e) => {
+    if (!e.isIntersecting) return;
+    links.forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id));
+  }), { rootMargin: '-20% 0px -70% 0px' });
+  ids.forEach((id) => { const el = document.getElementById(id); if (el) io.observe(el); });
+})();
+</script>
+</body>
+</html>
