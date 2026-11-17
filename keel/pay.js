@@ -616,7 +616,11 @@
       if (!prefill.to) q.focus();
     };
     renderTo();
-    if (prefill.to) lookup(prefill.to).then((u) => { if (u) { st.to = u; renderTo(); (amt.value ? note : amt).focus(); } else toast(`No one has @${esc(prefill.to)}`, true); });
+    if (prefill.to) lookup(prefill.to).then((u) => {
+      if (!u) return toast(`No one has @${esc(prefill.to)}`, true);
+      if (u.handle === S.acct.user.handle) return toast('That’s your own link. Share it so friends can pay you.');
+      st.to = u; renderTo(); (amt.value ? note : amt).focus();
+    });
     else if (!prefill.amount) amt.focus();
 
     $('#pay').onclick = () => confirmPay(st.to, parseFloat(amt.value), note.value.trim());
