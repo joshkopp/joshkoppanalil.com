@@ -600,3 +600,10 @@ body.padmode .tabbar .tab-pay.on { background: var(--ink); color: var(--pastel);
 .risk-fine { margin: 10px 0 0; font-size: 12px; color: var(--faint); }
 .risk-fine a { color: var(--brand); }
 #go:disabled { opacity: .45; }
+
+/* Signup: passkey lock step */
+.lockhero { width: 72px; height: 72px; border-radius: 22px; background: var(--pastel, #CEE4C3); display: grid; place-items: center; margin: 4px 0 18px; }
+.lockhero svg { width: 34px; height: 34px; fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.lockpts { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 10px; }
+.lockpts li { position: relative; padding-left: 28px; font-weight: 600; color: var(--ink); }
+.lockpts li::before { content: ""; position: absolute; left: 0; top: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--pastel, #CEE4C3) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 12.5l4 4 8-9' fill='none' stroke='%230D2A1D' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat; }

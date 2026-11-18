@@ -1,44 +1,75 @@
 # Monyx
 
-The money app you can talk to. Say "send Maya 20 for pizza", tap to confirm. Split bills, request money, hear when you get paid, and buy, sell and swap crypto. Test mode on Solana devnet.
+**Just say who to pay.** Monyx is a voice-first dollar wallet on Solana. Say "send Maya 20 for pizza", read the plain-English preview, tap Pay. Before anything goes out, Monyx checks the destination for scams. No seed phrase, no gas, no tokens to understand. Test mode on Solana devnet.
 
-## Deploying to monyx.pro
-This folder is self-contained: every path is relative, and the Solana library ships in `vendor/`.
-Copy the contents of this folder (not the folder itself) to the root of monyx.pro.
+- Live: https://monyx.pro (marketing site) and https://monyx.pro/app/ (the wallet)
+- Built by Josh Koppanalil and Andrew Hu for the UBC 2026 hackathon
 
-- `index.html`, `pay.js`, `pay.css`: the app
-- `voice-parse.js`: turns a spoken sentence into pay / request / split / balance / activity (tests: `node voice-parse.test.js`)
-- `pro/`: Monyx Pro (wallet tracer, agent API market, ledger)
-- `llms.txt`, `agents.json`: instructions for AI agents using the API market
-- `server/index.ts`: source of the Supabase edge function `monyx` (accounts, usernames, requests, profile pictures)
-- `payments/index.ts`: source of `monyx-pay` (USDC payments with Monyx paying the fee, test dollars, pay links, live inbox, exchange, Grok Bot agent API)
-- `payments/quicknode-filter.js`: the QuickNode Streams filter
-- `grok-bot/`: setup page and `SKILL.md` for Grok Bot
-- `privacy/`, `terms/`, `about/`, `404.html`, `robots.txt`, `sitemap.xml`, `og.png`: site pages
-- `meter/index.ts`: source of the Supabase edge function `monyx-market` (pay-per-pull API market)
-- `voice/index.ts`: source of the Supabase edge function `monyx-voice` (ElevenLabs speech-to-text and text-to-speech)
+## What it does
 
-## Voice setup
-Add the secret `ELEVENLABS_API_KEY` to the Supabase project (Edge Functions → Secrets). Optional: `ELEVENLABS_VOICE_ID` to change the voice.
-Without the key, the app falls back to the browser's built-in speech recognition and speech, and typing always works.
+| Feature | How it works |
+| --- | --- |
+| **Voice payments** | ElevenLabs speech-to-text turns "send Jordan 12.50 for movie tickets" into a payment preview; `voice-parse.js` handles pay, request, split, balance and activity. Monyx reads risky payments back out loud. |
+| **Send-time risk check** | Every payment is tagged **High**, **Medium** or **Normal** before you can send. High: look-alike addresses (same first and last 4 characters as someone you've paid), usernames one letter off from a contact, program or mint addresses, invalid addresses. Medium: not on Monyx, brand-new account, or more than half your balance to someone new. On High the Pay button stays disabled until you tick "I understand". |
+| **Passkey lock by default** | Signup offers Face ID / fingerprint lock as a step. The account key is encrypted with AES-GCM using a key derived (HKDF) from the passkey's WebAuthn PRF output, so browser storage only holds ciphertext. Devices without PRF fall back to the recovery key. |
+| **Recovery key** | Every account gets a backup key (save to password manager, copy or download). It's how you get in on a new device or if you lose your passkey. |
+| **No fees** | Gasless relay: the client builds the USDC transfer with the Monyx bank as fee payer, signs its part, and `/monyx-pay/relay` validates the instructions before co-signing. Users never need SOL. |
+| **Dollars, not tokens** | Balances count only Circle's USDC mint, so fake "USDC" tokens airdropped to you can't fake your balance. |
+| **Pay links** | Send money to anyone with a link. The link holds a one-time escrow key; claiming sweeps and closes the escrow. |
+| **Live alerts** | Payments inside Monyx show up instantly; outside payments arrive through QuickNode Streams. |
+| **Grok Bot (agent API)** | `mx_` API keys let an AI assistant draft payments and requests with a weekly limit. Drafts land in "Waiting for your OK". A key can never move money by itself. |
+| **Money pad** | Cash App-style keypad behind the $ tab, with keyboard shortcuts on laptops (Enter = Pay, Shift+Enter = Request). |
 
-The backend stays on Supabase, so nothing changes when the domain does.
+## Layout
 
-## Money setup (USDC on devnet)
-Dollars are Circle's devnet USDC (`4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`). The Monyx bank wallet
-(`9JBSMxHPKMDLyUMhwV2NzFNUikNoQfnJj82NyBoPNJRs`) pays every network fee in SOL and hands out test dollars in USDC, so it needs both:
-- **USDC:** go to https://faucet.circle.com, choose Solana Devnet and paste the bank address. That gives 20 USDC every 2 hours. Each new account takes $5, then $2 a day (change with the secrets MONYX_WELCOME_USD and MONYX_DAILY_USD).
-- **SOL** for fees: https://faucet.solana.com. Each payment costs the bank about 0.000005 SOL, plus about 0.002 SOL the first time someone receives USDC.
+```
+/                 marketing site (index, features, how-it-works, safety, about, faq)
+/app/             the wallet (app/index.html loads ../pay.js and ../pay.css)
+/pro/             Monyx Pro: wallet tracer, agent API market, ledger
+/grok-bot/        Grok Bot setup page and SKILL.md
+/documentation/   API docs
+/privacy/ /terms/ legal pages
+```
 
-## Faster Solana RPC (recommended before judging)
-The free public devnet RPC rate-limits under load (we saw 429s in a live test). In QuickNode, create a **Solana Devnet** endpoint and add these Supabase secrets:
-- `SOLANA_RPC`: the endpoint URL, which the server uses to send and confirm payments
-- `PUBLIC_RPC`: the same URL, or a second endpoint, which browsers use for balances and activity (the app picks it up from `/monyx-pay/info`)
+Old links like `/#pay` or `/#claim/...` are forwarded into `/app/` by `assets/route.js`.
 
-## QuickNode Streams (live "you got paid" for money from outside Monyx)
-1. Pick a long random string and add it as the Supabase secret `QN_STREAMS_KEY`.
-2. In QuickNode, create a Stream: Solana, Devnet, dataset **Block**, starting from the latest block.
-3. Choose "Modify the payload" and paste `payments/quicknode-filter.js`.
-4. Destination: Webhook, URL `https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/monyx-pay/streams?key=<QN_STREAMS_KEY>`.
-5. Send a test USDC payment to a Monyx account from any wallet. The app announces it within a few seconds.
-Payments made inside Monyx already show up instantly without Streams, because the relay logs them.
+Source files:
+
+- `pay.js`, `pay.css`: the wallet (risk check, passkey lock, money pad, signup)
+- `voice-parse.js`: sentence → intent parser (tests: `node voice-parse.test.js`)
+- `server/index.ts`: Supabase edge function `monyx` (accounts, usernames, requests, avatars)
+- `payments/index.ts`: `monyx-pay` (relay, test dollars, pay links, inbox, Streams webhook, agent API)
+- `payments/quicknode-filter.js`: QuickNode Streams filter
+- `voice/index.ts`: `monyx-voice` (ElevenLabs STT and TTS)
+- `meter/index.ts`: `monyx-market` (pay-per-call API market over x402)
+- `vendor/`: bundled Solana web3.js, so the site has no runtime CDN dependencies
+
+## Security notes
+
+- Every page ships a strict Content-Security-Policy meta tag: no inline scripts, no third-party scripts.
+- Account keys never leave the device. With passkey lock on, they are only stored encrypted.
+- The relay re-checks every transaction server-side (`checkTx`): only expected programs, only the USDC mint, bank only as fee payer.
+- GitHub Pages can't set response headers, so HSTS, `frame-ancestors` and `X-Content-Type-Options` need a proxy in front (for example Cloudflare). Turn on "Enforce HTTPS" in the Pages settings.
+
+## Setup
+
+### Money (USDC on devnet)
+Dollars are Circle's devnet USDC (`4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`). The bank wallet (`9JBSMxHPKMDLyUMhwV2NzFNUikNoQfnJj82NyBoPNJRs`) pays network fees in SOL and hands out test dollars, so it needs both:
+- **USDC:** https://faucet.circle.com → Solana Devnet → paste the bank address (20 USDC every 2 hours). New accounts get $5, then $2 a day (`MONYX_WELCOME_USD`, `MONYX_DAILY_USD`).
+- **SOL:** https://faucet.solana.com. About 0.000005 SOL per payment, plus about 0.002 SOL the first time someone receives USDC.
+
+### Voice
+Add the Supabase secret `ELEVENLABS_API_KEY` (optional `ELEVENLABS_VOICE_ID`). Without it the app falls back to the browser's speech recognition, and typing always works.
+
+### Faster RPC
+The public devnet RPC rate-limits under load. Create a QuickNode Solana Devnet endpoint and set `SOLANA_RPC` (server) and `PUBLIC_RPC` (browsers, served from `/monyx-pay/info`).
+
+### QuickNode Streams
+1. Add a long random Supabase secret `QN_STREAMS_KEY`.
+2. In QuickNode, create a Stream: Solana, Devnet, dataset **Block**, from the latest block.
+3. "Modify the payload" with `payments/quicknode-filter.js`.
+4. Webhook URL: `https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/monyx-pay/streams?key=<QN_STREAMS_KEY>`.
+5. Send devnet USDC to a Monyx account from any wallet; the app announces it within seconds.
+
+## Deploying
+Every path is relative. Copy this folder's contents to the site root (keep `CNAME` and `.nojekyll` in the monyx.pro repo).

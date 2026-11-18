@@ -365,7 +365,7 @@
     $('#goLogin').onclick = () => (location.hash = '#login');
   }
 
-  function dots(n) { return `<div class="dots">${[1, 2, 3].map((i) => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div>`; }
+  function dots(n) { const tot = S.signup && S.signup.lockStep ? 4 : 3; return `<div class="dots">${Array.from({ length: tot }, (_, i) => i + 1).map((i) => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div>`; }
   function stepShell(n, body, foot, back = true) {
     return `<section class="steps">
       <div class="topline">${back ? `<button class="back" id="back" aria-label="Back">${ICON.back}</button>` : '<span></span>'}${dots(n)}<span style="width:32px"></span></div>
@@ -450,7 +450,8 @@
         S.acct.token = r.token; S.acct.user = r.user; saveAcct();
         // Welcome dollars arrive while they save their key.
         su.bonus = api(PAPI + '/topup', { method: 'POST' }).catch(() => null);
-        stepKey();
+        // Passkey lock is the default: offer it before the backup key.
+        if (passkeysPossible()) { su.lockStep = true; stepLock(); } else stepKey();
       } catch (e) {
         next.disabled = false; next.textContent = 'Create account';
         hint.className = 'hint bad'; hint.textContent = friendly(e);
@@ -458,11 +459,32 @@
       }
     };
   }
+  function stepLock() {
+    show(stepShell(3, `<div class="lockhero">${ICON.lock}</div>
+      <h2>Lock it with Face ID or a fingerprint</h2>
+      <p class="sub">Your account key gets encrypted on this device. Only your face, fingerprint or device PIN can open it, so a stolen laptop or a peek at your browser storage gets nothing.</p>
+      <ul class="lockpts"><li>No password to remember</li><li>Your key never leaves this device</li><li>You'll still get a backup key for a new phone</li></ul>
+      <div class="hint" id="hint" aria-live="polite"></div>`,
+      `<button class="btn btn-dark" id="next">Turn on passkey lock</button><button class="btn btn-text" id="skip">Not now</button>`, false));
+    const next = $('#next'), hint = $('#hint');
+    next.onclick = async () => {
+      next.disabled = true; next.innerHTML = '<span class="spin"></span>Waiting for your passkey';
+      try { await enablePasskeyLock(); S.signup.locked = true; toast('Locked with your passkey'); stepKey(); }
+      catch (err) {
+        next.disabled = false; next.textContent = 'Try again';
+        hint.className = 'hint bad'; hint.textContent = err.safe ? err.message : 'That didn’t work. Try again, or skip and use your backup key.';
+        if (err.safe && err.message === NO_PRF) { $('#skip').textContent = 'Continue with a backup key'; }
+      }
+    };
+    $('#skip').onclick = () => stepKey();
+  }
   function recoveryKey() { return b58enc(Uint8Array.from(S.acct.secret || S.secretMem)); }
   function stepKey() {
     const key = recoveryKey();
-    show(stepShell(3, `<h2>Save your recovery key</h2>
-      <p class="sub">It's the only way back into your account if you switch phones or clear your browser. We can't reset it for you.</p>
+    const locked = S.signup && S.signup.locked;
+    show(stepShell(S.signup && S.signup.lockStep ? 4 : 3, `${locked ? `<h2>Save a backup key</h2>
+      <p class="sub">Your passkey opens Monyx on this device. This backup gets you in on a new phone or if you lose this one. We can't reset it for you.</p>` : `<h2>Save your recovery key</h2>
+      <p class="sub">It's the only way back into your account if you switch phones or clear your browser. We can't reset it for you.</p>`}
       <div class="keybox" id="kb" title="Tap to reveal" role="button" tabindex="0">Tap to reveal</div>
       <button class="btn btn-dark btn-sm" id="pm" style="margin-top:10px;width:100%">Save to my password manager</button>
       <div class="btn-row" style="margin-top:8px"><button class="btn btn-light btn-sm" id="cp" style="width:100%">Copy</button><button class="btn btn-light btn-sm" id="dl" style="width:100%">Download</button></div>
@@ -494,7 +516,7 @@
       <h2>You're in, ${esc(S.acct.user.name.split(' ')[0])}.</h2>
       <p class="sub">${got ? `We added <b style="color:var(--ink)">${money(b.usd)}</b> in test dollars so you can try it out.` : 'Add money from your home screen whenever you’re ready.'}</p>
       <p class="sub">Friends can pay you at <b style="color:var(--ink)">@${esc(S.acct.user.handle)}</b>.</p></div>
-    </div><div class="foot"><button class="btn btn-dark" id="go">Go to Monyx</button>${S.acct.mode === 'key' && passkeysPossible() ? '<button class="btn btn-text" id="pk">Lock Monyx with Face ID or a fingerprint</button>' : ''}</div></section>`);
+    </div><div class="foot"><button class="btn btn-dark" id="go">Go to Monyx</button>${S.acct.mode === 'key' && passkeysPossible() && !vault.get() && !(S.signup && S.signup.lockStep) ? '<button class="btn btn-text" id="pk">Lock Monyx with Face ID or a fingerprint</button>' : ''}</div></section>`);
     $('#go').onclick = () => { const p = store.get('monyx.pending'); store.del('monyx.pending'); location.hash = p || '#home'; };
     const pk = $('#pk');
     if (pk) pk.onclick = async () => {
