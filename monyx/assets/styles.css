@@ -526,9 +526,10 @@ h2.page-block {
 }
 .avatar {
   flex-shrink: 0;
-  width: 56px;
-  height: 56px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
+  overflow: hidden;
   background: var(--mint);
   color: var(--ink);
   font-weight: 800;
@@ -537,6 +538,7 @@ h2.page-block {
   letter-spacing: -0.04em;
 }
 .band-mint .avatar { background: var(--foam); }
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .person h3 { font-size: 1.2rem; letter-spacing: -0.03em; }
 .role {
   font-weight: 600;
