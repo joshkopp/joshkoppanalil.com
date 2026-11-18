@@ -632,19 +632,36 @@
   function screenLogin() {
     show(`<section class="steps">
       <div class="topline"><button class="back" id="back" aria-label="Back">${ICON.back}</button><span></span><span></span></div>
-      <div class="body"><h2>Welcome back</h2><p class="sub">Paste the recovery key you saved when you signed up.</p>
+      <div class="body"><h2>Welcome back</h2>
+        ${passkeysPossible() ? `<button class="btn btn-dark" id="lpk" style="width:100%;margin-top:14px">${ICON.lock}Sign in with a passkey</button><div class="or"><span>or</span></div>` : ''}
+        <div class="lmode" role="tablist"><button role="tab" data-m="pw" class="on" aria-selected="true">Password</button><button role="tab" data-m="rk" aria-selected="false">Recovery key</button></div>
+        <p class="sub" id="lsub">Your @username and the password you set for signing in.</p>
         <form id="lf" autocomplete="on">
-          <label class="field"><input name="username" id="lu" autocomplete="username" placeholder="@username (optional)" aria-label="Username, optional"></label>
-          <label class="field" style="margin-top:12px"><input type="password" id="rk" name="password" autocomplete="current-password" spellcheck="false" autocapitalize="off" placeholder="Your recovery key" aria-label="Recovery key"><button type="button" class="showk" id="showk">Show</button></label>
+          <label class="field"><input name="username" id="lu" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="@username" aria-label="Username"></label>
+          <label class="field" style="margin-top:12px"><input type="password" id="rk" name="password" autocomplete="current-password" spellcheck="false" autocapitalize="off" placeholder="Password" aria-label="Password"><button type="button" class="showk" id="showk">Show</button></label>
         </form>
-        <p class="fine" style="margin-top:8px">Saved it in a password manager? It can fill this in for you.</p>
+        <p class="fine" style="margin-top:8px" id="lfine">Saved it in a password manager? It can fill this in for you.</p>
         <div class="hint" id="hint"></div></div>
       <div class="foot"><button class="btn btn-dark" id="go" disabled>Log in</button>
         <button class="btn btn-light" id="lnk">Use a code from my other device</button>
         <button class="btn btn-text" id="ph">Use a Phantom wallet instead</button></div>
     </section>`);
     const rk = $('#rk'), go = $('#go'), hint = $('#hint');
+    let mode = 'pw';
     go.disabled = false;
+    $$('.lmode button').forEach((b) => (b.onclick = () => {
+      mode = b.dataset.m; hint.textContent = '';
+      $$('.lmode button').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
+      $('#lsub').textContent = mode === 'pw' ? 'Your @username and the password you set for signing in.' : 'Paste the recovery key you saved when you signed up.';
+      rk.placeholder = mode === 'pw' ? 'Password' : 'Your recovery key'; rk.setAttribute('aria-label', rk.placeholder);
+      $('#lu').placeholder = mode === 'pw' ? '@username' : '@username (optional)';
+    }));
+    const lpk = $('#lpk');
+    if (lpk) lpk.onclick = async () => {
+      lpk.disabled = true; const lab = lpk.innerHTML; lpk.innerHTML = '<span class="spin"></span>Waiting for your passkey';
+      try { await signInWithPasskeyAnywhere(); toast('Signed in with your passkey'); location.hash = store.get('monyx.pending') || '#home'; store.del('monyx.pending'); route(); }
+      catch (e) { S.acct = null; S.kp = null; lpk.disabled = false; lpk.innerHTML = lab; hint.className = 'hint bad'; hint.textContent = e.safe ? e.message : friendly(e); }
+    };
     $('#lf').onsubmit = (e) => { e.preventDefault(); go.click(); };
     $('#showk').onclick = () => { const v = rk.type === 'password'; rk.type = v ? 'text' : 'password'; $('#showk').textContent = v ? 'Hide' : 'Show'; };
         // Chrome can hand over a saved Monyx key directly.
@@ -652,6 +669,12 @@
     rk.oninput = () => { hint.textContent = ''; };
     $('#back').onclick = () => (location.hash = '');
     go.onclick = async () => {
+      if (mode === 'pw') {
+        go.disabled = true; go.innerHTML = '<span class="spin"></span>Checking';
+        try { await signInWithPasswordAnywhere($('#lu').value, rk.value); location.hash = store.get('monyx.pending') || '#home'; store.del('monyx.pending'); route(); }
+        catch (e) { S.acct = null; S.kp = null; go.disabled = false; go.textContent = 'Log in'; hint.className = 'hint bad'; hint.textContent = e.safe ? e.message : friendly(e); }
+        return;
+      }
       let kp;
       if (!rk.value.trim()) { hint.className = 'hint bad'; hint.textContent = 'Paste the recovery key you saved when you signed up.'; rk.focus(); return; }
       if (rk.value.trim().length < 40) { hint.className = 'hint bad'; hint.textContent = 'That’s too short. A recovery key is about 88 letters and numbers.'; rk.focus(); return; }
@@ -1354,6 +1377,7 @@
         ${row('links', ICON.link, 'Pay links', 'Money you sent with a link')}
         ${S.acct.mode === 'key' ? row('key', ICON.key, 'Recovery key', 'Back up or move to a new device') : ''}
         ${S.acct.mode === 'key' ? row('lock', ICON.lock, isPwVault(vault.get()) ? 'Password lock is on' : vault.get() ? 'Passkey lock is on' : 'Lock this device', isPwVault(vault.get()) ? 'Your password opens Monyx here' : vault.get() ? 'Face ID or fingerprint opens Monyx' : 'With a passkey or a password') : ''}
+        ${S.acct.mode === 'key' ? row('anywhere', ICON.key, 'Sign-in options', 'Password or passkey on any device') : ''}
         ${S.acct.mode === 'key' ? row('link', ICON.key, 'Sign in a new device', 'Approve it with a code, no recovery key needed') : ''}
         ${row('guide', ICON.book, 'How Monyx works', 'A plain-language guide')}
         ${row('details', ICON.info, 'Account details', 'For the curious')}
@@ -1372,12 +1396,48 @@
     const k = $('[data-r="key"]'); if (k) k.onclick = showKey;
     const lk = $('[data-r="lock"]'); if (lk) lk.onclick = lockSheet;
     const ln = $('[data-r="link"]'); if (ln) ln.onclick = linkApproveSheet;
+    const an = $('[data-r="anywhere"]'); if (an) an.onclick = signInOptionsSheet;
     $('[data-r="details"]').onclick = details;
     $('[data-r="guide"]').onclick = () => (location.href = '../documentation/');
     $('[data-r="pro"]').onclick = () => (location.href = '../pro/');
     $('[data-r="out"]').onclick = logout;
     $$('.modesw button').forEach((b) => (b.onclick = () => { if (appMode() !== b.dataset.m) { setMode(b.dataset.m); screenMe(); } }));
     $('#quiz').onclick = (e) => { e.preventDefault(); modeQuiz(screenMe); };
+  }
+  // How this account can sign in on other devices. Everything stored is ciphertext.
+  async function signInOptionsSheet() {
+    let st = { pw: false, passkeys: 0 };
+    try { st = await api('/backup'); } catch {}
+    sheet(`<h2>Sign-in options</h2>
+      <p class="sub">Ways to get into @${esc(S.acct.user.handle)} on any phone or computer. Monyx only ever stores your key encrypted.</p>
+      <div class="list menu" style="margin-top:12px">
+        <div class="item"><span class="ico">${ICON.key}</span><div class="mid"><div class="t">Password</div><div class="s">${st.pw ? 'On. Sign in with @username + password.' : 'Off'}</div></div></div>
+        <div class="item"><span class="ico">${ICON.lock}</span><div class="mid"><div class="t">Passkey</div><div class="s">${st.passkeys ? `On (${st.passkeys}). Works wherever your passkey syncs, like iCloud Keychain or Google Password Manager.` : 'Off'}</div></div></div>
+        <div class="item"><span class="ico">${ICON.info}</span><div class="mid"><div class="t">Recovery key</div><div class="s">Always works. Keep it somewhere safe.</div></div></div>
+      </div>
+      <div class="hint" id="soh" aria-live="polite"></div>
+      <div style="display:grid;gap:8px;margin-top:12px">
+        <button class="btn btn-dark" id="sopw">${st.pw ? 'Change sign-in password' : 'Set a sign-in password'}</button>
+        ${passkeysPossible() ? `<button class="btn btn-light" id="sopk">${st.passkeys ? 'Add another passkey' : 'Add a passkey'}</button>` : ''}
+        ${st.pw ? '<button class="btn btn-text" id="sorpw">Turn off password sign-in</button>' : ''}
+        ${st.passkeys ? '<button class="btn btn-text" id="sorpk">Turn off passkey sign-in</button>' : ''}
+      </div>`, (el, close) => {
+      const h = $('#soh', el);
+      const need = () => { if (!(S.acct.secret || S.secretMem)) { h.className = 'hint bad'; h.textContent = 'Unlock Monyx first.'; return true; } return false; };
+      $('#sopw', el).onclick = () => { if (need()) return; close(); passwordSheet(signInOptionsSheet, true); };
+      const pk = $('#sopk', el);
+      if (pk) pk.onclick = async () => {
+        if (need()) return;
+        pk.disabled = true; pk.innerHTML = '<span class="spin"></span>Waiting for your passkey';
+        try {
+          const { id, prf } = await newAccountPasskey();
+          await backupPasskey(b64(id), prf);
+          close(); toast('Passkey added. Use it to sign in on your other devices.'); signInOptionsSheet();
+        } catch (e) { pk.disabled = false; pk.textContent = 'Add a passkey'; h.className = 'hint bad'; h.textContent = e.safe ? e.message : friendly(e); }
+      };
+      const rp = $('#sorpw', el); if (rp) rp.onclick = async () => { await api('/backup/remove', { method: 'POST', body: { kind: 'pw' } }).catch(() => {}); close(); toast('Password sign-in turned off'); signInOptionsSheet(); };
+      const rk = $('#sorpk', el); if (rk) rk.onclick = async () => { await api('/backup/remove', { method: 'POST', body: { kind: 'pk' } }).catch(() => {}); close(); toast('Passkey sign-in turned off. Passkeys still unlock this device.'); signInOptionsSheet(); };
+    });
   }
   function lockSheet() {
     const on = !!vault.get(), pw = isPwVault(vault.get());
@@ -2389,19 +2449,8 @@
   async function enablePasskeyLock() {
     const secret = S.acct.secret || S.secretMem;
     if (!secret) throw userError('Unlock Monyx first.');
-    const salt = rand(32), u = S.acct.user;
-    let cred;
-    try {
-      cred = await navigator.credentials.create({ publicKey: {
-        rp: { name: 'Monyx' }, user: { id: rand(16), name: `@${u.handle}`, displayName: u.name }, challenge: rand(32),
-        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
-        authenticatorSelection: { residentKey: 'preferred', userVerification: 'required' },
-        extensions: { prf: { eval: { first: salt } } } } });
-    } catch (e) { if (/NotAllowed|abort/i.test(String(e.name || e))) throw userError('Passkey setup was cancelled.'); throw userError(NO_PRF); }
-    const ext = cred.getClientExtensionResults().prf;
-    if (!ext || ext.enabled === false) throw userError(NO_PRF);
-    const id = new Uint8Array(cred.rawId);
-    const prf = ext.results && ext.results.first ? new Uint8Array(ext.results.first) : await passkeyPrf(id, salt);
+    const salt = ACCOUNT_SALT, u = S.acct.user;
+    const { id, prf } = await newAccountPasskey();
     const key = await vaultKey(prf, salt), iv = rand(12);
     const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, Uint8Array.from(secret)));
     // Prove we can decrypt before throwing away the plain copy.
@@ -2409,6 +2458,8 @@
     if (b58enc(back) !== b58enc(Uint8Array.from(secret))) throw userError(NO_PRF);
     vault.set({ id: b64(id), salt: b64(salt), iv: b64(iv), ct: b64(ct), address: S.acct.address, user: vaultUser(u) });
     S.secretMem = Array.from(secret); delete S.acct.secret; S.holdKey = false; saveAcct();
+    // Same passkey signs in on your other devices (where it syncs). Best effort: the lock works either way.
+    if (S.acct.token) api('/backup/pk', { method: 'POST', body: { cred_id: b64(id), salt: b64(salt), iv: b64(iv), ct: b64(ct) } }).catch(() => {});
   }
   function disablePasskeyLock() {
     if (!S.secretMem) return;
@@ -2462,16 +2513,98 @@
     }
   }
   const unlockSaved = (pw) => (isPwVault(vault.get()) ? unlockWithPassword(pw) : unlockWithPasskey());
+
+  /* ───────── sign in on any device ─────────
+     Password: PBKDF2 gives 512 bits. The first half encrypts the account key; the second half is a
+     login proof the server checks before releasing the ciphertext. The password never leaves the device.
+     Passkey: a synced passkey (iCloud Keychain, Google Password Manager…) with a fixed PRF input,
+     so any device that has the passkey can derive the same key and open the server's ciphertext. */
+  const ACCOUNT_SALT = new TextEncoder().encode('monyx account passkey v1').slice(0, 24);
+  async function pwSplit(pw, salt, iter) {
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw.normalize('NFKC')), 'PBKDF2', false, ['deriveBits']);
+    const bits = new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, base, 512));
+    const enc = await crypto.subtle.importKey('raw', bits.slice(0, 32), 'AES-GCM', false, ['encrypt', 'decrypt']);
+    return { enc, auth: b64(bits.slice(32)) };
+  }
+  async function backupPassword(pw) {
+    const secret = S.acct.secret || S.secretMem; if (!secret) throw userError('Unlock Monyx first.');
+    const salt = rand(16), iv = rand(12), { enc, auth } = await pwSplit(pw, salt, PW_ITER);
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, enc, Uint8Array.from(secret)));
+    await api('/backup/pw', { method: 'POST', body: { salt: b64(salt), iter: PW_ITER, iv: b64(iv), ct: b64(ct), auth } });
+  }
+  async function backupPasskey(credIdB64, prf) {
+    const secret = S.acct.secret || S.secretMem; if (!secret) throw userError('Unlock Monyx first.');
+    const key = await vaultKey(prf, ACCOUNT_SALT), iv = rand(12);
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, Uint8Array.from(secret)));
+    await api('/backup/pk', { method: 'POST', body: { cred_id: credIdB64, salt: b64(ACCOUNT_SALT), iv: b64(iv), ct: b64(ct) } });
+    return { iv, ct };
+  }
+  // Create a passkey for this account that can sign in anywhere it syncs. Returns { id, prf }.
+  async function newAccountPasskey() {
+    const u = S.acct.user;
+    let cred;
+    try {
+      cred = await navigator.credentials.create({ publicKey: {
+        rp: { name: 'Monyx' }, user: { id: new TextEncoder().encode(S.acct.address).slice(0, 64), name: `@${u.handle}`, displayName: u.name }, challenge: rand(32),
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+        authenticatorSelection: { residentKey: 'required', requireResidentKey: true, userVerification: 'required' },
+        extensions: { prf: { eval: { first: ACCOUNT_SALT } } } } });
+    } catch (e) { if (/NotAllowed|abort/i.test(String(e.name || e))) throw userError('Passkey setup was cancelled.'); throw userError(NO_PRF); }
+    const ext = cred.getClientExtensionResults().prf;
+    if (!ext || ext.enabled === false) throw userError(NO_PRF);
+    const id = new Uint8Array(cred.rawId);
+    const prf = ext.results && ext.results.first ? new Uint8Array(ext.results.first) : await passkeyPrf(id, ACCOUNT_SALT);
+    return { id, prf };
+  }
+  // Finish a sign-in once the account key is known: get a session and lock this device.
+  async function finishKeySignIn(secretArr, expectAddress) {
+    const kp = keypairFrom(secretArr);
+    if (expectAddress && kp.publicKey.toBase58() !== expectAddress) throw userError('That key doesn’t match this account. Nothing was saved.');
+    S.kp = kp; vault.del();
+    S.acct = { mode: 'key', secret: Array.from(kp.secretKey), address: kp.publicKey.toBase58(), token: null, user: null };
+    S.secretMem = null; S.holdKey = true;
+    const r = await api('/login', { method: 'POST', auth: false, body: await proof(S.acct.address) });
+    S.acct.token = r.token; S.acct.user = r.user;
+  }
+  async function signInWithPasswordAnywhere(handle, pw) {
+    const h = handle.trim().replace(/^@/, '').toLowerCase();
+    if (!h) throw userError('Type your @username.');
+    if (!pw) throw userError('Type your password.');
+    const st = await api('/backup/pw/start', { method: 'POST', auth: false, body: { handle: h } });
+    const { enc, auth } = await pwSplit(pw, b64d(st.salt), st.iter);
+    const b = await api('/backup/pw/open', { method: 'POST', auth: false, body: { handle: h, auth } });
+    const secret = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64d(b.iv) }, enc, b64d(b.ct)));
+    await finishKeySignIn(Array.from(secret), b.address);
+    await enablePasswordLock(pw); // same password opens Monyx on this device
+  }
+  async function signInWithPasskeyAnywhere() {
+    if (!passkeysPossible()) throw userError('This browser can’t use passkeys. Use your password or recovery key.');
+    let a;
+    try {
+      a = await navigator.credentials.get({ publicKey: { challenge: rand(32), userVerification: 'required', extensions: { prf: { eval: { first: ACCOUNT_SALT } } } } });
+    } catch (e) { if (/NotAllowed|abort/i.test(String(e.name || e))) throw userError('The passkey prompt was closed.'); throw e; }
+    const prfRes = a.getClientExtensionResults().prf;
+    if (!prfRes || !prfRes.results || !prfRes.results.first) throw userError('That passkey can’t unlock Monyx on this device. Use your password, a code or your recovery key.');
+    const idB64 = b64(new Uint8Array(a.rawId)), prf = new Uint8Array(prfRes.results.first);
+    const b = await api('/backup/pk/open', { method: 'POST', auth: false, body: { cred_id: idB64 } });
+    const key = await vaultKey(prf, b64d(b.salt));
+    const secret = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64d(b.iv) }, key, b64d(b.ct)));
+    await finishKeySignIn(Array.from(secret), b.address);
+    // Lock this device with the same passkey: the server's ciphertext works locally too.
+    vault.set({ id: idB64, salt: b.salt, iv: b.iv, ct: b.ct, address: S.acct.address, user: vaultUser(S.acct.user) });
+    S.secretMem = Array.from(secret); delete S.acct.secret; S.holdKey = false; saveAcct();
+  }
   // Ask for a new password twice, then lock with it.
-  function passwordSheet(done) {
-    sheet(`<h2>Lock with a password</h2>
-      <p class="sub">Your account key is encrypted on this device with this password. You'll type it to open Monyx here. It never leaves this device, so we can't reset it. Your recovery key still works if you forget it.</p>
+  function passwordSheet(done, backupOnly) {
+    sheet(`<h2>${backupOnly ? 'Set a sign-in password' : 'Lock with a password'}</h2>
+      <p class="sub">${backupOnly ? 'Sign in on any device with your @username and this password.' : 'Your account key is encrypted with this password. You’ll type it to open Monyx here.'} We never see the password, so we can't reset it. Your recovery key still works if you forget it.</p>
       <form id="pwf" autocomplete="on"><input type="text" name="username" autocomplete="username" value="@${esc((S.acct.user || {}).handle || '')}" hidden>
         <label class="field" style="margin-top:14px"><input type="password" id="pw1" autocomplete="new-password" placeholder="New password (8+ characters)" aria-label="New password"></label>
         <label class="field" style="margin-top:10px"><input type="password" id="pw2" autocomplete="new-password" placeholder="Type it again" aria-label="Confirm password"></label>
       </form>
+      ${backupOnly ? '' : '<label class="check" style="display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:14px"><input type="checkbox" id="pwany" checked style="margin-top:3px"><span>Also use it to sign in on other devices<br><small style="color:var(--faint)">Monyx stores your key encrypted with this password. Use 12+ characters if you turn this on.</small></span></label>'}
       <div class="hint" id="pwh" aria-live="polite"></div>
-      <button class="btn btn-dark" id="pwgo" style="margin-top:12px">Lock with this password</button>`, (el, close) => {
+      <button class="btn btn-dark" id="pwgo" style="margin-top:12px">${backupOnly ? 'Save password' : 'Lock with this password'}</button>`, (el, close) => {
       const h = $('#pwh', el), go = $('#pwgo', el);
       setTimeout(() => $('#pw1', el).focus(), 50);
       $('#pwf', el).onsubmit = (e) => { e.preventDefault(); go.click(); };
@@ -2479,9 +2612,15 @@
         const a = $('#pw1', el).value, b = $('#pw2', el).value;
         const bad = pwProblem(a); if (bad) { h.className = 'hint bad'; h.textContent = bad; return; }
         if (a !== b) { h.className = 'hint bad'; h.textContent = 'Those don’t match.'; return; }
+        const any = backupOnly || ($('#pwany', el) && $('#pwany', el).checked);
+        if (any && a.length < 12) { h.className = 'hint bad'; h.textContent = 'For signing in on other devices, use at least 12 characters.'; return; }
         go.disabled = true; go.innerHTML = '<span class="spin"></span>Encrypting';
-        try { await enablePasswordLock(a); close(); toast('Locked with your password'); done && done(); }
-        catch (e) { go.disabled = false; go.textContent = 'Lock with this password'; h.className = 'hint bad'; h.textContent = e.safe ? e.message : 'That didn’t work. Try again.'; }
+        try {
+          if (any) await backupPassword(a);
+          if (!backupOnly) await enablePasswordLock(a);
+          close(); toast(backupOnly ? 'Password saved. Use it to sign in anywhere.' : any ? 'Locked. This password also signs you in on other devices.' : 'Locked with your password'); done && done();
+        }
+        catch (e) { go.disabled = false; go.textContent = backupOnly ? 'Save password' : 'Lock with this password'; h.className = 'hint bad'; h.textContent = e.safe ? e.message : 'That didn’t work. Try again.'; }
       };
     });
   }

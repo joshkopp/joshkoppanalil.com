@@ -184,6 +184,44 @@ Deno.serve(async (req) => {
       return json({ status: l.status });
     }
 
+    // ---------- sign in on any device with a password or a synced passkey ----------
+    // The server keeps the account key only as ciphertext. Password backups are released
+    // only after a login proof derived from the password (the password itself never arrives),
+    // with wrong guesses rate-limited per account, so the ciphertext can't be pulled and
+    // attacked offline. Passkey backups need the passkey's PRF secret to open.
+    if (path === "/backup/pw/start" && req.method === "POST") {
+      const h = String(body.handle || "").toLowerCase().replace(/^@/, "");
+      const { data: u } = await db.from("monyx_users").select("id").eq("handle", h).maybeSingle();
+      const { data: b } = u ? await db.from("monyx_key_backups").select("salt, iter").eq("user_id", u.id).eq("kind", "pw").maybeSingle() : { data: null };
+      if (!b) return fail("That account hasn't turned on password sign-in. Use your recovery key, a passkey or a code from your other device.", 404, "no_password");
+      return json({ salt: b.salt, iter: b.iter });
+    }
+    if (path === "/backup/pw/open" && req.method === "POST") {
+      const h = String(body.handle || "").toLowerCase().replace(/^@/, "");
+      const { data: u } = await db.from("monyx_users").select("id, address").eq("handle", h).maybeSingle();
+      const { data: b } = u ? await db.from("monyx_key_backups").select("*").eq("user_id", u.id).eq("kind", "pw").maybeSingle() : { data: null };
+      if (!b) return fail("That account hasn't turned on password sign-in.", 404, "no_password");
+      const key = "pw:" + u!.id;
+      const { data: t } = await db.from("monyx_pw_tries").select("*").eq("key", key).maybeSingle();
+      const fresh = !t || Date.now() - Date.parse(t.first_at) > 15 * 60_000;
+      if (!fresh && t!.n >= 8) return fail("Too many wrong passwords. Wait 15 minutes, or use your recovery key.", 429, "rate_limited");
+      if (limitedLink("ip:" + ip)) return fail("Too many tries from here. Wait a few minutes.", 429, "rate_limited");
+      if ((await sha256(String(body.auth || ""))) !== b.auth_hash) {
+        await db.from("monyx_pw_tries").upsert({ key, n: fresh ? 1 : t!.n + 1, first_at: fresh ? new Date().toISOString() : t!.first_at });
+        return fail("That password isn't right.", 401, "wrong_password");
+      }
+      await db.from("monyx_pw_tries").delete().eq("key", key);
+      return json({ iv: b.iv, ct: b.ct, address: u!.address });
+    }
+    if (path === "/backup/pk/open" && req.method === "POST") {
+      const cred = String(body.cred_id || "");
+      if (!/^[A-Za-z0-9_\-+/=]{16,400}$/.test(cred)) return fail("That passkey isn't set up for Monyx.", 404, "no_passkey");
+      const { data: b } = await db.from("monyx_key_backups").select("user_id, salt, iv, ct").eq("kind", "pk").eq("cred_id", cred).maybeSingle();
+      if (!b) return fail("That passkey isn't set up for signing in on other devices yet. Use your recovery key or a code from your other device.", 404, "no_passkey");
+      const { data: u } = await db.from("monyx_users").select("address").eq("id", b.user_id).single();
+      return json({ salt: b.salt, iv: b.iv, ct: b.ct, address: u.address });
+    }
+
     if (path === "/register" && req.method === "POST") {
       const handle = String(body.handle || "").toLowerCase().replace(/^@/, "");
       const name = String(body.name || "").trim().slice(0, 40);
@@ -213,6 +251,32 @@ Deno.serve(async (req) => {
     if (!user) return fail("Please sign in again.", 401, "unauthorized");
 
     if (path === "/me") return json({ user: pub(user) });
+
+    if (path === "/backup" && req.method === "GET") {
+      const { data } = await db.from("monyx_key_backups").select("kind, created_at").eq("user_id", user.id);
+      return json({ pw: (data || []).some((b) => b.kind === "pw"), passkeys: (data || []).filter((b) => b.kind === "pk").length });
+    }
+    if (path === "/backup/pw" && req.method === "POST") {
+      const { salt, iv, ct, auth } = body; const iter = Number(body.iter);
+      if (![salt, iv, ct, auth].every((x) => typeof x === "string" && /^[A-Za-z0-9+/=]{16,200}$/.test(x)) || !(iter >= 300000 && iter <= 5000000)) return fail("That didn't work. Try again.");
+      await db.from("monyx_key_backups").delete().eq("user_id", user.id).eq("kind", "pw");
+      const { error } = await db.from("monyx_key_backups").insert({ user_id: user.id, kind: "pw", salt, iter, iv, ct, auth_hash: await sha256(auth) });
+      if (error) return oops("backup pw", error);
+      return json({ ok: true });
+    }
+    if (path === "/backup/pk" && req.method === "POST") {
+      const { cred_id, salt, iv, ct } = body;
+      if (!/^[A-Za-z0-9_\-+/=]{16,400}$/.test(String(cred_id || "")) || ![salt, iv, ct].every((x) => typeof x === "string" && /^[A-Za-z0-9+/=]{16,200}$/.test(x))) return fail("That didn't work. Try again.");
+      await db.from("monyx_key_backups").delete().eq("kind", "pk").eq("cred_id", cred_id).eq("user_id", user.id);
+      const { error } = await db.from("monyx_key_backups").insert({ user_id: user.id, kind: "pk", cred_id, salt, iv, ct });
+      if (error) return oops("backup pk", error);
+      return json({ ok: true });
+    }
+    if (path === "/backup/remove" && req.method === "POST") {
+      const kind = body.kind === "pk" ? "pk" : "pw";
+      await db.from("monyx_key_backups").delete().eq("user_id", user.id).eq("kind", kind);
+      return json({ ok: true });
+    }
 
     if (path === "/link/find" && req.method === "POST") {
       if (limitedLink(user.id)) return fail("Too many tries. Wait a few minutes.", 429, "rate_limited");
