@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://nvfxdzxdlizznrknmunl.supabase.co; manifest-src 'self'; media-src 'self' data: blob:; connect-src 'self' https://nvfxdzxdlizznrknmunl.supabase.co https://api.devnet.solana.com https://*.quiknode.pro https://*.helius-rpc.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F6F9F3">
+<meta name="color-scheme" content="light">
+<title>Monyx: just say who to pay</title>
+<meta name="description" content="Monyx is the money app you can talk to. Say who to pay and how much, then tap to confirm. Split bills, request money and hear when you get paid. No fees. Currently in test mode.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="canonical" href="https://monyx.pro/app/">
+<meta property="og:title" content="Monyx: just say who to pay">
+<meta property="og:description" content="Say &quot;send Maya 20 for pizza&quot;, tap once, and it arrives in about a second. Voice payments in digital dollars, no fees.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://monyx.pro/">
+<meta property="og:image" content="https://monyx.pro/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://monyx.pro/og.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Geist:wght@400;500;600;650;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../pay.css?v=17">
+</head>
+<body>
+<div class="shell">
+  <main id="app" aria-live="polite">
+    <noscript>
+      <section class="welcome nojs">
+        <div class="brand"><span class="logo"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M10 21v-7.2a3 3 0 0 1 6 0V21m0-7.2a3 3 0 0 1 6 0V21"/></svg>monyx</span></div>
+        <h1>Just say<br>who to pay.</h1>
+        <p class="sub">Monyx is the money app you can talk to. Say “send Maya 20 for pizza”, tap once, and it arrives in about a second, with no fees. Split bills, ask for money back, send a link to anyone, and hear when you get paid.</p>
+        <p class="sub"><b>Monyx needs JavaScript</b> to create your account securely on this device. Turn it on and reload, or read <a href="../documentation/">how Monyx works</a>.</p>
+        <p class="fine">Test mode: balances are test dollars with no real value. <a href="../about.html">About</a> · <a href="../privacy/">Privacy</a> · <a href="../terms/">Terms</a></p>
+      </section>
+    </noscript>
+  </main>
+  <nav class="tabbar" id="tabbar" aria-label="Main" hidden>
+    <a class="tabbrand" href="#home" aria-label="Monyx home"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M10 21v-7.2a3 3 0 0 1 6 0V21m0-7.2a3 3 0 0 1 6 0V21"/></svg><b>monyx</b></a>
+    <a href="#home" data-tab="home"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
+    <a href="#invest" data-tab="invest"><svg viewBox="0 0 24 24"><path d="M4 18l5-6 4 3 7-9M15 6h5v5"/></svg><span>Invest</span></a>
+    <a href="#pay" data-tab="pay" class="tab-pay" aria-label="Pay or request"><i aria-hidden="true">$</i><span>Pay or request</span></a>
+    <a href="#activity" data-tab="activity"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg><span>Activity</span></a>
+    <a href="#me" data-tab="me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg><span>Me</span></a>
+  </nav>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="../vendor/buffer.js?v=1" defer></script>
+<script src="../vendor/solana-web3.js?v=1" defer></script>
+<script src="../vendor/qrcode.js?v=1" defer></script>
+<script src="../voice-parse.js?v=2" defer></script>
+<script src="../pay.js?v=15" defer></script>
+</body>
+</html>

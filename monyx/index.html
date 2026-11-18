@@ -1,61 +1,398 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://nvfxdzxdlizznrknmunl.supabase.co; manifest-src 'self'; media-src 'self' data: blob:; connect-src 'self' https://nvfxdzxdlizznrknmunl.supabase.co https://api.devnet.solana.com https://*.quiknode.pro https://*.helius-rpc.com; object-src 'none'; base-uri 'self'; form-action 'self'">
-<meta name="referrer" content="strict-origin-when-cross-origin">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#F6F9F3">
-<meta name="color-scheme" content="light">
-<title>Monyx: just say who to pay</title>
-<meta name="description" content="Monyx is the money app you can talk to. Say who to pay and how much, then tap to confirm. Split bills, request money and hear when you get paid. No fees. Currently in test mode.">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="icon" href="favicon.ico" sizes="any">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="canonical" href="https://monyx.pro/">
-<meta property="og:title" content="Monyx: just say who to pay">
-<meta property="og:description" content="Say &quot;send Maya 20 for pizza&quot;, tap once, and it arrives in about a second. Voice payments in digital dollars, no fees.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://monyx.pro/">
-<meta property="og:image" content="https://monyx.pro/og.png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://monyx.pro/og.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Geist:wght@400;500;600;650;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="pay.css?v=16">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monyx — a wallet that checks before you send</title>
+  <meta name="description" content="Monyx is a beginner-friendly anti-scam wallet. Pay by @username or QR, see a plain-English preview, and check the destination before you send. Demo on Solana devnet.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="theme-color" content="#F6F9F3">
+  <meta name="color-scheme" content="light">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Monyx">
+  <meta property="og:image" content="https://monyx.pro/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://monyx.pro/">
+  <meta property="og:title" content="Monyx — a wallet that checks before you send">
+  <meta property="og:description" content="Monyx is a beginner-friendly anti-scam wallet. Pay by @username or QR, see a plain-English preview, and check the destination before you send. Demo on Solana devnet.">
+  <meta property="og:url" content="https://monyx.pro/">
+  <script src="assets/route.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css?v=1">
 </head>
 <body>
-<div class="shell">
-  <main id="app" aria-live="polite">
-    <noscript>
-      <section class="welcome nojs">
-        <div class="brand"><span class="logo"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M10 21v-7.2a3 3 0 0 1 6 0V21m0-7.2a3 3 0 0 1 6 0V21"/></svg>monyx</span></div>
-        <h1>Just say<br>who to pay.</h1>
-        <p class="sub">Monyx is the money app you can talk to. Say “send Maya 20 for pizza”, tap once, and it arrives in about a second, with no fees. Split bills, ask for money back, send a link to anyone, and hear when you get paid.</p>
-        <p class="sub"><b>Monyx needs JavaScript</b> to create your account securely on this device. Turn it on and reload, or read <a href="documentation/">how Monyx works</a>.</p>
-        <p class="fine">Test mode: balances are test dollars with no real value. <a href="about/">About</a> · <a href="privacy/">Privacy</a> · <a href="terms/">Terms</a></p>
-      </section>
-    </noscript>
-  </main>
-  <nav class="tabbar" id="tabbar" aria-label="Main" hidden>
-    <a class="tabbrand" href="#home" aria-label="Monyx home"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M10 21v-7.2a3 3 0 0 1 6 0V21m0-7.2a3 3 0 0 1 6 0V21"/></svg><b>monyx</b></a>
-    <a href="#home" data-tab="home"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
-    <a href="#invest" data-tab="invest"><svg viewBox="0 0 24 24"><path d="M4 18l5-6 4 3 7-9M15 6h5v5"/></svg><span>Invest</span></a>
-    <a href="#pay" data-tab="pay" class="tab-pay" aria-label="Pay or request"><i aria-hidden="true">$</i><span>Pay or request</span></a>
-    <a href="#activity" data-tab="activity"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg><span>Activity</span></a>
-    <a href="#me" data-tab="me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg><span>Me</span></a>
-  </nav>
-</div>
-<div class="toast" id="toast" role="status" hidden></div>
+  <a class="skip" href="#main">Skip to content</a>
+  <!-- Top bar. The wordmark is the word monyx plus a square dot. -->
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="index.html">monyx<span class="dot" aria-hidden="true"></span><span class="sr-only"> home</span></a>
+      <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu">
+        <span></span><span></span>
+      </button>
+      <nav class="nav-links" id="site-menu" aria-label="Site">
+        <a href="features.html">Features</a>
+        <a href="how-it-works.html">How it works</a>
+        <a href="safety.html">Safety</a>
+        <a href="about.html">About</a>
+        <a href="faq.html">FAQ</a>
+        <a class="nav-login menu-only" href="app/#login">Log in</a>
+        <a class="btn btn-primary btn-sm menu-only" href="app/"><span>Open the wallet</span></a>
+      </nav>
+      <div class="nav-side">
+        <a class="nav-login-desk" href="app/#login">Log in</a>
+        <a class="btn btn-primary btn-sm" href="app/"><span>Open the wallet</span></a>
+      </div>
+    </div>
+  </header>
 
-<script src="vendor/buffer.js?v=1" defer></script>
-<script src="vendor/solana-web3.js?v=1" defer></script>
-<script src="vendor/qrcode.js?v=1" defer></script>
-<script src="voice-parse.js?v=2" defer></script>
-<script src="pay.js?v=14" defer></script>
+  <main id="main">
+
+    <!-- Big, quiet hero: a short headline, two buttons, then the phone. -->
+    <section class="hero">
+      <div class="wrap">
+        <h1>A wallet that checks before you send.</h1>
+        <p class="lede">We're Josh and Andrew. Pay with an @username, a QR, or just your voice. Before anything goes out, we write it in plain English and tag the destination High, Medium, or Normal risk. Dollars in, dollars out, no fees.</p>
+        <div class="ctas">
+          <a class="btn btn-primary" href="app/"><span>Open the wallet</span></a>
+          <a class="btn btn-ghost" href="how-it-works.html"><span>See how it works</span></a>
+        </div>
+      </div>
+    </section>
+
+    <div class="wave wave-mint" aria-hidden="true">
+      <svg viewBox="0 0 2880 80" preserveAspectRatio="none">
+        <path d="M0,40 C240,80 480,0 720,40 C960,80 1200,0 1440,40 C1680,80 1920,0 2160,40 C2400,80 2640,0 2880,40 L2880,80 L0,80 Z"></path>
+      </svg>
+    </div>
+
+    <!-- Liquid blobs sit in this mint field, behind a lightly tilting phone. -->
+    <div class="stage-band">
+      <div class="wrap">
+        <div class="stage" id="stage">
+          <div class="liquid" aria-hidden="true">
+            <svg viewBox="0 0 800 640" preserveAspectRatio="xMidYMid slice">
+              <defs>
+                <!-- The "goo" filter blurs two shapes and then tightens the
+                     alpha edge so they look like they melt into each other. -->
+                <filter id="goo" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="16" result="blur"/>
+                  <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -8" result="goo"/>
+                  <feBlend in="SourceGraphic" in2="goo"/>
+                </filter>
+              </defs>
+              <g filter="url(#goo)">
+                <path id="blob-a" d=""></path>
+                <path id="blob-b" d=""></path>
+                <path id="blob-c" d=""></path>
+              </g>
+            </svg>
+          </div>
+          <div class="phone-3d" id="phone-3d">
+            <figure class="phone">
+              <img src="assets/wallet.png?v=2" width="390" height="844" alt="The Monyx home screen: a dollar balance, a Just say it button, a payment Grok Bot drafted waiting for your OK, and a request from Jordan.">
+            </figure>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wave wave-white" aria-hidden="true">
+      <svg viewBox="0 0 2880 80" preserveAspectRatio="none">
+        <path d="M0,40 C240,0 480,80 720,40 C960,0 1200,80 1440,40 C1680,0 1920,80 2160,40 C2400,0 2640,80 2880,40 L2880,80 L0,80 Z"></path>
+      </svg>
+    </div>
+
+    <section class="band band-white" id="why">
+      <div class="wrap split reveal">
+        <div class="copy">
+          <p class="kicker">Why we built this</p>
+          <h2>Most wallets will let you send to a typo.</h2>
+          <p>That's the whole story. No second look, no "wait, is this the same person?" A friend of ours almost paid the wrong person because two addresses looked the same at both ends. There's no undo on that, which still sits with us.</p>
+          <p>The look-alike address thing is called address poisoning: a close copy shows up in your history so you paste the wrong one. A token with a copied logo is another one. And people get rushed. We've all been rushed.</p>
+        </div>
+        <div class="visual">
+          <div class="card">
+            <p class="card-label">What we wanted</p>
+            <p class="preview-line">The careful part should happen before you hit send, in regular sentences. Not afterwards, in a block explorer.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wave wave-mint" aria-hidden="true">
+      <svg viewBox="0 0 2880 80" preserveAspectRatio="none">
+        <path d="M0,40 C240,80 480,0 720,40 C960,80 1200,0 1440,40 C1680,80 1920,0 2160,40 C2400,80 2640,0 2880,40 L2880,80 L0,80 Z"></path>
+      </svg>
+    </div>
+
+    <section class="band band-mint" id="features">
+      <div class="wrap split reveal">
+        <div class="copy">
+          <p class="kicker">Pay simply</p>
+          <h2>Pay by @username or QR.</h2>
+          <p>Type @maya, or scan a code. You can still paste a long address if you want to. Most of the time you won't. <a class="text-link" href="features.html">See all the features</a>.</p>
+        </div>
+        <div class="visual">
+          <div class="card">
+            <p class="card-label">Send to</p>
+            <div class="pay-row">
+              <div class="fake-input" style="flex:1"><span class="at">@</span>maya</div>
+              <svg class="qr" viewBox="0 0 88 88" aria-hidden="true">
+                <rect width="88" height="88" rx="16" fill="#e8f4e0"/>
+                <rect x="10" y="10" width="22" height="22" rx="3" fill="#1f3d2b"/>
+                <rect x="16" y="16" width="10" height="10" rx="1" fill="#e8f4e0"/>
+                <rect x="56" y="10" width="22" height="22" rx="3" fill="#1f3d2b"/>
+                <rect x="62" y="16" width="10" height="10" rx="1" fill="#e8f4e0"/>
+                <rect x="10" y="56" width="22" height="22" rx="3" fill="#1f3d2b"/>
+                <rect x="16" y="62" width="10" height="10" rx="1" fill="#e8f4e0"/>
+                <rect x="40" y="10" width="6" height="6" fill="#1f3d2b"/>
+                <rect x="40" y="22" width="6" height="6" fill="#1f3d2b"/>
+                <rect x="10" y="40" width="6" height="6" fill="#1f3d2b"/>
+                <rect x="22" y="40" width="6" height="6" fill="#1f3d2b"/>
+                <rect x="40" y="40" width="14" height="14" fill="#1f3d2b"/>
+                <rect x="58" y="40" width="6" height="6" fill="#1f3d2b"/>
+                <rect x="70" y="40" width="6" height="6" fill="#1f3d2b"/>
+                <rect x="40" y="58" width="6" height="6" fill="#1f3d2b"/>
+                <rect x="52" y="58" width="6" height="6" fill="#1f3d2b"/>
+                <rect x="64" y="58" width="14" height="6" fill="#1f3d2b"/>
+                <rect x="40" y="70" width="6" height="6" fill="#1f3d2b"/>
+                <rect x="58" y="70" width="6" height="6" fill="#1f3d2b"/>
+                <rect x="70" y="70" width="6" height="6" fill="#1f3d2b"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wave wave-white" aria-hidden="true">
+      <svg viewBox="0 0 2880 80" preserveAspectRatio="none">
+        <path d="M0,40 C240,0 480,80 720,40 C960,0 1200,80 1440,40 C1680,0 1920,80 2160,40 C2400,0 2640,80 2880,40 L2880,80 L0,80 Z"></path>
+      </svg>
+    </div>
+
+    <section class="band band-white">
+      <div class="wrap split flip reveal">
+        <div class="copy">
+          <p class="kicker">In plain English</p>
+          <h2>See the payment before it leaves.</h2>
+          <p>Before you confirm, we write out what you're about to do. "You're sending two dollars to Maya." If something looks off, you see it here.</p>
+        </div>
+        <div class="visual">
+          <div class="card">
+            <p class="card-label">Preview</p>
+            <p class="preview-line">You're sending two dollars to Maya.</p>
+            <span class="badge badge-normal">Normal risk</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wave wave-mint" aria-hidden="true">
+      <svg viewBox="0 0 2880 80" preserveAspectRatio="none">
+        <path d="M0,40 C240,80 480,0 720,40 C960,80 1200,0 1440,40 C1680,80 1920,0 2160,40 C2400,80 2640,0 2880,40 L2880,80 L0,80 Z"></path>
+      </svg>
+    </div>
+
+    <section class="band band-mint">
+      <div class="wrap split reveal">
+        <div class="copy">
+          <p class="kicker">A second look</p>
+          <h2>An address safety check, in three words you can use.</h2>
+          <p>We look at the destination and give it a risk tier: High, Medium, or Normal. These labels are here to help you pause. They are not legal or financial advice. <a class="text-link" href="safety.html">How the check works</a>.</p>
+        </div>
+        <div class="visual">
+          <div class="card">
+            <p class="card-label">Risk tiers</p>
+            <div class="tier-list">
+              <div class="tier-item">
+                <span class="badge badge-high">High risk</span>
+                <div>
+                  <h3>Pause here.</h3>
+                  <p>Something about this destination deserves a closer look.</p>
+                </div>
+              </div>
+              <div class="tier-item">
+                <span class="badge badge-medium">Medium risk</span>
+                <div>
+                  <h3>Worth a second look.</h3>
+                  <p>Not a hard stop. Just slow down before you confirm.</p>
+                </div>
+              </div>
+              <div class="tier-item">
+                <span class="badge badge-normal">Normal risk</span>
+                <div>
+                  <h3>Nothing unusual jumped out.</h3>
+                  <p>Still read the preview. You're the one sending it.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wave wave-white" aria-hidden="true">
+      <svg viewBox="0 0 2880 80" preserveAspectRatio="none">
+        <path d="M0,40 C240,0 480,80 720,40 C960,0 1200,80 1440,40 C1680,0 1920,80 2160,40 C2400,0 2640,80 2880,40 L2880,80 L0,80 Z"></path>
+      </svg>
+    </div>
+
+    <section class="band band-white" id="voice">
+      <div class="wrap split flip reveal">
+        <div class="copy">
+          <p class="kicker">Just say it</p>
+          <h2>Tell it who to pay, out loud.</h2>
+          <p>Hold the mic and say "send Maya twenty for pizza" or "split sixty with Sam and Leo." Monyx fills in the payment and reads it back to you. Then you get the same preview and the same check as always. Typing works too, if you'd rather not talk to your phone in public.</p>
+        </div>
+        <div class="visual">
+          <div class="card">
+            <p class="card-label">You said</p>
+            <p class="preview-line">"Send Maya twenty for pizza."</p>
+            <div class="mini-rows">
+              <div><span>To</span><b>Maya Chen · @maya</b></div>
+              <div><span>Amount</span><b>$20.00</b></div>
+              <div><span>For</span><b>pizza</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wave wave-mint" aria-hidden="true">
+      <svg viewBox="0 0 2880 80" preserveAspectRatio="none">
+        <path d="M0,40 C240,80 480,0 720,40 C960,80 1200,0 1440,40 C1680,80 1920,0 2160,40 C2400,80 2640,0 2880,40 L2880,80 L0,80 Z"></path>
+      </svg>
+    </div>
+
+    <section class="band band-mint" id="fees">
+      <div class="wrap split reveal">
+        <div class="copy">
+          <p class="kicker">Dollars, not tokens</p>
+          <h2>A dollar stays a dollar. And there's no fee.</h2>
+          <p>Your balance is in USDC, a digital dollar, so it doesn't swing around like other crypto. Every send also needs a tiny network fee, normally paid in a token you'd have to go buy first. We pay it for you. You never see it, and you never need to own anything but dollars.</p>
+        </div>
+        <div class="visual">
+          <div class="card">
+            <p class="card-label">On every payment</p>
+            <div class="mini-rows">
+              <div><span>You send</span><b>$20.00</b></div>
+              <div><span>Maya gets</span><b>$20.00</b></div>
+              <div><span>Network fee</span><b>Paid by Monyx</b></div>
+              <div><span>Arrives</span><b>In about a second</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wave wave-white" aria-hidden="true">
+      <svg viewBox="0 0 2880 80" preserveAspectRatio="none">
+        <path d="M0,40 C240,0 480,80 720,40 C960,0 1200,80 1440,40 C1680,0 1920,80 2160,40 C2400,0 2640,80 2880,40 L2880,80 L0,80 Z"></path>
+      </svg>
+    </div>
+
+    <section class="band band-white" id="links">
+      <div class="wrap split flip reveal">
+        <div class="copy">
+          <p class="kicker">Pay links</p>
+          <h2>Pay someone who isn't on Monyx yet.</h2>
+          <p>Make a link and text it. The money waits in its own little account until they open the link and claim it. If they never do, you can take it back. They don't need to know what a wallet is. They just tap.</p>
+        </div>
+        <div class="visual">
+          <div class="card">
+            <p class="card-label">What they see</p>
+            <p class="preview-line">Josh sent you $20.00.</p>
+            <p class="card-note">"For the concert tickets." Tap to claim it. It takes about ten seconds.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wave wave-mint" aria-hidden="true">
+      <svg viewBox="0 0 2880 80" preserveAspectRatio="none">
+        <path d="M0,40 C240,80 480,0 720,40 C960,80 1200,0 1440,40 C1680,80 1920,0 2160,40 C2400,80 2640,0 2880,40 L2880,80 L0,80 Z"></path>
+      </svg>
+    </div>
+
+    <section class="band band-mint" id="assistant">
+      <div class="wrap split reveal">
+        <div class="copy">
+          <p class="kicker">An assistant that can't spend</p>
+          <h2>Let Grok Bot handle the asking. You keep the sending.</h2>
+          <p>Connect Grok Bot with a key from your Me tab and it can ask friends for rent, check who owes you, and draft payments. Drafts wait on your home screen under "Waiting for your OK." The key has no way to move money on its own. Every draft goes through the same preview and check as a payment you start yourself.</p>
+        </div>
+        <div class="visual">
+          <div class="card">
+            <p class="card-label">Waiting for your OK</p>
+            <p class="preview-line">Grok Bot wants to pay Maya Chen $12.00.</p>
+            <p class="card-note">Your share of Friday pizza. Review it, or dismiss it.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wave wave-white" aria-hidden="true">
+      <svg viewBox="0 0 2880 80" preserveAspectRatio="none">
+        <path d="M0,40 C240,0 480,80 720,40 C960,0 1200,80 1440,40 C1680,0 1920,80 2160,40 C2400,0 2640,80 2880,40 L2880,80 L0,80 Z"></path>
+      </svg>
+    </div>
+
+    <section class="band band-white" id="story">
+      <div class="wrap">
+        <div class="story reveal">
+          <p class="kicker">How this started</p>
+          <h2>We got into crypto the usual student way.</h2>
+          <p>A little late, a little lost, and suddenly responsible for money in apps that assumed we already knew the rules. Then we watched friends almost mess it up. Look-alike addresses. Tokens that weren't what they said. A group chat that made a send feel urgent.</p>
+          <p>So we built Monyx at the UBC 2026 hackathon. <a class="text-link" href="about.html">The rest of the story, and the two of us</a>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="band band-white close" style="padding-top:0">
+      <div class="wrap reveal">
+        <h2>Try the demo.</h2>
+        <p>It runs on Solana devnet, so the balances are play money. We built it so we can add more chains later.</p>
+        <div class="ctas">
+          <a class="btn btn-primary" href="app/"><span>Open the wallet</span></a>
+          <a class="btn btn-ghost" href="faq.html"><span>Read the FAQ</span></a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="brand">
+        <a class="logo" href="index.html">monyx<span class="dot" aria-hidden="true"></span></a>
+        <p class="links">
+          <a href="index.html" aria-current="page">Home</a>
+          <a href="features.html">Features</a>
+          <a href="how-it-works.html">How it works</a>
+          <a href="safety.html">Safety</a>
+          <a href="about.html">About</a>
+          <a href="faq.html">FAQ</a>
+          <a href="app/#login">Log in</a>
+          <a href="app/#signup">Sign up</a>
+          <a href="documentation/">Docs</a>
+          <a href="grok-bot/">Grok Bot</a>
+          <a href="pro/">Monyx Pro</a>
+          <a href="privacy/">Privacy</a>
+          <a href="terms/">Terms</a>
+          <a href="https://monyx.pro/">monyx.pro</a>
+        </p>
+      </div>
+      <p class="legal">Monyx Wallet. UBC 2026 hackathon project. Devnet demo only. Risk labels are informational, not legal or financial advice.</p>
+    </div>
+  </footer>
+  <script src="assets/main.js?v=1" defer></script>
 </body>
 </html>

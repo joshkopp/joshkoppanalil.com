@@ -359,7 +359,7 @@
         <button class="btn btn-dark" id="goSignup">Create your account</button>
         <button class="btn btn-text" id="goLogin">I already have an account</button>
       </div>
-      <p class="fine">Monyx is in test mode: balances are test dollars with no real value. <a href="documentation/">How it works</a> · <a href="privacy/">Privacy</a> · <a href="terms/">Terms</a></p>
+      <p class="fine">Monyx is in test mode: balances are test dollars with no real value. <a href="../documentation/">How it works</a> · <a href="../privacy/">Privacy</a> · <a href="../terms/">Terms</a></p>
     </section>`);
     $('#goSignup').onclick = () => startSignup();
     $('#goLogin').onclick = () => (location.hash = '#login');
@@ -883,18 +883,92 @@
   async function lookup(handle) {
     try { const { user } = await api(`/u/${encodeURIComponent(handle.replace(/^@/, ''))}`, { auth: false }); S.people[user.address] = user; return user; } catch { return null; }
   }
+  /* Risk check: a plain-language pause before money leaves. It only reads
+     what the app already knows (your history, your contacts, the account's
+     age, the address itself), so it runs instantly and offline. Informational,
+     not a guarantee. */
+  const editDist1 = (a, b) => {
+    if (a === b || Math.abs(a.length - b.length) > 1) return false;
+    let i = 0, j = 0, d = 0;
+    while (i < a.length && j < b.length) {
+      if (a[i] === b[j]) { i++; j++; continue; }
+      if (++d > 1) return false;
+      if (a.length > b.length) i++; else if (b.length > a.length) j++; else { i++; j++; }
+    }
+    return d + (a.length - i) + (b.length - j) <= 1;
+  };
+  function riskCheck(to, dollars) {
+    const high = [], med = [], ok = [];
+    const addr = to.address || '';
+    const history = (S.feed || []).filter((e) => e && e.with === addr);
+    const paidBefore = history.some((e) => e.amount < 0), heardFrom = history.length > 0;
+    const known = new Map();
+    for (const e of S.feed || []) if (e && e.with && e.with !== addr) known.set(e.with, S.people[e.with] || { address: e.with });
+    for (const p of Object.values(S.people || {})) if (p && p.address && p.address !== addr) known.set(p.address, p);
+    // 1. Address poisoning: same start and end as someone you know, different middle.
+    for (const [a, p] of known) {
+      if (a.slice(0, 4) === addr.slice(0, 4) && a.slice(-4) === addr.slice(-4)) {
+        high.push(`This account number starts and ends like ${p.name ? esc(p.name) + '’s' : 'one in your history'}, but it isn’t the same account. That’s a common trick.`);
+        break;
+      }
+    }
+    // 2. Look-alike username: one letter away from someone you've paid.
+    if (to.handle) {
+      const twin = knownPeople().find((p) => p.handle !== to.handle && editDist1(p.handle.toLowerCase(), to.handle.toLowerCase()));
+      if (twin && !paidBefore) high.push(`@${esc(to.handle)} is one letter off from @${esc(twin.handle)}, someone you already know.`);
+    }
+    // 3. Addresses no person can hold: programs, the USDC token itself.
+    try {
+      if (addr === USDC) high.push('That’s the address of the USDC token itself, not a person. Money sent there is gone.');
+      else if (!solanaWeb3.PublicKey.isOnCurve(new solanaWeb3.PublicKey(addr).toBytes())) high.push('This address belongs to a program, not a person’s wallet. Money sent there can get stuck.');
+    } catch { high.push('This doesn’t look like a valid account number.'); }
+    // 4. Softer signals.
+    if (to.bank) med.push('This is Monyx’s own account, not a person.');
+    if (to.unknown) med.push('This account isn’t on Monyx, so we can’t show a name or photo.');
+    if (!paidBefore) med.push(heardFrom ? `You’ve been paid by ${esc(first(to))}, but you’ve never paid them.` : `You’ve never paid ${esc(first(to))} before.`);
+    const age = to.since ? (Date.now() - new Date(to.since).getTime()) / 864e5 : null;
+    if (age != null && age < 1) med.push('This Monyx account was made in the last day.');
+    if (S.cash != null && dollars > 0.5 * usd(S.cash) && !paidBefore && dollars >= 20) med.push('That’s more than half your balance, to someone new.');
+    if (paidBefore) ok.push(`You’ve paid ${esc(first(to))} before.`);
+    if (to.handle && !to.unknown) ok.push(`@${esc(to.handle)} is a Monyx account${to.name ? ` named ${esc(to.name)}` : ''}.`);
+    // A single soft signal on its own (just "first time") is normal life, not a warning.
+    const softOnly = med.length === 1 && !paidBefore && !to.unknown && !to.bank && (age == null || age >= 1);
+    const tier = high.length ? 'high' : med.length && !softOnly ? 'medium' : 'normal';
+    return { tier, reasons: tier === 'high' ? high.concat(med) : tier === 'medium' ? med : softOnly ? med.concat(ok) : ok };
+  }
+  function previewLine(to, dollars, note) {
+    const name = to.unknown ? `the account ending ${esc(addrEnd(to.address))}` : esc(who(to));
+    return `You’re sending <b>${spoken(dollars)}</b> to <b>${name}</b>${to.handle ? ` (@${esc(to.handle)})` : ''}${note ? ` for “${esc(plainNote(note))}”` : ''}.`;
+  }
+  const addrEnd = (a) => (a || '').slice(-4);
+  const TIER = { high: 'High risk', medium: 'Medium risk', normal: 'Normal risk' };
+  const TIER_HELP = { high: 'Pause here. Check with the person you’re paying before you send.', medium: 'Worth a second look. Not a hard stop.', normal: 'Nothing unusual jumped out. Still read the sentence above.' };
+  function riskCard(to, dollars, note) {
+    const r = riskCheck(to, dollars);
+    return { r, html: `<div class="risk risk-${r.tier}" role="group" aria-label="Payment preview">
+      <p class="risk-line">${previewLine(to, dollars, note)}</p>
+      <div class="risk-tag"><span class="tier">${TIER[r.tier]}</span><span>${TIER_HELP[r.tier]}</span></div>
+      ${r.reasons.length ? `<ul class="risk-why">${r.reasons.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''}
+      ${r.tier === 'high' ? `<label class="risk-ok"><input type="checkbox" id="riskok"> I checked this with ${esc(first(to))} and still want to send it</label>` : ''}
+      <p class="risk-fine">Risk labels are informational, not a guarantee. <a href="../safety.html" target="_blank" rel="noopener">How the check works</a></p>
+    </div>` };
+  }
+
   function confirmPay(to, dollars, note, requestId, voiced = false, draftId = null) {
     if ((to.handle && S.acct.user && to.handle === S.acct.user.handle) || to.address === S.acct.address) { toast("That's your own account. You can't pay yourself.", true); return; }
     const after = S.cash != null ? usd(S.cash) - dollars : null;
     const short_ = after != null && after < -0.004;
+    const rc = riskCard(to, dollars, note);
     sheet(`<div class="confirm">${avatar(to, 'lg')}<div class="sub">Pay ${esc(who(to))}${to.handle ? ` · @${esc(to.handle)}` : ''}</div>
       <div class="big">${money(dollars)}</div>${note ? `<div class="note">${esc(note)}</div>` : ''}</div>
       <div class="ledger"><div><span>From</span><b>Monyx balance</b></div>${after != null && after >= -0.004 ? `<div><span>Balance after</span><b>${money(Math.max(0, after))}</b></div>` : ''}<div><span>Network fee</span><b>Paid by Monyx</b></div></div>
       ${draftId ? `<div class="voiced">${ICON.spark}<span>Drafted by your assistant. Check it, then tap Pay.</span></div>` : ''}
       ${voiced ? `<div class="voiced">${ICON.mic}<span>Filled in by voice. Check it, then tap Pay.</span></div>` : ''}
-      ${to.unknown ? `<div class="warn">${'This account isn’t on Monyx. Payments can’t be undone, so double-check the number.'}</div>` : ''}
+      ${rc.html}
       ${short_ ? `<div class="warn">You have ${money(usd(S.cash))}. Add ${money(dollars - usd(S.cash))} more to pay this.</div><button class="btn btn-dark" id="addm">Add money</button>` : `<button class="btn btn-dark" id="go">Pay ${money(dollars)}</button>`}`, (el, close) => {
       if (short_) { $('#addm', el).onclick = () => { close(); addMoney(); }; return; }
+      if (rc.r.tier === 'high') { const g = $('#go', el), c = $('#riskok', el); g.disabled = true; c.onchange = () => (g.disabled = !c.checked); }
+      if (voiced && rc.r.tier !== 'normal') say(`${TIER[rc.r.tier]}. ${rc.r.tier === 'high' ? 'Please check before you send.' : 'Take a second look.'}`);
       $('#go', el).onclick = async (e) => {
         const b = e.currentTarget; b.disabled = true; b.innerHTML = '<span class="spin"></span>Sending';
         try {
@@ -1006,7 +1080,7 @@
         ${row('pro', ICON.tools, 'Monyx Pro', 'Wallet tracer and developer tools')}
         ${row('out', ICON.out, 'Log out', '')}
       </div>
-      <p class="fine" style="margin-top:22px">Monyx · <a href="about/">About</a> · <a href="privacy/">Privacy</a> · <a href="terms/">Terms</a></p>`, { tabs: true, tab: 'me' });
+      <p class="fine" style="margin-top:22px">Monyx · <a href="../about.html">About</a> · <a href="../privacy/">Privacy</a> · <a href="../terms/">Terms</a></p>`, { tabs: true, tab: 'me' });
     $('#share').onclick = shareLink;
     $('#tTalk').onchange = (e) => { S.voice.talk = e.target.checked; store.set('monyx.talkback', S.voice.talk); if (S.voice.talk) say('Okay, I’ll talk back.'); else stopSpeaking(); };
     $('#tAnn').onchange = (e) => { S.voice.announce = e.target.checked; store.set('monyx.announce', S.voice.announce); if (S.voice.announce) say('I’ll read new payments out loud.', { force: true }); };
@@ -1018,8 +1092,8 @@
     const k = $('[data-r="key"]'); if (k) k.onclick = showKey;
     const lk = $('[data-r="lock"]'); if (lk) lk.onclick = lockSheet;
     $('[data-r="details"]').onclick = details;
-    $('[data-r="guide"]').onclick = () => (location.href = 'documentation/');
-    $('[data-r="pro"]').onclick = () => (location.href = 'pro/');
+    $('[data-r="guide"]').onclick = () => (location.href = '../documentation/');
+    $('[data-r="pro"]').onclick = () => (location.href = '../pro/');
     $('[data-r="out"]').onclick = logout;
   }
   function lockSheet() {
@@ -1807,7 +1881,7 @@
         <button class="btn btn-dark" id="goSignup">Create account &amp; claim</button>
         <button class="btn btn-text" id="goLogin">I already have an account</button>
       </div>
-      <p class="fine">Monyx is in test mode: these are test dollars with no real value. <a href="documentation/">How it works</a></p>
+      <p class="fine">Monyx is in test mode: these are test dollars with no real value. <a href="../documentation/">How it works</a></p>
     </section>`);
     $('#goSignup').onclick = () => startSignup();
     $('#goLogin').onclick = () => (location.hash = '#login');
@@ -1824,7 +1898,7 @@
         <button class="btn btn-dark" id="goSignup">Create account to pay</button>
         <button class="btn btn-text" id="goLogin">I already have an account</button>
       </div>
-      <p class="fine">Monyx is in test mode: balances are test dollars with no real value. <a href="documentation/">How it works</a></p>
+      <p class="fine">Monyx is in test mode: balances are test dollars with no real value. <a href="../documentation/">How it works</a></p>
     </section>`);
     $('#goSignup').onclick = () => startSignup();
     $('#goLogin').onclick = () => (location.hash = '#login');
@@ -1896,7 +1970,7 @@
       <label class="field prefix" style="margin-top:8px"><span style="font-size:15px;white-space:nowrap">Per week $</span><input id="lim" inputmode="numeric" value="50" style="padding-left:6px" aria-label="Weekly draft limit in dollars"></label>
       <button class="btn btn-dark" id="mk" style="margin-top:12px">Create key</button>
       <div id="out"></div>
-      <p class="fine" style="margin-top:12px"><a href="grok-bot/" target="_blank" rel="noopener">How to set up Grok Bot</a></p>`, (el) => {
+      <p class="fine" style="margin-top:12px"><a href="../grok-bot/" target="_blank" rel="noopener">How to set up Grok Bot</a></p>`, (el) => {
       $$('[data-rv]', el).forEach((b) => (b.onclick = async () => { b.disabled = true; await api(`${PAPI}/agent-keys/${b.dataset.rv}/revoke`, { method: 'POST' }).catch(() => {}); b.closest('.item').remove(); toast('Assistant removed'); }));
       $('#mk', el).onclick = async (e) => {
         const b = e.currentTarget; b.disabled = true;
