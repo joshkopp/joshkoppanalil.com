@@ -1,5 +1,5 @@
 /* ============================================================
-   Monyx marketing site — shared styles
+   Monyx marketing site: shared styles
    Pastel green #CEE4C3 (the brand mint), deep green #1f3d2b for
    text and buttons so body copy meets WCAG AA on both white and
    mint, and lots of whitespace. Risk labels are High, Medium,
@@ -429,7 +429,7 @@ h2.page-block {
 }
 .text-link:hover { color: var(--mute); }
 
-/* Large rounded "product" cards — typographic mocks, not screenshots. */
+/* Large rounded "product" cards: typographic mocks, not screenshots. */
 .card {
   background: var(--white);
   border-radius: var(--radius);
@@ -855,3 +855,100 @@ footer .legal { max-width: 46em; }
 .checks { list-style: none; margin: 14px 0 18px; display: grid; gap: 12px; }
 .checks li { display: flex; gap: 12px; align-items: flex-start; color: var(--mute); }
 .checks .badge { flex: none; min-width: 74px; justify-content: center; text-align: center; }
+
+/* ---- Hero phone: smaller, with a slim real-phone bezel ----
+   Sized off the screen height so it always fits on a laptop with the
+   headline above it. */
+.stage { min-height: 0; padding: 8px 0 0; }
+.stage-band { padding: 12px 0 56px; }
+.phone {
+  position: relative;
+  width: clamp(190px, 27vh, 246px);
+  padding: 7px;
+  border-radius: 40px;
+  background: #13261b;
+  border: 0;
+  box-shadow:
+    inset 0 0 0 1.5px #2c4a37,
+    0 0 0 1px rgba(31, 61, 43, 0.25),
+    0 30px 50px -24px rgba(31, 61, 43, 0.55),
+    0 12px 18px -10px rgba(31, 61, 43, 0.25);
+}
+.phone::before { /* the camera pill */
+  content: ""; position: absolute; top: 15px; left: 50%; width: 30%; height: 15px; margin-left: -15%;
+  background: #13261b; border-radius: 999px; z-index: 2;
+}
+.phone img { border-radius: 33px; background: #F6F9F3; display: block; aspect-ratio: 390 / 844; object-fit: cover; object-position: top; }
+@media (max-width: 799px) { .phone { width: min(230px, 60vw); } }
+@media (max-height: 640px) and (min-width: 800px) { .phone { width: 180px; } }
+
+/* ---- How it works: a timeline with a small mock of each screen ---- */
+.journey { list-style: none; position: relative; display: grid; gap: clamp(48px, 7vw, 88px); padding: 12px 0; }
+.journey::before { /* the thread that ties the steps together */
+  content: ""; position: absolute; left: 22px; top: 40px; bottom: 40px; width: 2px;
+  background: repeating-linear-gradient(to bottom, rgba(31, 61, 43, 0.28) 0 6px, transparent 6px 14px);
+}
+.j-step { position: relative; display: grid; gap: 28px; align-items: center; padding-left: 64px; }
+.j-step .step-n { position: absolute; left: 0; top: 0; box-shadow: 0 0 0 6px var(--mint); }
+.j-copy h2 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); letter-spacing: -0.04em; line-height: 1.1; margin-bottom: 12px; }
+.j-copy p:not(.j-time) { color: var(--mute); max-width: 32em; }
+.j-time { display: inline-block; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); background: rgba(255, 255, 255, 0.6); padding: 4px 12px; border-radius: var(--pill); margin-bottom: 12px; }
+.j-mock { position: relative; display: grid; gap: 12px; justify-items: center; }
+@media (min-width: 900px) {
+  .journey::before { left: 50%; margin-left: -1px; }
+  .j-step { grid-template-columns: 1fr 1fr; gap: 96px; padding-left: 0; }
+  .j-step .step-n { left: 50%; top: 50%; margin: -22px 0 0 -22px; }
+  .j-step.flip .j-copy { order: 2; }
+  .j-step .j-mock { justify-items: center; }
+}
+
+/* Mock pieces. Built from type and boxes, not screenshots, so they stay crisp. */
+.m-card { width: min(340px, 100%); background: var(--white); border-radius: 26px; padding: 20px 22px; box-shadow: var(--shadow); text-align: left; }
+.m-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); margin-bottom: 12px; }
+.m-field { display: flex; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--foam); margin-bottom: 8px; font-size: 0.95rem; }
+.m-field span { color: var(--mute); }
+.m-field i { font-style: normal; color: var(--mute); }
+.m-btn { margin-top: 6px; text-align: center; padding: 13px; border-radius: var(--pill); background: var(--mint); font-weight: 700; }
+.m-toast { background: var(--ink); color: #fff; font-size: 0.9rem; font-weight: 600; padding: 10px 16px; border-radius: var(--pill); transform: rotate(-2deg); box-shadow: 0 12px 24px -12px rgba(31, 61, 43, 0.6); }
+.m-pad { width: min(260px, 100%); background: var(--mint-2); border-radius: 30px; padding: 22px 22px 18px; box-shadow: var(--shadow); text-align: center; }
+.m-amt { font-size: 4.2rem; font-weight: 800; letter-spacing: -0.06em; line-height: 1; margin: 6px 0 16px; }
+.m-amt sup { font-size: 0.45em; vertical-align: top; position: relative; top: 0.3em; margin-right: 2px; }
+.m-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 0; font-size: 1.2rem; font-weight: 600; margin-bottom: 14px; }
+.m-keys span { padding: 6px 0; }
+.m-pad-act { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-weight: 700; font-size: 0.95rem; }
+.m-pad-act span { padding: 10px; border-radius: var(--pill); background: rgba(255, 255, 255, 0.55); }
+.m-pad-act .dark { background: var(--ink); color: #fff; }
+.m-bubble { display: flex; align-items: center; gap: 10px; background: var(--white); padding: 10px 16px 10px 10px; border-radius: var(--pill); font-weight: 600; font-size: 0.95rem; box-shadow: 0 12px 24px -14px rgba(31, 61, 43, 0.5); transform: rotate(1.5deg); }
+.m-mic { width: 30px; height: 30px; border-radius: 50%; background: var(--mint); position: relative; flex: none; }
+.m-mic::before { content: ""; position: absolute; left: 50%; top: 7px; width: 8px; height: 12px; margin-left: -4px; border-radius: 4px; background: var(--ink); }
+.m-line { font-size: 1.05rem; line-height: 1.45; margin-bottom: 12px; }
+.m-why { color: var(--mute); font-size: 0.92rem; margin-top: 8px; }
+.m-high { width: min(300px, 92%); padding: 14px 18px; background: #fbeeeb; transform: rotate(-1.5deg); margin-top: -4px; }
+.m-high .m-why { margin-top: 6px; }
+.m-done { text-align: center; }
+.m-tick { width: 56px; height: 56px; border-radius: 50%; background: var(--mint); display: grid; place-items: center; margin: 4px auto 14px; }
+.m-tick svg { width: 28px; height: 28px; fill: none; stroke: var(--ink); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.m-done .m-line { margin-bottom: 0; font-size: 1.15rem; }
+.m-speed { display: inline-block; margin-top: 14px; font-size: 0.85rem; font-weight: 700; color: var(--ink); background: var(--foam); padding: 6px 12px; border-radius: var(--pill); }
+
+.bts { display: grid; gap: 18px; margin-top: 28px; }
+.bts-item { background: var(--foam); border-radius: 26px; padding: 24px; }
+.bts-item h3 { font-size: 1.15rem; letter-spacing: -0.02em; margin-bottom: 6px; }
+.bts-item p { color: var(--mute); }
+@media (min-width: 760px) { .bts { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 1040px) { .bts { grid-template-columns: repeat(4, 1fr); } }
+
+/* ---- Home hero: words left, phone right on laptops; stacked on phones ---- */
+.phone::before { display: none; }
+.hero-grid { display: grid; gap: 8px; }
+.hero .stage { margin-top: 28px; padding: 24px 0 8px; }
+.hero .liquid { inset: -4% -6% -10% -6%; }
+@media (min-width: 980px) {
+  .hero { padding: clamp(28px, 5vh, 64px) 0 clamp(36px, 6vh, 72px); text-align: left; }
+  .hero-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); align-items: center; gap: 48px; }
+  .hero h1 { margin: 0 0 20px; max-width: 13ch; font-size: clamp(2.6rem, 4.6vw, 4.1rem); }
+  .hero .lede { margin: 0 0 30px; max-width: 30em; }
+  .hero .ctas { justify-content: flex-start; }
+  .hero .stage { margin-top: 0; padding: 0; }
+  .hero .phone { width: clamp(200px, 31vh, 262px); }
+}

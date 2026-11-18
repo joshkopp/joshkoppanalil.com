@@ -14,8 +14,8 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const short = (a, n = 4) => (a ? `${a.slice(0, n)}…${a.slice(-n)}` : '');
   const name = (a) => T.label(a) || short(a);
-  const fmtSol = (v, d = 4) => (v == null ? '—' : Number(v).toLocaleString('en-US', { minimumFractionDigits: Math.min(d, 2), maximumFractionDigits: d }));
-  const fmtUsd = (v) => (v == null ? '—' : v.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: v < 1 ? 4 : 2 }));
+  const fmtSol = (v, d = 4) => (v == null ? '–' : Number(v).toLocaleString('en-US', { minimumFractionDigits: Math.min(d, 2), maximumFractionDigits: d }));
+  const fmtUsd = (v) => (v == null ? '–' : v.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: v < 1 ? 4 : 2 }));
   const ago = (t) => {
     if (!t) return '';
     const s = Math.max(0, Date.now() / 1000 - t);
@@ -300,7 +300,7 @@
     const span = times.length > 1 ? (Math.max(...times) - Math.min(...times)) : 0;
     const spanTxt = span > 86400 ? `${(span / 86400).toFixed(1)}d` : span > 3600 ? `${(span / 3600).toFixed(1)}h` : `${Math.round(span / 60)}m`;
     const cells = [['Scanned', rep.scanned], ['SOL in', fmtSol(rep.totals.solIn, 3)], ['SOL out', fmtSol(rep.totals.solOut, 3)],
-      ['Counterparties', rep.counterparties.length], ['Failed', rep.totals.failed], ['Window', times.length ? spanTxt : '—']];
+      ['Counterparties', rep.counterparties.length], ['Failed', rep.totals.failed], ['Window', times.length ? spanTxt : '–']];
     $('#traceStats').innerHTML = cells.map(([k, v]) => `<div class="stat"><span>${k}</span><b>${v}</b></div>`).join('');
   }
   function renderRanks(rep) {
@@ -308,7 +308,7 @@
     $('#ranks').innerHTML = rep.counterparties.slice(0, 22).map((c, i) => {
       const v = c.receivedSol + c.sentSol;
       const toks = Object.keys(c.tokens || {}).length;
-      return `<li data-i="${i}" data-a="${c.address}"><span class="i">${String(i + 1).padStart(2, '0')}</span><span class="a">${c.label ? `<em>${esc(c.label)}</em>` : ''}${esc(c.address)}</span><span class="v">${v ? fmtSol(v, 3) + ' SOL' : toks ? `${toks} token${toks > 1 ? 's' : ''}` : '—'} · ${c.txCount}tx</span><span class="bar"><i style="width:${(v / max) * 100}%;background:${colorOf(c)}"></i></span></li>`;
+      return `<li data-i="${i}" data-a="${c.address}"><span class="i">${String(i + 1).padStart(2, '0')}</span><span class="a">${c.label ? `<em>${esc(c.label)}</em>` : ''}${esc(c.address)}</span><span class="v">${v ? fmtSol(v, 3) + ' SOL' : toks ? `${toks} token${toks > 1 ? 's' : ''}` : '–'} · ${c.txCount}tx</span><span class="bar"><i style="width:${(v / max) * 100}%;background:${colorOf(c)}"></i></span></li>`;
     }).join('') || '<li class="muted"><span></span><span>None in this window</span><span></span></li>';
   }
   function renderTimeline(rep) {
@@ -466,7 +466,7 @@
       parts.push(`<p>Over its last ${t.scanned} transactions it took in ${fmtSol(t.totals.solIn, 4)} SOL and sent out ${fmtSol(t.totals.solOut, 4)} SOL across ${t.counterparties.length} counterpart${t.counterparties.length === 1 ? 'y' : 'ies'}${cite('trace')}.${top ? ` The heaviest is <b>${esc(top.label || short(top.address, 5))}</b>: ${top.txCount} transaction${top.txCount > 1 ? 's' : ''}, ${fmtSol(top.sentSol, 4)} SOL toward the target and ${fmtSol(top.receivedSol, 4)} back.` : ''}${t.programs[0] ? ` Most-touched program: ${esc(t.programs[0].label || short(t.programs[0].id))}.` : ''}</p>`);
     }
     const a = p.activity;
-    parts.push(`<p>${a.sampled ? `Pace is ${a.txPerDay ?? '—'} transactions a day in the sampled window, with ${a.failureRatePct}% failing. Last seen ${a.newest ? new Date(a.newest).toLocaleString() : '—'}.` : 'No activity to speak of.'} ${net === 'mainnet' ? 'Mainnet' : 'Devnet'} was running ${pu.tps.toLocaleString()} TPS (${pu.nonVoteTps.toLocaleString()} non-vote) at slot ${pu.slot.toLocaleString()}${cite('pulse')}.</p>`);
+    parts.push(`<p>${a.sampled ? `Pace is ${a.txPerDay ?? '–'} transactions a day in the sampled window, with ${a.failureRatePct}% failing. Last seen ${a.newest ? new Date(a.newest).toLocaleString() : '–'}.` : 'No activity to speak of.'} ${net === 'mainnet' ? 'Mainnet' : 'Devnet'} was running ${pu.tps.toLocaleString()} TPS (${pu.nonVoteTps.toLocaleString()} non-vote) at slot ${pu.slot.toLocaleString()}${cite('pulse')}.</p>`);
     const total = srcs.reduce((s, k) => s + price[k], 0);
     parts.push(`<div class="src">${srcs.map((k, i) => `<span>[${i + 1}] /api/${k} · ${price[k] / LAMPORTS} SOL · <a href="${txUrl(o[k].sig)}" target="_blank" rel="noopener">${short(o[k].sig, 6)}</a></span>`).join('')}<span>Total paid: ${(total / LAMPORTS).toFixed(5)} SOL</span></div>`);
     $('#brief').innerHTML = parts.join('');

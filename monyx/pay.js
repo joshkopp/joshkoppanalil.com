@@ -695,7 +695,7 @@
     const p = S.people[f.with] || (f.with ? { address: f.with, unknown: true } : null);
     sheet(`<div class="confirm">${avatar(p, 'lg')}<div class="sub">${f.amount > 0 ? 'From' : 'To'} ${esc(who(p))}${p && p.handle && !p.bank ? ` · @${esc(p.handle)}` : ''}</div>
       <div class="big">${money(usd(Math.abs(f.amount)))}</div><div class="note">${esc(f.note || '')}</div></div>
-      <div class="ledger"><div><span>Status</span><b>${f.ok ? 'Completed' : 'Failed'}</b></div><div><span>Date</span><b>${f.time ? new Date(f.time * 1000).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</b></div></div>
+      <div class="ledger"><div><span>Status</span><b>${f.ok ? 'Completed' : 'Failed'}</b></div><div><span>Date</span><b>${f.time ? new Date(f.time * 1000).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '–'}</b></div></div>
       ${p && p.handle && !p.bank ? `<button class="btn btn-dark" id="again">${f.amount > 0 ? 'Pay' : 'Pay again'} ${esc(first(p))}</button>` : ''}
       <p class="fine" style="margin-top:14px"><a href="https://explorer.solana.com/tx/${sig}?cluster=devnet" target="_blank" rel="noopener">View public receipt</a></p>`, (el, close) => {
       const a = $('#again', el); if (a) a.onclick = () => { close(); location.hash = `#pay/${p.handle}`; };
@@ -1454,7 +1454,7 @@
         $('#sppl', el).style.display = st.people.length ? '' : 'none';
         $$('[data-rm]', el).forEach((b) => (b.onclick = () => { st.people.splice(+b.dataset.rm, 1); paint(); }));
         const n = st.people.length;
-        $('#sum', el).innerHTML = `<div><span>Each person pays</span><b>${n ? money(share()) : '—'}</b></div><div><span>You collect</span><b>${n ? money(share() * n) : '—'}</b></div>`;
+        $('#sum', el).innerHTML = `<div><span>Each person pays</span><b>${n ? money(share()) : '–'}</b></div><div><span>You collect</span><b>${n ? money(share() * n) : '–'}</b></div>`;
         const go = $('#go', el); go.disabled = !n; go.textContent = n ? `Request ${money(share())} from ${n} ${n === 1 ? 'person' : 'people'}` : 'Add people to split with';
       };
       $('#sme', el).onchange = (e) => { st.me = e.target.checked; paint(); };

@@ -6,7 +6,7 @@
 //   4. The wallet screenshot (home only) floats a little and tilts toward the pointer.
 //   5. Morphing liquid blobs behind the phone (home only).
 //   6. FAQ accordion.
-//   7. Demo forms never submit — they do not send or save anything.
+//   7. Demo forms never submit. They do not send or save anything.
 // If the visitor asked for reduced motion, we skip the animated bits.
 
 (() => {
@@ -85,8 +85,8 @@
     const onMove = (e) => {
       if (!fine) return;
       const r = stage.getBoundingClientRect();
-      mx = ((e.clientX - r.left) / r.width - 0.5) * 14;
-      my = ((e.clientY - r.top) / r.height - 0.5) * -10;
+      mx = ((e.clientX - r.left) / r.width - 0.5) * 8;
+      my = ((e.clientY - r.top) / r.height - 0.5) * -6;
     };
     stage.addEventListener("mousemove", onMove);
     stage.addEventListener("mouseleave", () => { mx = 0; my = 0; });
@@ -94,7 +94,7 @@
     const tick = (now) => {
       if (!running || document.hidden) return;
       const t = now / 1000;
-      const floatY = Math.sin(t * 0.7) * 8;
+      const floatY = Math.sin(t * 0.7) * 5;
       cx += (mx - cx) * 0.08;
       cy += (my - cy) * 0.08;
       phone.style.transform =

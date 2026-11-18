@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Monyx — a wallet that checks before you send</title>
+  <title>Monyx: a wallet that checks before you send</title>
   <meta name="description" content="Monyx is a beginner-friendly anti-scam wallet. Pay by @username or QR, see a plain-English preview, and check the destination before you send. Demo on Solana devnet.">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -18,14 +18,14 @@
   <meta property="og:image" content="https://monyx.pro/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="canonical" href="https://monyx.pro/">
-  <meta property="og:title" content="Monyx — a wallet that checks before you send">
+  <meta property="og:title" content="Monyx: a wallet that checks before you send">
   <meta property="og:description" content="Monyx is a beginner-friendly anti-scam wallet. Pay by @username or QR, see a plain-English preview, and check the destination before you send. Demo on Solana devnet.">
   <meta property="og:url" content="https://monyx.pro/">
   <script src="assets/route.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/styles.css?v=1">
+  <link rel="stylesheet" href="assets/styles.css?v=2">
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -56,25 +56,15 @@
 
     <!-- Big, quiet hero: a short headline, two buttons, then the phone. -->
     <section class="hero">
-      <div class="wrap">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
         <h1>A wallet that checks before you send.</h1>
         <p class="lede">We're Josh and Andrew. Pay with an @username, a QR, or just your voice. Before anything goes out, we write it in plain English and tag the destination High, Medium, or Normal risk. Dollars in, dollars out, no fees.</p>
         <div class="ctas">
           <a class="btn btn-primary" href="app/"><span>Open the wallet</span></a>
           <a class="btn btn-ghost" href="how-it-works.html"><span>See how it works</span></a>
         </div>
-      </div>
-    </section>
-
-    <div class="wave wave-mint" aria-hidden="true">
-      <svg viewBox="0 0 2880 80" preserveAspectRatio="none">
-        <path d="M0,40 C240,80 480,0 720,40 C960,80 1200,0 1440,40 C1680,80 1920,0 2160,40 C2400,80 2640,0 2880,40 L2880,80 L0,80 Z"></path>
-      </svg>
-    </div>
-
-    <!-- Liquid blobs sit in this mint field, behind a lightly tilting phone. -->
-    <div class="stage-band">
-      <div class="wrap">
+        </div>
         <div class="stage" id="stage">
           <div class="liquid" aria-hidden="true">
             <svg viewBox="0 0 800 640" preserveAspectRatio="xMidYMid slice">
@@ -101,13 +91,8 @@
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="wave wave-white" aria-hidden="true">
-      <svg viewBox="0 0 2880 80" preserveAspectRatio="none">
-        <path d="M0,40 C240,0 480,80 720,40 C960,0 1200,80 1440,40 C1680,0 1920,80 2160,40 C2400,0 2640,80 2880,40 L2880,80 L0,80 Z"></path>
-      </svg>
-    </div>
 
     <section class="band band-white" id="why">
       <div class="wrap split reveal">
@@ -393,6 +378,6 @@
       <p class="legal">Monyx Wallet. UBC 2026 hackathon project. Devnet demo only. Risk labels are informational, not legal or financial advice.</p>
     </div>
   </footer>
-  <script src="assets/main.js?v=1" defer></script>
+  <script src="assets/main.js?v=2" defer></script>
 </body>
 </html>
