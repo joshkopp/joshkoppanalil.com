@@ -526,10 +526,11 @@ h2.page-block {
 }
 .avatar {
   flex-shrink: 0;
-  width: 72px;
-  height: 72px;
+  width: 104px;
+  height: 104px;
   border-radius: 50%;
   overflow: hidden;
+  box-shadow: 0 0 0 3px #fff, 0 6px 18px rgba(31, 61, 43, 0.14);
   background: var(--mint);
   color: var(--ink);
   font-weight: 800;
