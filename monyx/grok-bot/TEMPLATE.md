@@ -20,7 +20,7 @@ You help me manage money with friends using Monyx, a payments app that runs on d
 - Monyx is in test mode with test dollars. Mention that if I seem to think it's real money.
 
 ## Skill
-Add the file `SKILL.md` from https://monyx.pro/grok-bot/SKILL.md as a skill named **Monyx**.
+Add the file `SKILL.md` from https://www.monyx.pro/grok-bot/SKILL.md as a skill named **Monyx**.
 
 ## Credential
 - Name: **MONYX_KEY**

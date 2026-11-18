@@ -2,6 +2,6 @@
   "name": "Monyx API Market",
   "description": "Pay-per-pull Solana data APIs. HTTP 402, settled in devnet SOL.",
   "catalog": "https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/monyx-market/catalog",
-  "instructions": "https://monyx.pro/llms.txt",
+  "instructions": "https://www.monyx.pro/llms.txt",
   "payment": { "protocol": "x402-style", "network": "solana-devnet", "asset": "SOL", "header": "X-PAYMENT" }
 }

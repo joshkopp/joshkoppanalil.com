@@ -18,8 +18,11 @@ const HANDLE = /^[a-z0-9_]{3,20}$/;
 const B58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const RESERVED = new Set(["monyx", "admin", "support", "bank", "help", "official", "team", "security", "pay", "request", "me", "home"]);
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
+const ORIGINS = new Set(["https://monyx.pro", "https://www.monyx.pro", "https://joshkoppanalil.com", "https://www.joshkoppanalil.com"]);
+// Only our own sites may call this API from a browser. Servers (Grok Bot, QuickNode) send no Origin and aren't affected.
+const cors: Record<string, string> = {
+  "Access-Control-Allow-Origin": "https://www.monyx.pro",
+  "Vary": "Origin",
   "Access-Control-Allow-Headers": "content-type, authorization, apikey, x-client-info",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
@@ -39,6 +42,9 @@ const PUBLIC = "id, handle, name, address, avatar, created_at";
 // a new file name so phones never show a stale cached photo.
 const AVATAR_BASE = `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/avatars/`;
 const pub = (u: any) => u && ({ handle: u.handle, name: u.name, address: u.address, avatar: u.avatar ? AVATAR_BASE + u.avatar : null, since: u.created_at });
+// Signed-out visitors (a pay link opened in a new browser) only see a name, @username and photo.
+// The account number and join date need a session.
+const pubLite = (u: any) => u && ({ handle: u.handle, name: u.name, avatar: u.avatar ? AVATAR_BASE + u.avatar : null });
 const AVATAR_MAX = 300_000;          // bytes; the app sends ~25 KB 320×320 JPEGs
 const AVATARS_PER_HOUR = 15;
 const avatarHits = new Map<string, { t: number; n: number }>();
@@ -90,6 +96,8 @@ async function bank() {
 
 // ---------- router ----------
 Deno.serve(async (req) => {
+  const origin = req.headers.get("origin") || "";
+  cors["Access-Control-Allow-Origin"] = ORIGINS.has(origin) ? origin : "https://www.monyx.pro";
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   const url = new URL(req.url);
   const path = url.pathname.replace(/^.*?\/monyx(?=\/|$)/, "") || "/";
@@ -104,12 +112,15 @@ Deno.serve(async (req) => {
       return json({ available: !data, reason: data ? "Taken" : null });
     }
     if (path === "/search") {
+      const viewer = await me(req);
+      if (!viewer) return fail("Log in to search for people.", 401, "unauthorized");
       const q = (url.searchParams.get("q") || "").replace(/^@/, "").trim().toLowerCase().replace(/[%_,()]/g, "");
       if (q.length < 1) return json({ users: [] });
       const { data } = await db.from("monyx_users").select(PUBLIC).or(`handle.ilike.${q}%,name.ilike.%${q}%`).order("handle").limit(8);
       return json({ users: (data || []).map(pub) });
     }
     if (path === "/resolve") {
+      if (!(await me(req))) return json({ users: {} });
       const list = (url.searchParams.get("a") || "").split(",").filter((a) => B58.test(a)).slice(0, 60);
       if (!list.length) return json({ users: {} });
       const { data } = await db.from("monyx_users").select(PUBLIC).in("address", list);
@@ -121,7 +132,8 @@ Deno.serve(async (req) => {
     const um = path.match(/^\/u\/([a-z0-9_]{3,20})$/i);
     if (um) {
       const { data } = await db.from("monyx_users").select(PUBLIC).eq("handle", um[1].toLowerCase()).maybeSingle();
-      return data ? json({ user: pub(data) }) : fail("No one has that username.", 404, "not_found");
+      if (!data) return fail("No one has that username.", 404, "not_found");
+      return json({ user: (await me(req)) ? pub(data) : pubLite(data) });
     }
 
     if (path === "/register" && req.method === "POST") {

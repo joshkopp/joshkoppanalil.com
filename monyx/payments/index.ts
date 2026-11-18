@@ -38,8 +38,11 @@ const TOPUP_HOURS = 20;
 const RELAYS_PER_HOUR = 40, NEW_ACCOUNTS_PER_DAY = 15;
 const B58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
+const ORIGINS = new Set(["https://monyx.pro", "https://www.monyx.pro", "https://joshkoppanalil.com", "https://www.joshkoppanalil.com"]);
+// Only our own sites may call this API from a browser. Servers (Grok Bot, QuickNode) send no Origin and aren't affected.
+const cors: Record<string, string> = {
+  "Access-Control-Allow-Origin": "https://www.monyx.pro",
+  "Vary": "Origin",
   "Access-Control-Allow-Headers": "content-type, authorization, apikey, x-client-info",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
@@ -239,6 +242,8 @@ function usdcMoves(tx: any) {
 }
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get("origin") || "";
+  cors["Access-Control-Allow-Origin"] = ORIGINS.has(origin) ? origin : "https://www.monyx.pro";
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   const url = new URL(req.url);
   const path = url.pathname.replace(/^.*?\/monyx-pay(?=\/|$)/, "") || "/";
@@ -508,9 +513,11 @@ Deno.serve(async (req) => {
       const { data: h } = await db.from("monyx_holdings").select("qty").eq("user_id", user.id).eq("asset", asset).maybeSingle();
       const have = Number(h?.qty || 0);
       const qty = body.all ? have : roundQty(Number(body.usd) / p);
-      const usd = Math.floor(qty * p * 100) / 100;
+      // Round to the nearest cent so the payout matches what the sheet showed.
+      const usd = Math.round(qty * p * 100) / 100;
       if (!(qty > 0) || qty > have + 1e-12) return fail(`You have $${(have * p).toFixed(2)} of ${ASSETS[asset].sym} to sell.`);
-      if (usd < 0.5) return fail("The smallest sale is $0.50.");
+      if (usd < 0.01) return fail("That's less than a cent. Swap it into another coin instead.");
+      if (!body.all && usd < 0.5) return fail("The smallest sale is $0.50. Use Sell all to cash out a smaller amount.");
       const kp = await bank();
       if ((await usdcOf(kp.publicKey)) - usd * U < BANK_FLOOR_USDC) return fail("Selling is paused while Monyx tops up. Swaps still work.", 503, "bank_low");
       const { error: e1 } = await db.rpc("monyx_adjust", { p_user: user.id, p_asset: asset, p_delta: -qty });

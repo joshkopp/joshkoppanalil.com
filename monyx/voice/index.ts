@@ -8,8 +8,11 @@
 // The ElevenLabs key lives only here (secret ELEVENLABS_API_KEY).
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
+const ORIGINS = new Set(["https://monyx.pro", "https://www.monyx.pro", "https://joshkoppanalil.com", "https://www.joshkoppanalil.com"]);
+// Only our own sites may call this API from a browser. Servers (Grok Bot, QuickNode) send no Origin and aren't affected.
+const cors: Record<string, string> = {
+  "Access-Control-Allow-Origin": "https://www.monyx.pro",
+  "Vary": "Origin",
   "Access-Control-Allow-Headers": "content-type, authorization, apikey, x-client-info",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
@@ -71,6 +74,8 @@ async function speak(text: string) {
 }
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get("origin") || "";
+  cors["Access-Control-Allow-Origin"] = ORIGINS.has(origin) ? origin : "https://www.monyx.pro";
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   const path = new URL(req.url).pathname.replace(/^.*?\/monyx-voice(?=\/|$)/, "") || "/";
   try {

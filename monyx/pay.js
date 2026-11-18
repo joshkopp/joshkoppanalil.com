@@ -26,6 +26,8 @@
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const app = $('#app');
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const cleanAddr = (s) => String(s || '').replace(/^solana:/i, '').split('?')[0].replace(/[\s\u200b-\u200d\ufeff]/g, '');
+  const isSelf = (p) => !!(p && S.acct && ((p.address && p.address === S.acct.address) || (p.handle && S.acct.user && p.handle === S.acct.user.handle)));
   const isAddr = (s) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s || '');
   const short = (a) => `${a.slice(0, 4)}…${a.slice(-4)}`;
   const store = {
@@ -34,6 +36,7 @@
     del(k) { try { localStorage.removeItem(k); } catch {} },
   };
   const ICON = {
+    bell: '<svg viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>',
     back: '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
     x: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
     chev: '<svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
@@ -146,7 +149,9 @@
     }
     return j;
   }
-  function saveAcct() { store.set('monyx.acct', S.acct); }
+  // While S.holdKey is set (signup or login, before the passkey lock step) the
+  // account lives only in memory: the raw key is never written to storage.
+  function saveAcct() { if (S.holdKey) return; store.set('monyx.acct', S.acct); }
 
   /* ───────── chain ───────── */
   async function rpc(method, params, tries = 4) {
@@ -274,7 +279,7 @@
     if (!need.length) return;
     if (!fresh) store.set('monyx.peopleAt', Date.now());
     try {
-      const { users } = await api(`/resolve?a=${need.join(',')}`, { auth: false });
+      const { users } = await api(`/resolve?a=${need.join(',')}`);
       for (const a of need) S.people[a] = users[a] || { address: a, unknown: true };
       store.set('monyx.people', S.people);
     } catch {}
@@ -299,14 +304,15 @@
     return `<div class="av ${size}" style="background:${PALETTE[h % PALETTE.length]}">${esc(ini)}${photo}</div>`;
   }
   const who = (p) => (p && !p.unknown ? (p.bank ? 'Monyx' : p.name) : (p ? short(p.address) : 'Someone'));
-  const first = (p) => (p && !p.unknown && !p.bank ? p.name.split(' ')[0] : who(p));
+  // Full names in toasts, chips and receipts, so two people called Maya can't be confused.
+  const first = (p) => who(p);
   function when(t) {
     if (!t) return 'Pending';
     const d = new Date(t * 1000), now = new Date();
     const s = (now - d) / 1000;
     if (s < 60) return 'Just now';
     if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-    if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    if (s < 86400 && d.toDateString() === now.toDateString()) return `${Math.floor(s / 3600)}h ago`;
     const y = new Date(now); y.setDate(now.getDate() - 1);
     if (d.toDateString() === y.toDateString()) return 'Yesterday';
     return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
@@ -444,7 +450,8 @@
         S.kp = su.kp;
         const address = su.kp.publicKey.toBase58();
         S.acct = { mode: 'key', secret: Array.from(su.kp.secretKey), address, token: null, user: null };
-        saveAcct();   // keep the key even if the next call fails
+        S.holdKey = passkeysPossible();   // key stays in memory until the passkey lock is on
+        saveAcct();
         const p = await proof(address);
         const r = await api('/register', { method: 'POST', auth: false, body: { ...p, name: su.name, handle: su.handle, bonus: false } });
         S.acct.token = r.token; S.acct.user = r.user; saveAcct();
@@ -459,24 +466,35 @@
       }
     };
   }
-  function stepLock() {
-    show(stepShell(3, `<div class="lockhero">${ICON.lock}</div>
-      <h2>Lock it with Face ID or a fingerprint</h2>
-      <p class="sub">Your account key gets encrypted on this device. Only your face, fingerprint or device PIN can open it, so a stolen laptop or a peek at your browser storage gets nothing.</p>
-      <ul class="lockpts"><li>No password to remember</li><li>Your key never leaves this device</li><li>You'll still get a backup key for a new phone</li></ul>
-      <div class="hint" id="hint" aria-live="polite"></div>`,
-      `<button class="btn btn-dark" id="next">Turn on passkey lock</button><button class="btn btn-text" id="skip">Not now</button>`, false));
+  function stepLock(login) {
+    const body = `<div class="lockhero">${ICON.lock}</div>
+      <h2>${login ? 'Lock Monyx on this device' : 'Lock it with Face ID or a fingerprint'}</h2>
+      <p class="sub">Your account key is encrypted on this device and only opens with your face, fingerprint or device PIN. It's never saved in plain text.</p>
+      <ul class="lockpts"><li>No password or seed phrase to memorize</li><li>Your key never leaves this device</li>${login ? '' : '<li>You also get a backup key, saved to your password manager</li>'}</ul>
+      <div class="hint" id="hint" aria-live="polite"></div>
+      <details class="adv" id="adv"><summary>Advanced</summary><p>Skipping stores your key unencrypted in this browser. Anyone with access to this device could copy it.</p><button class="btn btn-light btn-sm" id="skip">Skip and store it unencrypted</button></details>`;
+    show(login ? `<section class="steps"><div class="topline"><span></span><span></span><span></span></div><div class="body">${body}</div><div class="foot"><button class="btn btn-dark" id="next">Turn on passkey lock</button></div></section>`
+      : stepShell(3, body, `<button class="btn btn-dark" id="next">Turn on passkey lock</button>`, false));
     const next = $('#next'), hint = $('#hint');
+    const after = () => {
+      if (login) { location.hash = store.get('monyx.pending') || '#home'; store.del('monyx.pending'); route(); }
+      else stepKey();
+    };
+    const fallback = () => { S.holdKey = false; saveAcct(); after(); };
     next.onclick = async () => {
       next.disabled = true; next.innerHTML = '<span class="spin"></span>Waiting for your passkey';
-      try { await enablePasskeyLock(); S.signup.locked = true; toast('Locked with your passkey'); stepKey(); }
+      try { await enablePasskeyLock(); if (S.signup) S.signup.locked = true; toast('Locked with your passkey'); after(); }
       catch (err) {
         next.disabled = false; next.textContent = 'Try again';
-        hint.className = 'hint bad'; hint.textContent = err.safe ? err.message : 'That didn’t work. Try again, or skip and use your backup key.';
-        if (err.safe && err.message === NO_PRF) { $('#skip').textContent = 'Continue with a backup key'; }
+        hint.className = 'hint bad';
+        if (err.safe && err.message === NO_PRF) {
+          // This device can't do it: fall back to the backup key, stored the old way.
+          hint.textContent = "This device's passkeys can't encrypt Monyx yet, so your key will be kept in this browser. Keep your backup key safe.";
+          next.textContent = 'Continue'; next.onclick = fallback;
+        } else hint.textContent = err.safe ? err.message : 'That didn’t work. Try again.';
       }
     };
-    $('#skip').onclick = () => stepKey();
+    $('#skip').onclick = fallback;
   }
   function recoveryKey() { return b58enc(Uint8Array.from(S.acct.secret || S.secretMem)); }
   function stepKey() {
@@ -556,13 +574,15 @@
       go.disabled = true; go.innerHTML = '<span class="spin"></span>Logging in';
       S.kp = kp;
       S.acct = { mode: 'key', secret: Array.from(kp.secretKey), address: kp.publicKey.toBase58(), token: null, user: null };
-      vault.del(); S.secretMem = null;
+      vault.del(); S.secretMem = null; S.holdKey = passkeysPossible();
       try {
         const r = await api('/login', { method: 'POST', auth: false, body: await proof(S.acct.address) });
         S.acct.token = r.token; S.acct.user = r.user; saveAcct();
+        if (S.holdKey) { stepLock(true); return; }
         location.hash = store.get('monyx.pending') || '#home'; store.del('monyx.pending');
       } catch (e) {
         go.disabled = false; go.textContent = 'Log in';
+        S.holdKey = false;
         if (e.code === 'no_account') { S.acct = null; toast('No account yet for that key. Let’s make one.'); startSignup(kp); return; }
         S.acct = null; hint.className = 'hint bad'; hint.textContent = e.status === 401 ? "That recovery key didn't work. Check it and try again." : friendly(e);
       }
@@ -615,7 +635,7 @@
   /* home */
   function screenHome() {
     const u = S.acct.user;
-    show(`<header class="top"><a class="me" href="#me">${avatar(u, 'sm')}<span>Hi, ${esc(u.name.split(' ')[0])}</span></a><span class="pill"><i></i>Test mode</span></header>
+    show(`<header class="top"><a class="me" href="#me">${avatar(u, 'sm')}<span>Hi, ${esc(u.name.split(' ')[0])}</span></a><span class="topr"><span class="pill"><i></i>Test mode</span><button class="bell" id="bell" aria-label="Notifications">${ICON.bell}<i id="bellN" hidden></i></button></span></header>
       <section class="balance">
         <div class="label"><span>Balance</span><span class="cur">USD</span></div>
         <div class="amount" id="bal"><div class="skeleton" style="width:60%;height:44px;border-radius:12px"></div></div>
@@ -698,14 +718,36 @@
     if (/^Buy /.test(n)) return `Bought <b>${esc(n.slice(4))}</b>`;
     return incoming ? '<b>Monyx</b> paid you' : 'Paid <b>Monyx</b>';
   }
+  // Activity shows the requests you've sent that are still open.
+  function paintSentRequests() {
+    const el = $('#sentreqs'); if (!el) return;
+    const out = (S.requests && S.requests.outgoing) || [];
+    el.innerHTML = out.length ? `<h3 style="margin-top:14px">Requests you sent</h3><div class="list">${out.map((r) => `<div class="item">${avatar(r.to, 'sm')}<div class="mid"><div class="t">You asked <b>${esc(who(r.to))}</b></div><div class="s">${esc(r.note || 'No note')} · ${when(Date.parse(r.created) / 1000)} · Waiting</div></div><div class="amt">${money(r.usd)}</div></div>`).join('')}</div><h3 style="margin-top:18px">Payments</h3>` : '';
+  }
+  // Bell: open requests for you + assistant drafts waiting for your OK.
+  function paintBell() {
+    const n = ((S.requests && S.requests.incoming) || []).length + ((S.drafts) || []).length;
+    const b = $('#bellN'); if (!b) return;
+    b.hidden = !n; b.textContent = n > 9 ? '9+' : String(n);
+    $('#bell').setAttribute('aria-label', n ? `${n} notification${n > 1 ? 's' : ''}` : 'Notifications');
+    $('#bell').onclick = () => {
+      const t = $('#drafts') && S.drafts && S.drafts.length ? $('#drafts') : $('#reqs');
+      if (n && t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      else toast('You’re all caught up.');
+    };
+  }
   function paintRequests() {
+    paintBell();
     const el = $('#reqs'); if (!el) return;
     const { incoming = [], outgoing = [] } = S.requests;
-    if (!incoming.length && !outgoing.length) { el.innerHTML = ''; return; }
-    el.innerHTML = (incoming.length ? `<h3>Requests for you</h3>` + incoming.map((r) => `<div class="req">
+    if (!incoming.length && !outgoing.length) { el.innerHTML = ''; el.dataset.h = ''; return; }
+    const html = (incoming.length ? `<h3>Requests for you</h3>` + incoming.map((r) => `<div class="req">
         <div class="row">${avatar(r.from)}<div><div class="t"><b>${esc(r.from.name)}</b> requests <b>${money(r.usd)}</b></div><div class="s">${esc(r.note || 'No note')} · ${when(Date.parse(r.created) / 1000)}</div></div></div>
         <div class="btn-row"><button class="btn btn-light btn-sm" data-dec="${r.id}" style="width:100%">Decline</button><button class="btn btn-dark btn-sm" data-pay="${r.id}" style="width:100%">Pay</button></div></div>`).join('') : '')
       + (outgoing.length ? `<h3>Waiting on</h3><div class="list">` + outgoing.map((r) => `<div class="item">${avatar(r.to, 'sm')}<div class="mid"><div class="t">${esc(r.to.name)} · ${money(r.usd)}</div><div class="s">${esc(r.note || 'No note')}</div></div><button class="btn btn-text btn-sm" data-can="${r.id}">Cancel</button></div>`).join('') + `</div>` : '');
+    // Polling repaints this list; skip identical repaints so a tap never lands on a button that was just replaced.
+    if (el.dataset.h === html) return;
+    el.innerHTML = html; el.dataset.h = html;
     $$('[data-pay]', el).forEach((b) => (b.onclick = () => { const r = incoming.find((x) => x.id === b.dataset.pay); confirmPay(r.from, r.usd, r.note, r.id); }));
     $$('[data-dec]', el).forEach((b) => (b.onclick = async () => { b.disabled = true; try { await api(`/requests/${b.dataset.dec}`, { method: 'POST', body: { action: 'decline' } }); toast('Request declined'); loadRequests(); } catch (e) { b.disabled = false; showError(e); } }));
     $$('[data-can]', el).forEach((b) => (b.onclick = async () => { b.disabled = true; try { await api(`/requests/${b.dataset.can}`, { method: 'POST', body: { action: 'cancel' } }); toast('Request cancelled'); loadRequests(); } catch (e) { b.disabled = false; showError(e); } }));
@@ -806,13 +848,13 @@
         av.textContent = okAmt && v > have ? `You have ${money(have)}. You can still request it.` : `${money(have)} available`;
         av.className = 'avail' + (okAmt && v > have ? ' bad' : '');
       }
-      $('#pay').disabled = !(okAmt && st.to && (S.cash == null || v <= usd(S.cash)));
+      $('#pay').disabled = !(okAmt && st.to && !isSelf(st.to) && (S.cash == null || v <= usd(S.cash)));
       $('#req').disabled = !(okAmt && st.to && st.to.handle && !st.to.bank);
       $('#vialink').hidden = !!st.to;
     };
     amt.oninput = () => {
       const before = amt.value;
-      let v = amt.value.replace(/[^0-9.]/g, '');
+      let v = /-/.test(before) ? '' : amt.value.replace(/[^0-9.]/g, '');
       const parts = v.split('.'); if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
       if (v.includes('.')) v = v.split('.')[0] + '.' + v.split('.')[1].slice(0, 2);
       amt.value = v; size(); valid();
@@ -829,6 +871,7 @@
 
     const renderTo = () => {
       const box = $('#toBox');
+      if (isSelf(st.to)) { st.to = null; toast("That's your own account. You can't pay yourself.", true); }
       if (st.to) {
         const p = st.to;
         box.innerHTML = p.link
@@ -853,16 +896,18 @@
       let t, seq = 0;
       q.oninput = () => {
         clearTimeout(t);
-        const v = q.value.trim();
+        let v = q.value.trim();
         if (!v) { paint(recent(), 'Recent'); return; }
+        if (isAddr(cleanAddr(v))) v = cleanAddr(v);
         if (isAddr(v)) {
-          if (v === S.acct.address) { res.innerHTML = '<div class="empty">That’s your own account number.</div>'; return; }
+          if (v === S.acct.address) { res.innerHTML = '<div class="empty">That’s your own account number. You can’t pay yourself.</div>'; valid(); return; }
           st.to = S.people[v] && !S.people[v].unknown ? S.people[v] : { address: v, unknown: true }; renderTo(); valid(); return;
         }
+        res.innerHTML = '<div class="empty searching"><span class="spin"></span>Searching…</div>';
         t = setTimeout(async () => {
           const my = ++seq;
           try {
-            const { users } = await api(`/search?q=${encodeURIComponent(v)}`, { auth: false });
+            const { users } = await api(`/search?q=${encodeURIComponent(v)}`);
             if (my !== seq) return;
             const list = users.filter((u) => u.handle !== S.acct.user.handle);
             if (!list.length && users.some((u) => u.handle === S.acct.user.handle)) { res.innerHTML = '<div class="empty">That’s you! Share your pay link so friends can pay you.</div>'; return; }
@@ -871,13 +916,14 @@
               res.innerHTML = `<div class="empty">No one called “${esc(v)}” on Monyx yet.<br><button class="btn btn-light btn-sm" id="nolink" style="margin-top:10px">Send ${esc(v)} a link instead</button></div>`;
               $('#nolink').onclick = () => { st.to = { link: true, name: v, address: '' }; renderTo(); };
             }
-          } catch {}
+          } catch { if (my === seq) res.innerHTML = '<div class="empty">Couldn’t search right now. Try again.</div>'; }
         }, 220);
       };
       if (canScan) $('#scan').onclick = () => scanCode((txt) => {
         const m = txt.match(/#pay\/([a-z0-9_]{3,20})(?:\/([0-9.]+))?/i);
-        if (m) { lookup(m[1]).then((u) => { if (u) { st.to = u; if (m[2] && !amt.value) { amt.value = m[2]; size(); } renderTo(); } }); return; }
-        const a = txt.replace(/^solana:/, '').split('?')[0];
+        if (m) { lookup(m[1]).then((u) => { if (u && isSelf(u)) { toast('That’s your own code. Share it so friends can pay you.', true); return; } if (u) { st.to = u; if (m[2] && !amt.value) { amt.value = m[2]; size(); } renderTo(); } }); return; }
+        const a = cleanAddr(txt);
+        if (a === S.acct.address) { toast('That’s your own code. Share it so friends can pay you.', true); return; }
         if (isAddr(a)) { st.to = S.people[a] && !S.people[a].unknown ? S.people[a] : { address: a, unknown: true }; renderTo(); return; }
         toast("That code isn't a Monyx link.", true);
       });
@@ -903,7 +949,7 @@
     };
   }
   async function lookup(handle) {
-    try { const { user } = await api(`/u/${encodeURIComponent(handle.replace(/^@/, ''))}`, { auth: false }); S.people[user.address] = user; return user; } catch { return null; }
+    try { const { user } = await api(`/u/${encodeURIComponent(handle.replace(/^@/, ''))}`); if (user.address) S.people[user.address] = user; return user; } catch { return null; }
   }
   /* Risk check: a plain-language pause before money leaves. It only reads
      what the app already knows (your history, your contacts, the account's
@@ -939,6 +985,7 @@
       const twin = knownPeople().find((p) => p.handle !== to.handle && editDist1(p.handle.toLowerCase(), to.handle.toLowerCase()));
       if (twin && !paidBefore) high.push(`@${esc(to.handle)} is one letter off from @${esc(twin.handle)}, someone you already know.`);
     }
+    if (isSelf(to)) high.push('This is your own account. Paying yourself does nothing.');
     // 3. Addresses no person can hold: programs, the USDC token itself.
     try {
       if (addr === USDC) high.push('That’s the address of the USDC token itself, not a person. Money sent there is gone.');
@@ -977,7 +1024,8 @@
   }
 
   function confirmPay(to, dollars, note, requestId, voiced = false, draftId = null) {
-    if ((to.handle && S.acct.user && to.handle === S.acct.user.handle) || to.address === S.acct.address) { toast("That's your own account. You can't pay yourself.", true); return; }
+    if (isSelf(to)) { toast("That's your own account. You can't pay yourself.", true); return; }
+    if (!(dollars > 0) || dollars > 10000) { toast('Enter an amount between $0.01 and $10,000.', true); return; }
     const after = S.cash != null ? usd(S.cash) - dollars : null;
     const short_ = after != null && after < -0.004;
     const rc = riskCard(to, dollars, note);
@@ -995,7 +1043,10 @@
         const b = e.currentTarget; b.disabled = true; b.innerHTML = '<span class="spin"></span>Sending';
         try {
           const sig = await send(to.address, dollars, note);
-          if (requestId) api(`/requests/${requestId}`, { method: 'POST', body: { action: 'paid', sig } }).catch(() => {}).then(loadRequests);
+          if (requestId) {
+            if (S.requests && S.requests.incoming) S.requests.incoming = S.requests.incoming.filter((x) => x.id !== requestId);
+            api(`/requests/${requestId}`, { method: 'POST', body: { action: 'paid', sig } }).catch(() => {}).then(loadRequests);
+          }
           if (draftId) api(`${PAPI}/drafts/${draftId}`, { method: 'POST', body: { action: 'paid', sig } }).catch(() => {});
           close();
           S.feed.unshift({ sig, time: Math.floor(Date.now() / 1000), ok: true, with: to.address, note, amount: -toUnits(dollars) });
@@ -1065,7 +1116,7 @@
           note.textContent = r.status === 'wait' ? `You've had today's test dollars. More ${r.next ? `after ${new Date(r.next).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'tomorrow'}.`
             : r.status === 'bank_empty' ? 'Free dollars are paused while Monyx refills. Use the Circle faucet below.'
             : r.status === 'limit' ? 'That’s the limit for today on this network.' : 'That didn’t work. Try again in a minute.';
-          note.style.color = 'var(--bad)';
+          note.style.color = 'var(--red)';
         } catch (e) { b.disabled = false; b.textContent = 'Try again'; showError(e); }
       };
     });
@@ -1255,6 +1306,8 @@
     return S.port;
   }
   const coin = (a, size = '') => `<div class="av coin ${size}" style="background:${esc(a.color)}">${esc(a.symbol.slice(0, 4))}</div>`;
+  // The sparkline covers 7 days, so the % beside it must too.
+  const chg7 = (arr) => (arr && arr.length > 1 && arr[0] ? ((arr[arr.length - 1] - arr[0]) / arr[0]) * 100 : null);
   const pct = (v) => (v == null ? '' : `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(2)}%`);
   const fmtPrice = (p) => (p >= 1 ? money(p) : '$' + Number(p).toPrecision(3));
   const fmtQty = (q, sym) => `${q >= 1 ? q.toLocaleString('en-US', { maximumFractionDigits: 4 }) : Number(q).toPrecision(4).replace(/0+$/, '').replace(/\.$/, '')} ${sym}`;
@@ -1295,7 +1348,7 @@
         : `<div class="hint" style="text-align:center;margin:14px 0 0">You don't own any crypto yet. Start with as little as $1.</div>`;
     }
     if (S.markets) {
-      $('#mkts').innerHTML = S.markets.assets.map((a) => `<button class="item" data-a="${esc(a.id)}">${coin(a)}<div class="mid"><div class="t">${esc(a.name)}</div><div class="s">${esc(a.symbol)}</div></div>${spark(a.spark)}<div style="text-align:right;min-width:84px"><div class="amt">${fmtPrice(a.price)}</div><div class="s ${a.change24h >= 0 ? 'up' : 'down'}">${pct(a.change24h)}</div></div></button>`).join('');
+      $('#mkts').innerHTML = S.markets.assets.map((a) => `<button class="item" data-a="${esc(a.id)}">${coin(a)}<div class="mid"><div class="t">${esc(a.name)}</div><div class="s">${esc(a.symbol)}</div></div>${spark(a.spark)}<div style="text-align:right;min-width:84px"><div class="amt">${fmtPrice(a.price)}</div><div class="s ${(chg7(a.spark) ?? a.change24h) >= 0 ? 'up' : 'down'}">${chg7(a.spark) != null ? pct(chg7(a.spark)) + ' · 7d' : pct(a.change24h) + ' · 24h'}</div></div></button>`).join('');
     }
     $$('[data-a]').forEach((b) => (b.onclick = () => assetSheet(assetById(b.dataset.a) || holdingOf(b.dataset.a))));
   }
@@ -1305,7 +1358,7 @@
     sheet(`<div class="assethead">${coin(a, 'md')}<div><div class="t">${esc(a.name)}</div><div class="s">${esc(a.symbol)}</div></div></div>
       <div class="big" style="font-size:40px;font-weight:600;letter-spacing:-.03em;margin-top:14px">${fmtPrice(a.price)}</div>
       <div class="${a.change24h >= 0 ? 'up' : 'down'}" style="font-size:14px;font-weight:500">${pct(a.change24h)} today</div>
-      <div class="bigspark">${spark(a.spark, 320, 110, 2.2)}</div><div class="fine" style="text-align:left;margin:-4px 0 14px">Past 7 days</div>
+      <div class="bigspark">${spark(a.spark, 320, 110, 2.2)}</div><div class="fine" style="text-align:left;margin:-4px 0 14px">Past 7 days${chg7(a.spark) != null ? ` · <span class="${chg7(a.spark) >= 0 ? 'up' : 'down'}">${pct(chg7(a.spark))}</span>` : ''}</div>
       ${h ? `<div class="ledger"><div><span>You own</span><b>${esc(fmtQty(h.qty, a.symbol))}</b></div><div><span>Worth</span><b>${money(h.value)}</b></div></div>` : ''}
       <div class="btn-row">${h ? `<button class="btn btn-light" id="sell">Sell</button>` : `<button class="btn btn-light" id="swap">Swap into ${esc(a.symbol)}</button>`}<button class="btn btn-dark" id="buy">Buy</button></div>
       ${h ? `<button class="btn btn-text" id="swap" style="margin-top:4px">Swap ${esc(a.symbol)} for another coin</button>` : ''}`, (el, close) => {
@@ -1333,8 +1386,8 @@
       const upd = () => {
         const v = parseFloat(amt.value);
         amt.style.width = Math.max(1, (amt.value || '0').length + 0.2) + 'ch';
-        const tooSmall = v > 0 && v < min;
-        const ok = v >= min && v <= max + 0.005;
+        const tooSmall = v > 0 && v < min && !all;
+        const ok = (all ? max > 0 : v >= min) && v <= max + 0.005;
         go.disabled = !ok;
         prev.className = 'avail' + (v > max + 0.005 || tooSmall ? ' bad' : '');
         prev.textContent = v > max + 0.005 ? `You have ${money(max)} available`
@@ -1365,7 +1418,10 @@
       max: cash, maxLabel: 'All cash', cta: `Buy ${esc(a.symbol)}`,
       preview: (v) => `You'll get about ${fmtQty(v / a.price, a.symbol)}`,
       async onGo(v, _all, close) {
+        const g = document.querySelector('.sheet #go');
+        if (g) g.innerHTML = '<span class="spin"></span>Paying';
         const sig = await send(await bankAddr(), v, `Buy ${a.symbol}`);
+        if (g) g.innerHTML = `<span class="spin"></span>Adding your ${esc(a.symbol)}`;
         pendingBuys.add(a.id, sig);
         let r, tries = 0;
         while (!r) {
@@ -1388,7 +1444,7 @@
     amountSheet({
       title: `Sell ${esc(a.name)}`, sub: `Money goes back to your Monyx cash. You own ${esc(fmtQty(h.qty, a.symbol))}.`,
       max: h.value, maxLabel: 'Sell all', cta: `Sell ${esc(a.symbol)}`, min: 0.5,
-      belowMin: 'The smallest sale is $0.50. You can swap a small amount into another coin instead.',
+      belowMin: 'The smallest sale is $0.50. Tap Sell all to cash out everything, however small.',
       preview: (v) => `You'll sell about ${fmtQty(v / a.price, a.symbol)}`,
       async onGo(v, all, close) {
         const r = await api(PAPI + '/trade/sell', { method: 'POST', body: { asset: a.id, usd: v, all } });
@@ -1426,7 +1482,7 @@
       $('#stt', el).onclick = () => pickAsset('Swap to', S.markets.assets.filter((x) => x.id !== st.from.id), (x) => { st.to = x; paint(); });
       $('#flip', el).onclick = () => { const h = holdingOf(st.to.id); if (!h) { toast(`You don't own any ${st.to.symbol} yet.`); return; } const f = st.from; st.from = h; st.to = assetById(f.id) || f; amt.value = ''; paint(); };
       amt.oninput = () => { all = false; amt.value = amt.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1').replace(/(\.\d\d).+/, '$1'); paint(); };
-      $$('[data-v]', el).forEach((b) => (b.onclick = () => { all = b.dataset.v === 'max'; amt.value = (Math.floor((all ? st.from.value : st.from.value / 2) * 100) / 100).toFixed(2); paint(); }));
+      $$('[data-v]', el).forEach((b) => (b.onclick = () => { all = b.dataset.v === 'max'; amt.value = (all ? Math.round(st.from.value * 100) / 100 : Math.floor(st.from.value / 2 * 100) / 100).toFixed(2); paint(); if (all) prev.textContent = `All of it: ${fmtQty(st.from.qty, st.from.symbol)} → about ${fmtQty(st.from.value / st.to.price, st.to.symbol)}`; }));
       paint(); amt.focus();
       go.onclick = async () => {
         go.disabled = true; go.innerHTML = '<span class="spin"></span>Swapping';
@@ -1443,14 +1499,17 @@
   function screenActivity(tab = 'pay') {
     show(`<header class="top"><b>Activity</b><span class="pill"><i></i>Test mode</span></header>
       <div class="seg" id="seg"><button data-t="pay" class="${tab === 'pay' ? 'on' : ''}">Payments</button><button data-t="trade" class="${tab === 'trade' ? 'on' : ''}">Crypto</button></div>
+      ${tab === 'pay' ? '<div id="sentreqs"></div>' : ''}
       <div class="list" id="${tab === 'pay' ? 'feed' : 'trades'}" data-limit="100" style="margin-top:14px"><div class="item"><div class="mid"><div class="skeleton" style="width:60%"></div></div></div></div>`, { tabs: true, tab: 'activity' });
     $$('#seg button').forEach((b) => (b.onclick = () => screenActivity(b.dataset.t)));
-    if (tab === 'pay') { if (S.feed.length) paintFeed(); loadFeed(); }
+    if (tab === 'pay') { if (S.feed.length) paintFeed(); loadFeed(); paintSentRequests(); loadRequests().then(paintSentRequests); }
     else Promise.all([loadMarkets(), loadPortfolio()]).then(paintTrades);
   }
   function paintTrades() {
     const el = $('#trades'); if (!el || !S.port) return;
     const name = (id) => (id === 'cash' ? 'cash' : (assetById(id) || { symbol: id }).symbol);
+    const knownAsset = (id) => !S.markets || id === 'cash' || !!assetById(id);
+    S.port.trades = S.port.trades.filter((t) => knownAsset(t.asset_from) && knownAsset(t.asset_to));
     if (!S.port.trades.length) { el.innerHTML = `<div class="empty">No trades yet.<br><a href="#invest">Buy your first crypto</a></div>`; return; }
     el.innerHTML = S.port.trades.map((t) => {
       const a = assetById(t.kind === 'sell' ? t.asset_from : t.asset_to) || { symbol: '?', color: '#999' };
@@ -1486,7 +1545,7 @@
         if (!v) { $('#sres', el).innerHTML = ''; return; }
         t = setTimeout(async () => {
           try {
-            const { users } = await api(`/search?q=${encodeURIComponent(v)}`, { auth: false });
+            const { users } = await api(`/search?q=${encodeURIComponent(v)}`);
             const list = users.filter((u) => u.handle !== S.acct.user.handle && !st.people.some((p) => p.handle === u.handle));
             $('#sres', el).innerHTML = list.length ? `<div class="list" style="margin-top:8px">${list.map((u, i) => `<button class="item" data-i="${i}">${avatar(u, 'sm')}<div class="mid"><div class="t">${esc(u.name)}</div><div class="s">@${esc(u.handle)}</div></div>${ICON.plus.replace('<svg', '<svg width="18" height="18" style="fill:none;stroke:currentColor;stroke-width:2"')}</button>`).join('')}</div>` : `<div class="hint">No one called “${esc(v)}” on Monyx yet.</div>`;
             $$('[data-i]', $('#sres', el)).forEach((b) => (b.onclick = () => { st.people.push(list[+b.dataset.i]); $('#sq', el).value = ''; $('#sres', el).innerHTML = ''; paint(); }));
@@ -1576,7 +1635,7 @@
     if (mine.length && (mine.length === 1 || mine[0][1] > mine[1][1])) return { one: mine[0][0] };
     let others = [];
     try {
-      const { users } = await api(`/search?q=${encodeURIComponent(name.replace(/\s+/g, ' ').slice(0, 30))}`, { auth: false });
+      const { users } = await api(`/search?q=${encodeURIComponent(name.replace(/\s+/g, ' ').slice(0, 30))}`);
       others = users.filter((u) => u.handle !== S.acct.user.handle);
     } catch {}
     const all = [...mine.map((x) => x[0])];
@@ -1975,6 +2034,7 @@
   }
   function paintDrafts() {
     const el = $('#drafts'); if (!el) return;
+    paintBell();
     if (!S.drafts.length) { el.innerHTML = ''; return; }
     el.innerHTML = `<h3>Waiting for your OK</h3>` + S.drafts.map((d) => `<div class="req draft">
       <div class="row"><div class="av sm bot">${ICON.spark}</div><div><div class="t"><b>${esc(d.from)}</b> wants to pay <b>${esc(d.to ? d.to.name : 'someone')}</b> <b>${money(d.usd)}</b></div><div class="s">${esc(d.reason || d.note || 'No note')} · ${when(Date.parse(d.at) / 1000)}</div></div></div>
@@ -2074,7 +2134,7 @@
     const back = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct));
     if (b58enc(back) !== b58enc(Uint8Array.from(secret))) throw userError(NO_PRF);
     vault.set({ id: b64(id), salt: b64(salt), iv: b64(iv), ct: b64(ct), address: S.acct.address });
-    S.secretMem = Array.from(secret); delete S.acct.secret; saveAcct();
+    S.secretMem = Array.from(secret); delete S.acct.secret; S.holdKey = false; saveAcct();
   }
   function disablePasskeyLock() {
     if (!S.secretMem) return;
@@ -2161,12 +2221,14 @@
 
   function boot() {
     // Never run the pay screens inside someone else's page (clickjacking).
-    if (window.top !== window.self) { document.body.innerHTML = '<p style="padding:24px;font:16px system-ui">Monyx can only be used at <a href="https://monyx.pro" target="_top">monyx.pro</a>.</p>'; return; }
+    if (window.top !== window.self) { document.body.innerHTML = '<p style="padding:24px;font:16px system-ui">Monyx can only be used at <a href="https://www.monyx.pro" target="_top">monyx.pro</a>.</p>'; return; }
     S.acct = S.acct || store.get('monyx.acct');
     if (S.acct && S.acct.mode === 'key' && S.acct.secret) { try { S.kp = keypairFrom(S.acct.secret); } catch { S.acct = null; } }
     if (S.acct && S.acct.mode === 'key' && !S.acct.secret && !vault.get()) S.acct.token = null; // no key anywhere: start over
     if (S.acct && !S.acct.token) { S.acct = null; S.kp = null; store.del('monyx.acct'); } // signup interrupted before the account existed
     window.addEventListener('hashchange', route);
+    // Mid-signup the key exists only in memory; warn before it's lost.
+    window.addEventListener('beforeunload', (e) => { if (S.holdKey && S.acct && S.acct.token) { e.preventDefault(); e.returnValue = ''; } });
     RPC = store.get('monyx.rpc', RPC);
     rememberLinkPeople();
     loadInfo();

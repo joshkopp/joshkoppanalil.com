@@ -1,8 +1,8 @@
 # Monyx
 
-**Just say who to pay.** Monyx is a voice-first dollar wallet on Solana. Say "send Maya 20 for pizza", read the plain-English preview, tap Pay. Before anything goes out, Monyx checks the destination for scams. No seed phrase, no gas, no tokens to understand. Test mode on Solana devnet.
+**Just say who to pay.** Monyx is a voice-first dollar wallet on Solana. Say "send Maya 20 for pizza", read the plain-English preview, tap Pay. Before anything goes out, Monyx checks the destination for scams. No seed phrase to memorize, no gas, no tokens to understand. Test mode on Solana devnet.
 
-- Live: https://monyx.pro (marketing site) and https://monyx.pro/app/ (the wallet)
+- Live: https://www.monyx.pro (marketing site) and https://www.monyx.pro/app/ (the wallet)
 - Built by Josh Koppanalil and Andrew Hu for the UBC 2026 hackathon
 
 ## What it does

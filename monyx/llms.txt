@@ -27,4 +27,4 @@ One signature buys one pull for the exact params quoted. If the upstream fails
 - tx       0.0003 SOL   signature, net              plain-English transaction breakdown
 - token    0.0005 SOL   mint, net                   supply, authorities, holder concentration
 
-Human interface: https://monyx.pro/pro/
+Human interface: https://www.monyx.pro/pro/
