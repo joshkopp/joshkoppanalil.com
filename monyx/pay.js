@@ -306,7 +306,13 @@
     const photo = p.avatar ? `<img src="${esc(p.avatar)}" alt="" loading="lazy" data-fallback>` : '';
     return `<div class="av ${size}" style="background:${PALETTE[h % PALETTE.length]}">${esc(ini)}${photo}</div>`;
   }
-  const who = (p) => (p && !p.unknown ? (p.bank ? 'Monyx' : p.name) : (p ? short(p.address) : 'Someone'));
+  // Nicknames for addresses outside Monyx. Stored on this device only, never sent to the server.
+  const nicks = () => store.get('monyx.nicks', {});
+  const nickOf = (a) => (a && nicks()[a]) || '';
+  const who = (p) => {
+    if (p && p.unknown && p.address && nickOf(p.address)) return nickOf(p.address);
+    return p && !p.unknown ? (p.bank ? 'Monyx' : p.name) : (p ? short(p.address) : 'Someone');
+  };
   // Full names in toasts, chips and receipts, so two people called Maya can't be confused.
   const first = (p) => who(p);
   function when(t) {
@@ -764,8 +770,10 @@
       <div class="big">${money(usd(Math.abs(f.amount)))}</div><div class="note">${esc(f.note || '')}</div></div>
       <div class="ledger"><div><span>Status</span><b>${f.ok ? 'Completed' : 'Failed'}</b></div><div><span>Date</span><b>${f.time ? new Date(f.time * 1000).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '–'}</b></div></div>
       ${p && p.handle && !p.bank ? `<button class="btn btn-dark" id="again">${f.amount > 0 ? 'Pay' : 'Pay again'} ${esc(first(p))}</button>` : ''}
+      ${p && p.unknown && f.with ? `<p class="fine"><a href="#" id="nameit">${nickOf(f.with) ? `Rename this address (${short(f.with)})` : 'Name this address'}</a></p>` : ''}
       <p class="fine" style="margin-top:14px"><a href="https://explorer.solana.com/tx/${sig}?cluster=devnet" target="_blank" rel="noopener">View public receipt</a></p>`, (el, close) => {
       const a = $('#again', el); if (a) a.onclick = () => { close(); location.hash = `#pay/${p.handle}`; };
+      const nm = $('#nameit', el); if (nm) nm.onclick = (e) => { e.preventDefault(); close(); nameAddress(f.with, () => txDetail(sig)); };
     });
     history.replaceState(null, '', '#home');
   }
@@ -1039,7 +1047,8 @@
     const after = S.cash != null ? usd(S.cash) - dollars : null;
     const short_ = after != null && after < -0.004;
     const rc = riskCard(to, dollars, note);
-    sheet(`<div class="confirm">${avatar(to, 'lg')}<div class="sub">Pay ${esc(who(to))}${to.handle ? ` · @${esc(to.handle)}` : ''}</div>
+    const named = to.unknown && !to.handle && nickOf(to.address);
+    sheet(`<div class="confirm">${avatar(to, 'lg')}<div class="sub">Pay ${esc(who(to))}${to.handle ? ` · @${esc(to.handle)}` : ''}${named ? ` · ${short(to.address)}` : ''}</div>
       <div class="big">${money(dollars)}</div>${note ? `<div class="note">${esc(note)}</div>` : ''}</div>
       <div class="ledger"><div><span>From</span><b>Monyx balance</b></div>${after != null && after >= -0.004 ? `<div><span>Balance after</span><b>${money(Math.max(0, after))}</b></div>` : ''}<div><span>Network fee</span><b>Paid by Monyx</b></div></div>
       ${draftId ? `<div class="voiced">${ICON.spark}<span>Drafted by your assistant. Check it, then tap Pay.</span></div>` : ''}
@@ -1061,7 +1070,9 @@
           close();
           S.feed.unshift({ sig, time: Math.floor(Date.now() / 1000), ok: true, with: to.address, note, amount: -toUnits(dollars) });
           S.people[to.address] = S.people[to.address] || to;
-          success(`You paid ${esc(first(to))} ${money(dollars)}`, note, sig);
+          const namable = to.unknown && !to.handle && !to.bank && !nickOf(to.address);
+          success(`You paid ${esc(first(to))} ${money(dollars)}`, note, sig, namable ? '<a href="#" id="nameprompt">Save a name for this address</a>' : '');
+          const np = $('#nameprompt'); if (np) np.onclick = (e) => { e.preventDefault(); nameAddress(to.address); };
           if (voiced) say(`Done. You paid ${first(to)} ${spoken(dollars)}.`);
           refreshBalance();
         } catch (err) {
@@ -1082,6 +1093,28 @@
     $('#done').onclick = () => (location.hash = back);
     history.replaceState(null, '', '#done');
     S.lastMs = null;
+  }
+
+  // Name a non-Monyx address so it reads "Mom's wallet" instead of 9JBS…NJRs. Device-only.
+  function nameAddress(address, onDone) {
+    sheet(`<h2>Name this address</h2><p class="sub">Only you see this name, and only on this device.</p>
+      <input id="nk" maxlength="24" placeholder="e.g. Mom's wallet" autocomplete="off" style="width:100%;margin-top:10px;padding:12px;font:inherit;border:1px solid var(--line,#ccc);border-radius:12px">
+      <p class="fine" id="nkerr" style="color:var(--red)"></p>
+      <p class="fine">${esc(address)}</p>
+      <div class="btn-row" style="margin-top:12px"><button class="btn btn-light" id="nkno">Cancel</button><button class="btn btn-dark" id="nks">Save name</button></div>`, (el, close) => {
+      const inp = $('#nk', el), err = $('#nkerr', el);
+      setTimeout(() => inp.focus(), 50);
+      $('#nkno', el).onclick = close;
+      $('#nks', el).onclick = () => {
+        const name = inp.value.replace(/\s+/g, ' ').trim().replace(/^@+/, '');
+        if (!name) { err.textContent = 'Type a name.'; return; }
+        const lc = name.toLowerCase();
+        const taken = lc === 'monyx' || Object.values(S.people || {}).some((p) => p && !p.unknown && p.handle && p.handle.toLowerCase() === lc);
+        if (taken) { err.textContent = 'That name is already a Monyx username. Pick another.'; return; }
+        const all = nicks(); all[address] = name; store.set('monyx.nicks', all);
+        close(); toast(`Saved "${esc(name)}"`); onDone && onDone();
+      };
+    });
   }
 
   function scanCode(onCode) {
@@ -1280,7 +1313,7 @@
       $('#no', el).onclick = close;
       $('#yes', el).onclick = async () => {
         api('/logout', { method: 'POST' }).catch(() => {});
-        store.del(`monyx.feed.${S.acct.address}`); store.del('monyx.acct');
+        store.del(`monyx.feed.${S.acct.address}`); store.del('monyx.acct'); store.del('monyx.nicks');
         vault.del(); S.secretMem = null;
         S.acct = null; S.kp = null; S.feed = []; S.cash = null; S.requests = { incoming: [], outgoing: [] };
         close(); location.hash = '';
