@@ -28,6 +28,12 @@ const cases=[
 ['pay maya -5','pay',null,['maya'],''],
 ['add money','topup',null,[],''],
 ['top up my balance','topup',null,[],''],
+// usernames that end in digits must never lose them (that pays someone else)
+['send monyxtester2 0.25 for self','pay',0.25,['monyxtester2'],'Self'],
+['send monyxtester two 0.25','pay',0.25,['monyxtester2'],''],
+['pay @monyxtester2 3','pay',3,['monyxtester2'],''],
+['send maya two dollars','pay',2,['maya'],''],
+['send 2 dollars to maya','pay',2,['maya'],''],
 ];
 let bad=0;
 for(const [s,i,a,p,n] of cases){const r=parse(s);const ok=r.intent===i&&r.amount===a&&JSON.stringify(r.people)===JSON.stringify(p)&&r.note===n;if(!ok){bad++;console.log('FAIL',JSON.stringify(s),'→',JSON.stringify(r));}}

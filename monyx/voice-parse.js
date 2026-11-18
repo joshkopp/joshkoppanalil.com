@@ -65,6 +65,7 @@
     'send pay paying give transfer venmo zelle tip back request ask charge bill collect invoice get split owe owes owed from with between ' +
     'among and plus also dollar dollars buck bucks usd cash him her them they for each everyone everybody people of us yeah um uh now real quick go ahead').split(' '));
 
+  const STOP = new Set(['send', 'pay', 'paid', 'give', 'request', 'ask', 'split', 'charge', 'bill', 'owe', 'owes', 'to', 'for', 'from', 'and', 'with', 'me', 'him', 'her', 'them', 'us', 'the', 'a', 'an', 'each', 'about', 'like', 'around', 'dollars', 'dollar', 'bucks', 'usd', 'cents', 'times']);
   function parse(input) {
     const raw = String(input || '').trim();
     let t = ' ' + raw.toLowerCase()
@@ -78,6 +79,11 @@
       .replace(/(\D)\.(\s|$)/g, '$1 ')
       .replace(/\s+/g, ' ') + ' ';
     t = ' ' + wordsToDigits(t.trim().split(' ')).join(' ') + ' ';
+    // "monyxtester two 0.25" → "monyxtester2 0.25": a single digit between a name and another number
+    // belongs to the username (handles often end in digits). Reading it as the amount would pay a
+    // different person. If the guess is wrong, the app finds no exact match and asks who you meant.
+    t = t.replace(/ (@?[a-z_][a-z0-9_]{2,}) (\d) (\$?\d+(?:\.\d{1,2})?)(?= )/g, (m, name, d, amt) =>
+      (STOP.has(name.replace(/^@/, '')) ? m : ` ${name}${d} ${amt}`));
     // Glue "@ maya" and "maya _ c" back together.
     t = t.replace(/ _ /g, '_').replace(/@ /g, '@');
 

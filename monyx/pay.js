@@ -200,7 +200,8 @@
   }
   async function refreshBalance() {
     if (!S.acct) return;
-    try { S.cash = await usdcOf(S.acct.address); paintBalance(); } catch {}
+    const who0 = S.acct && S.acct.address;
+    try { const c = await usdcOf(who0); if (S.acct && S.acct.address === who0) { S.cash = c; paintBalance(); } } catch {}
   }
   async function loadInfo() {
     try {
@@ -260,6 +261,7 @@
     if (!S.acct) return;
     const me = S.acct.address;
     const cacheKey = `monyx.usdcfeed.${me}`;
+    if (S.feedOwner !== me) { S.feed = []; S.feedOwner = me; } // never show another account's history
     if (!S.feed.length) S.feed = store.get(cacheKey, []);
     try {
       const sigs = await rpc('getSignaturesForAddress', [ataOf(me).toBase58(), { limit: 25 }]);
@@ -273,6 +275,7 @@
           if (tx) got.set(s.signature, toEntry(tx, s, me));
         }
       }));
+      if (!S.acct || S.acct.address !== me) return; // signed into another account meanwhile: drop these results
       S.feed = sigs.map((s) => known.get(s.signature) || got.get(s.signature)).filter(Boolean);
       store.set(cacheKey, S.feed);
       notePaid(S.feed.filter((f) => f.ok && f.amount < 0).map((f) => f.with));
@@ -412,6 +415,14 @@
     $('#goLogin').onclick = () => (location.hash = '#login');
   }
   // Someone who has had an account on this device (kept after logout, cleared by "forget this device").
+  // Everything kept in memory or storage for one account. Called on logout and before any sign-in,
+  // so switching accounts on a device never shows the last person's balance, history or requests.
+  function clearAccountState(address) {
+    if (address) { store.del(`monyx.usdcfeed.${address}`); store.del(`monyx.feed.${address}`); store.del(`monyx.paidTo.${address}`); }
+    S.feed = []; S.cash = null; S.port = null; S.people = S.people || {};
+    S.requests = { incoming: [], outgoing: [] }; S.drafts = []; S.lastMs = null;
+    store.del('monyx.feed'); store.del('monyx.pending.sig');
+  }
   const knownUser = () => (savedPk() && savedPk().user) || store.get('monyx.known') || null;
   // A passkey-locked account that was logged out on this device (see logout()).
   const savedPk = () => { const v = vault.get(); return v && v.address && !S.acct ? v : null; };
@@ -420,7 +431,7 @@
     btn.disabled = true; const label = btn.innerHTML; btn.innerHTML = `<span class="spin"></span>${isPwVault(v) ? 'Checking your password' : 'Waiting for your passkey'}`;
     try {
       const timeout = new Promise((_, no) => setTimeout(() => no(userError('The passkey prompt timed out. Try again.')), 60000));
-      S.acct = { mode: 'key', address: v.address, token: null, user: v.user || null };
+      clearAccountState(S.acct && S.acct.address); S.acct = { mode: 'key', address: v.address, token: null, user: v.user || null };
       await Promise.race([unlockSaved($('#pkpw') && $('#pkpw').value), timeout]);     // decrypts the key into memory only
       btn.innerHTML = '<span class="spin"></span>Signing in';
       const r = await api('/login', { method: 'POST', auth: false, body: await proof(v.address) });
@@ -517,7 +528,7 @@
         if (!su.kp) su.kp = W().Keypair.generate();
         S.kp = su.kp;
         const address = su.kp.publicKey.toBase58();
-        S.acct = { mode: 'key', secret: Array.from(su.kp.secretKey), address, token: null, user: null };
+        clearAccountState(S.acct && S.acct.address); S.acct = { mode: 'key', secret: Array.from(su.kp.secretKey), address, token: null, user: null };
         S.holdKey = true;   // key stays in memory until a passkey or password lock is on
         saveAcct();
         const p = await proof(address);
@@ -687,7 +698,7 @@
       try { kp = parseRecovery(rk.value); } catch { hint.className = 'hint bad'; hint.textContent = "That doesn't look like a Monyx recovery key."; return; }
       go.disabled = true; go.innerHTML = '<span class="spin"></span>Logging in';
       S.kp = kp;
-      S.acct = { mode: 'key', secret: Array.from(kp.secretKey), address: kp.publicKey.toBase58(), token: null, user: null };
+      clearAccountState(S.acct && S.acct.address); S.acct = { mode: 'key', secret: Array.from(kp.secretKey), address: kp.publicKey.toBase58(), token: null, user: null };
       vault.del(); S.secretMem = null; S.holdKey = true; // offer a passkey or password lock before keeping the key
       try {
         const r = await api('/login', { method: 'POST', auth: false, body: await proof(S.acct.address) });
@@ -710,7 +721,7 @@
     try {
       const r = await p.connect();
       const address = r.publicKey.toString();
-      S.acct = { mode: 'phantom', address, token: null, user: null };
+      clearAccountState(S.acct && S.acct.address); S.acct = { mode: 'phantom', address, token: null, user: null };
       try {
         const res = await api('/login', { method: 'POST', auth: false, body: await proof(address) });
         S.acct.token = res.token; S.acct.user = res.user; saveAcct(); location.hash = '#home';
@@ -1551,7 +1562,7 @@
       $('#no', el).onclick = close;
       $('#yes', el).onclick = async () => {
         api('/logout', { method: 'POST' }).catch(() => {});
-        store.del(`monyx.feed.${S.acct.address}`); store.del('monyx.acct');
+        clearAccountState(S.acct.address); store.del('monyx.acct');
         // The vault holds only ciphertext that needs this device's passkey, so it can stay for a quick sign-in.
         const forget = !hasPk || ($('#forget', el) && $('#forget', el).checked);
         if (hasPk && $('#forget', el) && $('#forget', el).checked) store.del('monyx.known'); // "forget this device" forgets who you are too
@@ -2568,7 +2579,7 @@
     const kp = keypairFrom(secretArr);
     if (expectAddress && kp.publicKey.toBase58() !== expectAddress) throw userError('That key doesn’t match this account. Nothing was saved.');
     S.kp = kp; vault.del();
-    S.acct = { mode: 'key', secret: Array.from(kp.secretKey), address: kp.publicKey.toBase58(), token: null, user: null };
+    clearAccountState(S.acct && S.acct.address); S.acct = { mode: 'key', secret: Array.from(kp.secretKey), address: kp.publicKey.toBase58(), token: null, user: null };
     S.secretMem = null; S.holdKey = true;
     const r = await api('/login', { method: 'POST', auth: false, body: await proof(S.acct.address) });
     S.acct.token = r.token; S.acct.user = r.user;
@@ -2684,7 +2695,7 @@
           const kp = keypairFrom(Array.from(secret));
           if (kp.publicKey.toBase58() !== p.user.address) throw userError('The key that arrived doesn’t match that account. Nothing was saved.');
           S.kp = kp;
-          S.acct = { mode: 'key', secret: Array.from(kp.secretKey), address: p.user.address, token: null, user: p.user };
+          clearAccountState(S.acct && S.acct.address); S.acct = { mode: 'key', secret: Array.from(kp.secretKey), address: p.user.address, token: null, user: p.user };
           vault.del(); S.secretMem = null; S.holdKey = true;
           const lr = await api('/login', { method: 'POST', auth: false, body: await proof(S.acct.address) });
           S.acct.token = lr.token; S.acct.user = lr.user;

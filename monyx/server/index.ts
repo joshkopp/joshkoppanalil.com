@@ -77,6 +77,25 @@ async function proves(address: string, ts: number, sig: string) {
 }
 const CODE_ALPH = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no 0/O, 1/I/L
 const sha256 = async (t: string) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)))].map((b) => b.toString(16).padStart(2, "0")).join("");
+// Keyed hash with a server-only secret (MONYX_PEPPER, or the service key if unset).
+const PEPPER = Deno.env.get("MONYX_PEPPER") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+let pepperKey: CryptoKey | null = null;
+async function hmac(t: string) {
+  pepperKey ??= await crypto.subtle.importKey("raw", new TextEncoder().encode(PEPPER), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.sign("HMAC", pepperKey, new TextEncoder().encode(t)))));
+}
+// Attempt counters kept in the database, so limits hold across server instances.
+async function tooMany(key: string, max: number, minutes: number) {
+  const { data: t } = await db.from("monyx_pw_tries").select("n, first_at").eq("key", key).maybeSingle();
+  return !!t && Date.now() - Date.parse(t.first_at) < minutes * 60_000 && t.n >= max;
+}
+async function countTry(key: string, minutes: number, max: number) {
+  const { data: t } = await db.from("monyx_pw_tries").select("n, first_at").eq("key", key).maybeSingle();
+  const fresh = !t || Date.now() - Date.parse(t.first_at) > minutes * 60_000;
+  const n = fresh ? 1 : t!.n + 1;
+  await db.from("monyx_pw_tries").upsert({ key, n, first_at: fresh ? new Date().toISOString() : t!.first_at });
+  return Math.max(0, max - n);
+}
 const linkTries = new Map<string, { t: number; n: number }>();
 const limitedLink = (k: string) => { const now = Date.now(), w = linkTries.get(k); if (!w || now - w.t > 600_000) { linkTries.set(k, { t: now, n: 1 }); return false; } return ++w.n > 10; };
 const token = () => [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -189,29 +208,37 @@ Deno.serve(async (req) => {
     // only after a login proof derived from the password (the password itself never arrives),
     // with wrong guesses rate-limited per account, so the ciphertext can't be pulled and
     // attacked offline. Passkey backups need the passkey's PRF secret to open.
+    // Same answer whether or not the account exists or has a password: a made-up salt that never
+    // changes for that name, so nobody can learn who has password sign-in by asking.
     if (path === "/backup/pw/start" && req.method === "POST") {
-      const h = String(body.handle || "").toLowerCase().replace(/^@/, "");
-      const { data: u } = await db.from("monyx_users").select("id").eq("handle", h).maybeSingle();
+      const h = String(body.handle || "").toLowerCase().replace(/^@/, "").slice(0, 40);
+      if (await tooMany("start-ip:" + ip, 60, 15)) return fail("Too many tries from here. Wait 15 minutes.", 429, "rate_limited");
+      await countTry("start-ip:" + ip, 15, 60);
+      const { data: u } = HANDLE.test(h) ? await db.from("monyx_users").select("id").eq("handle", h).maybeSingle() : { data: null };
       const { data: b } = u ? await db.from("monyx_key_backups").select("salt, iter").eq("user_id", u.id).eq("kind", "pw").maybeSingle() : { data: null };
-      if (!b) return fail("That account hasn't turned on password sign-in. Use your recovery key, a passkey or a code from your other device.", 404, "no_password");
-      return json({ salt: b.salt, iter: b.iter });
+      if (b) return json({ salt: b.salt, iter: b.iter });
+      return json({ salt: (await hmac("fake-salt:" + h)).slice(0, 24), iter: 600000 });
     }
     if (path === "/backup/pw/open" && req.method === "POST") {
-      const h = String(body.handle || "").toLowerCase().replace(/^@/, "");
-      const { data: u } = await db.from("monyx_users").select("id, address").eq("handle", h).maybeSingle();
+      const h = String(body.handle || "").toLowerCase().replace(/^@/, "").slice(0, 40);
+      const NOPE = "That username and password don't match. Check both, or use your recovery key or a code from your other device.";
+      // Limits that hold across server instances (stored in the database), shown to the person:
+      // 8 wrong tries per account per 15 minutes, 20 per day, and 30 per network per 15 minutes.
+      if (await tooMany("ip:" + ip, 30, 15)) return fail("Too many tries from this network. Wait 15 minutes.", 429, "rate_limited");
+      if (await tooMany("acct15:" + h, 8, 15)) return fail("Too many wrong passwords for this account. Wait 15 minutes, or use your recovery key.", 429, "rate_limited");
+      if (await tooMany("acctday:" + h, 20, 1440)) return fail("Too many wrong passwords today. Use your recovery key or a code from your other device.", 429, "rate_limited");
+      const { data: u } = HANDLE.test(h) ? await db.from("monyx_users").select("id, address").eq("handle", h).maybeSingle() : { data: null };
       const { data: b } = u ? await db.from("monyx_key_backups").select("*").eq("user_id", u.id).eq("kind", "pw").maybeSingle() : { data: null };
-      if (!b) return fail("That account hasn't turned on password sign-in.", 404, "no_password");
-      const key = "pw:" + u!.id;
-      const { data: t } = await db.from("monyx_pw_tries").select("*").eq("key", key).maybeSingle();
-      const fresh = !t || Date.now() - Date.parse(t.first_at) > 15 * 60_000;
-      if (!fresh && t!.n >= 8) return fail("Too many wrong passwords. Wait 15 minutes, or use your recovery key.", 429, "rate_limited");
-      if (limitedLink("ip:" + ip)) return fail("Too many tries from here. Wait a few minutes.", 429, "rate_limited");
-      if ((await sha256(String(body.auth || ""))) !== b.auth_hash) {
-        await db.from("monyx_pw_tries").upsert({ key, n: fresh ? 1 : t!.n + 1, first_at: fresh ? new Date().toISOString() : t!.first_at });
-        return fail("That password isn't right.", 401, "wrong_password");
+      const auth = String(body.auth || "");
+      // Only a keyed hash of the login proof is stored; the password and the proof itself never are.
+      const ok = !!b && (b.auth_hash === "h2:" + (await hmac("auth:" + auth)) || b.auth_hash === (await sha256(auth)));
+      if (!ok) {
+        const left = await countTry("acct15:" + h, 15, 8);
+        await countTry("acctday:" + h, 1440, 20); await countTry("ip:" + ip, 15, 30);
+        return fail(left > 0 ? `${NOPE} ${left} ${left === 1 ? "try" : "tries"} left before a 15-minute wait.` : NOPE, 401, "wrong_password");
       }
-      await db.from("monyx_pw_tries").delete().eq("key", key);
-      return json({ iv: b.iv, ct: b.ct, address: u!.address });
+      await db.from("monyx_pw_tries").delete().in("key", ["acct15:" + h]);
+      return json({ iv: b!.iv, ct: b!.ct, address: u!.address });
     }
     if (path === "/backup/pk/open" && req.method === "POST") {
       const cred = String(body.cred_id || "");
@@ -260,7 +287,7 @@ Deno.serve(async (req) => {
       const { salt, iv, ct, auth } = body; const iter = Number(body.iter);
       if (![salt, iv, ct, auth].every((x) => typeof x === "string" && /^[A-Za-z0-9+/=]{16,200}$/.test(x)) || !(iter >= 300000 && iter <= 5000000)) return fail("That didn't work. Try again.");
       await db.from("monyx_key_backups").delete().eq("user_id", user.id).eq("kind", "pw");
-      const { error } = await db.from("monyx_key_backups").insert({ user_id: user.id, kind: "pw", salt, iter, iv, ct, auth_hash: await sha256(auth) });
+      const { error } = await db.from("monyx_key_backups").insert({ user_id: user.id, kind: "pw", salt, iter, iv, ct, auth_hash: "h2:" + (await hmac("auth:" + auth)) });
       if (error) return oops("backup pw", error);
       return json({ ok: true });
     }
