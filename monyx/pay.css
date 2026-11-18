@@ -627,3 +627,25 @@ body.padmode .tabbar .tab-pay.on { background: var(--ink); color: var(--pastel);
 .field .showk { flex: none; height: 40px; border-radius: 10px; }
 .field .showk:hover { background: var(--line2); }
 a.logo { color: inherit; text-decoration: none; }
+
+/* Logged out, passkey still on this device: "Sign in with passkey" card. */
+.pkback { display: flex; align-items: center; gap: 12px; margin: 18px 0 4px; padding: 12px 14px; background: var(--card); border-radius: 16px; box-shadow: inset 0 0 0 1px var(--line2); text-align: left; }
+.pkback b { display: block; font-size: 15px; }
+.pkback span { display: block; font-size: 13px; color: var(--faint); }
+#goPk svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; margin-right: 8px; }
+.fine.bad { color: var(--bad); }
+
+/* Basic / Pro */
+body[data-mode="basic"] .tabbar a[data-tab="invest"],
+body[data-mode="basic"] #cryptoRow,
+body[data-mode="basic"] [data-r="pro"] { display: none !important; }
+.modesw { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.modesw button { text-align: left; border: 0; background: var(--card); box-shadow: inset 0 0 0 1px var(--line2); border-radius: 14px; padding: 12px 14px; font: inherit; color: var(--ink); cursor: pointer; }
+.modesw button b { display: block; font-size: 15px; }
+.modesw button span { display: block; font-size: 12.5px; color: var(--faint); margin-top: 2px; }
+.modesw button.on { box-shadow: inset 0 0 0 2px var(--brand); background: color-mix(in srgb, var(--brand) 8%, var(--card)); }
+.qq { margin: 16px 0 8px; font-size: 14.5px; }
+.qopts { display: flex; flex-wrap: wrap; gap: 8px; }
+.qopts button { border: 0; background: var(--card); box-shadow: inset 0 0 0 1px var(--line2); border-radius: 99px; padding: 9px 14px; font: inherit; font-size: 14px; color: var(--ink2); cursor: pointer; }
+.qopts button.on { background: var(--brand); color: #fff; box-shadow: none; }
+.qrec { margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--brand) 10%, var(--card)); font-size: 14px; line-height: 1.5; }

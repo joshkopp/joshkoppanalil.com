@@ -402,14 +402,43 @@
       <h1>Just say<br>who to pay.</h1>
       <p class="sub">Tell Monyx “send Maya 20 for pizza” and it’s ready to go. Split dinner, ask for money back, hear when you get paid. No bank details, no fees.</p>
       ${banner || ''}
+      ${savedPk() ? `<div class="pkback">${avatar(savedPk().user || {}, 'sm')}<div><b>${esc((savedPk().user || {}).name || 'Your account')}</b><span>${(savedPk().user || {}).handle ? '@' + esc(savedPk().user.handle) + ' · ' : ''}passkey saved on this device</span></div></div>` : ''}
       <div class="cta">
-        <button class="btn btn-dark" id="goSignup">Create your account</button>
-        <button class="btn btn-text" id="goLogin">I already have an account</button>
+        ${savedPk() ? `<button class="btn btn-dark" id="goPk">${ICON.lock}Sign in with passkey</button>
+        <button class="btn btn-text" id="goLogin">Use a recovery key instead</button>
+        <button class="btn btn-text" id="goSignup">Create a new account</button>`
+        : `<button class="btn btn-dark" id="goSignup">Create your account</button>
+        <button class="btn btn-text" id="goLogin">I already have an account</button>`}
       </div>
+      <p class="fine" id="pkh" aria-live="polite"></p>
       <p class="fine">Monyx is in test mode: balances are test dollars with no real value. <a href="../documentation/">How it works</a> · <a href="../privacy/">Privacy</a> · <a href="../terms/">Terms</a></p>
     </section>`);
     $('#goSignup').onclick = () => startSignup();
     $('#goLogin').onclick = () => (location.hash = '#login');
+    const pk = $('#goPk'); if (pk) pk.onclick = () => signInWithPasskey(pk, $('#pkh'));
+  }
+  // A passkey-locked account that was logged out on this device (see logout()).
+  const savedPk = () => { const v = vault.get(); return v && v.address && !S.acct ? v : null; };
+  async function signInWithPasskey(btn, hint) {
+    const v = vault.get(); if (!v) return;
+    btn.disabled = true; const label = btn.innerHTML; btn.innerHTML = '<span class="spin"></span>Waiting for your passkey';
+    try {
+      const timeout = new Promise((_, no) => setTimeout(() => no(userError('The passkey prompt timed out. Try again.')), 60000));
+      S.acct = { mode: 'key', address: v.address, token: null, user: v.user || null };
+      await Promise.race([unlockWithPasskey(), timeout]);     // decrypts the key into memory only
+      btn.innerHTML = '<span class="spin"></span>Signing in';
+      const r = await api('/login', { method: 'POST', auth: false, body: await proof(v.address) });
+      S.acct.token = r.token; S.acct.user = r.user; saveAcct();
+      v.user = vaultUser(r.user); vault.set(v);
+      location.hash = store.get('monyx.pending') || '#home'; store.del('monyx.pending'); route();
+    } catch (e) {
+      S.acct = null; S.kp = null; S.secretMem = null;
+      btn.disabled = false; btn.innerHTML = label;
+      hint.className = 'fine bad';
+      hint.textContent = e.name === 'NotAllowedError' || e.name === 'AbortError' ? 'The passkey prompt was closed. Try again, or use your recovery key.'
+        : e.code === 'no_account' ? 'That account no longer exists. Use your recovery key or create a new one.'
+        : e.safe ? e.message : 'That didn’t work. Try again, or use your recovery key.';
+    }
   }
 
   function dots(n) { const tot = S.signup && S.signup.lockStep ? 4 : 3; return `<div class="dots">${Array.from({ length: tot }, (_, i) => i + 1).map((i) => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div>`; }
@@ -582,7 +611,9 @@
       <p class="sub">${got ? `We added <b style="color:var(--ink)">${money(b.usd)}</b> in test dollars so you can try it out.` : 'Add money from your home screen whenever you’re ready.'}</p>
       <p class="sub">Friends can pay you at <b style="color:var(--ink)">@${esc(S.acct.user.handle)}</b>.</p></div>
     </div><div class="foot"><button class="btn btn-dark" id="go">Go to Monyx</button>${S.acct.mode === 'key' && passkeysPossible() && !vault.get() && !(S.signup && S.signup.lockStep) ? '<button class="btn btn-text" id="pk">Lock Monyx with Face ID or a fingerprint</button>' : ''}</div></section>`);
-    $('#go').onclick = () => { const p = store.get('monyx.pending'); store.del('monyx.pending'); location.hash = p || '#home'; };
+    const toApp = () => { const p = store.get('monyx.pending'); store.del('monyx.pending'); location.hash = p || '#home'; };
+    // New accounts pick Basic or Pro once (a pay link they came from skips the quiz).
+    $('#go').onclick = () => (store.get('monyx.pending') ? (setMode('basic', true), toApp()) : modeQuiz(toApp));
     const pk = $('#pk');
     if (pk) pk.onclick = async () => {
       pk.disabled = true;
@@ -1302,6 +1333,12 @@
         <label class="item toggle"><span class="ico">${ICON.mic}</span><div class="mid"><div class="t">Monyx talks back</div><div class="s">Hear confirmations out loud</div></div><input type="checkbox" id="tTalk" ${S.voice.talk ? 'checked' : ''}><i class="sw"></i></label>
         <label class="item toggle"><span class="ico">${ICON.speaker}</span><div class="mid"><div class="t">Read payments aloud</div><div class="s">“${esc((knownPeople()[0] || { name: 'Alex' }).name.split(' ')[0])} sent you $14 for pizza”</div></div><input type="checkbox" id="tAnn" ${S.voice.announce ? 'checked' : ''}><i class="sw"></i></label>
       </div>
+      <h3>Mode</h3>
+      <div class="modesw" role="radiogroup" aria-label="App mode">
+        <button role="radio" data-m="basic" aria-checked="${appMode() === 'basic'}" class="${appMode() === 'basic' ? 'on' : ''}"><b>Basic</b><span>Pay, request, split</span></button>
+        <button role="radio" data-m="pro" aria-checked="${appMode() === 'pro'}" class="${appMode() === 'pro' ? 'on' : ''}"><b>Pro</b><span>Adds Invest and Pro tools</span></button>
+      </div>
+      <p class="fine"><a href="#" id="quiz">Not sure? Answer 2 questions</a></p>
       <h3>Account</h3>
       <div class="list menu">
         ${row('add', ICON.plus, 'Add money', 'Free test dollars')}
@@ -1329,6 +1366,8 @@
     $('[data-r="guide"]').onclick = () => (location.href = '../documentation/');
     $('[data-r="pro"]').onclick = () => (location.href = '../pro/');
     $('[data-r="out"]').onclick = logout;
+    $$('.modesw button').forEach((b) => (b.onclick = () => { if (appMode() !== b.dataset.m) { setMode(b.dataset.m); screenMe(); } }));
+    $('#quiz').onclick = (e) => { e.preventDefault(); modeQuiz(screenMe); };
   }
   function lockSheet() {
     const on = !!vault.get();
@@ -1426,13 +1465,18 @@
     });
   }
   function logout() {
-    sheet(`<h2>Log out?</h2><p class="sub">${S.acct.mode === 'key' ? 'You’ll need your recovery key to get back in. Your money stays in your account.' : 'You can log back in with Phantom any time.'}</p>
+    const hasPk = S.acct.mode === 'key' && !!vault.get();
+    sheet(`<h2>Log out?</h2><p class="sub">${hasPk ? 'Your money stays in your account. Next time, sign back in on this device with your passkey (Face ID, fingerprint or PIN).' : S.acct.mode === 'key' ? 'You’ll need your recovery key to get back in. Your money stays in your account.' : 'You can log back in with Phantom any time.'}</p>
+      ${hasPk ? '<label class="check" style="display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:14px"><input type="checkbox" id="forget" style="margin-top:3px"><span>Also remove passkey sign-in from this device<br><small style="color:var(--faint)">Do this on a shared or borrowed device. You’ll need your recovery key to get back in here.</small></span></label>' : ''}
       <div class="btn-row" style="margin-top:18px"><button class="btn btn-light" id="no">Cancel</button><button class="btn btn-dark" id="yes">Log out</button></div>`, (el, close) => {
       $('#no', el).onclick = close;
       $('#yes', el).onclick = async () => {
         api('/logout', { method: 'POST' }).catch(() => {});
         store.del(`monyx.feed.${S.acct.address}`); store.del('monyx.acct');
-        vault.del(); S.secretMem = null;
+        // The vault holds only ciphertext that needs this device's passkey, so it can stay for a quick sign-in.
+        const forget = !hasPk || ($('#forget', el) && $('#forget', el).checked);
+        if (forget) vault.del(); else { const v = vault.get(); if (v) { v.user = vaultUser(S.acct.user); vault.set(v); } }
+        S.secretMem = null;
         S.acct = null; S.kp = null; S.feed = []; S.cash = null; S.requests = { incoming: [], outgoing: [] };
         close(); location.hash = '';
       };
@@ -2146,14 +2190,20 @@
         <p class="sub">@${esc(u.handle)} uses Monyx to get paid. Create a free account or log in, and we'll bring you right back here to pay.</p>
       </div>
       <div class="cta">
-        <button class="btn btn-dark" id="goSignup">Create account to pay</button>
-        <button class="btn btn-text" id="goLogin">I already have an account</button>
+        ${savedPk() ? `<button class="btn btn-dark" id="goPk">${ICON.lock}Sign in with passkey to pay</button>
+        <button class="btn btn-text" id="goLogin">Use a recovery key instead</button>
+        <button class="btn btn-text" id="goSignup">Create a new account</button>`
+        : `<button class="btn btn-dark" id="goSignup">Create account to pay</button>
+        <button class="btn btn-text" id="goLogin">I already have an account</button>`}
       </div>
+      <p class="fine" id="pkh" aria-live="polite"></p>
       <p class="fine">Monyx is in test mode: balances are test dollars with no real value. <a href="../documentation/">How it works</a></p>
     </section>`);
     $('#goSignup').onclick = () => startSignup();
     $('#goLogin').onclick = () => (location.hash = '#login');
+    const pk = $('#goPk'); if (pk) pk.onclick = () => signInWithPasskey(pk, $('#pkh'));
   }
+
   async function claimLink(secret) {
     const kp = claimKey(secret);
     if (!kp) { toast('That link is broken. Ask them to send it again.', true); location.hash = '#home'; return; }
@@ -2276,6 +2326,46 @@
     const base = await crypto.subtle.importKey('raw', prf, 'HKDF', false, ['deriveKey']);
     return crypto.subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt, info: new TextEncoder().encode('monyx vault v1') }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
   }
+  /* Basic vs Pro. Basic is a plain payments app (pay, request, split, links).
+     Pro adds Invest (crypto) and Monyx Pro's tracer and developer tools.
+     Stored per device; accounts from before the switch existed stay on Pro. */
+  const appMode = () => (store.get('monyx.mode') === 'basic' ? 'basic' : 'pro');
+  function setMode(m, quiet) {
+    store.set('monyx.mode', m === 'basic' ? 'basic' : 'pro');
+    document.body.dataset.mode = appMode();
+    if (!quiet) toast(m === 'basic' ? 'Basic mode: just payments. Switch any time in Me.' : 'Pro mode: Invest and Pro tools are on.');
+  }
+  // Two quick questions, then a recommendation. Shown once after signup, and any time from Me.
+  function modeQuiz(then) {
+    const a = {};
+    sheet(`<h2>Basic or Pro?</h2><p class="sub">Two quick questions and we'll suggest one. You can switch any time in Me.</p>
+      <p class="qq"><b>What will you mostly use Monyx for?</b></p>
+      <div class="qopts" data-q="use"><button data-v="friends">Paying and splitting with friends</button><button data-v="invest">That, plus buying some crypto</button><button data-v="build">Exploring wallets, tracing or building</button></div>
+      <p class="qq"><b>Have you used a crypto wallet before?</b></p>
+      <div class="qopts" data-q="wallet"><button data-v="no">No</button><button data-v="little">A little</button><button data-v="yes">Yes</button></div>
+      <div id="qrec" class="qrec" hidden></div>
+      <div class="btn-row" style="margin-top:14px"><button class="btn btn-light" id="qBasic">Use Basic</button><button class="btn btn-dark" id="qPro">Use Pro</button></div>`, (el, close) => {
+      const done = (m) => { setMode(m); close(); };
+      const paint = () => {
+        if (!a.use || !a.wallet) return;
+        const rec = a.use === 'friends' && a.wallet !== 'yes' ? 'basic' : a.use === 'friends' ? 'basic' : 'pro';
+        const why = rec === 'basic' ? 'Basic keeps it to sending, requesting and splitting money. Nothing crypto-flavored to wade through.'
+          : a.use === 'build' ? 'Pro adds the wallet tracer, the pay-per-call market and Invest.' : 'Pro adds Invest, so you can buy, sell and swap test crypto next to your cash.';
+        const r = $('#qrec', el); r.hidden = false; r.innerHTML = `<b>We suggest ${rec === 'basic' ? 'Basic' : 'Pro'}.</b> ${why}`;
+        $('#qBasic', el).className = 'btn ' + (rec === 'basic' ? 'btn-dark' : 'btn-light');
+        $('#qPro', el).className = 'btn ' + (rec === 'pro' ? 'btn-dark' : 'btn-light');
+        $('#qBasic', el).textContent = rec === 'basic' ? 'Use Basic (suggested)' : 'Use Basic';
+        $('#qPro', el).textContent = rec === 'pro' ? 'Use Pro (suggested)' : 'Use Pro';
+      };
+      $$('.qopts', el).forEach((g) => $$('button', g).forEach((b) => (b.onclick = () => {
+        a[g.dataset.q] = b.dataset.v; $$('button', g).forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); paint();
+      })));
+      $('#qBasic', el).onclick = () => done('basic');
+      $('#qPro', el).onclick = () => done('pro');
+    }, () => { if (!store.get('monyx.mode')) setMode('pro', true); then && then(); }); // closing without choosing keeps Pro
+  }
+  // Just enough to greet you on the sign-in screen after logging out. No key material.
+  const vaultUser = (u) => u ? { name: u.name, handle: u.handle, avatar: u.avatar || null } : null;
   const NO_PRF = "This device's passkeys can't lock Monyx yet. Your recovery key still protects your account.";
   async function passkeyPrf(credId, salt) {
     const a = await navigator.credentials.get({ publicKey: { challenge: rand(32), allowCredentials: [{ type: 'public-key', id: credId }], userVerification: 'required', extensions: { prf: { eval: { first: salt } } } } });
@@ -2304,7 +2394,7 @@
     // Prove we can decrypt before throwing away the plain copy.
     const back = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct));
     if (b58enc(back) !== b58enc(Uint8Array.from(secret))) throw userError(NO_PRF);
-    vault.set({ id: b64(id), salt: b64(salt), iv: b64(iv), ct: b64(ct), address: S.acct.address });
+    vault.set({ id: b64(id), salt: b64(salt), iv: b64(iv), ct: b64(ct), address: S.acct.address, user: vaultUser(u) });
     S.secretMem = Array.from(secret); delete S.acct.secret; S.holdKey = false; saveAcct();
   }
   function disablePasskeyLock() {
@@ -2383,6 +2473,7 @@
     if (view === 'send') return screenPay({ amount: amtCheck(a).n > 0 ? a : '', mode: b === 'r' ? 'request' : 'pay', fromPad: true });
     if (view === 'pay') return screenPay({ to: a, amount: amtCheck(b).n > 0 ? amtCheck(b).n.toFixed(2).replace(/\.00$/, '') : '', note: c ? decodeURIComponent(c) : '' });
     if (view === 'me') return screenMe();
+    if (view === 'invest' && appMode() === 'basic') { toast('Invest is part of Pro mode. Turn it on in Me.'); location.hash = '#home'; return; }
     if (view === 'invest') return screenInvest();
     if (view === 'activity') return screenActivity();
     if (view === 'tx') { if (!$('#feed')) screenHome(); return txDetail(a); }
@@ -2401,6 +2492,7 @@
     // Mid-signup the key exists only in memory; warn before it's lost.
     window.addEventListener('beforeunload', (e) => { if (S.holdKey && S.acct && S.acct.token) { e.preventDefault(); e.returnValue = ''; } });
     store.del('monyx.rpc');
+    document.body.dataset.mode = appMode();
     rememberLinkPeople();
     loadInfo();
     // Broken profile photos fall back to initials. (Delegated, so no inline handlers: the CSP forbids them.)
