@@ -173,7 +173,8 @@
   }
   async function usdcOf(owner) {
     try { return Number((await rpc('getTokenAccountBalance', [ataOf(owner).toBase58()])).value.amount); }
-    catch (e) { if (e.rpc) return 0; throw e; } // no USDC account yet = $0
+    // Only "no such account" means $0. Rate limits and other RPC errors must throw, never show a false $0.
+    catch (e) { if (e.rpc && /could not find account|invalid param/i.test(e.message || '')) return 0; throw e; }
   }
   async function refreshBalance() {
     if (!S.acct) return;
@@ -300,6 +301,12 @@
     if (!p) return `<div class="av ${size} addr">?</div>`;
     if (p.bank) return `<div class="av ${size} bank">${MARK}</div>`;
     if (p.link && !p.handle) return `<div class="av ${size} linkav">${ICON.link}</div>`;
+    const nk = p.unknown && p.address ? nickOf(p.address) : '';
+    if (nk) {
+      let h = 2166136261; for (const c of nk) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0;
+      const ini = nk.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+      return `<div class="av ${size}" style="background:${PALETTE[h % PALETTE.length]}">${esc(ini)}</div>`;
+    }
     if (p.unknown || !p.name) return `<div class="av ${size} addr">#</div>`;
     let h = 2166136261; for (const c of p.handle || p.name) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; // FNV-1a spreads similar names across colours
     const ini = p.name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
@@ -915,7 +922,8 @@
         if (!v) { paint(recent(), 'Recent'); return; }
         if (isAddr(cleanAddr(v))) v = cleanAddr(v);
         const cv = cleanAddr(v);
-        if (cv.length >= 8 && S.acct.address.includes(cv)) { res.innerHTML = '<div class="empty">That’s part of your own account number. You can’t pay yourself.</div>'; valid(); return; }
+        // Only a typed start or end of your own account number counts, so ordinary matches inside other addresses don't block.
+        if (cv.length >= 8 && (S.acct.address.startsWith(cv) || S.acct.address.endsWith(cv))) { res.innerHTML = '<div class="empty">That’s part of your own account number. You can’t pay yourself.</div>'; valid(); return; }
         if (isAddr(v)) {
           if (v === S.acct.address) { res.innerHTML = '<div class="empty">That’s your own account number. You can’t pay yourself.</div>'; valid(); return; }
           st.to = S.people[v] && !S.people[v].unknown ? S.people[v] : { address: v, unknown: true }; renderTo(); valid(); return;
@@ -1313,7 +1321,7 @@
       $('#no', el).onclick = close;
       $('#yes', el).onclick = async () => {
         api('/logout', { method: 'POST' }).catch(() => {});
-        store.del(`monyx.feed.${S.acct.address}`); store.del('monyx.acct'); store.del('monyx.nicks');
+        store.del(`monyx.feed.${S.acct.address}`); store.del('monyx.acct');
         vault.del(); S.secretMem = null;
         S.acct = null; S.kp = null; S.feed = []; S.cash = null; S.requests = { incoming: [], outgoing: [] };
         close(); location.hash = '';
