@@ -291,3 +291,7 @@ dialog menu { display: flex; justify-content: flex-end; gap: 8px; padding: 0; ma
 :root, :root:root { color-scheme: light; --ink: #F6F9F3; --ink2: #fff; --ink3: #EDF4E8; --line: rgba(13,42,29,.08); --line2: rgba(13,42,29,.15); --bone: #0D2A1D; --bone2: #2E4A3C; --mute: #556E61; --dim: #7D9387; --sig: #3E6B30; --sig-ink: #2F5424; --in: #3E6B30; --bad: #B3261E; --tok: #7D9387; }
 @media (prefers-color-scheme: dark) { :root, :root:root { --ink: #F6F9F3; --ink2: #fff; --ink3: #EDF4E8; --line: rgba(13,42,29,.08); --line2: rgba(13,42,29,.15); --bone: #0D2A1D; --bone2: #2E4A3C; --mute: #556E61; --dim: #7D9387; --sig: #3E6B30; --sig-ink: #2F5424; --in: #3E6B30; --bad: #B3261E; --tok: #7D9387; } }
 ::selection { background: #CEE4C3; color: #0D2A1D; }
+
+/* Empty and loading rows span the whole list instead of squeezing into the icon column. */
+.activity li.muted, .ranks li.muted, .exchange li.muted { display: block; padding: 14px 0; line-height: 1.5; }
+.empty-note { color: var(--mute); font-size: 13px; line-height: 1.55; padding: 12px 0 4px; }

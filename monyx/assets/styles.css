@@ -964,3 +964,9 @@ footer .legal { max-width: 46em; }
 /* Mobile fixes: the menu's "Open the wallet" pill keeps white text, and no stray sideways scroll at 390px. */
 .nav-links .menu-only.btn-primary, .nav-links.is-open .menu-only.btn-primary { color: #fff; justify-content: center; }
 html, body { overflow-x: clip; }
+
+/* One logo everywhere: the green "m" mark plus the word, linking home. */
+.logo { align-items: center; gap: 9px; }
+.logo .mk { width: 28px; height: 28px; flex-shrink: 0; }
+.logo .mk rect { fill: #3E6B30; }
+.logo .mk path { fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }

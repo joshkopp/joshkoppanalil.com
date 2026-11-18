@@ -218,7 +218,7 @@
   }
 
   /* ───────────────────────── tracer ───────────────────────── */
-  const TR = { net: 'mainnet', hops: [], report: null };
+  const TR = { net: 'devnet', hops: [], report: null }; // devnet first: it's where Monyx lives
   function paintSamples() {
     const s = [['Monyx treasury', TREASURY, 'devnet']];
     if (S.pubkey) s.unshift(['My wallet', S.pubkey, 'devnet']);
@@ -338,24 +338,32 @@
       $('#catalog').innerHTML = cat.apis.map((a) => `<div class="api" data-name="${a.name}"><div><b>${esc(a.title)}</b> <span class="path">/api/${a.name}</span></div><span class="price">${a.priceSol} SOL</span><p>${esc(a.summary)}</p></div>`).join('');
       if (!S.sel) selectApi(cat.apis.find((a) => a.name === 'profile') || cat.apis[0]);
       else $$('.api').forEach((el) => el.classList.toggle('on', el.dataset.name === S.sel.name));
-    } catch (e) { $('#catalog').innerHTML = `<div class="api"><p>Couldn't load the market. ${esc(msg(e))}</p></div>`; }
+    } catch (e) {
+      $('#catalog').innerHTML = `<div class="api"><p>Couldn't load the market. ${esc(msg(e))}</p></div>`;
+    }
     loadKpis('#marketKpis');
   }
   async function loadKpis(sel) {
     try {
-      const l = await (await fetch(`${METER}/ledger`)).json();
-      $(sel).innerHTML = `<div><span>Pulls paid</span><b>${l.pulls}</b></div><div><span>SOL earned</span><b>${fmtSol(l.earnedSol, 4)}</b></div><div><span>Payers</span><b>${l.payers}</b></div>`;
+      const r = await fetch(`${METER}/ledger`); if (!r.ok) throw new Error('meter');
+      const l = await r.json();
+      l.pulls = Number(l.pulls) || 0; l.payers = Number(l.payers) || 0; l.earnedSol = Number(l.earnedSol) || 0;
+      l.recent = Array.isArray(l.recent) ? l.recent : []; l.byApi = l.byApi && typeof l.byApi === 'object' ? l.byApi : {};
+      $(sel).innerHTML = `<div><span>Pulls paid</span><b>${l.pulls.toLocaleString()}</b></div><div><span>SOL earned</span><b>${fmtSol(l.earnedSol, 4)}</b></div><div><span>Payers</span><b>${l.payers.toLocaleString()}</b></div>`;
       return l;
-    } catch { return null; }
+    } catch {
+      $(sel).innerHTML = '<div><span>Pulls paid</span><b>–</b></div><div><span>SOL earned</span><b>–</b></div><div><span>Payers</span><b>–</b></div>';
+      return null;
+    }
   }
   function selectApi(a) {
-    S.sel = a;
+    S.sel = a; const ce = $('#cEmpty'); if (ce) ce.hidden = true;
     $$('.api').forEach((el) => el.classList.toggle('on', el.dataset.name === a.name));
     $('#cTitle').textContent = `${a.title}`;
     $('#cPrice').innerHTML = `${a.priceSol} SOL<s>${a.priceLamports.toLocaleString()} lamports</s>`;
     const f = $('#cForm');
     f.innerHTML = Object.entries(a.params).map(([k, desc]) => k === 'net'
-      ? `<label>${k}<select name="net"><option ${a.example.net !== 'devnet' ? 'selected' : ''}>mainnet</option><option ${a.example.net === 'devnet' ? 'selected' : ''}>devnet</option></select></label>`
+      ? `<label>${k}<select name="net"><option ${a.example.net !== 'mainnet' ? 'selected' : ''}>devnet</option><option ${a.example.net === 'mainnet' ? 'selected' : ''}>mainnet</option></select></label>`
       : `<label>${k} <small>${esc(desc)}</small><input name="${k}" spellcheck="false" value="${esc(a.example[k] || (k === 'address' && S.pubkey ? S.pubkey : ''))}"></label>`).join('')
       + `<div class="row"><button class="primary" type="submit" id="pullBtn">Pull for ${a.priceSol} SOL</button><button class="ghost tiny" type="button" id="curlBtn">Copy as curl</button></div>`;
     $('#exchange').innerHTML = '';
@@ -541,7 +549,7 @@ def pull(api, **params):
     rpc.confirm_transaction(sig, "confirmed")
     return requests.get(url, params=params, headers={"X-PAYMENT": str(sig)}).json()
 
-print(pull("pulse", net="mainnet"))`,
+print(pull("pulse", net="devnet"))`,
     };
     $('#docCode').textContent = D[kind];
     $$('#docTabs button').forEach((b) => b.classList.toggle('on', b.dataset.doc === kind));
@@ -551,14 +559,19 @@ print(pull("pulse", net="mainnet"))`,
   /* ───────────────────────── ledger ───────────────────────── */
   async function showLedger() {
     const l = await loadKpis('#ledgerKpis');
-    if (!l) { $('#ledgerTable').innerHTML = '<tr><td class="muted">Meter unreachable.</td></tr>'; return; }
+    if (!l) {
+      $('#ledgerTable').innerHTML = '<tr><td class="muted">The meter isn’t answering right now. Hit Refresh in a minute.</td></tr>';
+      $('#ledgerBars').innerHTML = '<p class="empty-note">Pulls per endpoint show here once the meter answers.</p>';
+      return;
+    }
     $('#ledgerTable').innerHTML = '<tr><th>When</th><th>Endpoint</th><th>Payer</th><th>SOL</th><th>Tx</th></tr>' + (l.recent.length ? l.recent.map((r) =>
       `<tr><td class="muted">${ago(Date.parse(r.created_at) / 1000)}</td><td>/${esc(r.api)}${r.served ? '' : ' <span class="down">unserved</span>'}</td><td><a href="${addrUrl(r.payer)}" target="_blank" rel="noopener">${short(r.payer)}</a></td><td>${Number(r.lamports) / LAMPORTS}</td><td><a href="${txUrl(r.sig)}" target="_blank" rel="noopener">${short(r.sig, 5)}</a></td></tr>`).join('')
       : '<tr><td colspan="5" class="muted">No paid pulls yet. Be the first from the Market.</td></tr>');
     const max = Math.max(1, ...Object.values(l.byApi));
     const cat = S.catalog || (await loadCatalog().catch(() => null));
-    const names = cat ? cat.apis.map((a) => a.name) : Object.keys(l.byApi);
-    $('#ledgerBars').innerHTML = names.map((n) => `<div><span>/${n}</span><i style="width:${((l.byApi[n] || 0) / max) * 100}%"></i><em>${l.byApi[n] || 0}</em></div>`).join('');
+    const names = cat && Array.isArray(cat.apis) ? cat.apis.map((a) => a.name) : Object.keys(l.byApi);
+    $('#ledgerBars').innerHTML = names.length ? names.map((n) => `<div><span>/${esc(n)}</span><i style="width:${((l.byApi[n] || 0) / max) * 100}%"></i><em>${l.byApi[n] || 0}</em></div>`).join('')
+      : '<p class="empty-note">No endpoints have been paid for yet. Try one from the Market.</p>';
   }
 
   /* ───────────────────────── router ───────────────────────── */
@@ -569,7 +582,7 @@ print(pull("pulse", net="mainnet"))`,
     $$('.view').forEach((s) => (s.hidden = s.id !== `v-${v}`));
     $$('#nav a').forEach((x) => x.classList.toggle('on', x.dataset.view === v));
     $('#crumb').textContent = TITLES[v];
-    if (v === 'trace') { paintSamples(); if (a && isAddr(a) && (!TR.report || TR.report.address !== a)) { TR.hops = []; runTrace(a, n === 'devnet' ? 'devnet' : 'mainnet'); } }
+    if (v === 'trace') { paintSamples(); if (a && isAddr(a) && (!TR.report || TR.report.address !== a)) { TR.hops = []; runTrace(a, n === 'mainnet' ? 'mainnet' : 'devnet'); } }
     if (v === 'market') showMarket();
     if (v === 'agents') { paintAgent(); paintDocs(); if (!$('#agentTarget').value) $('#agentTarget').value = S.pubkey || TREASURY; }
     if (v === 'ledger') showLedger();
@@ -587,7 +600,7 @@ print(pull("pulse", net="mainnet"))`,
     } catch {}
   }
   async function tickSlot() {
-    try { $('#tickSlot').textContent = (await T.rpc(rpcUrl('mainnet'), 'getSlot', [], 1)).toLocaleString(); } catch {}
+    try { $('#tickSlot').textContent = (await T.rpc(rpcUrl('devnet'), 'getSlot', [], 1)).toLocaleString(); } catch {}
   }
 
   function rpcDialog() {
@@ -694,7 +707,7 @@ print(pull("pulse", net="mainnet"))`,
       catch (err) { toast(err.message, false, 8000); }
       finally { b.disabled = false; }
     };
-    let agentNet = 'mainnet';
+    let agentNet = 'devnet';
     $('#agentNet').onclick = (e) => { const b = e.target.closest('button'); if (b) { agentNet = b.dataset.net; setSeg($('#agentNet'), agentNet); } };
     $('#agentForm').onsubmit = (e) => {
       e.preventDefault();

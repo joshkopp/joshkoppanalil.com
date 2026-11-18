@@ -19,7 +19,7 @@
   const SITE = location.origin + location.pathname.replace(/index\.html$/, '');
   // The mark: a violet tile with a white "m". Simple enough to read at favicon size.
   const MARK = '<svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M10 21v-7.2a3 3 0 0 1 6 0V21m0-7.2a3 3 0 0 1 6 0V21"/></svg>';
-  const LOGO = `<span class="logo">${MARK}monyx</span>`;
+  const LOGO = `<a class="logo" href="../" aria-label="Monyx home">${MARK}monyx</a>`; // the mark always leads to the Monyx home page
   const U = 1e6; // USDC has 6 decimals
   const W = () => window.solanaWeb3;
 
@@ -525,10 +525,15 @@
     const fallback = () => { S.holdKey = false; saveAcct(); after(); };
     next.onclick = async () => {
       next.disabled = true; next.innerHTML = '<span class="spin"></span>Waiting for your passkey';
-      try { await enablePasskeyLock(); if (S.signup) S.signup.locked = true; toast('Locked with your passkey'); after(); }
+      // Browsers can leave a passkey prompt hanging (dismissed sheet, no authenticator). Give up after 60s.
+      const slow = setTimeout(() => { hint.className = 'hint'; hint.textContent = 'Still waiting. If no passkey prompt is showing, tap Try again.'; next.disabled = false; next.textContent = 'Try again'; }, 20000);
+      const timeout = new Promise((_, no) => setTimeout(() => no(userError('The passkey prompt timed out. Try again, or use Advanced to skip.')), 60000));
+      try { await Promise.race([enablePasskeyLock(), timeout]); clearTimeout(slow); if (S.signup) S.signup.locked = true; toast('Locked with your passkey'); after(); }
       catch (err) {
+        clearTimeout(slow);
         next.disabled = false; next.textContent = 'Try again';
         hint.className = 'hint bad';
+        if (err.name === 'NotAllowedError' || err.name === 'AbortError') { hint.textContent = 'The passkey prompt was closed. Tap Try again, or use Advanced to skip.'; return; }
         if (err.safe && err.message === NO_PRF) {
           // This device can't do it: fall back to the backup key, stored the old way.
           hint.textContent = "This device's passkeys can't encrypt Monyx yet, so your key will be kept in this browser. Keep your backup key safe.";
@@ -750,7 +755,8 @@
     el.innerHTML = rows.slice(0, +(el.dataset.limit || 100)).map((f) => {
       const p = S.people[f.with] || (f.with ? { address: f.with, unknown: true } : null);
       const incoming = f.amount > 0;
-      const title = !f.with ? 'Account activity' : p && p.bank ? bankTitle(f, incoming) : incoming ? `<b>${esc(who(p))}</b> paid you` : `You paid <b>${esc(who(p))}</b>`;
+      const linkBack = incoming && ((p && p.cancelled) || /^Link cancelled$/.test(f.note || ''));
+      const title = !f.with ? 'Account activity' : linkBack ? '<b>Pay link cancelled</b> · money back' : p && p.bank ? bankTitle(f, incoming) : incoming ? `<b>${esc(who(p))}</b> paid you` : `You paid <b>${esc(who(p))}</b>`;
       const sub = [f.note && !(p && p.bank) ? esc(f.note) : '', when(f.time)].filter(Boolean).join(' · ');
       return `<a class="item" href="#tx/${f.sig}">${avatar(p)}<div class="mid"><div class="t">${title}</div><div class="s">${sub}${f.ok ? '' : ' · Failed'}</div></div><div class="amt ${incoming ? 'in' : ''}">${money(usd(f.amount), true)}</div></a>`;
     }).join('');
@@ -955,7 +961,17 @@
       if (err) { av.className = 'avail bad'; av.textContent = err; }
     };
     note.oninput = () => { st.note = note.value; };
-    $$('.emojis button').forEach((b) => (b.onclick = () => { note.value = b.dataset.e + (note.value && !note.value.startsWith(b.dataset.e) ? ' ' + note.value : ''); st.note = note.value; note.focus(); }));
+    // One category at a time: a new chip replaces the old one, tapping the same chip again removes it,
+    // and anything typed after the chip is kept.
+    const CHIPS = [...$$('.emojis button')].map((b) => b.dataset.e);
+    const splitNote = (v) => { const c = CHIPS.find((x) => v === x || v.startsWith(x + ' ')); return { chip: c || '', rest: c ? v.slice(c.length).trim() : v.trim() }; };
+    const markChips = () => { const { chip } = splitNote(note.value); $$('.emojis button').forEach((x) => { x.classList.toggle('on', x.dataset.e === chip); x.setAttribute('aria-pressed', x.dataset.e === chip); }); };
+    $$('.emojis button').forEach((b) => (b.onclick = () => {
+      const { chip, rest } = splitNote(note.value);
+      note.value = chip === b.dataset.e ? rest : (b.dataset.e + (rest ? ' ' + rest : ''));
+      st.note = note.value; markChips(); note.focus();
+    }));
+    note.addEventListener('input', markChips); markChips();
     $('#close').onclick = () => (location.hash = prefill.fromPad ? '#pay' : '#home');
     if (prefill.mode === 'request') { $('#req').className = 'btn btn-dark'; $('#pay').className = 'btn btn-light'; $('#req').parentNode.append($('#req')); }
     $('#vmic').onclick = talk;
@@ -2160,7 +2176,8 @@
           if (!units) throw userError('This link is empty. It may have just been claimed.');
           const r = await usdcSend({ owner: escrow, signer: kp, to: S.acct.address, units, note: mine ? 'Link cancelled' : (info.note || 'Claimed link'), closeEscrow: true });
           S.lastMs = r.ms || null;
-          S.people[escrow] = { ...info.from, address: escrow, link: true, name: mine ? 'Cancelled link' : info.from.name };
+          // A cancelled link is your own money coming back, not a person paying you.
+          S.people[escrow] = { ...info.from, address: escrow, link: true, cancelled: !!mine, name: mine ? 'Your cancelled pay link' : info.from.name };
           close(); refreshBalance(); store.del('monyx.pending');
           success(mine ? `${money(info.usd)} is back in your balance` : `${money(info.usd)} from ${esc(info.from.name)} (@${esc(info.from.handle)}) is yours`, info.note, r.sig);
           if (!mine) say(`${info.from.name.split(' ')[0]} sent you ${spoken(info.usd)}. It's in your balance.`);
