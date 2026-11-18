@@ -402,23 +402,17 @@
       <h1>Just say<br>who to pay.</h1>
       <p class="sub">Tell Monyx “send Maya 20 for pizza” and it’s ready to go. Split dinner, ask for money back, hear when you get paid. No bank details, no fees.</p>
       ${banner || ''}
-      ${savedPk() ? `<div class="pkback">${avatar(savedPk().user || {}, 'sm')}<div><b>${esc((savedPk().user || {}).name || 'Your account')}</b><span>${(savedPk().user || {}).handle ? '@' + esc(savedPk().user.handle) + ' · ' : ''}${isPwVault(savedPk()) ? 'password' : 'passkey'} saved on this device</span></div></div>` : ''}
       <div class="cta">
-        ${savedPk() && isPwVault(savedPk()) ? `<form id="pkf" class="pwrow"><input type="text" name="username" autocomplete="username" value="@${esc((savedPk().user || {}).handle || '')}" hidden><label class="field"><input type="password" id="pkpw" autocomplete="current-password" placeholder="Your password" aria-label="Password"></label></form>` : ''}
-        ${savedPk() ? `<button class="btn btn-dark" id="goPk">${ICON.lock}${isPwVault(savedPk()) ? 'Sign in with password' : 'Sign in with passkey'}</button>
-        <button class="btn btn-text" id="goLogin">Use a recovery key instead</button>
-        <button class="btn btn-text" id="goSignup">Create a new account</button>`
-        : `<button class="btn btn-dark" id="goSignup">Create your account</button>
-        <button class="btn btn-text" id="goLogin">I already have an account</button>`}
+        <button class="btn btn-dark" id="goSignup">Create your account</button>
+        <button class="btn btn-text" id="goLogin">I already have an account</button>
       </div>
-      <p class="fine" id="pkh" aria-live="polite"></p>
       <p class="fine">Monyx is in test mode: balances are test dollars with no real value. <a href="../documentation/">How it works</a> · <a href="../privacy/">Privacy</a> · <a href="../terms/">Terms</a></p>
     </section>`);
     $('#goSignup').onclick = () => startSignup();
     $('#goLogin').onclick = () => (location.hash = '#login');
-    const pk = $('#goPk'); if (pk) pk.onclick = () => signInWithPasskey(pk, $('#pkh'));
-    const pf = $('#pkf'); if (pf) pf.onsubmit = (e) => { e.preventDefault(); pk.click(); };
   }
+  // Someone who has had an account on this device (kept after logout, cleared by "forget this device").
+  const knownUser = () => (savedPk() && savedPk().user) || store.get('monyx.known') || null;
   // A passkey-locked account that was logged out on this device (see logout()).
   const savedPk = () => { const v = vault.get(); return v && v.address && !S.acct ? v : null; };
   async function signInWithPasskey(btn, hint) {
@@ -631,9 +625,14 @@
 
   function screenLogin() {
     show(`<section class="steps">
-      <div class="topline"><button class="back" id="back" aria-label="Back">${ICON.back}</button><span></span><span></span></div>
-      <div class="body"><h2>Welcome back</h2>
-        ${passkeysPossible() ? `<button class="btn btn-dark" id="lpk" style="width:100%;margin-top:14px">${ICON.lock}Sign in with a passkey</button><div class="or"><span>or</span></div>` : ''}
+      <div class="topline">${knownUser() ? '<span></span>' : `<button class="back" id="back" aria-label="Back">${ICON.back}</button>`}<span></span><span></span></div>
+      <div class="body"><h2>Welcome back${knownUser() && knownUser().name ? `, ${esc(knownUser().name.split(' ')[0])}` : ''}</h2>
+        ${savedPk() ? `<div class="pkback">${avatar(savedPk().user || {}, 'sm')}<div><b>${esc((savedPk().user || {}).name || 'Your account')}</b><span>${(savedPk().user || {}).handle ? '@' + esc(savedPk().user.handle) + ' · ' : ''}${isPwVault(savedPk()) ? 'password' : 'passkey'} saved on this device</span></div></div>
+        ${isPwVault(savedPk()) ? `<form id="pkf" class="pwrow"><input type="text" name="username" autocomplete="username" value="@${esc((savedPk().user || {}).handle || '')}" hidden><label class="field"><input type="password" id="pkpw" autocomplete="current-password" placeholder="Your password" aria-label="Password"></label></form>` : ''}
+        <button class="btn btn-dark" id="goPk" style="width:100%;margin-top:12px">${ICON.lock}${isPwVault(savedPk()) ? 'Sign in with password' : 'Sign in with passkey'}</button>
+        <p class="fine" id="pkh" aria-live="polite"></p>
+        <details class="adv"><summary>Other ways to sign in</summary>` : ''}
+        ${passkeysPossible() ? `<button class="btn btn-${savedPk() ? 'light' : 'dark'}" id="lpk" style="width:100%;margin-top:14px">${ICON.lock}Sign in with a passkey</button><div class="or"><span>or</span></div>` : ''}
         <div class="lmode" role="tablist"><button role="tab" data-m="pw" class="on" aria-selected="true">Password</button><button role="tab" data-m="rk" aria-selected="false">Recovery key</button></div>
         <p class="sub" id="lsub">Your @username and the password you set for signing in.</p>
         <form id="lf" autocomplete="on">
@@ -641,10 +640,12 @@
           <label class="field" style="margin-top:12px"><input type="password" id="rk" name="password" autocomplete="current-password" spellcheck="false" autocapitalize="off" placeholder="Password" aria-label="Password"><button type="button" class="showk" id="showk">Show</button></label>
         </form>
         <p class="fine" style="margin-top:8px" id="lfine">Saved it in a password manager? It can fill this in for you.</p>
-        <div class="hint" id="hint"></div></div>
-      <div class="foot"><button class="btn btn-dark" id="go" disabled>Log in</button>
+        <div class="hint" id="hint"></div>
+        ${savedPk() ? `<button class="btn btn-dark" id="go" style="width:100%;margin-top:10px">Log in</button></details>` : ''}</div>
+      <div class="foot">${savedPk() ? '' : '<button class="btn btn-dark" id="go" disabled>Log in</button>'}
         <button class="btn btn-light" id="lnk">Use a code from my other device</button>
-        <button class="btn btn-text" id="ph">Use a Phantom wallet instead</button></div>
+        <button class="btn btn-text" id="ph">Use a Phantom wallet instead</button>
+        ${knownUser() ? `<p class="fine" style="text-align:center;margin-top:6px">${knownUser().handle ? `Not @${esc(knownUser().handle)}? <a href="#" id="notme">Use another account</a> · ` : ''}<a href="#" id="newacct">Create a new account</a></p>` : ''}</div>
     </section>`);
     const rk = $('#rk'), go = $('#go'), hint = $('#hint');
     let mode = 'pw';
@@ -667,7 +668,12 @@
         // Chrome can hand over a saved Monyx key directly.
     if (window.PasswordCredential) navigator.credentials.get({ password: true, mediation: 'optional' }).then((c) => { if (c && c.password && !rk.value) { rk.value = c.password; if (c.id) $('#lu').value = c.id; } }).catch(() => {});
     rk.oninput = () => { hint.textContent = ''; };
-    $('#back').onclick = () => (location.hash = '');
+    const bk = $('#back'); if (bk) bk.onclick = () => (location.hash = '');
+    const ku = knownUser(); if (ku && ku.handle && !$('#lu').value) $('#lu').value = '@' + ku.handle;
+    const gp = $('#goPk'); if (gp) gp.onclick = () => signInWithPasskey(gp, $('#pkh'));
+    const pkf = $('#pkf'); if (pkf) { pkf.onsubmit = (e) => { e.preventDefault(); gp.click(); }; setTimeout(() => $('#pkpw').focus(), 60); }
+    const nm = $('#notme'); if (nm) nm.onclick = (e) => { e.preventDefault(); store.del('monyx.known'); $('#lu').value = ''; nm.parentElement.remove(); $('h2').textContent = 'Welcome back'; };
+    const na = $('#newacct'); if (na) na.onclick = (e) => { e.preventDefault(); startSignup(); };
     go.onclick = async () => {
       if (mode === 'pw') {
         go.disabled = true; go.innerHTML = '<span class="spin"></span>Checking';
@@ -1548,6 +1554,7 @@
         store.del(`monyx.feed.${S.acct.address}`); store.del('monyx.acct');
         // The vault holds only ciphertext that needs this device's passkey, so it can stay for a quick sign-in.
         const forget = !hasPk || ($('#forget', el) && $('#forget', el).checked);
+        if (hasPk && $('#forget', el) && $('#forget', el).checked) store.del('monyx.known'); // "forget this device" forgets who you are too
         if (forget) vault.del(); else { const v = vault.get(); if (v) { v.user = vaultUser(S.acct.user); vault.set(v); } }
         S.secretMem = null;
         S.acct = null; S.kp = null; S.feed = []; S.cash = null; S.requests = { incoming: [], outgoing: [] };
@@ -2787,8 +2794,9 @@
     if (!signedIn) {
       if (view === 'login') return screenLogin();
       if (view === 'signup') { if (!S.signup) S.signup = { step: 1, name: '', handle: '', kp: null }; return S.signup.step === 1 ? stepName() : undefined; }
-      return screenWelcome();
+      return knownUser() || savedPk() ? screenLogin() : screenWelcome(); // returning → Welcome back, first visit → fresh welcome
     }
+    if (S.acct.user) store.set('monyx.known', vaultUser(S.acct.user));
     if (view === 'pay' && !a) return screenPad();
     if (view === 'send') return screenPay({ amount: amtCheck(a).n > 0 ? a : '', mode: b === 'r' ? 'request' : 'pay', fromPad: true });
     if (view === 'pay') return screenPay({ to: a, amount: amtCheck(b).n > 0 ? amtCheck(b).n.toFixed(2).replace(/\.00$/, '') : '', note: c ? decodeURIComponent(c) : '' });
