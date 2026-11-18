@@ -121,7 +121,7 @@ header.is-stuck {
   cursor: pointer;
   border-radius: 10px;
 }
-.menu-btn span {
+.menu-btn span[aria-hidden] {
   display: block;
   width: 18px;
   height: 2px;
@@ -132,7 +132,7 @@ header.is-stuck {
 .menu-btn[aria-expanded="true"] span:first-child {
   transform: translateY(3.5px) rotate(45deg);
 }
-.menu-btn[aria-expanded="true"] span:last-child {
+.menu-btn[aria-expanded="true"] span:nth-child(2) {
   transform: translateY(-3.5px) rotate(-45deg);
 }
 
@@ -833,7 +833,7 @@ footer .legal { max-width: 46em; }
   .btn::before,
   .reveal,
   .phone-3d,
-  .menu-btn span,
+  .menu-btn span[aria-hidden],
   .faq-btn::after {
     animation: none !important;
     transition: none !important;

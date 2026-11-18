@@ -61,12 +61,19 @@ function b58decode(s: string) {
 }
 const b64decode = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 const signText = (address: string, ts: number) => `Sign in to Monyx\n\nAccount: ${address}\nTime: ${ts}`;
+// Each signed sign-in message works once. A copied message can't be replayed to open a second session.
 async function proves(address: string, ts: number, sig: string) {
-  if (!B58.test(address) || !Number.isFinite(ts) || Math.abs(Date.now() - ts) > 5 * 60_000) return false;
+  if (!B58.test(address) || !Number.isFinite(ts) || Math.abs(Date.now() - ts) > 2 * 60_000) return false;
+  let ok = false;
   try {
     const key = await crypto.subtle.importKey("raw", b58decode(address), { name: "Ed25519" }, false, ["verify"]);
-    return await crypto.subtle.verify({ name: "Ed25519" }, key, b64decode(sig), new TextEncoder().encode(signText(address, ts)));
+    ok = await crypto.subtle.verify({ name: "Ed25519" }, key, b64decode(sig), new TextEncoder().encode(signText(address, ts)));
   } catch { return false; }
+  if (!ok) return false;
+  const { error } = await db.from("monyx_used_logins").insert({ sig });
+  if (error) return false; // already used
+  if (Math.random() < 0.05) db.from("monyx_used_logins").delete().lt("used_at", new Date(Date.now() - 3600_000).toISOString()).then(() => {});
+  return true;
 }
 const token = () => [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, "0")).join("");
 
@@ -104,6 +111,7 @@ Deno.serve(async (req) => {
   const ip = (req.headers.get("x-forwarded-for") || "?").split(",")[0].trim();
   const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
   try {
+    if (["/check", "/search", "/resolve"].includes(path) && req.method !== "GET") return fail("Use GET.", 405, "method_not_allowed");
     if (path === "/check") {
       const h = (url.searchParams.get("handle") || "").toLowerCase();
       if (!HANDLE.test(h)) return json({ available: false, reason: "3–20 letters, numbers or _" });

@@ -118,14 +118,15 @@
       const w = n.match(/^(.*?)\b(with|between|among|to|from)\b(.*)$/);
       if (w && w[1].trim()) { n = w[1]; rest = t.slice(0, nm.index) + ' ' + w[2] + ' ' + w[3]; }
       else rest = t.slice(0, nm.index);
-      n = n.replace(/\$?\d+(\.\d+)?\s*(dollars?|bucks?)?/g, ' ');
+      n = n.replace(/(^|\s)\$?\d+(\.\d+)?(\s*(dollars?|bucks?))?(?=\s|$)/g, ' ');
       note = noteFrom(n.trim());
     }
 
     // ---- names: what's left once verbs, amounts and filler are gone ----
     const people = [];
     const chunks = rest
-      .replace(/\$?\d+(\.\d{1,2})?\s*(dollars?|bucks?|usd|cents?)?/g, ' , ')
+      // Only standalone numbers are amounts; the 2 in "monyxtester2" is part of a username.
+      .replace(/(^|\s)-?\s?\$?\d+(\.\d{1,2})?(\s*(dollars?|bucks?|usd|cents?))?(?=\s|$)/g, ' , ')
       .replace(/\b(and|with|plus|also|between|among|to|from)\b/g, ' , ')
       .split(',');
     for (const c of chunks) {

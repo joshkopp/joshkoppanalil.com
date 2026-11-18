@@ -234,7 +234,7 @@
     tx.feePayer = bank;
     const signed = signer === 'phantom' ? await phantom().signTransaction(tx) : (tx.partialSign(signer), tx);
     const raw = signed.serialize({ requireAllSignatures: false, verifySignatures: false });
-    return await api(PAPI + '/relay', { method: 'POST', body: { tx: b64(raw) }, auth: false });
+    return await api(PAPI + '/relay', { method: 'POST', body: { tx: b64(raw) } }); // sends your session: relay checks it matches the signer
   }
   async function send(toAddress, dollars, note) {
     const units = toUnits(dollars);
@@ -382,6 +382,8 @@
   function show(html, { tabs = false, tab = '', pad = false } = {}) {
     document.querySelectorAll('.sheet-wrap').forEach((w) => w.remove()); // a new screen closes any open sheet
     if (S.padKey) { document.removeEventListener('keydown', S.padKey); S.padKey = null; }
+    if (S.padPaste) { document.removeEventListener('paste', S.padPaste); S.padPaste = null; }
+    if (S.padText) { document.removeEventListener('keypress', S.padText); S.padText = null; }
     document.body.classList.toggle('has-tabs', !!tabs);
     document.body.classList.toggle('padmode', !!pad);
     app.innerHTML = `<div class="screen">${html}</div>`;
@@ -819,18 +821,21 @@
     show(`<div class="pad">
       <div class="padtop"><button class="x mic" id="vmic" aria-label="Say who to pay instead">${ICON.mic}</button><span class="padcur">USD</span><span class="x" aria-hidden="true"></span></div>
       <div class="padmid"><div class="padamt" id="padamt" role="status" aria-live="polite" aria-label="Amount"><span class="d">$</span><span id="padv">0</span></div>
-      <div class="padsub" id="padsub">&nbsp;</div><div class="padhint">Type an amount with your keyboard, then press Enter</div></div>
+      <div class="padsub" id="padsub">&nbsp;</div><input id="padcap" class="sr-only" inputmode="none" autocomplete="off" aria-hidden="true" tabindex="-1"><div class="padhint">Type an amount with your keyboard, then press Enter</div></div>
       <div class="keypad" role="group" aria-label="Keypad">${keys.map((k) => `<button class="key" data-k="${k}" aria-label="${k === 'del' ? 'Delete' : k === '.' ? 'Decimal point' : k}">${k === 'del' ? '<svg viewBox="0 0 24 24"><path d="M9 6h11v12H9l-5-6z"/><path d="M12.5 9.5l5 5M17.5 9.5l-5 5"/></svg>' : k}</button>`).join('')}</div>
       <div class="padact"><button class="btn padbtn" id="padreq">Request</button><button class="btn padbtn" id="padpay">Pay</button></div>
     </div>`, { tabs: true, tab: 'pay', pad: true });
     const amtEl = $('#padamt'), vEl = $('#padv'), sub = $('#padsub');
     const shake = () => { amtEl.classList.remove('shake'); void amtEl.offsetWidth; amtEl.classList.add('shake'); navigator.vibrate && navigator.vibrate(30); };
-    let neg = false;   // a typed minus sign: shown, and nothing can be sent until it's cleared
+    let neg = false;   // false | true (a minus) | 'junk' (e, +, letters): shown, and nothing can be sent until cleared
+    let junk = '';
     const paint = () => {
       const txt = v || '0';
       vEl.textContent = (neg ? '−' : '') + txt.replace(/^(\d+)/, (d) => Number(d).toLocaleString('en-US'));
-      amtEl.classList.toggle('neg', neg);
-      if (neg) { sub.textContent = 'Amounts can’t be negative. Press delete to clear it.'; sub.classList.add('bad'); S.padV = ''; return; }
+      amtEl.classList.toggle('neg', !!neg);
+      const ok = !neg && parseFloat(v) > 0;
+      $('#padpay').disabled = !ok; $('#padreq').disabled = !ok; // buttons look off whenever they'd do nothing
+      if (neg) { vEl.textContent = junk || '−'; sub.textContent = neg === 'junk' ? 'Use numbers only, like 12.50. Press delete to clear it.' : 'Amounts can’t be negative. Press delete to clear it.'; sub.classList.add('bad'); S.padV = ''; return; }
       amtEl.dataset.len = Math.min(9, txt.length);
       amtEl.classList.toggle('zero', !v || +v === 0);
       S.padV = v;
@@ -840,10 +845,19 @@
         sub.classList.toggle('bad', n > have);
       }
     };
-    const press = (k) => {
+    // Once something invalid is typed, everything typed is kept as shown text (junk) until it's deleted,
+    // so "-1" stays "−1" and "1e2" stays "1e2" instead of quietly becoming a valid amount.
+    const press = (k, ch) => {
       let next = v;
-      if (k === '-') { neg = true; shake(); paint(); return; }
-      if (k === 'del') { if (neg && !v) { neg = false; paint(); return; } next = v.slice(0, -1); if (neg && !next) { neg = false; } }
+      if (k === '-' || k === 'junk') {
+        if (!neg) junk = v; neg = (neg === true || k === '-') ? true : 'junk';
+        junk += k === '-' ? '−' : (ch || '?'); v = ''; shake(); paint(); return;
+      }
+      if (neg) {
+        if (k === 'del') { junk = junk.slice(0, -1); if (!junk) neg = false; } else junk += k;
+        paint(); return;
+      }
+      if (k === 'del') next = v.slice(0, -1);
       else if (k === '.') { if (v.includes('.')) return shake(); next = (v || '0') + '.'; }
       else if (v === '0') next = k;
       else if (v.includes('.') && v.split('.')[1].length >= 2) return shake();
@@ -863,14 +877,48 @@
     $('#vmic').onclick = talk;
     S.padKey = (e) => {
       if (e.metaKey || e.ctrlKey || e.altKey || document.querySelector('.sheet-wrap')) return;
-      const t = e.target; if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+      const t = e.target; if (t && t.id !== 'padcap' && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
       let k = null;
-      if (/^[0-9]$/.test(e.key)) k = e.key; else if (e.key === '.' || e.key === ',') k = '.'; else if (e.key === 'Backspace' || e.key === 'Delete') k = 'del'; else if (e.key === '-' || e.key === '−') k = '-';
-      if (k) { e.preventDefault(); press(k); if (k === '-') return; const b = $(`.key[data-k="${k}"]`); if (b) { b.classList.add('down'); setTimeout(() => b.classList.remove('down'), 120); } return; }
+      if (/^[0-9]$/.test(e.key)) k = e.key; else if (e.key === '.' || e.key === ',') k = '.'; else if (e.key === 'Backspace' || e.key === 'Delete') k = 'del';
+      else if (MINUS.test(e.key)) k = '-';
+      else if (e.key.length === 1 && /[eE+a-df-zA-DF-Z]/.test(e.key) && (v || neg)) k = 'junk'; // "1e2" must not become 12
+      if (k) { e.preventDefault(); press(k, e.key); if (k === '-') return; const b = $(`.key[data-k="${k}"]`); if (b) { b.classList.add('down'); setTimeout(() => b.classList.remove('down'), 120); } return; }
       if (e.key === 'Enter') { e.preventDefault(); go(e.shiftKey ? 'request' : 'pay'); }
-      if (e.key === 'Escape') { v = ''; neg = false; paint(); }
+      if (e.key === 'Escape') { v = ''; neg = false; junk = ''; paint(); }
     };
     document.addEventListener('keydown', S.padKey);
+    // Pasted amounts go through the same check as typed ones.
+    S.padPaste = (e) => {
+      const t = e.target; if (t && t.id !== 'padcap' && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') || document.querySelector('.sheet-wrap')) return;
+      const txt = (e.clipboardData && e.clipboardData.getData('text')) || ''; if (!txt) return;
+      e.preventDefault();
+      const r = amtCheck(txt.replace(/^\s*\$/, ''));
+      if (r.err) { neg = MINUS.test(txt) ? true : 'junk'; junk = txt.trim().replace(/-/g, '−').slice(0, 12); v = ''; shake(); paint(); return; }
+      if (r.n > 10000) { sub.textContent = 'You can send up to $10,000 at a time.'; sub.classList.add('bad'); return shake(); }
+      v = String(txt).replace(/[,\s$]/g, ''); neg = false; paint();
+    };
+    document.addEventListener('paste', S.padPaste);
+    // Characters that arrive as text with no usable key (a typed "−" from a symbol picker or IME).
+    S.padText = (e) => {
+      if (document.querySelector('.sheet-wrap')) return;
+      const t = e.target; if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+      if (e.key && e.key.length === 1 && MINUS.test(e.key) && e.key !== '-') { e.preventDefault(); press('-'); }
+    };
+    document.addEventListener('keypress', S.padText);
+    // Text that arrives with no key event at all (symbol pickers, IMEs, automation) lands in this
+    // hidden box and goes through the same keypad rules, so nothing is silently dropped.
+    const cap = $('#padcap');
+    if (cap && matchMedia('(pointer: fine)').matches) {
+      cap.focus({ preventScroll: true });
+      cap.addEventListener('blur', () => setTimeout(() => { if (document.body.contains(cap) && !document.querySelector('.sheet-wrap') && !/INPUT|TEXTAREA|BUTTON|A/.test((document.activeElement || {}).tagName || '')) cap.focus({ preventScroll: true }); }, 0));
+      cap.addEventListener('input', () => {
+        const txt = cap.value; cap.value = '';
+        for (const ch of txt) {
+          if (/[0-9]/.test(ch)) press(ch); else if (ch === '.' || ch === ',') press('.');
+          else if (MINUS.test(ch)) press('-'); else if (ch.trim()) press('junk', ch);
+        }
+      });
+    }
     paint(); refreshBalance().then(paint);
   }
 
@@ -1702,8 +1750,9 @@
   // Dollars said the way people say them: $20 → "20 dollars", $12.50 → "12 dollars and 50 cents".
   const spoken = (v) => {
     const d = Math.floor(v + 1e-9), c = Math.round((v - d) * 100);
-    if (!d) return `${c} cents`;
-    return `${d.toLocaleString('en-US')} dollar${d === 1 ? '' : 's'}${c ? ` and ${c} cents` : ''}`;
+    const cs = (n) => `${n} cent${n === 1 ? '' : 's'}`;
+    if (!d) return cs(c);
+    return `${d.toLocaleString('en-US')} dollar${d === 1 ? '' : 's'}${c ? ` and ${cs(c)}` : ''}`;
   };
   const plainNote = (n) => { const t = (n || '').replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, ''); return /^[A-Z][a-z]/.test(t) ? t[0].toLowerCase() + t.slice(1) : t; };
   const knownPeople = () => {
@@ -2113,7 +2162,7 @@
           S.lastMs = r.ms || null;
           S.people[escrow] = { ...info.from, address: escrow, link: true, name: mine ? 'Cancelled link' : info.from.name };
           close(); refreshBalance(); store.del('monyx.pending');
-          success(mine ? `${money(info.usd)} is back in your balance` : `${money(info.usd)} from ${esc(info.from.name.split(' ')[0])} is yours`, info.note, r.sig);
+          success(mine ? `${money(info.usd)} is back in your balance` : `${money(info.usd)} from ${esc(info.from.name)} (@${esc(info.from.handle)}) is yours`, info.note, r.sig);
           if (!mine) say(`${info.from.name.split(' ')[0]} sent you ${spoken(info.usd)}. It's in your balance.`);
         } catch (err) { b.disabled = false; b.textContent = 'Try again'; showError(err, 6000); }
       };

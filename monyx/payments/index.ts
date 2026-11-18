@@ -112,6 +112,13 @@ async function bank() {
 }
 // The bank paying someone (test money, a sale). The bank is both owner and fee payer.
 async function bankPays(to: string, units: number, note: string) {
+  const sig = await bankSends(to, units, note);
+  await confirm(sig);
+  await logPayment(sig, (await bank()).publicKey.toBase58(), to, units, note, "bank");
+  return sig;
+}
+// Build, sign and send a bank payment; returns once it's on the wire (not yet confirmed).
+async function bankSends(to: string, units: number, note: string) {
   const kp = await bank(); const toKey = new PublicKey(to);
   const tx = new Transaction().add(createAtaIx(kp.publicKey, toKey), transferIx(kp.publicKey, toKey, units), memoIx(note));
   // Retry only steps before the tx is on the wire (blockhash, send), so a retry can never pay twice.
@@ -124,8 +131,6 @@ async function bankPays(to: string, units: number, note: string) {
       break;
     } catch (e) { if (i >= 2) throw e; await new Promise((r) => setTimeout(r, 400 * 2 ** i)); }
   }
-  await confirm(sig);
-  await logPayment(sig, kp.publicKey.toBase58(), to, units, note, "bank");
   return sig;
 }
 async function logPayment(sig: string, from: string | null, to: string, units: number, note: string, source: string) {
@@ -134,6 +139,7 @@ async function logPayment(sig: string, from: string | null, to: string, units: n
 
 // ---------- relay: check, co-sign as fee payer, send ----------
 const hits = new Map<string, { t: number; n: number }>();
+const rpcCache = new Map<string, { text: string; until: number }>();
 function limited(key: string, max: number, windowMs = 3600_000) {
   const now = Date.now(); const w = hits.get(key);
   if (!w || now - w.t > windowMs) { hits.set(key, { t: now, n: 1 }); return false; }
@@ -275,9 +281,29 @@ Deno.serve(async (req) => {
       if (!ORIGINS.has(origin)) return fail("Browser RPC is only for the Monyx app.", 403, "forbidden");
       const m = String(body?.method || "");
       if (!READ.has(m) || !Array.isArray(body?.params) || JSON.stringify(body.params).length > 2000) return fail("That RPC call isn't allowed.", 400, "bad_rpc");
-      const r = await fetch(RPC, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: m, params: body.params }) });
-      return new Response(await r.text(), { status: r.status, headers: { ...cors, "content-type": "application/json" } });
+      if (limited("rpc" + ip, 900, 600_000)) return fail("Slow down a little.", 429, "rate_limited");
+      // Cache answers: a confirmed transaction never changes, and balances/history are fine 3 seconds stale.
+      // Cuts upstream calls (and the 429s they cause) by a lot when several tabs poll.
+      const ck = m + JSON.stringify(body.params);
+      const hit = rpcCache.get(ck);
+      if (hit && Date.now() < hit.until) return new Response(hit.text, { status: 200, headers: { ...cors, "content-type": "application/json", "x-cache": "hit" } });
+      let r: Response | null = null;
+      for (let i = 0; i < 3; i++) {
+        r = await fetch(RPC, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: m, params: body.params }) }).catch(() => null);
+        if (r && r.status !== 429 && r.status < 500) break;
+        await new Promise((x) => setTimeout(x, 300 * 2 ** i));
+      }
+      if (!r) return fail("The network is busy. Try again.", 503, "busy");
+      const text = await r.text();
+      if (r.ok && !/"error"/.test(text.slice(0, 200))) {
+        const ttl = m === "getTransaction" && !/"result":null/.test(text) ? 600_000 : 3_000;
+        if (rpcCache.size > 3000) rpcCache.clear();
+        rpcCache.set(ck, { text, until: Date.now() + ttl });
+      }
+      return new Response(text, { status: r.status, headers: { ...cors, "content-type": "application/json" } });
     }
+    // Read-only routes only answer GET; anything else is a 405, not a silent 200.
+    if ((path === "/info" || path === "/markets") && req.method !== "GET") return fail("Use GET.", 405, "method_not_allowed");
     if (path === "/info") {
       const kp = await bank();
       return json({ bank: kp.publicKey.toBase58(), usdc: USDC.toBase58(), bankUsd: dollars(await usdcOf(kp.publicKey)), rpc: PUBLIC_RPC });
@@ -319,6 +345,12 @@ Deno.serve(async (req) => {
         db.from("monyx_claims").select("*").eq("escrow", t.owner).eq("status", "open").maybeSingle(),
       ]);
       if (!owner && !claim) return fail("That account isn't on Monyx.", 403, "forbidden");
+      // A Monyx account's payment also needs that account's own session, not just its signature.
+      // Claim links have no account (the link's key is the only key), so they rely on the signature.
+      if (owner && !claim) {
+        const su = await sessionUser(req);
+        if (!su || su.address !== t.owner) return fail("Please sign in again. Nothing was sent.", 401, "unauthorized");
+      }
       if (t.closes && !claim) return fail("That payment couldn't be sent. Nothing was sent.", 400, "rejected");
       if (limited("r" + t.owner, RELAYS_PER_HOUR) || limited("ip" + ip, RELAYS_PER_HOUR * 3)) return fail("That's a lot of payments. Try again in a bit.", 429, "rate_limited");
       if (await usdcOf(new PublicKey(t.owner)) < t.units) return fail("You don't have enough for that. Nothing was sent.", 409, "insufficient");
@@ -557,9 +589,20 @@ Deno.serve(async (req) => {
       const { error: e1 } = await db.rpc("monyx_adjust", { p_user: user.id, p_asset: asset, p_delta: -qty });
       if (e1) return fail("You don't have that much to sell.", 409, "insufficient");
       try {
-        const sig = await bankPays(user.address, Math.round(usd * U), `Sold ${ASSETS[asset].sym}`);
+        // Answer as soon as the payout is on the wire (about a second); confirm in the background.
+        // If it never lands, the coins go back and the trade is marked failed.
+        const sig = await bankSends(user.address, Math.round(usd * U), `Sold ${ASSETS[asset].sym}`);
         await db.from("monyx_trades").insert({ user_id: user.id, kind: "sell", asset_from: asset, asset_to: "cash", qty_from: qty, qty_to: usd, usd, sig });
-        return json({ asset, symbol: ASSETS[asset].sym, qty, usd, signature: sig });
+        const kp2 = await bank();
+        // @ts-ignore EdgeRuntime is provided by Supabase
+        EdgeRuntime.waitUntil(confirm(sig, 120_000)
+          .then(() => logPayment(sig, kp2.publicKey.toBase58(), user.address, Math.round(usd * U), `Sold ${ASSETS[asset].sym}`, "bank"))
+          .catch(async (x: unknown) => {
+            console.error("[monyx-pay] sell never confirmed, refunding coins:", sig, x);
+            await db.rpc("monyx_adjust", { p_user: user.id, p_asset: asset, p_delta: qty });
+            await db.from("monyx_trades").delete().eq("sig", sig);
+          }));
+        return json({ asset, symbol: ASSETS[asset].sym, qty, usd, signature: sig, pending: true });
       } catch (e) {
         await db.rpc("monyx_adjust", { p_user: user.id, p_asset: asset, p_delta: qty });
         console.error("[monyx-pay] sell payout:", e);
