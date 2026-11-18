@@ -114,9 +114,16 @@ async function bank() {
 async function bankPays(to: string, units: number, note: string) {
   const kp = await bank(); const toKey = new PublicKey(to);
   const tx = new Transaction().add(createAtaIx(kp.publicKey, toKey), transferIx(kp.publicKey, toKey, units), memoIx(note));
-  const { blockhash } = await conn.getLatestBlockhash("confirmed");
-  tx.recentBlockhash = blockhash; tx.feePayer = kp.publicKey; tx.sign(kp);
-  const sig = await conn.sendRawTransaction(tx.serialize());
+  // Retry only steps before the tx is on the wire (blockhash, send), so a retry can never pay twice.
+  let sig = "";
+  for (let i = 0; ; i++) {
+    try {
+      const { blockhash } = await conn.getLatestBlockhash("confirmed");
+      tx.recentBlockhash = blockhash; tx.feePayer = kp.publicKey; tx.signatures = []; tx.sign(kp);
+      sig = await conn.sendRawTransaction(tx.serialize());
+      break;
+    } catch (e) { if (i >= 2) throw e; await new Promise((r) => setTimeout(r, 400 * 2 ** i)); }
+  }
   await confirm(sig);
   await logPayment(sig, kp.publicKey.toBase58(), to, units, note, "bank");
   return sig;
@@ -261,6 +268,16 @@ Deno.serve(async (req) => {
   let body: any = {}; try { body = raw ? JSON.parse(raw) : {}; } catch { /* */ }
   try {
     // ----- public -----
+    // Read-only RPC proxy: browsers read balances and history through the private SOLANA_RPC
+    // instead of hammering the public devnet endpoint (which answers 429 under load).
+    if (path === "/rpc" && req.method === "POST") {
+      const READ = new Set(["getTokenAccountBalance", "getSignaturesForAddress", "getTransaction", "getLatestBlockhash", "getSignatureStatuses", "getAccountInfo", "getBalance"]);
+      if (!ORIGINS.has(origin)) return fail("Browser RPC is only for the Monyx app.", 403, "forbidden");
+      const m = String(body?.method || "");
+      if (!READ.has(m) || !Array.isArray(body?.params) || JSON.stringify(body.params).length > 2000) return fail("That RPC call isn't allowed.", 400, "bad_rpc");
+      const r = await fetch(RPC, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: m, params: body.params }) });
+      return new Response(await r.text(), { status: r.status, headers: { ...cors, "content-type": "application/json" } });
+    }
     if (path === "/info") {
       const kp = await bank();
       return json({ bank: kp.publicKey.toBase58(), usdc: USDC.toBase58(), bankUsd: dollars(await usdcOf(kp.publicKey)), rpc: PUBLIC_RPC });
@@ -411,6 +428,13 @@ Deno.serve(async (req) => {
     const user = await sessionUser(req);
     if (!user) return fail("Please sign in again.", 401, "unauthorized");
 
+    // Has this user paid that address before, from any device? Feeds the send-time risk check.
+    if (path === "/paidto") {
+      const a = url.searchParams.get("a") || "";
+      if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a)) return fail("Bad account number.");
+      const { count } = await db.from("monyx_payments").select("sig", { count: "exact", head: true }).eq("from_addr", user.address).eq("to_addr", a);
+      return json({ count: count ?? 0 });
+    }
     if (path === "/topup" && req.method === "POST") {
       // Free test dollars: a welcome amount the first time, then a smaller one each day.
       const first = !user.last_topup_at;
@@ -528,7 +552,8 @@ Deno.serve(async (req) => {
       if (usd < 0.01) return fail("That's less than a cent. Swap it into another coin instead.");
       if (!body.all && usd < 0.5) return fail("The smallest sale is $0.50. Use Sell all to cash out a smaller amount.");
       const kp = await bank();
-      if ((await usdcOf(kp.publicKey)) - usd * U < BANK_FLOOR_USDC) return fail("Selling is paused while Monyx tops up. Swaps still work.", 503, "bank_low");
+      // A user's sale outranks welcome dollars, so sales may use the floor; only an actually empty bank pauses them.
+      if ((await usdcOf(kp.publicKey)) < usd * U) return fail("Selling is paused while the Monyx test bank refills. Swaps still work.", 503, "bank_low");
       const { error: e1 } = await db.rpc("monyx_adjust", { p_user: user.id, p_asset: asset, p_delta: -qty });
       if (e1) return fail("You don't have that much to sell.", 409, "insufficient");
       try {

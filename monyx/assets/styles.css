@@ -960,3 +960,7 @@ footer .legal { max-width: 46em; }
 .say-chip { display: inline-block; margin: 0 0 18px; padding: 8px 16px; border-radius: 999px; background: #fff; color: var(--ink); font-weight: 600; font-size: 0.98rem; box-shadow: 0 6px 18px rgba(31, 61, 43, 0.08); }
 .h1-sub { display: block; color: #3E6B30; }
 @media (min-width: 980px) { .hero-copy h1 { font-size: clamp(2.6rem, 4.6vw, 4rem); } }
+
+/* Mobile fixes: the menu's "Open the wallet" pill keeps white text, and no stray sideways scroll at 390px. */
+.nav-links .menu-only.btn-primary, .nav-links.is-open .menu-only.btn-primary { color: #fff; justify-content: center; }
+html, body { overflow-x: clip; }

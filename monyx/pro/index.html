@@ -2,18 +2,25 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://nvfxdzxdlizznrknmunl.supabase.co https://api.devnet.solana.com wss://api.devnet.solana.com https://solana-rpc.publicnode.com wss://solana-rpc.publicnode.com https://api.coingecko.com; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="theme-color" content="#F6F9F3">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Monyx Pro: wallet tracer and agent API market</title>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Monyx">
+  <meta property="og:title" content="Monyx Pro: wallet tracer and agent API market">
+  <meta property="og:description" content="A Solana wallet with a built-in wallet tracer and an API market where agents pay devnet SOL per request over HTTP 402.">
+  <meta property="og:url" content="https://www.monyx.pro/pro/">
+  <meta property="og:image" content="https://www.monyx.pro/og.png">
+  <meta name="twitter:card" content="summary_large_image">
 <meta name="description" content="A Solana wallet with a built-in wallet tracer and an API market where agents pay devnet SOL per request over HTTP 402.">
 <link rel="icon" href="../favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Geist:wght@400;500;600;650;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=5">
+<link rel="stylesheet" href="styles.css?v=6">
 <link rel="alternate" type="text/plain" href="../llms.txt" title="Agent instructions">
 </head>
 <body>
@@ -207,10 +214,10 @@
 <dialog id="dlg"><form method="dialog" id="dlgBody"></form></dialog>
 <div class="toast" id="toast" hidden></div>
 
-<script src="../vendor/buffer.js?v=8"></script>
-<script src="../vendor/solana-web3.js?v=8"></script>
-<script src="../vendor/qrcode.js"></script>
-<script src="trace.js?v=2"></script>
-<script src="app.js?v=2"></script>
+<script src="../vendor/buffer.js?v=8" defer></script>
+<script src="../vendor/solana-web3.js?v=8" defer></script>
+<script src="../vendor/qrcode.js" defer></script>
+<script src="trace.js?v=2" defer></script>
+<script src="app.js?v=2" defer></script>
 </body>
 </html>

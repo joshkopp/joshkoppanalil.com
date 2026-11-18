@@ -10,7 +10,8 @@
   const API = 'https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/monyx';
   const VAPI = API + '-voice';
   const PAPI = API + '-pay';
-  let RPC = 'https://api.devnet.solana.com'; // monyx-pay /info can point this at a faster endpoint (see loadInfo)
+  // Reads go through monyx-pay's /rpc proxy (private endpoint, no public-devnet 429s).
+  let RPC = PAPI + '/rpc';
   const USDC = '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU'; // Circle's devnet USDC
   const TOKEN = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
   const ATA_PROGRAM = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
@@ -28,7 +29,28 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const cleanAddr = (s) => String(s || '').replace(/^solana:/i, '').split('?')[0].replace(/[\s\u200b-\u200d\ufeff]/g, '');
   const isSelf = (p) => !!(p && S.acct && ((p.address && p.address === S.acct.address) || (p.handle && S.acct.user && p.handle === S.acct.user.handle)));
-  const isAddr = (s) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s || '');
+  // Amount boxes: anything but digits and one dot (a minus of any kind, e, +) makes the amount invalid.
+  // The text stays in the box so "-1" can't quietly turn into 1 as you keep typing.
+  const MINUS = /[-\u2212\u2010-\u2015\ufe63\uff0d]/;
+  function amtCheck(raw) {
+    const t = String(raw || '').replace(/[,\s]/g, '');
+    if (MINUS.test(t)) return { n: NaN, err: 'Amounts can’t be negative.' };
+    if (/[^0-9.]/.test(t) || (t.match(/\./g) || []).length > 1) return { n: NaN, err: 'Use numbers only, like 12.50.' };
+    if (/\.\d{3}/.test(t)) return { n: NaN, err: 'Dollars only go to 2 decimal places (cents).' };
+    return { n: t ? parseFloat(t) : NaN, err: '' };
+  }
+  const numOf = (input) => amtCheck(input.value).n;
+  const BANK_ADDR = '9JBSMxHPKMDLyUMhwV2NzFNUikNoQfnJj82NyBoPNJRs'; // fallback until /info answers
+  // A real account number decodes to exactly 32 bytes; random 43-character strings usually don't.
+  const B58A = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  function b58len(s) {
+    let n = 0n; for (const c of s) n = n * 58n + BigInt(B58A.indexOf(c));
+    let len = 0; while (n > 0n) { n >>= 8n; len++; }
+    for (const c of s) { if (c === '1') len++; else break; }
+    return len;
+  }
+  const isAddr = (s) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s || '') && b58len(s) === 32;
+  const looksAddr = (s) => /^[1-9A-HJ-NP-Za-km-z]{30,50}$/.test(s || '');
   const short = (a) => `${a.slice(0, 4)}…${a.slice(-4)}`;
   const store = {
     get(k, d = null) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -184,7 +206,6 @@
     try {
       const i = await api(PAPI + '/info', { auth: false });
       S.bankAddr = i.bank; store.set('monyx.bank2', i.bank);
-      if (i.rpc && /^https:\/\//.test(i.rpc)) { RPC = i.rpc; store.set('monyx.rpc', i.rpc); }
     } catch {}
   }
   async function bankAddr() {
@@ -254,6 +275,7 @@
       }));
       S.feed = sigs.map((s) => known.get(s.signature) || got.get(s.signature)).filter(Boolean);
       store.set(cacheKey, S.feed);
+      notePaid(S.feed.filter((f) => f.ok && f.amount < 0).map((f) => f.with));
       await resolvePeople(S.feed.map((f) => f.with).filter(Boolean));
       paintFeed(); paintPeople();
       announceFeed([...got.values()].filter(Boolean));
@@ -276,15 +298,16 @@
   }
   async function resolvePeople(addresses) {
     if (store.get('monyx.peopleV') !== 2) { S.people = {}; store.set('monyx.people', {}); store.set('monyx.peopleAt', 0); store.set('monyx.peopleV', 2); }
-    const b = S.bankAddr || store.get('monyx.bank2');
+    const b = S.bankAddr || store.get('monyx.bank2') || BANK_ADDR;
     if (b) S.people[b] = { handle: 'monyx', name: 'Monyx', address: b, bank: true };
     const fresh = Date.now() - store.get('monyx.peopleAt', 0) < 600_000;
-    const need = [...new Set(addresses)].filter((a) => !(S.people[a] && S.people[a].link) && (!fresh || !S.people[a]));
+    const need = [...new Set(addresses)].filter((a) => a !== b && !(S.people[a] && S.people[a].link) && (!fresh || !S.people[a]));
     if (!need.length) return;
     if (!fresh) store.set('monyx.peopleAt', Date.now());
     try {
       const { users } = await api(`/resolve?a=${need.join(',')}`);
       for (const a of need) S.people[a] = users[a] || { address: a, unknown: true };
+      if (b) S.people[b] = { handle: 'monyx', name: 'Monyx', address: b, bank: true }; // the treasury label is never overwritten
       store.set('monyx.people', S.people);
     } catch {}
   }
@@ -425,7 +448,7 @@
   function stepHandle() {
     const su = S.signup;
     show(stepShell(2, `<h2>Pick your @username</h2><p class="sub">People pay you with this. Short and easy to say out loud works best.</p>
-      <label class="field prefix" style="margin-top:22px"><span>@</span><input id="hd" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="20" value="${esc(su.handle)}"></label>
+      <label class="field prefix" style="margin-top:22px"><span>@</span><input id="hd" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40" value="${esc(su.handle)}"></label>
       <div class="hint" id="hint" aria-live="polite"></div>`,
       `<button class="btn btn-dark" id="next">Create account</button>`));
     const hd = $('#hd'), hint = $('#hint'), next = $('#next');
@@ -435,17 +458,18 @@
       const stripped = v !== hd.value.toLowerCase();
       if (v !== hd.value) hd.value = v;
       if (stripped) { hint.className = 'hint bad'; hint.textContent = 'Usernames can only use letters, numbers and _.'; }
-      su.handle = v; su.avail = false;
+      su.handle = v; su.avail = false; next.disabled = true;
       if (v.length < 3) { hint.className = 'hint'; hint.textContent = 'At least 3 letters or numbers.'; return; }
+      if (v.length > 20) { hint.className = 'hint bad'; hint.textContent = `Usernames can be 20 characters at most (that's ${v.length}).`; return; }
       const my = ++seq;
       hint.className = 'hint'; hint.textContent = 'Checking…';
       try {
         const r = await api(`/check?handle=${encodeURIComponent(v)}`, { auth: false });
         if (my !== seq) return;
-        su.avail = r.available;
+        su.avail = r.available; next.disabled = !r.available;
         hint.className = 'hint ' + (r.available ? 'ok' : 'bad');
         hint.textContent = r.available ? `@${v} is yours if you want it.` : `${r.reason || 'Taken'}. Try @${v}${Math.floor(Math.random() * 90 + 10)}?`;
-      } catch { hint.className = 'hint bad'; hint.textContent = "Couldn't check right now."; }
+      } catch { hint.className = 'hint bad'; hint.textContent = "Couldn't check right now."; next.disabled = false; }
     };
     hd.oninput = () => { clearTimeout(t); t = setTimeout(check, 280); };
     hd.onkeydown = (e) => { if (e.key === 'Enter') next.click(); };
@@ -718,7 +742,10 @@
     paintStart();
     const el = $('#feed'); if (!el) return;
     if (!S.feed.length) { el.innerHTML = `<div class="empty">Nothing here yet.<br>Pay a friend, or share your link from the Me tab to get paid.</div>`; return; }
-    el.innerHTML = S.feed.slice(0, +(el.dataset.limit || 100)).map((f) => {
+    const isTrade = (f) => (S.people[f.with] || {}).bank && /^(Sold|Buy) /.test(f.note || '');
+    const rows = el.dataset.notrades ? S.feed.filter((f) => !isTrade(f)) : S.feed; // trades live under the Crypto tab
+    if (!rows.length) { el.innerHTML = `<div class="empty">No payments yet.<br>Trades are under Crypto.</div>`; return; }
+    el.innerHTML = rows.slice(0, +(el.dataset.limit || 100)).map((f) => {
       const p = S.people[f.with] || (f.with ? { address: f.with, unknown: true } : null);
       const incoming = f.amount > 0;
       const title = !f.with ? 'Account activity' : p && p.bank ? bankTitle(f, incoming) : incoming ? `<b>${esc(who(p))}</b> paid you` : `You paid <b>${esc(who(p))}</b>`;
@@ -862,7 +889,7 @@
     const amt = $('#amt'), note = $('#note');
     const size = () => { amt.style.width = Math.max(1, (amt.value || '0').length + 0.2) + 'ch'; };
     const valid = () => {
-      const v = parseFloat(amt.value);
+      const v = numOf(amt);
       const okAmt = v > 0 && v <= 10000;
       const av = $('#avail');
       if (S.cash != null) {
@@ -875,14 +902,9 @@
       $('#vialink').hidden = !!st.to;
     };
     amt.oninput = () => {
-      const before = amt.value;
-      let v = /-/.test(before) ? '' : amt.value.replace(/[^0-9.]/g, '');
-      const parts = v.split('.'); if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
-      if (v.includes('.')) v = v.split('.')[0] + '.' + v.split('.')[1].slice(0, 2);
-      amt.value = v; size(); valid();
-      const av = $('#avail');
-      if (/-/.test(before)) { av.className = 'avail bad'; av.textContent = 'Amounts can’t be negative.'; }
-      else if (/\.\d{3}/.test(before)) { av.className = 'avail bad'; av.textContent = 'Dollars only go to 2 decimal places (cents).'; }
+      size(); valid();
+      const { err } = amtCheck(amt.value), av = $('#avail');
+      if (err) { av.className = 'avail bad'; av.textContent = err; }
     };
     note.oninput = () => { st.note = note.value; };
     $$('.emojis button').forEach((b) => (b.onclick = () => { note.value = b.dataset.e + (note.value && !note.value.startsWith(b.dataset.e) ? ' ' + note.value : ''); st.note = note.value; note.focus(); }));
@@ -928,6 +950,7 @@
           if (v === S.acct.address) { res.innerHTML = '<div class="empty">That’s your own account number. You can’t pay yourself.</div>'; valid(); return; }
           st.to = S.people[v] && !S.people[v].unknown ? S.people[v] : { address: v, unknown: true }; renderTo(); valid(); return;
         }
+        if (looksAddr(v) && !/^[a-z0-9_]{3,20}$/i.test(v)) { res.innerHTML = '<div class="empty">That’s not a valid account number. Check it and try again.</div>'; st.to = null; valid(); return; }
         res.innerHTML = '<div class="empty searching"><span class="spin"></span>Searching…</div>';
         t = setTimeout(async () => {
           const my = ++seq;
@@ -962,19 +985,29 @@
     });
     else if (!prefill.amount) amt.focus();
 
-    $('#pay').onclick = () => (st.to.link ? confirmLink(parseFloat(amt.value), note.value.trim(), st.to.name) : confirmPay(st.to, parseFloat(amt.value), note.value.trim()));
+    $('#pay').onclick = () => (st.to.link ? confirmLink(numOf(amt), note.value.trim(), st.to.name) : confirmPay(st.to, numOf(amt), note.value.trim()));
     $('#vialink').onclick = () => { st.to = { link: true, name: '', address: '' }; renderTo(); valid(); amt.focus(); };
-    $('#split').onclick = () => splitSheet(parseFloat(amt.value), note.value.trim(), st.to);
+    $('#split').onclick = () => splitSheet(numOf(amt), note.value.trim(), st.to);
     $('#req').onclick = async () => {
       const b = $('#req'); b.disabled = true; b.innerHTML = '<span class="spin"></span>';
       try {
-        await api('/requests', { method: 'POST', body: { to: st.to.handle, usd: parseFloat(amt.value), note: note.value.trim() } });
-        success(`Requested ${money(parseFloat(amt.value))} from ${esc(first(st.to))}`, note.value.trim(), null, `We'll let ${esc(first(st.to))} know next time they open Monyx.`);
+        await api('/requests', { method: 'POST', body: { to: st.to.handle, usd: numOf(amt), note: note.value.trim() } });
+        success(`Requested ${money(numOf(amt))} from ${esc(first(st.to))}`, note.value.trim(), null, `We'll let ${esc(first(st.to))} know next time they open Monyx.`);
       } catch (e) { showError(e); b.disabled = false; b.textContent = 'Request'; }
     };
   }
   async function lookup(handle) {
-    try { const { user } = await api(`/u/${encodeURIComponent(handle.replace(/^@/, ''))}`); if (user.address) S.people[user.address] = user; return user; } catch { return null; }
+    const h = handle.replace(/^@/, '').toLowerCase();
+    try {
+      let { user } = await api(`/u/${encodeURIComponent(h)}`);
+      // Paying needs the account number. If the profile came back without it, ask search (also signed-in only).
+      if (user && !user.address && S.acct && S.acct.token) {
+        const { users } = await api(`/search?q=${encodeURIComponent(h)}`).catch(() => ({ users: [] }));
+        const hit = (users || []).find((u) => u.handle === h && u.address); if (hit) user = hit;
+      }
+      if (user && user.address) S.people[user.address] = user;
+      return user;
+    } catch { return null; }
   }
   /* Risk check: a plain-language pause before money leaves. It only reads
      what the app already knows (your history, your contacts, the account's
@@ -990,11 +1023,22 @@
     }
     return d + (a.length - i) + (b.length - j) <= 1;
   };
+  // Everyone you've paid, remembered past the 25-item feed window and topped up from the server.
+  const paidKey = () => `monyx.paidTo.${S.acct ? S.acct.address : ''}`;
+  const paidSet = () => new Set(store.get(paidKey(), []));
+  const notePaid = (addrs) => { const s = paidSet(); let ch = false; for (const a of addrs) if (a && !s.has(a)) { s.add(a); ch = true; } if (ch) store.set(paidKey(), [...s].slice(-500)); };
+  async function checkPaidBefore(addr) {
+    if (!addr || paidSet().has(addr)) return;
+    try {
+      const r = await Promise.race([api(`${PAPI}/paidto?a=${encodeURIComponent(addr)}`), new Promise((_, no) => setTimeout(() => no(new Error('slow')), 1500))]);
+      if (r && r.count > 0) notePaid([addr]);
+    } catch {}
+  }
   function riskCheck(to, dollars) {
     const high = [], med = [], ok = [];
     const addr = to.address || '';
     const history = (S.feed || []).filter((e) => e && e.with === addr);
-    const paidBefore = history.some((e) => e.amount < 0), heardFrom = history.length > 0;
+    const paidBefore = history.some((e) => e.amount < 0) || paidSet().has(addr), heardFrom = history.length > 0;
     const known = new Map();
     for (const e of S.feed || []) if (e && e.with && e.with !== addr) known.set(e.with, S.people[e.with] || { address: e.with });
     for (const p of Object.values(S.people || {})) if (p && p.address && p.address !== addr) known.set(p.address, p);
@@ -1049,8 +1093,10 @@
     </div>` };
   }
 
-  function confirmPay(to, dollars, note, requestId, voiced = false, draftId = null) {
+  async function confirmPay(to, dollars, note, requestId, voiced = false, draftId = null) {
+    if (to && to.address && !to.bank) await checkPaidBefore(to.address);
     if (isSelf(to)) { toast("That's your own account. You can't pay yourself.", true); return; }
+    if (!to || !isAddr(to.address)) { toast("Couldn't load this person's account number. Log in again and retry.", true); return; }
     if (!(dollars > 0) || dollars > 10000) { toast('Enter an amount between $0.01 and $10,000.', true); return; }
     const after = S.cash != null ? usd(S.cash) - dollars : null;
     const short_ = after != null && after < -0.004;
@@ -1077,7 +1123,7 @@
           if (draftId) api(`${PAPI}/drafts/${draftId}`, { method: 'POST', body: { action: 'paid', sig } }).catch(() => {});
           close();
           S.feed.unshift({ sig, time: Math.floor(Date.now() / 1000), ok: true, with: to.address, note, amount: -toUnits(dollars) });
-          S.people[to.address] = S.people[to.address] || to;
+          S.people[to.address] = S.people[to.address] || to; notePaid([to.address]);
           const namable = to.unknown && !to.handle && !to.bank && !nickOf(to.address);
           success(`You paid ${esc(first(to))} ${money(dollars)}`, note, sig, namable ? '<a href="#" id="nameprompt">Save a name for this address</a>' : '');
           const np = $('#nameprompt'); if (np) np.onclick = (e) => { e.preventDefault(); nameAddress(to.address); };
@@ -1437,7 +1483,7 @@
       const amt = $('#amt', el), go = $('#go', el), prev = $('#prev', el);
       let all = false;
       const upd = () => {
-        const v = parseFloat(amt.value);
+        const v = numOf(amt);
         amt.style.width = Math.max(1, (amt.value || '0').length + 0.2) + 'ch';
         const tooSmall = v > 0 && v < min && !all;
         const ok = (all ? max > 0 : v >= min) && v <= max + 0.005;
@@ -1449,17 +1495,15 @@
       };
       amt.oninput = () => {
         all = false;
-        const before = amt.value;
-        amt.value = /-/.test(before) ? '' : amt.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1').replace(/(\.\d\d).+/, '$1');
         upd();
-        if (/-/.test(before)) { prev.className = 'avail bad'; prev.textContent = 'Amounts can’t be negative.'; }
-        else if (/\.\d{3}/.test(before)) { prev.className = 'avail bad'; prev.textContent = 'Dollars only go to 2 decimal places (cents).'; }
+        const { err } = amtCheck(amt.value);
+        if (err) { go.disabled = true; prev.className = 'avail bad'; prev.textContent = err; }
       };
       $$('[data-v]', el).forEach((b) => (b.onclick = () => { all = b.dataset.v === 'max'; amt.value = all ? (Math.round(max * 100) / 100).toFixed(2) : b.dataset.v; upd(); if (all && !go.disabled) prev.textContent = `${maxLabel}: everything you have (${money(max)})`; }));
       upd(); amt.focus();
       go.onclick = async () => {
         go.disabled = true; go.innerHTML = '<span class="spin"></span>Working on it';
-        try { await onGo(parseFloat(amt.value), all, close); }
+        try { await onGo(numOf(amt), all, close); }
         catch (e) { go.disabled = false; go.textContent = cta; showError(e, 6000); }
       };
     });
@@ -1510,9 +1554,9 @@
     const owned = S.port ? S.port.holdings : [];
     if (!owned.length) { toast('Buy some crypto first, then you can swap it.'); return; }
     const st = { from: owned.find((h) => h.id === fromId) || owned[0], to: null };
-    st.to = assetById(toId) || (S.markets.assets.find((x) => x.id !== st.from.id && x.id === 'usd-coin') || S.markets.assets.find((x) => x.id !== st.from.id));
+    st.to = assetById(toId) || S.markets.assets.find((x) => x.id !== st.from.id);
     if (st.to && st.to.id === st.from.id) st.to = S.markets.assets.find((x) => x.id !== st.from.id);
-    sheet(`<h2>Swap</h2><p class="sub">Trade one coin for another at today's price. No fees.</p>
+    sheet(`<h2>Swap</h2><p class="sub">Trade one coin for another at the live price. No fees, but the price can move a little before it fills.</p>
       <div class="swapbox"><button class="swaprow" id="sf"></button><button class="swapflip" id="flip" aria-label="Flip">${ICON.swap}</button><button class="swaprow" id="stt"></button></div>
       <div class="amountin" style="padding:14px 0 6px"><span>$</span><input id="amt" inputmode="decimal" autocomplete="off" placeholder="0"></div>
       <div class="avail" id="prev" style="margin:0 0 14px"></div>
@@ -1524,27 +1568,27 @@
       const paint = () => {
         $('#sf', el).innerHTML = row(st.from, 'From', `${money(st.from.value)} available`);
         $('#stt', el).innerHTML = row(st.to, 'To', fmtPrice(st.to.price));
-        const v = parseFloat(amt.value);
+        const v = numOf(amt);
         amt.style.width = Math.max(1, (amt.value || '0').length + 0.2) + 'ch';
         const ok = v > 0 && v <= st.from.value + 0.005;
         go.disabled = !ok;
         prev.className = 'avail' + (v > st.from.value + 0.005 ? ' bad' : '');
-        prev.textContent = v > st.from.value + 0.005 ? `You have ${money(st.from.value)} of ${st.from.symbol}` : v > 0 ? `${fmtQty(v / st.from.price, st.from.symbol)} → about ${fmtQty(v / st.to.price, st.to.symbol)}` : ' ';
+        prev.textContent = v > st.from.value + 0.005 ? `You have ${money(st.from.value)} of ${st.from.symbol}` : v > 0 ? `${fmtQty(v / st.from.price, st.from.symbol)} → about ${fmtQty(v / st.to.price, st.to.symbol)} (live price)` : ' ';
       };
       $('#sf', el).onclick = () => pickAsset('Swap from', owned, (h) => { st.from = h; if (st.to.id === h.id) st.to = S.markets.assets.find((x) => x.id !== h.id); amt.value = ''; paint(); });
       $('#stt', el).onclick = () => pickAsset('Swap to', S.markets.assets.filter((x) => x.id !== st.from.id), (x) => { st.to = x; paint(); });
       $('#flip', el).onclick = () => { const h = holdingOf(st.to.id); if (!h) { toast(`You don't own any ${st.to.symbol} yet.`); return; } const f = st.from; st.from = h; st.to = assetById(f.id) || f; amt.value = ''; paint(); };
       amt.oninput = () => {
-        all = false; const neg = /-/.test(amt.value);
-        amt.value = neg ? '' : amt.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1').replace(/(\.\d\d).+/, '$1'); paint();
-        if (neg) { prev.className = 'avail bad'; prev.textContent = 'Amounts can’t be negative.'; }
+        all = false; paint();
+        const { err } = amtCheck(amt.value);
+        if (err) { go.disabled = true; prev.className = 'avail bad'; prev.textContent = err; }
       };
       $$('[data-v]', el).forEach((b) => (b.onclick = () => { all = b.dataset.v === 'max'; amt.value = (all ? Math.round(st.from.value * 100) / 100 : Math.floor(st.from.value / 2 * 100) / 100).toFixed(2); paint(); if (all) prev.textContent = `All of it: ${fmtQty(st.from.qty, st.from.symbol)} → about ${fmtQty(st.from.value / st.to.price, st.to.symbol)}`; }));
       paint(); amt.focus();
       go.onclick = async () => {
         go.disabled = true; go.innerHTML = '<span class="spin"></span>Swapping';
         try {
-          const r = await api(PAPI + '/trade/swap', { method: 'POST', body: { from: st.from.id, to: st.to.id, usd: parseFloat(amt.value), all } });
+          const r = await api(PAPI + '/trade/swap', { method: 'POST', body: { from: st.from.id, to: st.to.id, usd: numOf(amt), all } });
           close(); loadPortfolio();
           success(`Swapped ${money(r.usd)}`, `${fmtQty(r.qtyFrom, r.from)} → ${fmtQty(r.qtyTo, r.to)}`, null, null, '#invest');
         } catch (e) { go.disabled = false; go.textContent = 'Swap'; showError(e); }
@@ -1557,7 +1601,7 @@
     show(`<header class="top"><b>Activity</b><span class="pill"><i></i>Test mode</span></header>
       <div class="seg" id="seg"><button data-t="pay" class="${tab === 'pay' ? 'on' : ''}">Payments</button><button data-t="trade" class="${tab === 'trade' ? 'on' : ''}">Crypto</button></div>
       ${tab === 'pay' ? '<div id="sentreqs"></div>' : ''}
-      <div class="list" id="${tab === 'pay' ? 'feed' : 'trades'}" data-limit="100" style="margin-top:14px"><div class="item"><div class="mid"><div class="skeleton" style="width:60%"></div></div></div></div>`, { tabs: true, tab: 'activity' });
+      <div class="list" id="${tab === 'pay' ? 'feed' : 'trades'}" data-limit="100" data-notrades="1" style="margin-top:14px"><div class="item"><div class="mid"><div class="skeleton" style="width:60%"></div></div></div></div>`, { tabs: true, tab: 'activity' });
     $$('#seg button').forEach((b) => (b.onclick = () => screenActivity(b.dataset.t)));
     if (tab === 'pay') { if (S.feed.length) paintFeed(); loadFeed(); paintSentRequests(); loadRequests().then(paintSentRequests); }
     else Promise.all([loadMarkets(), loadPortfolio()]).then(paintTrades);
@@ -1681,6 +1725,8 @@
   // Find who they meant: friends first (people you've paid or been paid by), then everyone on Monyx.
   async function findPerson(name) {
     const n = norm(name), first1 = norm(name.split(' ')[0]);
+    const me = S.acct && S.acct.user;
+    if (me && (norm(me.handle) === n || norm(me.handle) === norm(name.replace(/^@/, '')) || norm(me.name) === n)) throw userError("That's you. You can't pay yourself.");
     const score = (p) => {
       const h = norm(p.handle), full = norm(p.name), f = norm(p.name.split(' ')[0]);
       if (h === n || full === n) return 3;
@@ -1689,22 +1735,24 @@
       return 0;
     };
     const mine = knownPeople().map((p) => [p, score(p)]).filter((x) => x[1]).sort((a, b) => b[1] - a[1]);
-    if (mine.length && (mine.length === 1 || mine[0][1] > mine[1][1])) return { one: mine[0][0] };
+    // Only a strong match (exact handle/name or first name) is picked on its own. A fuzzy near-match always asks.
+    if (mine.length && mine[0][1] >= 2 && (mine.length === 1 || mine[0][1] > mine[1][1])) return { one: mine[0][0] };
     let others = [];
     try {
       const { users } = await api(`/search?q=${encodeURIComponent(name.replace(/\s+/g, ' ').slice(0, 30))}`);
-      others = users.filter((u) => u.handle !== S.acct.user.handle);
+      others = users.filter((u) => u.handle !== S.acct.user.handle && u.address !== S.acct.address);
     } catch {}
     const all = [...mine.map((x) => x[0])];
     for (const u of others) if (!all.some((p) => p.handle === u.handle)) all.push(u);
     const exact = all.filter((p) => norm(p.handle) === n || norm(p.name) === n);
     if (exact.length === 1) return { one: exact[0] };
-    if (all.length === 1) return { one: all[0] };
-    return { many: all.slice(0, 6) };
+    const strong = mine.filter((x) => x[1] >= 2);
+    if (!exact.length && strong.length === 1) return { one: strong[0][0] };
+    return { many: all.slice(0, 6) }; // fuzzy or ambiguous: the person picks, even if only one is close
   }
   function choosePerson(name, list) {
     return new Promise((resolve) => {
-      sheet(`<h2>Which ${esc(name.replace(/\b\w/g, (c) => c.toUpperCase()))}?</h2><p class="sub">A few people match. Pick the right one.</p>
+      sheet(`<h2>${list.length === 1 ? 'Did you mean' : 'Which'} ${list.length === 1 ? esc(list[0].name) : esc(name.replace(/\b\w/g, (c) => c.toUpperCase()))}?</h2><p class="sub">${list.length === 1 ? `No exact match for “${esc(name)}”. Tap only if this is the right person.` : 'A few people match. Pick the right one.'}</p>
         <div class="list" style="margin-top:12px">${list.map((u, i) => `<button class="item" data-i="${i}">${avatar(u)}<div class="mid"><div class="t">${esc(u.name)}</div><div class="s">@${esc(u.handle)}</div></div>${ICON.chev}</button>`).join('')}</div>`,
       (el, close) => $$('[data-i]', el).forEach((b) => (b.onclick = () => { const u = list[+b.dataset.i]; resolve(u); close(); })), () => resolve(null));
     });
@@ -2249,7 +2297,7 @@
     if (view === 'pay' && a && !signedIn) {
       store.set('monyx.pending', '#' + h);
       const u = await lookup(a);
-      if (u) payIntro(u, b && parseFloat(b) > 0 ? parseFloat(b) : 0);
+      if (u) payIntro(u, amtCheck(b).n > 0 ? amtCheck(b).n : 0);
       else screenWelcome(`<div class="banner"><span>That pay link is for @${esc(a)}, who isn't on Monyx yet.</span></div>`);
       return;
     }
@@ -2266,8 +2314,8 @@
       return screenWelcome();
     }
     if (view === 'pay' && !a) return screenPad();
-    if (view === 'send') return screenPay({ amount: a && parseFloat(a) > 0 ? a : '', mode: b === 'r' ? 'request' : 'pay', fromPad: true });
-    if (view === 'pay') return screenPay({ to: a, amount: b && parseFloat(b) > 0 ? parseFloat(b).toFixed(2).replace(/\.00$/, '') : '', note: c ? decodeURIComponent(c) : '' });
+    if (view === 'send') return screenPay({ amount: amtCheck(a).n > 0 ? a : '', mode: b === 'r' ? 'request' : 'pay', fromPad: true });
+    if (view === 'pay') return screenPay({ to: a, amount: amtCheck(b).n > 0 ? amtCheck(b).n.toFixed(2).replace(/\.00$/, '') : '', note: c ? decodeURIComponent(c) : '' });
     if (view === 'me') return screenMe();
     if (view === 'invest') return screenInvest();
     if (view === 'activity') return screenActivity();
@@ -2286,7 +2334,7 @@
     window.addEventListener('hashchange', route);
     // Mid-signup the key exists only in memory; warn before it's lost.
     window.addEventListener('beforeunload', (e) => { if (S.holdKey && S.acct && S.acct.token) { e.preventDefault(); e.returnValue = ''; } });
-    RPC = store.get('monyx.rpc', RPC);
+    store.del('monyx.rpc');
     rememberLinkPeople();
     loadInfo();
     // Broken profile photos fall back to initials. (Delegated, so no inline handlers: the CSP forbids them.)
