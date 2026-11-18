@@ -402,9 +402,10 @@
       <h1>Just say<br>who to pay.</h1>
       <p class="sub">Tell Monyx “send Maya 20 for pizza” and it’s ready to go. Split dinner, ask for money back, hear when you get paid. No bank details, no fees.</p>
       ${banner || ''}
-      ${savedPk() ? `<div class="pkback">${avatar(savedPk().user || {}, 'sm')}<div><b>${esc((savedPk().user || {}).name || 'Your account')}</b><span>${(savedPk().user || {}).handle ? '@' + esc(savedPk().user.handle) + ' · ' : ''}passkey saved on this device</span></div></div>` : ''}
+      ${savedPk() ? `<div class="pkback">${avatar(savedPk().user || {}, 'sm')}<div><b>${esc((savedPk().user || {}).name || 'Your account')}</b><span>${(savedPk().user || {}).handle ? '@' + esc(savedPk().user.handle) + ' · ' : ''}${isPwVault(savedPk()) ? 'password' : 'passkey'} saved on this device</span></div></div>` : ''}
       <div class="cta">
-        ${savedPk() ? `<button class="btn btn-dark" id="goPk">${ICON.lock}Sign in with passkey</button>
+        ${savedPk() && isPwVault(savedPk()) ? `<form id="pkf" class="pwrow"><input type="text" name="username" autocomplete="username" value="@${esc((savedPk().user || {}).handle || '')}" hidden><label class="field"><input type="password" id="pkpw" autocomplete="current-password" placeholder="Your password" aria-label="Password"></label></form>` : ''}
+        ${savedPk() ? `<button class="btn btn-dark" id="goPk">${ICON.lock}${isPwVault(savedPk()) ? 'Sign in with password' : 'Sign in with passkey'}</button>
         <button class="btn btn-text" id="goLogin">Use a recovery key instead</button>
         <button class="btn btn-text" id="goSignup">Create a new account</button>`
         : `<button class="btn btn-dark" id="goSignup">Create your account</button>
@@ -416,16 +417,17 @@
     $('#goSignup').onclick = () => startSignup();
     $('#goLogin').onclick = () => (location.hash = '#login');
     const pk = $('#goPk'); if (pk) pk.onclick = () => signInWithPasskey(pk, $('#pkh'));
+    const pf = $('#pkf'); if (pf) pf.onsubmit = (e) => { e.preventDefault(); pk.click(); };
   }
   // A passkey-locked account that was logged out on this device (see logout()).
   const savedPk = () => { const v = vault.get(); return v && v.address && !S.acct ? v : null; };
   async function signInWithPasskey(btn, hint) {
     const v = vault.get(); if (!v) return;
-    btn.disabled = true; const label = btn.innerHTML; btn.innerHTML = '<span class="spin"></span>Waiting for your passkey';
+    btn.disabled = true; const label = btn.innerHTML; btn.innerHTML = `<span class="spin"></span>${isPwVault(v) ? 'Checking your password' : 'Waiting for your passkey'}`;
     try {
       const timeout = new Promise((_, no) => setTimeout(() => no(userError('The passkey prompt timed out. Try again.')), 60000));
       S.acct = { mode: 'key', address: v.address, token: null, user: v.user || null };
-      await Promise.race([unlockWithPasskey(), timeout]);     // decrypts the key into memory only
+      await Promise.race([unlockSaved($('#pkpw') && $('#pkpw').value), timeout]);     // decrypts the key into memory only
       btn.innerHTML = '<span class="spin"></span>Signing in';
       const r = await api('/login', { method: 'POST', auth: false, body: await proof(v.address) });
       S.acct.token = r.token; S.acct.user = r.user; saveAcct();
@@ -434,6 +436,7 @@
     } catch (e) {
       S.acct = null; S.kp = null; S.secretMem = null;
       btn.disabled = false; btn.innerHTML = label;
+      if (isPwVault(v)) S.acct = null;
       hint.className = 'fine bad';
       hint.textContent = e.name === 'NotAllowedError' || e.name === 'AbortError' ? 'The passkey prompt was closed. Try again, or use your recovery key.'
         : e.code === 'no_account' ? 'That account no longer exists. Use your recovery key or create a new one.'
@@ -521,7 +524,7 @@
         S.kp = su.kp;
         const address = su.kp.publicKey.toBase58();
         S.acct = { mode: 'key', secret: Array.from(su.kp.secretKey), address, token: null, user: null };
-        S.holdKey = passkeysPossible();   // key stays in memory until the passkey lock is on
+        S.holdKey = true;   // key stays in memory until a passkey or password lock is on
         saveAcct();
         const p = await proof(address);
         const r = await api('/register', { method: 'POST', auth: false, body: { ...p, name: su.name, handle: su.handle, bonus: false } });
@@ -529,7 +532,7 @@
         // Welcome dollars arrive while they save their key.
         su.bonus = api(PAPI + '/topup', { method: 'POST' }).catch(() => null);
         // Passkey lock is the default: offer it before the backup key.
-        if (passkeysPossible()) { su.lockStep = true; stepLock(); } else stepKey();
+        su.lockStep = true; stepLock(); // passkey, or a password where passkeys aren't available
       } catch (e) {
         next.disabled = false; next.textContent = 'Create account';
         hint.className = 'hint bad'; hint.textContent = friendly(e);
@@ -543,6 +546,7 @@
       <p class="sub">Your account key is encrypted on this device and only opens with your face, fingerprint or device PIN. It's never saved in plain text.</p>
       <ul class="lockpts"><li>No password or seed phrase to memorize</li><li>Your key never leaves this device</li>${login ? '' : '<li>You also get a backup key, saved to your password manager</li>'}</ul>
       <div class="hint" id="hint" aria-live="polite"></div>
+      <button class="btn btn-light" id="usepw" style="width:100%;margin-top:6px">Use a password instead</button>
       <details class="adv" id="adv"><summary>Advanced</summary><p>Skipping stores your key unencrypted in this browser. Anyone with access to this device could copy it.</p><button class="btn btn-light btn-sm" id="skip">Skip and store it unencrypted</button></details>`;
     show(login ? `<section class="steps"><div class="topline"><span></span><span></span><span></span></div><div class="body">${body}</div><div class="foot"><button class="btn btn-dark" id="next">Turn on passkey lock</button></div></section>`
       : stepShell(3, body, `<button class="btn btn-dark" id="next">Turn on passkey lock</button>`, false));
@@ -565,12 +569,14 @@
         if (err.name === 'NotAllowedError' || err.name === 'AbortError') { hint.textContent = 'The passkey prompt was closed. Tap Try again, or use Advanced to skip.'; return; }
         if (err.safe && err.message === NO_PRF) {
           // This device can't do it: fall back to the backup key, stored the old way.
-          hint.textContent = "This device's passkeys can't encrypt Monyx yet, so your key will be kept in this browser. Keep your backup key safe.";
-          next.textContent = 'Continue'; next.onclick = fallback;
+          hint.textContent = "This device's passkeys can't encrypt Monyx yet. Lock it with a password instead.";
+          next.hidden = true; $('#usepw').className = 'btn btn-dark';
         } else hint.textContent = err.safe ? err.message : 'That didn’t work. Try again.';
       }
     };
     $('#skip').onclick = fallback;
+    $('#usepw').onclick = () => passwordSheet(() => { if (S.signup) S.signup.locked = true; after(); });
+    if (!passkeysPossible()) { next.hidden = true; $('#usepw').className = 'btn btn-dark'; hint.textContent = 'This browser can’t use passkeys, so lock Monyx with a password.'; }
   }
   function recoveryKey() { return b58enc(Uint8Array.from(S.acct.secret || S.secretMem)); }
   function stepKey() {
@@ -634,6 +640,7 @@
         <p class="fine" style="margin-top:8px">Saved it in a password manager? It can fill this in for you.</p>
         <div class="hint" id="hint"></div></div>
       <div class="foot"><button class="btn btn-dark" id="go" disabled>Log in</button>
+        <button class="btn btn-light" id="lnk">Use a code from my other device</button>
         <button class="btn btn-text" id="ph">Use a Phantom wallet instead</button></div>
     </section>`);
     const rk = $('#rk'), go = $('#go'), hint = $('#hint');
@@ -652,7 +659,7 @@
       go.disabled = true; go.innerHTML = '<span class="spin"></span>Logging in';
       S.kp = kp;
       S.acct = { mode: 'key', secret: Array.from(kp.secretKey), address: kp.publicKey.toBase58(), token: null, user: null };
-      vault.del(); S.secretMem = null; S.holdKey = passkeysPossible();
+      vault.del(); S.secretMem = null; S.holdKey = true; // offer a passkey or password lock before keeping the key
       try {
         const r = await api('/login', { method: 'POST', auth: false, body: await proof(S.acct.address) });
         S.acct.token = r.token; S.acct.user = r.user; saveAcct();
@@ -666,6 +673,7 @@
       }
     };
     $('#ph').onclick = loginPhantom;
+    $('#lnk').onclick = screenLinkNew;
   }
   async function loginPhantom() {
     const p = phantom();
@@ -1345,7 +1353,8 @@
         ${row('ai', ICON.spark, 'AI assistant', 'Connect Grok Bot to draft payments')}
         ${row('links', ICON.link, 'Pay links', 'Money you sent with a link')}
         ${S.acct.mode === 'key' ? row('key', ICON.key, 'Recovery key', 'Back up or move to a new device') : ''}
-        ${S.acct.mode === 'key' && passkeysPossible() ? row('lock', ICON.lock, vault.get() ? 'Passkey lock is on' : 'Lock with a passkey', vault.get() ? 'Face ID or fingerprint opens Monyx' : 'Face ID or fingerprint to open Monyx') : ''}
+        ${S.acct.mode === 'key' ? row('lock', ICON.lock, isPwVault(vault.get()) ? 'Password lock is on' : vault.get() ? 'Passkey lock is on' : 'Lock this device', isPwVault(vault.get()) ? 'Your password opens Monyx here' : vault.get() ? 'Face ID or fingerprint opens Monyx' : 'With a passkey or a password') : ''}
+        ${S.acct.mode === 'key' ? row('link', ICON.key, 'Sign in a new device', 'Approve it with a code, no recovery key needed') : ''}
         ${row('guide', ICON.book, 'How Monyx works', 'A plain-language guide')}
         ${row('details', ICON.info, 'Account details', 'For the curious')}
         ${row('pro', ICON.tools, 'Monyx Pro', 'Wallet tracer and developer tools')}
@@ -1362,6 +1371,7 @@
     $('[data-r="links"]').onclick = linksSheet;
     const k = $('[data-r="key"]'); if (k) k.onclick = showKey;
     const lk = $('[data-r="lock"]'); if (lk) lk.onclick = lockSheet;
+    const ln = $('[data-r="link"]'); if (ln) ln.onclick = linkApproveSheet;
     $('[data-r="details"]').onclick = details;
     $('[data-r="guide"]').onclick = () => (location.href = '../documentation/');
     $('[data-r="pro"]').onclick = () => (location.href = '../pro/');
@@ -1370,15 +1380,18 @@
     $('#quiz').onclick = (e) => { e.preventDefault(); modeQuiz(screenMe); };
   }
   function lockSheet() {
-    const on = !!vault.get();
-    sheet(`<h2>${on ? 'Passkey lock is on' : 'Lock with a passkey'}</h2>
-      <p class="sub">${on ? 'Your account key is stored encrypted on this device. Monyx opens with Face ID, your fingerprint or your device PIN.' : 'Encrypt your account key on this device so Monyx only opens with Face ID, your fingerprint or your device PIN. Anyone who gets into your browser storage sees only scrambled data.'}</p>
-      <p class="fine">Keep your recovery key saved too. It's how you get in on a new device.</p>
-      <button class="btn btn-dark" id="lkgo" style="margin-top:14px">${on ? 'Turn off passkey lock' : 'Set up passkey'}</button>`, (el, close) => {
+    const on = !!vault.get(), pw = isPwVault(vault.get());
+    sheet(`<h2>${on ? (pw ? 'Password lock is on' : 'Passkey lock is on') : 'Lock this device'}</h2>
+      <p class="sub">${on ? `Your account key is stored encrypted on this device. Monyx opens with ${pw ? 'your password' : 'Face ID, your fingerprint or your device PIN'}.` : 'Encrypt your account key on this device so Monyx only opens with your passkey or a password. Anyone who gets into your browser storage sees only scrambled data.'}</p>
+      <p class="fine">Keep your recovery key saved too. It's how you get in if you lose this device.</p>
+      ${on ? '' : passkeysPossible() ? '' : '<p class="fine">This browser can’t use passkeys, so use a password.</p>'}
+      <button class="btn btn-dark" id="lkgo" style="margin-top:14px" ${!on && !passkeysPossible() ? 'hidden' : ''}>${on ? `Turn off ${pw ? 'password' : 'passkey'} lock` : 'Set up a passkey'}</button>
+      ${on ? '' : `<button class="btn ${passkeysPossible() ? 'btn-light' : 'btn-dark'}" id="lkpw" style="margin-top:8px">Use a password</button>`}`, (el, close) => {
+      const lp = $('#lkpw', el); if (lp) lp.onclick = () => { close(); passwordSheet(screenMe); };
       $('#lkgo', el).onclick = async (e) => {
         const b = e.currentTarget; b.disabled = true;
         try {
-          if (on) { disablePasskeyLock(); toast('Passkey lock turned off'); }
+          if (on) { disablePasskeyLock(); toast(pw ? 'Password lock turned off' : 'Passkey lock turned off'); }
           else { await enablePasskeyLock(); toast('Locked. Monyx now opens with your passkey.'); }
           close(); screenMe();
         } catch (err) { b.disabled = false; showError(err, 6000); }
@@ -1466,8 +1479,8 @@
   }
   function logout() {
     const hasPk = S.acct.mode === 'key' && !!vault.get();
-    sheet(`<h2>Log out?</h2><p class="sub">${hasPk ? 'Your money stays in your account. Next time, sign back in on this device with your passkey (Face ID, fingerprint or PIN).' : S.acct.mode === 'key' ? 'You’ll need your recovery key to get back in. Your money stays in your account.' : 'You can log back in with Phantom any time.'}</p>
-      ${hasPk ? '<label class="check" style="display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:14px"><input type="checkbox" id="forget" style="margin-top:3px"><span>Also remove passkey sign-in from this device<br><small style="color:var(--faint)">Do this on a shared or borrowed device. You’ll need your recovery key to get back in here.</small></span></label>' : ''}
+    sheet(`<h2>Log out?</h2><p class="sub">${hasPk ? `Your money stays in your account. Next time, sign back in on this device with your ${isPwVault(vault.get()) ? 'password' : 'passkey (Face ID, fingerprint or PIN)'}.` : S.acct.mode === 'key' ? 'You’ll need your recovery key to get back in. Your money stays in your account.' : 'You can log back in with Phantom any time.'}</p>
+      ${hasPk ? `<label class="check" style="display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:14px"><input type="checkbox" id="forget" style="margin-top:3px"><span>Also remove ${isPwVault(vault.get()) ? 'password' : 'passkey'} sign-in from this device<br><small style="color:var(--faint)">Do this on a shared or borrowed device. You’ll need your recovery key or another device to get back in here.</small></span></label>` : ''}
       <div class="btn-row" style="margin-top:18px"><button class="btn btn-light" id="no">Cancel</button><button class="btn btn-dark" id="yes">Log out</button></div>`, (el, close) => {
       $('#no', el).onclick = close;
       $('#yes', el).onclick = async () => {
@@ -2408,22 +2421,190 @@
     const secret = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64d(v.iv) }, key, b64d(v.ct)));
     S.secretMem = Array.from(secret); S.kp = keypairFrom(S.secretMem);
   }
+  /* ───────── password lock ─────────
+     For devices without passkey support, or people who'd rather type a password.
+     PBKDF2-SHA256 (600k rounds) turns the password into an AES-GCM key that encrypts
+     the account key; only ciphertext is stored. The password never leaves the device. */
+  const PW_ITER = 600000;
+  const isPwVault = (v) => !!(v && v.kind === 'pw');
+  async function pwKey(pw, salt, iter) {
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw.normalize('NFKC')), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  }
+  function pwProblem(pw) {
+    if (pw.length < 8) return 'Use at least 8 characters.';
+    if (/^(.)\1+$/.test(pw) || /^(password|12345678|qwertyui|monyx)/i.test(pw)) return 'That one is too easy to guess.';
+    return '';
+  }
+  async function enablePasswordLock(pw) {
+    const secret = S.acct.secret || S.secretMem;
+    if (!secret) throw userError('Unlock Monyx first.');
+    const bad = pwProblem(pw); if (bad) throw userError(bad);
+    const salt = rand(16), iv = rand(12), key = await pwKey(pw, salt, PW_ITER);
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, Uint8Array.from(secret)));
+    vault.set({ kind: 'pw', iter: PW_ITER, salt: b64(salt), iv: b64(iv), ct: b64(ct), address: S.acct.address, user: vaultUser(S.acct.user) });
+    S.secretMem = Array.from(secret); delete S.acct.secret; S.holdKey = false; saveAcct();
+  }
+  async function unlockWithPassword(pw) {
+    const v = vault.get();
+    // Slow down guessing on this device: after 5 misses, wait a little longer each time.
+    const miss = store.get('monyx.pwMiss', { n: 0, t: 0 });
+    const wait = miss.n >= 5 ? Math.min(300, 2 ** (miss.n - 4)) * 1000 - (Date.now() - miss.t) : 0;
+    if (wait > 0) throw userError(`Too many wrong tries. Wait ${Math.ceil(wait / 1000)} seconds.`);
+    try {
+      const key = await pwKey(pw, b64d(v.salt), v.iter || PW_ITER);
+      const secret = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64d(v.iv) }, key, b64d(v.ct)));
+      store.del('monyx.pwMiss');
+      S.secretMem = Array.from(secret); S.kp = keypairFrom(S.secretMem);
+    } catch {
+      store.set('monyx.pwMiss', { n: miss.n + 1, t: Date.now() });
+      throw userError('That password isn’t right. Try again, or use your recovery key.');
+    }
+  }
+  const unlockSaved = (pw) => (isPwVault(vault.get()) ? unlockWithPassword(pw) : unlockWithPasskey());
+  // Ask for a new password twice, then lock with it.
+  function passwordSheet(done) {
+    sheet(`<h2>Lock with a password</h2>
+      <p class="sub">Your account key is encrypted on this device with this password. You'll type it to open Monyx here. It never leaves this device, so we can't reset it. Your recovery key still works if you forget it.</p>
+      <form id="pwf" autocomplete="on"><input type="text" name="username" autocomplete="username" value="@${esc((S.acct.user || {}).handle || '')}" hidden>
+        <label class="field" style="margin-top:14px"><input type="password" id="pw1" autocomplete="new-password" placeholder="New password (8+ characters)" aria-label="New password"></label>
+        <label class="field" style="margin-top:10px"><input type="password" id="pw2" autocomplete="new-password" placeholder="Type it again" aria-label="Confirm password"></label>
+      </form>
+      <div class="hint" id="pwh" aria-live="polite"></div>
+      <button class="btn btn-dark" id="pwgo" style="margin-top:12px">Lock with this password</button>`, (el, close) => {
+      const h = $('#pwh', el), go = $('#pwgo', el);
+      setTimeout(() => $('#pw1', el).focus(), 50);
+      $('#pwf', el).onsubmit = (e) => { e.preventDefault(); go.click(); };
+      go.onclick = async () => {
+        const a = $('#pw1', el).value, b = $('#pw2', el).value;
+        const bad = pwProblem(a); if (bad) { h.className = 'hint bad'; h.textContent = bad; return; }
+        if (a !== b) { h.className = 'hint bad'; h.textContent = 'Those don’t match.'; return; }
+        go.disabled = true; go.innerHTML = '<span class="spin"></span>Encrypting';
+        try { await enablePasswordLock(a); close(); toast('Locked with your password'); done && done(); }
+        catch (e) { go.disabled = false; go.textContent = 'Lock with this password'; h.className = 'hint bad'; h.textContent = e.safe ? e.message : 'That didn’t work. Try again.'; }
+      };
+    });
+  }
+
+  /* ───────── sign in on a new device with a code ───────── */
+  const ecdhParams = { name: 'ECDH', namedCurve: 'P-256' };
+  async function linkKey(myPriv, theirPubB64) {
+    const theirs = await crypto.subtle.importKey('raw', b64d(theirPubB64), ecdhParams, false, []);
+    const bits = await crypto.subtle.deriveBits({ name: 'ECDH', public: theirs }, myPriv, 256);
+    const base = await crypto.subtle.importKey('raw', bits, 'HKDF', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(32), info: new TextEncoder().encode('monyx device link v1') }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  }
+  // Both screens show the same three emojis for the new device's key; a swapped key shows different ones.
+  const SAFETY = ['🍋', '🐢', '🎈', '🌵', '🚲', '🦊', '🍩', '🎸', '🌙', '🐙', '🍉', '🚀', '🌻', '🐝', '🧩', '🎲', '🍄', '🐳', '⚓', '🔑', '🦉', '🍒', '🧭', '🌈', '🐧', '🍀', '🎯', '🧁', '🦋', '🔔', '🍔', '🐞'];
+  async function safetyEmojis(pubB64) {
+    const h = new Uint8Array(await crypto.subtle.digest('SHA-256', b64d(pubB64)));
+    return [h[0], h[1], h[2]].map((b) => SAFETY[b % SAFETY.length]).join(' ');
+  }
+  // New device: show a code, wait for approval, decrypt the key, sign in.
+  async function screenLinkNew() {
+    show(`<section class="steps">
+      <div class="topline"><button class="back" id="back" aria-label="Back">${ICON.back}</button><span></span><span></span></div>
+      <div class="body" style="text-align:center"><h2>Sign in with your other device</h2>
+        <p class="sub">On a phone or computer where you're signed in to Monyx, open <b>Me → Sign in a new device</b> and enter this code.</p>
+        <div class="linkcode" id="lc"><span class="spin"></span></div>
+        <p class="fine">Safety check: <span class="emo" id="le"></span><br>Your other device will show the same three.</p>
+        <div class="hint" id="lh" aria-live="polite"></div></div>
+      <div class="foot"><button class="btn btn-text" id="rk">Use my recovery key instead</button></div>
+    </section>`);
+    let stop = false;
+    const leave = () => { stop = true; };
+    $('#back').onclick = () => { leave(); location.hash = '#login'; screenLogin(); };
+    $('#rk').onclick = () => { leave(); location.hash = '#login'; screenLogin(); };
+    window.addEventListener('hashchange', leave, { once: true });
+    const h = $('#lh');
+    try {
+      const pair = await crypto.subtle.generateKey(ecdhParams, false, ['deriveBits']);
+      const pubB64 = b64(new Uint8Array(await crypto.subtle.exportKey('raw', pair.publicKey)));
+      const r = await api('/link/start', { method: 'POST', auth: false, body: { pub: pubB64 } });
+      $('#lc').textContent = r.code; $('#le').textContent = await safetyEmojis(pubB64);
+      const until = Date.parse(r.expires);
+      while (!stop) {
+        await new Promise((ok) => setTimeout(ok, 2000));
+        if (stop) return;
+        if (Date.now() > until + 5000) { h.className = 'hint bad'; h.textContent = 'This code expired. Go back and try again.'; return; }
+        let p; try { p = await api('/link/poll', { method: 'POST', auth: false, body: { id: r.id, poll: r.poll } }); } catch { continue; }
+        if (p.status === 'claimed') { h.className = 'hint'; h.textContent = `@${p.user.handle} entered the code. Approve it on that device.`; }
+        if (p.status === 'denied') { h.className = 'hint bad'; h.textContent = 'The other device said no. Go back to try again.'; return; }
+        if (p.status === 'expired') { h.className = 'hint bad'; h.textContent = 'This code expired. Go back and try again.'; return; }
+        if (p.status === 'approved') {
+          h.className = 'hint'; h.innerHTML = '<span class="spin"></span>Signing you in';
+          const key = await linkKey(pair.privateKey, p.old_pub);
+          const secret = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64d(p.iv) }, key, b64d(p.ct)));
+          const kp = keypairFrom(Array.from(secret));
+          if (kp.publicKey.toBase58() !== p.user.address) throw userError('The key that arrived doesn’t match that account. Nothing was saved.');
+          S.kp = kp;
+          S.acct = { mode: 'key', secret: Array.from(kp.secretKey), address: p.user.address, token: null, user: p.user };
+          vault.del(); S.secretMem = null; S.holdKey = true;
+          const lr = await api('/login', { method: 'POST', auth: false, body: await proof(S.acct.address) });
+          S.acct.token = lr.token; S.acct.user = lr.user;
+          stepLock(true); // lock this new device before the key is kept anywhere
+          return;
+        }
+      }
+    } catch (e) { S.acct = null; S.kp = null; h.className = 'hint bad'; h.textContent = e.safe ? e.message : 'That didn’t work. Go back and try again.'; }
+  }
+  // Signed-in device: enter the code, compare emojis, send the key encrypted to the new device.
+  function linkApproveSheet() {
+    sheet(`<h2>Sign in a new device</h2>
+      <p class="sub">On the new device, choose <b>I already have an account → Use a code from my other device</b>. Type the code it shows.</p>
+      <label class="field" style="margin-top:14px"><input id="lcode" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="9" placeholder="K7QM-4ZPA" aria-label="Code from the new device" style="letter-spacing:.12em;font-weight:700;text-transform:uppercase"></label>
+      <div class="hint" id="lah" aria-live="polite"></div>
+      <div id="lstep"></div>
+      <button class="btn btn-dark" id="lfind" style="margin-top:12px">Continue</button>`, (el, close) => {
+      const h = $('#lah', el), go = $('#lfind', el), inp = $('#lcode', el);
+      setTimeout(() => inp.focus(), 50);
+      inp.oninput = () => { let v = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8); inp.value = v.length > 4 ? v.slice(0, 4) + '-' + v.slice(4) : v; h.textContent = ''; };
+      go.onclick = async () => {
+        const secret = S.acct.secret || S.secretMem;
+        if (!secret) { h.className = 'hint bad'; h.textContent = 'Unlock Monyx on this device first.'; return; }
+        go.disabled = true;
+        try {
+          const f = await api('/link/find', { method: 'POST', body: { code: inp.value } });
+          const emo = await safetyEmojis(f.pub);
+          inp.disabled = true;
+          $('#lstep', el).innerHTML = `<div class="linkok"><p>Does the new device show these?</p><div class="emo big">${emo}</div>
+            <p class="fine">Only approve a device you're holding. It will be able to spend your balance.</p></div>`;
+          go.textContent = 'Yes, sign it in'; go.disabled = false;
+          const no = document.createElement('button'); no.className = 'btn btn-light'; no.textContent = 'No, cancel'; no.style.marginTop = '8px'; go.after(no);
+          no.onclick = async () => { api('/link/deny', { method: 'POST', body: { id: f.id } }).catch(() => {}); close(); toast('Cancelled. Nothing was shared.'); };
+          go.onclick = async () => {
+            go.disabled = true; go.innerHTML = '<span class="spin"></span>Sending securely';
+            try {
+              const pair = await crypto.subtle.generateKey(ecdhParams, false, ['deriveBits']);
+              const oldPub = b64(new Uint8Array(await crypto.subtle.exportKey('raw', pair.publicKey)));
+              const key = await linkKey(pair.privateKey, f.pub), iv = rand(12);
+              const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, Uint8Array.from(secret)));
+              await api('/link/approve', { method: 'POST', body: { id: f.id, old_pub: oldPub, iv: b64(iv), ct: b64(ct) } });
+              close(); toast('Done. Your new device is signing in.');
+            } catch (e) { go.disabled = false; go.textContent = 'Yes, sign it in'; h.className = 'hint bad'; h.textContent = e.safe ? e.message : friendly(e); }
+          };
+        } catch (e) { go.disabled = false; h.className = 'hint bad'; h.textContent = e.safe ? e.message : friendly(e); }
+      };
+    });
+  }
   const isLocked = () => !!(S.acct && S.acct.mode === 'key' && !S.acct.secret && !S.kp && vault.get());
   function screenUnlock() {
     const u = S.acct.user || {};
     show(`<section class="welcome intro">
       <div class="brand">${LOGO}</div>
       <div class="introcard">${avatar(u, 'lg')}<h1>Welcome back${u.name ? `, ${esc(u.name.split(' ')[0])}` : ''}</h1>
-        <p class="sub">Monyx is locked with your passkey. Unlock with Face ID, your fingerprint or your device PIN.</p></div>
+        <p class="sub">${isPwVault(vault.get()) ? 'Monyx is locked with your password.' : 'Monyx is locked with your passkey. Unlock with Face ID, your fingerprint or your device PIN.'}</p></div>
+      ${isPwVault(vault.get()) ? `<form id="unf" class="pwrow"><input type="text" name="username" autocomplete="username" value="@${esc(u.handle || '')}" hidden><label class="field"><input type="password" id="unpw" autocomplete="current-password" placeholder="Your password" aria-label="Password"></label></form>` : ''}
       <div class="cta"><button class="btn btn-dark" id="un">Unlock</button>
         <button class="btn btn-text" id="rk">Use my recovery key instead</button></div>
       <p class="fine" id="uh"></p>
     </section>`);
     $('#un').onclick = async (e) => {
       const b = e.currentTarget; b.disabled = true;
-      try { await unlockWithPasskey(); route(); }
-      catch (err) { b.disabled = false; $('#uh').textContent = err.safe ? err.message : 'That didn’t unlock. Try again, or use your recovery key.'; }
+      try { await unlockSaved($('#unpw') && $('#unpw').value); route(); }
+      catch (err) { b.disabled = false; $('#uh').className = 'fine bad'; $('#uh').textContent = err.safe ? err.message : 'That didn’t unlock. Try again, or use your recovery key.'; }
     };
+    const uf = $('#unf'); if (uf) { uf.onsubmit = (e) => { e.preventDefault(); $('#un').click(); }; setTimeout(() => $('#unpw').focus(), 50); }
     $('#rk').onclick = () => { location.hash = '#login'; screenLogin(); };
   }
   // Save the recovery key in the browser's password manager (iCloud Keychain,

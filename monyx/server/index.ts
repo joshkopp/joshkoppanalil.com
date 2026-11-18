@@ -75,6 +75,10 @@ async function proves(address: string, ts: number, sig: string) {
   if (Math.random() < 0.05) db.from("monyx_used_logins").delete().lt("used_at", new Date(Date.now() - 3600_000).toISOString()).then(() => {});
   return true;
 }
+const CODE_ALPH = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no 0/O, 1/I/L
+const sha256 = async (t: string) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)))].map((b) => b.toString(16).padStart(2, "0")).join("");
+const linkTries = new Map<string, { t: number; n: number }>();
+const limitedLink = (k: string) => { const now = Date.now(), w = linkTries.get(k); if (!w || now - w.t > 600_000) { linkTries.set(k, { t: now, n: 1 }); return false; } return ++w.n > 10; };
 const token = () => [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, "0")).join("");
 
 async function newSession(userId: string) {
@@ -144,6 +148,42 @@ Deno.serve(async (req) => {
       return json({ user: (await me(req)) ? pub(data) : pubLite(data) });
     }
 
+    // ---------- sign in on a new device with a code from a signed-in one ----------
+    // The new device makes a one-off P-256 key pair and shows a code. The signed-in device
+    // enters the code, checks the safety emojis match, and sends the account key encrypted
+    // to the new device's public key (ECDH + AES-GCM). This server only relays ciphertext.
+    if (path === "/link/start" && req.method === "POST") {
+      const pubB64 = String(body.pub || "");
+      if (!/^[A-Za-z0-9+/=]{80,100}$/.test(pubB64)) return fail("That didn't work. Refresh and try again.");
+      const hour = new Date(Date.now() - 3600_000).toISOString();
+      const { count } = await db.from("monyx_device_links").select("id", { count: "exact", head: true }).eq("ip", ip).gte("created_at", hour);
+      if ((count ?? 0) >= 12) return fail("Too many sign-in codes from here. Try again in an hour.", 429, "rate_limited");
+      const poll = token();
+      for (let i = 0; i < 5; i++) {
+        const raw = crypto.getRandomValues(new Uint8Array(8));
+        const code = [...raw].map((b) => CODE_ALPH[b % CODE_ALPH.length]).join("");
+        const { data, error } = await db.from("monyx_device_links").insert({ code, poll_hash: await sha256(poll), new_pub: pubB64, ip }).select("id, expires_at").single();
+        if (!error) return json({ id: data.id, code: `${code.slice(0, 4)}-${code.slice(4)}`, poll, expires: data.expires_at });
+      }
+      return oops("link start", "code collision");
+    }
+    if (path === "/link/poll" && req.method === "POST") {
+      const { data: l } = await db.from("monyx_device_links").select("*").eq("id", String(body.id || "")).maybeSingle();
+      if (!l || l.poll_hash !== (await sha256(String(body.poll || "")))) return fail("That code isn't valid any more.", 404, "not_found");
+      if (new Date(l.expires_at) < new Date() && l.status !== "approved") return json({ status: "expired" });
+      if (l.status === "approved") {
+        // Hand the ciphertext over once, then wipe it.
+        await db.from("monyx_device_links").update({ status: "done", ct: null, iv: null }).eq("id", l.id);
+        const { data: u } = await db.from("monyx_users").select(PUBLIC).eq("id", l.user_id).single();
+        return json({ status: "approved", old_pub: l.old_pub, iv: l.iv, ct: l.ct, user: pub(u) });
+      }
+      if (l.status === "claimed") {
+        const { data: u } = await db.from("monyx_users").select("handle, name").eq("id", l.user_id).single();
+        return json({ status: "claimed", user: u });
+      }
+      return json({ status: l.status });
+    }
+
     if (path === "/register" && req.method === "POST") {
       const handle = String(body.handle || "").toLowerCase().replace(/^@/, "");
       const name = String(body.name || "").trim().slice(0, 40);
@@ -173,6 +213,29 @@ Deno.serve(async (req) => {
     if (!user) return fail("Please sign in again.", 401, "unauthorized");
 
     if (path === "/me") return json({ user: pub(user) });
+
+    if (path === "/link/find" && req.method === "POST") {
+      if (limitedLink(user.id)) return fail("Too many tries. Wait a few minutes.", 429, "rate_limited");
+      const code = String(body.code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (code.length !== 8) return fail("Codes are 8 letters and numbers, like K7QM-4ZPA.");
+      const { data: l } = await db.from("monyx_device_links").select("id, new_pub, status, user_id, expires_at, created_at").eq("code", code).maybeSingle();
+      if (!l || new Date(l.expires_at) < new Date() || l.status === "done" || l.status === "denied" || (l.user_id && l.user_id !== user.id))
+        return fail("No new device is waiting with that code. Check it, or make a new one.", 404, "not_found");
+      await db.from("monyx_device_links").update({ status: "claimed", user_id: user.id }).eq("id", l.id).in("status", ["pending", "claimed"]);
+      return json({ id: l.id, pub: l.new_pub, created: l.created_at });
+    }
+    if (path === "/link/approve" && req.method === "POST") {
+      const oldPub = String(body.old_pub || ""), iv = String(body.iv || ""), ct = String(body.ct || "");
+      if (!/^[A-Za-z0-9+/=]{80,100}$/.test(oldPub) || !/^[A-Za-z0-9+/=]{16}$/.test(iv) || !/^[A-Za-z0-9+/=]{60,200}$/.test(ct)) return fail("That didn't work. Try again.");
+      const { data, error } = await db.from("monyx_device_links").update({ status: "approved", old_pub: oldPub, iv, ct })
+        .eq("id", String(body.id || "")).eq("user_id", user.id).eq("status", "claimed").gt("expires_at", new Date().toISOString()).select("id");
+      if (error || !data?.length) return fail("That code expired. Make a new one on the new device.", 409, "expired");
+      return json({ ok: true });
+    }
+    if (path === "/link/deny" && req.method === "POST") {
+      await db.from("monyx_device_links").update({ status: "denied", ct: null }).eq("id", String(body.id || "")).eq("user_id", user.id);
+      return json({ ok: true });
+    }
     if (path === "/logout" && req.method === "POST") {
       await db.from("monyx_sessions").delete().eq("token", (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, ""));
       return json({ ok: true });
