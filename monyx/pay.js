@@ -274,6 +274,9 @@
     return { sig: s.signature, time: s.blockTime, ok: !s.err, with: withAddr, note, amount: mine };
   }
   async function resolvePeople(addresses) {
+    if (store.get('monyx.peopleV') !== 2) { S.people = {}; store.set('monyx.people', {}); store.set('monyx.peopleAt', 0); store.set('monyx.peopleV', 2); }
+    const b = S.bankAddr || store.get('monyx.bank2');
+    if (b) S.people[b] = { handle: 'monyx', name: 'Monyx', address: b, bank: true };
     const fresh = Date.now() - store.get('monyx.peopleAt', 0) < 600_000;
     const need = [...new Set(addresses)].filter((a) => !(S.people[a] && S.people[a].link) && (!fresh || !S.people[a]));
     if (!need.length) return;
@@ -780,9 +783,12 @@
     </div>`, { tabs: true, tab: 'pay', pad: true });
     const amtEl = $('#padamt'), vEl = $('#padv'), sub = $('#padsub');
     const shake = () => { amtEl.classList.remove('shake'); void amtEl.offsetWidth; amtEl.classList.add('shake'); navigator.vibrate && navigator.vibrate(30); };
+    let neg = false;   // a typed minus sign: shown, and nothing can be sent until it's cleared
     const paint = () => {
       const txt = v || '0';
-      vEl.textContent = txt.replace(/^(\d+)/, (d) => Number(d).toLocaleString('en-US'));
+      vEl.textContent = (neg ? '−' : '') + txt.replace(/^(\d+)/, (d) => Number(d).toLocaleString('en-US'));
+      amtEl.classList.toggle('neg', neg);
+      if (neg) { sub.textContent = 'Amounts can’t be negative. Press delete to clear it.'; sub.classList.add('bad'); S.padV = ''; return; }
       amtEl.dataset.len = Math.min(9, txt.length);
       amtEl.classList.toggle('zero', !v || +v === 0);
       S.padV = v;
@@ -794,7 +800,8 @@
     };
     const press = (k) => {
       let next = v;
-      if (k === 'del') next = v.slice(0, -1);
+      if (k === '-') { neg = true; shake(); paint(); return; }
+      if (k === 'del') { if (neg && !v) { neg = false; paint(); return; } next = v.slice(0, -1); if (neg && !next) { neg = false; } }
       else if (k === '.') { if (v.includes('.')) return shake(); next = (v || '0') + '.'; }
       else if (v === '0') next = k;
       else if (v.includes('.') && v.split('.')[1].length >= 2) return shake();
@@ -804,7 +811,7 @@
     };
     const go = (mode) => {
       const n = parseFloat(v);
-      if (!(n > 0)) return shake();
+      if (neg || !(n > 0)) return shake();
       if (mode === 'pay' && S.cash != null && n > usd(S.cash)) { shake(); toast(`You have ${money(usd(Math.max(0, S.cash)))}. Add money first, or request it instead.`, true); return; }
       location.hash = `#send/${n.toFixed(2).replace(/\.00$/, '')}${mode === 'request' ? '/r' : ''}`;
     };
@@ -816,10 +823,10 @@
       if (e.metaKey || e.ctrlKey || e.altKey || document.querySelector('.sheet-wrap')) return;
       const t = e.target; if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
       let k = null;
-      if (/^[0-9]$/.test(e.key)) k = e.key; else if (e.key === '.' || e.key === ',') k = '.'; else if (e.key === 'Backspace' || e.key === 'Delete') k = 'del';
-      if (k) { e.preventDefault(); press(k); const b = $(`.key[data-k="${k}"]`); if (b) { b.classList.add('down'); setTimeout(() => b.classList.remove('down'), 120); } return; }
+      if (/^[0-9]$/.test(e.key)) k = e.key; else if (e.key === '.' || e.key === ',') k = '.'; else if (e.key === 'Backspace' || e.key === 'Delete') k = 'del'; else if (e.key === '-' || e.key === '−') k = '-';
+      if (k) { e.preventDefault(); press(k); if (k === '-') return; const b = $(`.key[data-k="${k}"]`); if (b) { b.classList.add('down'); setTimeout(() => b.classList.remove('down'), 120); } return; }
       if (e.key === 'Enter') { e.preventDefault(); go(e.shiftKey ? 'request' : 'pay'); }
-      if (e.key === 'Escape') { v = ''; paint(); }
+      if (e.key === 'Escape') { v = ''; neg = false; paint(); }
     };
     document.addEventListener('keydown', S.padKey);
     paint(); refreshBalance().then(paint);
@@ -899,6 +906,8 @@
         let v = q.value.trim();
         if (!v) { paint(recent(), 'Recent'); return; }
         if (isAddr(cleanAddr(v))) v = cleanAddr(v);
+        const cv = cleanAddr(v);
+        if (cv.length >= 8 && S.acct.address.includes(cv)) { res.innerHTML = '<div class="empty">That’s part of your own account number. You can’t pay yourself.</div>'; valid(); return; }
         if (isAddr(v)) {
           if (v === S.acct.address) { res.innerHTML = '<div class="empty">That’s your own account number. You can’t pay yourself.</div>'; valid(); return; }
           st.to = S.people[v] && !S.people[v].unknown ? S.people[v] : { address: v, unknown: true }; renderTo(); valid(); return;
@@ -986,6 +995,7 @@
       if (twin && !paidBefore) high.push(`@${esc(to.handle)} is one letter off from @${esc(twin.handle)}, someone you already know.`);
     }
     if (isSelf(to)) high.push('This is your own account. Paying yourself does nothing.');
+    else if (to.address && S.acct && to.address !== S.acct.address && to.address.slice(0, 4) === S.acct.address.slice(0, 4) && to.address.slice(-4) === S.acct.address.slice(-4)) high.push('This looks like your own account number but isn’t. Scammers copy the start and end.');
     // 3. Addresses no person can hold: programs, the USDC token itself.
     try {
       if (addr === USDC) high.push('That’s the address of the USDC token itself, not a person. Money sent there is gone.');
@@ -1342,9 +1352,11 @@
     if (S.port) {
       const [d, c] = S.port.total.toFixed(2).split('.');
       pv.innerHTML = `<small>$</small>${Number(d).toLocaleString('en-US')}<span class="cents">.${c}</span>`;
-      const day = S.port.holdings.reduce((a, h) => a + (h.change24h != null ? h.value - h.value / (1 + h.change24h / 100) : 0), 0);
-      $('#pvchg').innerHTML = S.port.total > 0 ? `<span class="${day >= 0 ? 'up' : 'down'}">${day >= 0 ? '+' : '−'}${money(Math.abs(day))} today</span>` : '';
-      $('#holdings').innerHTML = S.port.holdings.length ? `<h3>Your coins</h3><div class="list">${S.port.holdings.map((h) => `<button class="item" data-a="${esc(h.id)}">${coin(h)}<div class="mid"><div class="t">${esc(h.name)}</div><div class="s">${esc(fmtQty(h.qty, h.symbol))}</div></div><div style="text-align:right"><div class="amt">${money(h.value)}</div><div class="s ${h.change24h >= 0 ? 'up' : 'down'}">${pct(h.change24h)}</div></div></button>`).join('')}</div>`
+      // Everything on Invest uses the same 7-day window as the charts.
+      const c7 = (h) => chg7(h.spark) ?? h.change24h;
+      const day = S.port.holdings.reduce((a, h) => a + (c7(h) != null ? h.value - h.value / (1 + c7(h) / 100) : 0), 0);
+      $('#pvchg').innerHTML = S.port.total > 0 ? `<span class="${day >= 0 ? 'up' : 'down'}">${day >= 0 ? '+' : '−'}${money(Math.abs(day))} past 7 days</span>` : '';
+      $('#holdings').innerHTML = S.port.holdings.length ? `<h3>Your coins</h3><div class="list">${S.port.holdings.map((h) => `<button class="item" data-a="${esc(h.id)}">${coin(h)}<div class="mid"><div class="t">${esc(h.name)}</div><div class="s">${esc(fmtQty(h.qty, h.symbol))}</div></div><div style="text-align:right"><div class="amt">${money(h.value)}</div><div class="s ${c7(h) >= 0 ? 'up' : 'down'}">${pct(c7(h))} · 7d</div></div></button>`).join('')}</div>`
         : `<div class="hint" style="text-align:center;margin:14px 0 0">You don't own any crypto yet. Start with as little as $1.</div>`;
     }
     if (S.markets) {
@@ -1357,8 +1369,8 @@
     const h = holdingOf(a.id);
     sheet(`<div class="assethead">${coin(a, 'md')}<div><div class="t">${esc(a.name)}</div><div class="s">${esc(a.symbol)}</div></div></div>
       <div class="big" style="font-size:40px;font-weight:600;letter-spacing:-.03em;margin-top:14px">${fmtPrice(a.price)}</div>
-      <div class="${a.change24h >= 0 ? 'up' : 'down'}" style="font-size:14px;font-weight:500">${pct(a.change24h)} today</div>
-      <div class="bigspark">${spark(a.spark, 320, 110, 2.2)}</div><div class="fine" style="text-align:left;margin:-4px 0 14px">Past 7 days${chg7(a.spark) != null ? ` · <span class="${chg7(a.spark) >= 0 ? 'up' : 'down'}">${pct(chg7(a.spark))}</span>` : ''}</div>
+      <div class="${(chg7(a.spark) ?? a.change24h) >= 0 ? 'up' : 'down'}" style="font-size:14px;font-weight:500">${chg7(a.spark) != null ? `${pct(chg7(a.spark))} past 7 days` : `${pct(a.change24h)} today`}</div>
+      <div class="bigspark">${spark(a.spark, 320, 110, 2.2)}</div><div class="fine" style="text-align:left;margin:-4px 0 14px">Past 7 days</div>
       ${h ? `<div class="ledger"><div><span>You own</span><b>${esc(fmtQty(h.qty, a.symbol))}</b></div><div><span>Worth</span><b>${money(h.value)}</b></div></div>` : ''}
       <div class="btn-row">${h ? `<button class="btn btn-light" id="sell">Sell</button>` : `<button class="btn btn-light" id="swap">Swap into ${esc(a.symbol)}</button>`}<button class="btn btn-dark" id="buy">Buy</button></div>
       ${h ? `<button class="btn btn-text" id="swap" style="margin-top:4px">Swap ${esc(a.symbol)} for another coin</button>` : ''}`, (el, close) => {
@@ -1397,7 +1409,7 @@
       amt.oninput = () => {
         all = false;
         const before = amt.value;
-        amt.value = amt.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1').replace(/(\.\d\d).+/, '$1');
+        amt.value = /-/.test(before) ? '' : amt.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1').replace(/(\.\d\d).+/, '$1');
         upd();
         if (/-/.test(before)) { prev.className = 'avail bad'; prev.textContent = 'Amounts can’t be negative.'; }
         else if (/\.\d{3}/.test(before)) { prev.className = 'avail bad'; prev.textContent = 'Dollars only go to 2 decimal places (cents).'; }
@@ -1481,7 +1493,11 @@
       $('#sf', el).onclick = () => pickAsset('Swap from', owned, (h) => { st.from = h; if (st.to.id === h.id) st.to = S.markets.assets.find((x) => x.id !== h.id); amt.value = ''; paint(); });
       $('#stt', el).onclick = () => pickAsset('Swap to', S.markets.assets.filter((x) => x.id !== st.from.id), (x) => { st.to = x; paint(); });
       $('#flip', el).onclick = () => { const h = holdingOf(st.to.id); if (!h) { toast(`You don't own any ${st.to.symbol} yet.`); return; } const f = st.from; st.from = h; st.to = assetById(f.id) || f; amt.value = ''; paint(); };
-      amt.oninput = () => { all = false; amt.value = amt.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1').replace(/(\.\d\d).+/, '$1'); paint(); };
+      amt.oninput = () => {
+        all = false; const neg = /-/.test(amt.value);
+        amt.value = neg ? '' : amt.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1').replace(/(\.\d\d).+/, '$1'); paint();
+        if (neg) { prev.className = 'avail bad'; prev.textContent = 'Amounts can’t be negative.'; }
+      };
       $$('[data-v]', el).forEach((b) => (b.onclick = () => { all = b.dataset.v === 'max'; amt.value = (all ? Math.round(st.from.value * 100) / 100 : Math.floor(st.from.value / 2 * 100) / 100).toFixed(2); paint(); if (all) prev.textContent = `All of it: ${fmtQty(st.from.qty, st.from.symbol)} → about ${fmtQty(st.from.value / st.to.price, st.to.symbol)}`; }));
       paint(); amt.focus();
       go.onclick = async () => {

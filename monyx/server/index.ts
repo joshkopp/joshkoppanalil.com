@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
       return json({ users: (data || []).map(pub) });
     }
     if (path === "/resolve") {
-      if (!(await me(req))) return json({ users: {} });
+      if (!(await me(req))) return fail("Log in to look up accounts.", 401, "unauthorized");
       const list = (url.searchParams.get("a") || "").split(",").filter((a) => B58.test(a)).slice(0, 60);
       if (!list.length) return json({ users: {} });
       const { data } = await db.from("monyx_users").select(PUBLIC).in("address", list);

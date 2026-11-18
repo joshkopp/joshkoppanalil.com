@@ -75,8 +75,17 @@ function transferIx(owner: PublicKey, to: PublicKey, units: number) {
   ] });
 }
 const memoIx = (text: string) => new TransactionInstruction({ programId: MEMO, keys: [], data: Buffer.from(text.slice(0, 80), "utf8") });
+// A missing token account really is $0. Anything else (a rate limit, a network
+// blip) is retried, so a busy RPC never reports an empty balance by mistake.
 async function usdcOf(owner: PublicKey) {
-  try { return Number((await conn.getTokenAccountBalance(ata(owner))).value.amount); } catch { return 0; }
+  for (let i = 0; ; i++) {
+    try { return Number((await conn.getTokenAccountBalance(ata(owner))).value.amount); }
+    catch (e: any) {
+      if (/could not find account|Invalid param/i.test(String(e?.message || e))) return 0;
+      if (i >= 3) throw e;
+      await new Promise((r) => setTimeout(r, 400 * 2 ** i));
+    }
+  }
 }
 // Wait for a transaction. Rate limits and network blips are retried with
 // backoff; only a real on-chain failure or a long timeout counts as failure.
