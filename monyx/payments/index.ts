@@ -133,8 +133,19 @@ async function bankSends(to: string, units: number, note: string) {
   }
   return sig;
 }
-async function logPayment(sig: string, from: string | null, to: string, units: number, note: string, source: string) {
-  await db.from("monyx_payments").upsert({ sig, from_addr: from, to_addr: to, units, note: note || null, source }, { onConflict: "sig", ignoreDuplicates: true });
+// Every payment Monyx knows about lands here once, keyed by signature (repeat deliveries are ignored).
+// A new USDC payment also settles a matching open request or split share automatically.
+async function logPayment(sig: string, from: string | null, to: string, units: number, note: string, source: string, token = "USDC", slot: number | null = null) {
+  const { data } = await db.from("monyx_payments").upsert({ sig, from_addr: from, to_addr: to, units, note: note || null, source, token, slot }, { onConflict: "sig", ignoreDuplicates: true }).select("sig");
+  if (data?.length && token === "USDC" && from) await settleRequest(from, to, units, sig).catch((e) => console.error("[monyx-pay] settle:", e));
+}
+async function settleRequest(payerAddr: string, requesterAddr: string, units: number, sig: string) {
+  const { data: ppl } = await db.from("monyx_users").select("id, address").in("address", [payerAddr, requesterAddr]);
+  const payer = ppl?.find((p: any) => p.address === payerAddr), requester = ppl?.find((p: any) => p.address === requesterAddr);
+  if (!payer || !requester) return;
+  const { data: open } = await db.from("monyx_requests").select("id, usd").eq("from_user", requester.id).eq("to_user", payer.id).eq("status", "open").order("created_at").limit(10);
+  const hit = (open || []).find((r: any) => Math.round(Number(r.usd) * U) === units);
+  if (hit) await db.from("monyx_requests").update({ status: "paid", paid_sig: sig, updated_at: new Date().toISOString() }).eq("id", hit.id).eq("status", "open");
 }
 
 // ---------- relay: check, co-sign as fee payer, send ----------
@@ -248,6 +259,58 @@ async function names(addrs: string[]) {
 const dollars = (units: number) => Math.round(units / 10_000) / 100;
 
 // Streams payloads: find every transaction, and for each one work out who got USDC.
+// Payment events from one transaction: USDC from token balances, SOL from lamport balances.
+// Accepts both the compact shape filter.js returns and a raw Solana block transaction.
+type PayEvent = { signature: string; slot: number | null; time: number | null; from_wallet: string | null; to_wallet: string; amount: number; token: "SOL" | "USDC"; memo: string };
+function paymentEvents(t: any): PayEvent[] {
+  const tx = t.transaction ? t : null;
+  const sig = t.signature || tx?.transaction?.signatures?.[0];
+  if (!sig) return [];
+  const meta = tx ? tx.meta : t;
+  if (meta?.err) return [];
+  const keys: string[] = (t.accountKeys || tx?.transaction?.message?.accountKeys || []).map((k: any) => (typeof k === "string" ? k : k.pubkey));
+  const memo = String(t.memo ?? ((meta?.logMessages || []).map((l: string) => l.match(/Memo \(len \d+\): "(.*)"$/)).find(Boolean)?.[1] ?? "")).slice(0, 80);
+  const slot = t.slot ?? tx?.slot ?? null, time = t.blockTime ?? tx?.blockTime ?? null;
+  const out: PayEvent[] = [];
+  const tok = new Map<string, number>();
+  for (const [list, sign] of [[meta?.preTokenBalances, -1], [meta?.postTokenBalances, 1]] as const)
+    for (const b of list || []) if (b.mint === USDC.toBase58() && b.owner) tok.set(b.owner, (tok.get(b.owner) || 0) + sign * Number(b.uiTokenAmount?.amount || 0));
+  const tFrom = [...tok.entries()].sort((a, b) => a[1] - b[1])[0];
+  for (const [owner, d] of tok) if (d > 0) out.push({ signature: sig, slot, time, from_wallet: tFrom && tFrom[1] < 0 ? tFrom[0] : null, to_wallet: owner, amount: d, token: "USDC", memo });
+  const pre: number[] = meta?.preBalances || [], post: number[] = meta?.postBalances || [];
+  const sol = keys.map((k, i) => [k, (post[i] ?? 0) - (pre[i] ?? 0)] as [string, number]);
+  const sFrom = [...sol].sort((a, b) => a[1] - b[1])[0];
+  // Ignore dust (rent for new token accounts and the like): a real SOL payment is at least 0.001 SOL.
+  for (const [k, d] of sol) if (d >= 1_000_000 && !tok.has(k)) out.push({ signature: sig, slot, time, from_wallet: sFrom && sFrom[1] < 0 ? sFrom[0] : null, to_wallet: k, amount: d, token: "SOL", memo });
+  return out;
+}
+const hexOf = (b: ArrayBuffer) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
+async function qnSignatureOk(req: Request, body: string) {
+  const token = Deno.env.get("QN_STREAM_TOKEN"); if (!token) return false;
+  const nonce = req.headers.get("x-qn-nonce") || "", ts = req.headers.get("x-qn-timestamp") || "", given = (req.headers.get("x-qn-signature") || "").toLowerCase();
+  if (!nonce || !ts || !given) return false;
+  const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(token), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const want = hexOf(await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(nonce + ts + body)));
+  if (want.length !== given.length) return false;
+  let diff = 0; for (let i = 0; i < want.length; i++) diff |= want.charCodeAt(i) ^ given.charCodeAt(i);
+  return diff === 0;
+}
+// Add a wallet to the QuickNode Key-Value list the Stream filter watches.
+const QN_LIST = "monyx_wallets";
+async function kvAddWallet(address: string) {
+  const key = Deno.env.get("QN_API_KEY"); if (!key) return false;
+  const h = { "content-type": "application/json", accept: "application/json", "x-api-key": key };
+  let r = await fetch(`https://api.quicknode.com/kv/rest/v1/lists/${QN_LIST}/items`, { method: "POST", headers: h, body: JSON.stringify({ item: address }) });
+  if (r.status === 404) r = await fetch("https://api.quicknode.com/kv/rest/v1/lists", { method: "POST", headers: h, body: JSON.stringify({ key: QN_LIST, items: [address] }) });
+  if (!r.ok) console.error("[monyx-pay] kv add:", r.status, (await r.text()).slice(0, 200));
+  return r.ok;
+}
+// Short-lived ticket for the event stream (EventSource can't send an Authorization header).
+async function hmacB64(t: string) {
+  const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(t))))).replace(/[+/=]/g, (c) => ({ "+": "-", "/": "_", "=": "" } as any)[c]);
+}
+const REMIND_HOURS = Number(Deno.env.get("MONYX_REMIND_HOURS")) || 24;
 function streamTxs(node: any, out: any[] = [], depth = 0): any[] {
   if (!node || typeof node !== "object" || depth > 6) return out;
   if (node.meta && node.transaction) { out.push(node); return out; }
@@ -270,7 +333,16 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^.*?\/monyx-pay(?=\/|$)/, "") || "/";
   const ip = (req.headers.get("x-forwarded-for") || "?").split(",")[0].trim();
-  const raw = req.method === "POST" ? await req.text() : "";
+  // Streams may gzip its webhook body; signatures are computed over the decompressed text.
+  let raw = "";
+  if (req.method === "POST") {
+    let bytes = new Uint8Array(await req.arrayBuffer());
+    if (/gzip/i.test(req.headers.get("content-encoding") || "") || (bytes[0] === 0x1f && bytes[1] === 0x8b)) {
+      try { bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer()); }
+      catch { return fail("Couldn't read that body.", 400); }
+    }
+    raw = new TextDecoder().decode(bytes);
+  }
   let body: any = {}; try { body = raw ? JSON.parse(raw) : {}; } catch { /* */ }
   try {
     // ----- public -----
@@ -316,19 +388,88 @@ Deno.serve(async (req) => {
       const { data: from } = await db.from("monyx_users").select(PUBLIC).eq("id", c.from_user).single();
       return json({ from: pub(from), usd: dollars(c.units), note: c.note, status: c.status });
     }
-    if (path === "/streams" && req.method === "POST") {
-      // QuickNode Streams webhook. Configure the destination URL with ?key=<QN_STREAMS_KEY>.
+    if ((path === "/streams" || path === "/qn/webhook") && req.method === "POST") {
+      // QuickNode Streams webhook. With QN_STREAM_TOKEN set, every delivery must carry a valid
+      // X-QN-Signature (HMAC-SHA256 of nonce + timestamp + body). The older ?key= check is only
+      // accepted while no token is configured.
+      const hasToken = !!Deno.env.get("QN_STREAM_TOKEN");
+      const okSig = hasToken ? await qnSignatureOk(req, raw) : false;
       const want = Deno.env.get("QN_STREAMS_KEY");
-      if (!want || url.searchParams.get("key") !== want) return fail("Not allowed.", 401, "unauthorized");
-      const txs = streamTxs(body);
-      const moves = txs.map(usdcMoves).filter((m) => m.sig);
-      const receivers = [...new Set(moves.flatMap((m) => [...m.delta.entries()].filter(([, d]) => d > 0).map(([o]) => o)))];
-      if (!receivers.length) return json({ ok: true, seen: txs.length, saved: 0 });
-      const { data: known } = await db.from("monyx_users").select("address").in("address", receivers);
+      if (!okSig && (hasToken || !want || url.searchParams.get("key") !== want)) return fail("Not allowed.", 401, "unauthorized");
+      // filter.js sends { matches: [...] }; without a filter Streams sends raw blocks.
+      const txs = Array.isArray(body?.matches) ? body.matches : Array.isArray(body?.data?.matches) ? body.data.matches : streamTxs(body);
+      const events = txs.flatMap(paymentEvents);
+      const wallets = [...new Set(events.flatMap((e) => [e.to_wallet, e.from_wallet]).filter(Boolean))] as string[];
+      if (!wallets.length) return json({ ok: true, seen: txs.length, saved: 0 });
+      const { data: known } = await db.from("monyx_users").select("address").in("address", wallets);
       const users = new Set((known || []).map((u: any) => u.address));
+      try { users.add((await bank()).publicKey.toBase58()); } catch { /* */ }
       let saved = 0;
-      for (const m of moves) for (const [owner, d] of m.delta) if (d > 0 && users.has(owner)) { await logPayment(m.sig, m.from, owner, d, m.note, "streams"); saved++; }
-      return json({ ok: true, seen: txs.length, saved });
+      for (const e of events) if (users.has(e.to_wallet) || (e.from_wallet && users.has(e.from_wallet))) {
+        await logPayment(e.signature, e.from_wallet, e.to_wallet, e.amount, e.memo, "streams", e.token, e.slot); saved++;
+      }
+      return json({ ok: true, seen: txs.length, events: events.length, saved });
+    }
+
+    // ----- live events (Server-Sent Events) -----
+    // The app opens /events?t=<ticket>. New payments (from the relay and from QuickNode Streams),
+    // requests that got paid and reminders for unpaid ones are pushed as they land. The connection
+    // ends after ~2 minutes and EventSource reconnects on its own, resuming from Last-Event-ID.
+    if (path === "/events" && req.method === "GET") {
+      const [b64, mac] = String(url.searchParams.get("t") || "").split(".");
+      let tk: any = null;
+      try { if (mac && mac === (await hmacB64(b64))) tk = JSON.parse(atob(b64)); } catch { /* */ }
+      if (!tk || tk.exp < Date.now()) return fail("Please sign in again.", 401, "unauthorized");
+      const me = tk.a as string, uid = tk.u as string;
+      let since = Number(req.headers.get("last-event-id")) || Number(url.searchParams.get("since")) || Date.now() - 5000;
+      const enc = new TextEncoder(), known = new Map<string, any>(), sentPaid = new Set<string>();
+      const who = async (addrs: string[]) => {
+        const need = addrs.filter((a) => a && !known.has(a));
+        if (need.length) { const m = await names(need); for (const a of need) known.set(a, m.get(a) || null); }
+      };
+      const body_ = new ReadableStream({
+        async start(ctrl) {
+          const send = (event: string, data: unknown, id?: number) => ctrl.enqueue(enc.encode(`${id ? `id: ${id}\n` : ""}event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+          ctrl.enqueue(enc.encode("retry: 2000\n\n"));
+          const t0 = Date.now(); let tick = 0;
+          try {
+            while (!req.signal.aborted && Date.now() - t0 < 120_000) {
+              const { data: pays } = await db.from("monyx_payments").select("sig, from_addr, to_addr, units, note, source, token, created_at")
+                .or(`to_addr.eq.${me},from_addr.eq.${me}`).gt("created_at", new Date(since).toISOString()).order("created_at").limit(25);
+              if (pays?.length) {
+                await who(pays.flatMap((p: any) => [p.from_addr, p.to_addr]));
+                for (const p of pays) {
+                  const at = Date.parse(p.created_at); since = Math.max(since, at);
+                  const incoming = p.to_addr === me;
+                  send("payment", { sig: p.sig, direction: incoming ? "in" : "out", from: p.from_addr, to: p.to_addr, amount: p.token === "SOL" ? p.units / 1e9 : dollars(p.units), token: p.token, note: p.note, via: p.source, at, person: known.get(incoming ? p.from_addr : p.to_addr) || null }, at);
+                }
+              }
+              if (tick % 4 === 0) {
+                // Requests you made that just got paid (settled automatically from the payment).
+                const { data: paid } = await db.from("monyx_requests").select("id, to_user, usd, note, updated_at").eq("from_user", uid).eq("status", "paid").gt("updated_at", new Date(Date.now() - 15_000).toISOString());
+                for (const r of paid || []) {
+                  if (sentPaid.has(r.id)) continue; sentPaid.add(r.id);
+                  const { data: u } = await db.from("monyx_users").select(PUBLIC).eq("id", r.to_user).single();
+                  send("request_paid", { id: r.id, usd: Number(r.usd), note: r.note, by: pub(u) });
+                }
+                // Reminders: requests waiting on you for more than REMIND_HOURS, sent once.
+                const { data: due } = await db.from("monyx_requests").select("id, from_user, usd, note, created_at").eq("to_user", uid).eq("status", "open").is("reminded_at", null).lt("created_at", new Date(Date.now() - REMIND_HOURS * 3600_000).toISOString()).limit(5);
+                for (const r of due || []) {
+                  const { data: claimed } = await db.from("monyx_requests").update({ reminded_at: new Date().toISOString() }).eq("id", r.id).is("reminded_at", null).select("id");
+                  if (!claimed?.length) continue;
+                  const { data: u } = await db.from("monyx_users").select(PUBLIC).eq("id", r.from_user).single();
+                  send("reminder", { id: r.id, usd: Number(r.usd), note: r.note, from: pub(u), since: r.created_at });
+                }
+              }
+              if (tick % 10 === 0) ctrl.enqueue(enc.encode(": still here\n\n"));
+              tick++;
+              await new Promise((r) => setTimeout(r, 1500));
+            }
+          } catch (e) { console.error("[monyx-pay] events:", e); }
+          try { ctrl.close(); } catch { /* */ }
+        },
+      });
+      return new Response(body_, { headers: { ...cors, "content-type": "text/event-stream", "cache-control": "no-cache, no-transform", "x-accel-buffering": "no" } });
     }
 
     // ----- relay: anyone with a valid signed USDC transfer (users and claim links) -----
@@ -397,7 +538,7 @@ Deno.serve(async (req) => {
       }
       if (path === "/agent/activity") {
         const n = Math.min(50, Math.max(1, Number(url.searchParams.get("limit")) || 20));
-        const { data } = await db.from("monyx_payments").select("*").or(`from_addr.eq.${u.address},to_addr.eq.${u.address}`).order("created_at", { ascending: false }).limit(n);
+        const { data } = await db.from("monyx_payments").select("*").or(`from_addr.eq.${u.address},to_addr.eq.${u.address}`).eq("token", "USDC").order("created_at", { ascending: false }).limit(n);
         const who = await names((data || []).flatMap((p: any) => [p.from_addr, p.to_addr]));
         return json({ payments: (data || []).map((p: any) => {
           const incoming = p.to_addr === u.address; const other = who.get(incoming ? p.from_addr : p.to_addr);
@@ -460,6 +601,26 @@ Deno.serve(async (req) => {
     const user = await sessionUser(req);
     if (!user) return fail("Please sign in again.", 401, "unauthorized");
 
+    if (path === "/events/ticket" && req.method === "POST") {
+      // Make sure QuickNode's filter is watching this wallet (once per account).
+      if (!user.kv_synced && (await kvAddWallet(user.address).catch(() => false))) await db.from("monyx_users").update({ kv_synced: true }).eq("id", user.id);
+      // Read-only ticket for your own event stream; reconnects reuse it, so it lasts a few hours.
+      const b64 = btoa(JSON.stringify({ u: user.id, a: user.address, exp: Date.now() + 6 * 3600_000 }));
+      return json({ ticket: `${b64}.${await hmacB64(b64)}` });
+    }
+    // Payment history from Monyx's own log (fed by the relay and QuickNode Streams), newest first.
+    if (path === "/activity" && req.method === "GET") {
+      const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit")) || 40));
+      let q = db.from("monyx_payments").select("sig, from_addr, to_addr, units, note, source, token, created_at").or(`to_addr.eq.${user.address},from_addr.eq.${user.address}`).order("created_at", { ascending: false }).limit(limit);
+      const before = url.searchParams.get("before"); if (before) q = q.lt("created_at", before);
+      const { data, error } = await q;
+      if (error) return oops("activity", error);
+      const ppl = await names((data || []).flatMap((p: any) => [p.from_addr, p.to_addr]));
+      return json({
+        payments: (data || []).map((p: any) => ({ sig: p.sig, from: p.from_addr, to: p.to_addr, units: Number(p.units), token: p.token, note: p.note, via: p.source, at: Date.parse(p.created_at) })),
+        people: Object.fromEntries([...ppl.entries()]),
+      });
+    }
     // Has this user paid that address before, from any device? Feeds the send-time risk check.
     if (path === "/paidto") {
       const a = url.searchParams.get("a") || "";
@@ -492,7 +653,7 @@ Deno.serve(async (req) => {
     }
     if (path === "/inbox") {
       const since = new Date(Number(url.searchParams.get("since")) || Date.now() - 15 * 60_000).toISOString();
-      const { data } = await db.from("monyx_payments").select("sig, from_addr, units, note, source, created_at").eq("to_addr", user.address).gt("created_at", since).order("created_at", { ascending: true }).limit(20);
+      const { data } = await db.from("monyx_payments").select("sig, from_addr, units, note, source, created_at").eq("to_addr", user.address).eq("token", "USDC").gt("created_at", since).order("created_at", { ascending: true }).limit(20);
       return json({ payments: (data || []).map((p: any) => ({ sig: p.sig, from: p.from_addr, usd: dollars(p.units), note: p.note, via: p.source, at: Date.parse(p.created_at) })), now: Date.now() });
     }
 

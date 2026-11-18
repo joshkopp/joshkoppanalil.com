@@ -263,6 +263,23 @@
     const cacheKey = `monyx.usdcfeed.${me}`;
     if (S.feedOwner !== me) { S.feed = []; S.feedOwner = me; } // never show another account's history
     if (!S.feed.length) S.feed = store.get(cacheKey, []);
+    // Monyx's own payment log first (fed by the relay and QuickNode Streams): one request, no Solana reads.
+    try {
+      const r = await api(`${PAPI}/activity?limit=40`);
+      if (!S.acct || S.acct.address !== me) return;
+      const rows = (r.payments || []).filter((p) => p.token !== 'SOL');
+      if (rows.length) {
+        for (const [a, u] of Object.entries(r.people || {})) if (u) S.people[a] = { ...u, address: a };
+        const fresh = rows.filter((p) => !S.feed.some((f) => f.sig === p.sig));
+        S.feed = rows.map((p) => ({ sig: p.sig, time: Math.floor(p.at / 1000), ok: true, with: p.to === me ? p.from : p.to, note: p.note || '', amount: p.to === me ? p.units : -p.units }));
+        store.set(cacheKey, S.feed);
+        notePaid(S.feed.filter((f) => f.amount < 0).map((f) => f.with));
+        await resolvePeople(S.feed.map((f) => f.with).filter((a) => a && !S.people[a]));
+        paintFeed(); paintPeople();
+        announceFeed(S.feed.filter((f) => fresh.some((p) => p.sig === f.sig)));
+        return;
+      }
+    } catch (e) { if (e.status === 401) return relogin(); }
     try {
       const sigs = await rpc('getSignaturesForAddress', [ataOf(me).toBase58(), { limit: 25 }]);
       const known = new Map(S.feed.map((f) => [f.sig, f]));
@@ -419,6 +436,7 @@
   // so switching accounts on a device never shows the last person's balance, history or requests.
   function clearAccountState(address) {
     if (address) { store.del(`monyx.usdcfeed.${address}`); store.del(`monyx.feed.${address}`); store.del(`monyx.paidTo.${address}`); }
+    stopLive(); S.liveFor = null;
     S.feed = []; S.cash = null; S.port = null; S.people = S.people || {};
     S.requests = { incoming: [], outgoing: [] }; S.drafts = []; S.lastMs = null;
     store.del('monyx.feed'); store.del('monyx.pending.sig');
@@ -2383,8 +2401,54 @@
      outside, show up in the inbox within a few seconds. */
   const announced = new Set();
   let inboxPrimed = false;
+  /* Live events: one EventSource to monyx-pay /events. The server pushes each payment the moment
+     it's logged (from the relay, or from QuickNode Streams for money arriving from outside Monyx),
+     plus requests that got paid and reminders. The 4-second inbox poll below only runs while the
+     live connection is down. */
+  const liveOpen = () => !!(S.live && S.live.readyState === 1);
+  function stopLive() { if (S.live) { S.live.close(); S.live = null; } clearTimeout(S.liveRetry); S.liveRetry = null; }
+  async function startLive() {
+    if (!window.EventSource || !S.acct || !S.acct.token || S.liveFor === S.acct.address && S.live && S.live.readyState !== 2) return;
+    stopLive(); S.liveFor = S.acct.address;
+    let t;
+    try { t = await api(`${PAPI}/events/ticket`, { method: 'POST' }); } catch (e) { if (e.status === 401) return relogin(); S.liveRetry = setTimeout(() => { S.liveRetry = null; startLive(); }, 15000); return; }
+    const es = new EventSource(`${PAPI}/events?t=${encodeURIComponent(t.ticket)}&since=${Date.now() - 2000}`);
+    S.live = es;
+    es.addEventListener('payment', (ev) => onLivePayment(JSON.parse(ev.data)));
+    es.addEventListener('request_paid', (ev) => {
+      const r = JSON.parse(ev.data); if (announced.has('rq' + r.id)) return; announced.add('rq' + r.id);
+      const n = r.by ? first(r.by) : 'Someone';
+      toast(`<b>${esc(n)}</b> paid your <b>${money(r.usd)}</b> request${r.note ? ` · ${esc(r.note)}` : ''}`, false, 5000);
+      if (S.voice.announce) say(`${n} paid your ${spoken(r.usd)} request${r.note ? ` for ${plainNote(r.note)}` : ''}.`);
+      loadRequests();
+    });
+    es.addEventListener('reminder', (ev) => {
+      const r = JSON.parse(ev.data); if (announced.has('rm' + r.id)) return; announced.add('rm' + r.id);
+      const n = r.from ? first(r.from) : 'Someone';
+      toast(`Reminder: <b>${esc(n)}</b> asked you for <b>${money(r.usd)}</b>${r.note ? ` · ${esc(r.note)}` : ''}. <a href="#activity">Pay it</a>`, false, 8000);
+      if (S.voice.announce) say(`Reminder: ${n} is still waiting on ${spoken(r.usd)}${r.note ? ` for ${plainNote(r.note)}` : ''}.`);
+      loadRequests();
+    });
+    // EventSource reconnects by itself; a closed stream (expired ticket, sign-out) gets a fresh ticket.
+    es.onerror = () => { if (es.readyState === 2 && S.live === es) { S.live = null; S.liveFor = null; S.liveRetry = setTimeout(() => { S.liveRetry = null; startLive(); }, 5000); } };
+  }
+  async function onLivePayment(p) {
+    if (announced.has(p.sig)) return; announced.add(p.sig);
+    const other = p.direction === 'in' ? p.from : p.to;
+    if (p.person && other) S.people[other] = { ...p.person, address: other };
+    refreshBalance();
+    if ($('#feed')) loadFeed();
+    if (p.direction !== 'in' || (p.person && p.person.bank)) return; // your own sends and Monyx payouts stay quiet
+    if (!p.person && other) await resolvePeople([other]);
+    const who_ = S.people[other]; const n = who_ && !who_.unknown ? first(who_) : 'Someone';
+    const amt = p.token === 'SOL' ? `${(+p.amount).toLocaleString('en-US', { maximumFractionDigits: 4 })} SOL` : money(p.amount);
+    const said = p.token === 'SOL' ? `${(+p.amount).toLocaleString('en-US', { maximumFractionDigits: 4 })} SOL` : spoken(p.amount);
+    toast(`<b>${esc(n)}</b> paid you <b>${amt}</b>${p.note ? ` · ${esc(p.note)}` : ''}`, false, 5000);
+    if (S.voice.announce) say(`${n} paid you ${said}${p.note ? ` for ${plainNote(p.note)}` : ''}.`);
+  }
   async function pollInbox() {
     if (!S.acct || !S.acct.token || document.hidden) return;
+    if (liveOpen()) { inboxPrimed = true; S.inboxAt = Date.now() - 2000; return; } // live stream has it covered
     try {
       const r = await api(`${PAPI}/inbox?since=${S.inboxAt}`);
       const fresh = r.payments.filter((p) => !announced.has(p.sig));
@@ -2808,6 +2872,7 @@
       return knownUser() || savedPk() ? screenLogin() : screenWelcome(); // returning → Welcome back, first visit → fresh welcome
     }
     if (S.acct.user) store.set('monyx.known', vaultUser(S.acct.user));
+    if (!liveOpen() && S.liveFor !== S.acct.address) startLive();
     if (view === 'pay' && !a) return screenPad();
     if (view === 'send') return screenPay({ amount: amtCheck(a).n > 0 ? a : '', mode: b === 'r' ? 'request' : 'pay', fromPad: true });
     if (view === 'pay') return screenPay({ to: a, amount: amtCheck(b).n > 0 ? amtCheck(b).n.toFixed(2).replace(/\.00$/, '') : '', note: c ? decodeURIComponent(c) : '' });
@@ -2839,6 +2904,7 @@
     route();
     setInterval(() => { if (S.acct && S.acct.token && !document.hidden) { refreshBalance(); if ($('#feed')) { loadFeed(); loadRequests(); loadDrafts(); } } }, 20000);
     setInterval(pollInbox, 4000); pollInbox();
+    setInterval(() => { if (S.acct && S.acct.token && !isLocked() && !liveOpen() && !S.liveRetry) startLive(); }, 10000);
     setInterval(() => { if ($('#feed') && !document.hidden) paintFeed(); }, 60000); // keep "Just now" honest
     loadMarkets();
     checkVoice();
