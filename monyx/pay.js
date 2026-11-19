@@ -37,7 +37,7 @@
     let t = String(raw || '').replace(/[\s\u200b-\u200d\ufeff]/g, '');
     // A minus anywhere is "negative", whatever else is wrong; a leading $ is fine ("$1,000" is $1,000).
     if (MINUS.test(t)) return { n: NaN, err: 'Amounts can’t be negative.' };
-    t = t.replace(/^\$/, '');
+    t = t.replace(/^(?:US)?[$＄]|[$＄]$|USD$/i, ''); // $1,000 · 1,000$ · ＄1,000 · US$1,000 · 1,000USD
     // A comma only counts as a thousands separator ("1,000" or "1,250.50"). Anything else is
     // rejected rather than guessed, so "1,000" can never become $1.00.
     if (t.includes(',')) { if (!/^\d{1,3}(,\d{3})+(\.\d*)?$/.test(t)) return { n: NaN, err: 'Use numbers only, like 1000 or 12.50.' }; t = t.replace(/,/g, ''); }
@@ -364,7 +364,12 @@
   }
   function syncPeople() {
     const a = S.acct && S.acct.address;
-    if (a && S.peopleFor !== a) { S.people = mine.get('monyx.people', {}); S.peopleFor = a; rememberLinkPeople(); }
+    if (a && S.peopleFor !== a) {
+      // New account on this page: its own saved names, and none of the last account's lookups or link labels.
+      S.people = mine.get('monyx.people', {}); S.peopleFor = a; S.askedUnknown = new Set();
+      if (S.linkLabelsFor !== a) { S.linkLabels = {}; S.linkLabelsFor = a; setTimeout(loadLinkLabels, 0); }
+      rememberLinkPeople();
+    }
   }
   async function resolvePeople(addresses) {
     if (store.get('monyx.peopleV') !== 3) { store.del('monyx.people'); store.del('monyx.peopleAt'); store.set('monyx.peopleV', 3); }
@@ -374,11 +379,12 @@
     const fresh = Date.now() - mine.get('monyx.peopleAt', 0) < 600_000;
     S.askedUnknown = S.askedUnknown || new Set(); // an address saved as "unknown" is asked about again once per page load
     const need = [...new Set(addresses)].filter((a) => a !== b && !(S.people[a] && S.people[a].link) && (!fresh || !S.people[a] || (S.people[a].unknown && !S.askedUnknown.has(a))));
-    need.forEach((a) => S.askedUnknown.add(a));
     if (!need.length) return;
-    if (!fresh) mine.set('monyx.peopleAt', Date.now());
     try {
       const { users } = await api(`/resolve?a=${need.join(',')}`);
+      // Only a lookup that actually answered counts; a failed one is tried again next time.
+      need.forEach((a) => S.askedUnknown.add(a));
+      if (!fresh) mine.set('monyx.peopleAt', Date.now());
       for (const a of need) S.people[a] = users[a] || { address: a, unknown: true };
       if (b) S.people[b] = { handle: 'monyx', name: 'Monyx', address: b, bank: true }; // the treasury label is never overwritten
       mine.set('monyx.people', S.people);
@@ -428,6 +434,18 @@
     const y = new Date(now); y.setDate(now.getDate() - 1);
     if (d.toDateString() === y.toDateString()) return 'Yesterday';
     return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
+  // "You got paid" style alerts. If the window is hidden, the alert waits and shows when you come back,
+  // so a payment that lands in the background isn't missed. Voice (if on) still speaks right away.
+  const missedAlerts = [];
+  function alertMe(html, ms = 5000) {
+    if (document.hidden) { missedAlerts.push(html); return; }
+    toast(html, false, ms);
+  }
+  function showMissedAlerts() {
+    if (!missedAlerts.length || document.hidden) return;
+    const all = missedAlerts.splice(0), extra = all.length - 3;
+    toast(all.slice(-3).join('<br>') + (extra > 0 ? `<br>and ${extra} more in Activity` : ''), false, 4000 + 1500 * Math.min(3, all.length));
   }
   let toastT;
   function toast(html, bad = false, ms = 3200) {
@@ -491,6 +509,7 @@
     if (address) { store.del(`monyx.usdcfeed.${address}`); store.del(`monyx.feed.${address}`); store.del(`monyx.paidTo.${address}`); }
     stopLive(); S.liveFor = null; S.liveSince = null;
     S.feed = []; S.cash = null; S.port = null; S.people = {}; S.peopleFor = null;
+    S.linkLabels = {}; S.linkLabelsFor = null; S.linkLabelsLoaded = null; S.askedUnknown = new Set(); missedAlerts.length = 0; // nothing from the last account carries over
     S.requests = { incoming: [], outgoing: [] }; S.drafts = []; S.lastMs = null; S.feedReady = null;
     store.del('monyx.feed'); store.del('monyx.pending.sig');
   }
@@ -1660,6 +1679,7 @@
         if (forget) vault.del(); else { const v = vault.get(); if (v) { v.user = vaultUser(S.acct.user); vault.set(v); } }
         S.secretMem = null;
         S.acct = null; S.kp = null; S.feed = []; S.cash = null; S.requests = { incoming: [], outgoing: [] };
+        S.people = {}; S.peopleFor = null; S.linkLabels = {}; S.linkLabelsFor = null; S.linkLabelsLoaded = null; S.askedUnknown = new Set(); missedAlerts.length = 0;
         close(); location.hash = '';
       };
     });
@@ -1795,7 +1815,7 @@
         if (!u || !u.address) return nope(`No one on Monyx is @${esc(h)}.`);
         v = u.address; who = u.name.split(' ')[0];
       }
-      if (!window.MonyxTrace) { out.innerHTML = '<div class="empty">The tracer didn’t load. Refresh and try again.</div>'; return; }
+      if (!window.MonyxTrace) return nope('The tracer didn’t load. Refresh the page, then try again.');
       MonyxTrace.mount(out, { address: v, who, token: S.acct && S.acct.token });
     };
     $('#trform').onsubmit = (e) => { e.preventDefault(); run(); };
@@ -2389,8 +2409,11 @@
   }
   async function loadLinkLabels() {
     if (!S.acct || !S.acct.token) return;
+    const forAcct = S.acct.address;
     try {
       const { claims } = await api(PAPI + '/claims');
+      if (S.acct?.address !== forAcct) return;
+      if (S.linkLabelsFor !== S.acct.address) return; // switched accounts while this was loading
       S.linkLabels = Object.fromEntries((claims || []).map((c) => [c.escrow, c.label || '']));
       syncPeople(); rememberLinkPeople(); if ($('#feed')) paintFeed();
     } catch { /* labels are a nicety */ }
@@ -2572,12 +2595,17 @@
      plus requests that got paid and reminders. The 4-second inbox poll below only runs while the
      live connection is down. */
   // Open and recently heard from (the server sends a ping every few seconds). A silent stream counts as closed.
-  const liveOpen = () => !!(S.live && S.live.readyState === 1 && Date.now() - (S.liveLast || 0) < 8000);
+  // Open and recently heard from. The server pings every 4.5 s, so 10 s of quiet means polling should help out.
+  const liveOpen = () => !!(S.live && S.live.readyState === 1 && Date.now() - (S.liveLast || 0) < 10000);
+  // Worth keeping: still connecting (for up to 10 s), or open with a ping in the last 14 s (three missed beats).
+  // Only a closed, stuck or silent stream is replaced, so a slow network doesn't burn through tickets.
+  const liveHealthy = () => !!S.live && (S.live.readyState === 0 ? Date.now() - (S.liveStartedAt || 0) < 10000 : S.live.readyState === 1 && Date.now() - (S.liveLast || 0) < 14000);
   function stopLive() { if (S.live) { S.live.close(); S.live = null; } clearTimeout(S.liveRetry); S.liveRetry = null; }
   async function startLive() {
     if (!window.EventSource || !S.acct || !S.acct.token || S.liveFor === S.acct.address && S.live && S.live.readyState !== 2) return;
     if (S.liveStarting) return;
     stopLive(); S.liveFor = S.acct.address; S.liveStarting = true;
+    if (S.linkLabelsLoaded !== S.acct.address) { S.linkLabelsLoaded = S.acct.address; syncPeople(); loadLinkLabels(); } // first live start after a sign-in
     let t;
     try { t = await api(`${PAPI}/events/ticket`, { method: 'POST' }); } catch (e) { S.liveStarting = false; if (e.status === 401) return relogin(); S.liveRetry = setTimeout(() => { S.liveRetry = null; startLive(); }, 15000); return; }
     S.liveStarting = false;
@@ -2585,7 +2613,7 @@
     // the stream (every couple of minutes) it says "bye" and we reopen with a fresh ticket.
     const since = S.liveSince || Date.now() - 2000;
     const es = new EventSource(`${PAPI}/events?t=${encodeURIComponent(t.ticket)}&since=${since}`);
-    S.live = es; S.liveLast = Date.now();
+    S.live = es; S.liveLast = Date.now(); S.liveStartedAt = Date.now();
     es.onopen = () => { S.liveLast = Date.now(); };
     es.addEventListener('ping', () => { S.liveLast = Date.now(); });
     const safe = (fn) => (ev) => { S.liveLast = Date.now(); try { if (ev.lastEventId) S.liveSince = Math.max(S.liveSince || 0, Number(ev.lastEventId) || 0); fn(JSON.parse(ev.data)); } catch (e) { console.warn('[monyx] skipped a live update', e); } };
@@ -2594,14 +2622,14 @@
     es.addEventListener('request_paid', safe((r) => {
       if (announced.has('rq' + r.id)) return; announced.add('rq' + r.id);
       const n = r.by ? first(r.by) : 'Someone';
-      toast(`<b>${esc(n)}</b> paid your <b>${money(r.usd)}</b> request${r.note ? ` · ${esc(r.note)}` : ''}`, false, 5000);
+      alertMe(`<b>${esc(n)}</b> paid your <b>${money(r.usd)}</b> request${r.note ? ` · ${esc(r.note)}` : ''}`);
       if (S.voice.announce) say(`${n} paid your ${spoken(r.usd)} request${r.note ? ` for ${plainNote(r.note)}` : ''}.`);
       loadRequests();
     }));
     es.addEventListener('reminder', safe((r) => {
       if (announced.has('rm' + r.id)) return; announced.add('rm' + r.id);
       const n = r.from ? first(r.from) : 'Someone';
-      toast(`Reminder: <b>${esc(n)}</b> asked you for <b>${money(r.usd)}</b>${r.note ? ` · ${esc(r.note)}` : ''}. <a href="#activity">Pay it</a>`, false, 8000);
+      alertMe(`Reminder: <b>${esc(n)}</b> asked you for <b>${money(r.usd)}</b>${r.note ? ` · ${esc(r.note)}` : ''}. <a href="#activity">Pay it</a>`, 8000);
       if (S.voice.announce) say(`Reminder: ${n} is still waiting on ${spoken(r.usd)}${r.note ? ` for ${plainNote(r.note)}` : ''}.`);
       loadRequests();
     }));
@@ -2619,12 +2647,13 @@
     const who_ = S.people[other]; const n = who_ && !who_.unknown ? first(who_) : 'Someone';
     const amt = p.token === 'SOL' ? `${(+p.amount).toLocaleString('en-US', { maximumFractionDigits: 4 })} SOL` : money(p.amount);
     const said = p.token === 'SOL' ? `${(+p.amount).toLocaleString('en-US', { maximumFractionDigits: 4 })} SOL` : spoken(p.amount);
-    toast(`<b>${esc(n)}</b> paid you <b>${amt}</b>${p.note ? ` · ${esc(p.note)}` : ''}`, false, 5000);
+    alertMe(`<b>${esc(n)}</b> paid you <b>${amt}</b>${p.note ? ` · ${esc(p.note)}` : ''}`);
     if (S.voice.announce) say(`${n} paid you ${said}${p.note ? ` for ${plainNote(p.note)}` : ''}.`);
   }
-  async function pollInbox() {
+  async function pollInbox(catchUp = false) {
     if (!S.acct || !S.acct.token || document.hidden) return;
-    if (liveOpen()) { inboxPrimed = true; S.inboxAt = Math.min(Date.now(), S.liveLast || Date.now()) - 10000; return; } // live stream has it covered; if it dies, polling resumes from just before it went quiet
+    if (catchUp && inboxPrimed) S.inboxAt = Math.min(S.inboxAt || Date.now(), (S.hiddenAt || Date.now()) - 10000);
+    else if (liveOpen()) { inboxPrimed = true; S.inboxAt = Math.min(Date.now(), S.liveLast || Date.now()) - 10000; return; } // live stream has it covered; if it dies, polling resumes from just before it went quiet
     try {
       const r = await api(`${PAPI}/inbox?since=${S.inboxAt}`);
       const fresh = r.payments.filter((p) => !announced.has(p.sig));
@@ -2639,7 +2668,7 @@
         return { html: `<b>${esc(n)}</b> sent you <b>${money(p.usd)}</b>${p.note && !(who_ && who_.bank) ? ` · ${esc(p.note)}` : ''}`, text: `${n} sent you ${spoken(p.usd)}${p.note && !(who_ && who_.bank) ? ` for ${plainNote(p.note)}` : ''}.`, bank: who_ && who_.bank };
       });
       const notable = lines.filter((l) => !l.bank);
-      if (notable.length) { toast(notable.map((l) => l.html).join('<br>'), false, 5000); if (S.voice.announce) say(notable.map((l) => l.text).join(' ')); }
+      if (notable.length) { notable.forEach((l) => alertMe(l.html)); if (S.voice.announce) say(notable.map((l) => l.text).join(' ')); }
       refreshBalance(); if ($('#feed')) loadFeed();
     } catch (e) { if (e.status === 401) relogin(); }
   }
@@ -3082,7 +3111,7 @@
     window.addEventListener('beforeunload', (e) => { if (S.holdKey && S.acct && S.acct.token) { e.preventDefault(); e.returnValue = ''; } });
     store.del('monyx.rpc');
     document.body.dataset.mode = appMode();
-    rememberLinkPeople(); loadLinkLabels();
+    rememberLinkPeople();
     loadInfo();
     // Broken profile photos fall back to initials. (Delegated, so no inline handlers: the CSP forbids them.)
     document.addEventListener('error', (e) => { if (e.target && e.target.matches && e.target.matches('img[data-fallback]')) e.target.remove(); }, true);
@@ -3090,9 +3119,9 @@
     setInterval(() => { if (S.acct && S.acct.token && !document.hidden) { refreshBalance(); if ($('#feed')) { loadFeed(); loadRequests(); loadDrafts(); } } }, 20000);
     setInterval(pollInbox, 3000); pollInbox();
     // Coming back to a background tab: catch up right away instead of waiting for the next timer.
-    document.addEventListener('visibilitychange', () => { if (document.hidden || !S.acct || !S.acct.token) return; if (!liveOpen()) { S.liveFor = null; startLive(); } pollInbox(); refreshBalance(); if ($('#feed')) loadFeed(); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) { S.hiddenAt = Date.now(); return; } if (!S.acct || !S.acct.token) return; showMissedAlerts(); if (!liveHealthy()) { S.liveFor = null; startLive(); } pollInbox(true).then(showMissedAlerts); refreshBalance(); if ($('#feed')) loadFeed(); });
     // Watchdog: reconnect when the live stream is closed or has gone quiet; it resumes from the last payment it saw.
-    setInterval(() => { if (S.acct && S.acct.token && !liveOpen() && !S.liveRetry && !S.liveStarting) { S.liveFor = null; startLive(); } }, 2000);
+    setInterval(() => { if (S.acct && S.acct.token && !liveHealthy() && !S.liveRetry && !S.liveStarting) { S.liveFor = null; startLive(); } }, 3000);
     setInterval(() => { if ($('#feed') && !document.hidden) paintFeed(); }, 60000); // keep "Just now" honest
     setInterval(() => { if ($('#preds') && !document.hidden) loadPredictions().then(paintPredictions).catch(() => {}); }, 60000);
     setInterval(() => { if ($('#gcoins') && !document.hidden) loadPrices().then(paintPrices).catch(() => {}); }, 30000);
