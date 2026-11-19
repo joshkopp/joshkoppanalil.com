@@ -47,11 +47,11 @@
 <h2>Set it up (2 minutes)</h2>
 <ol>
 <li>In Monyx, open <strong>Me → AI assistant</strong>, give it a name and a weekly limit, and tap <strong>Create key</strong>. Copy the key; you'll only see it once.</li>
-<li>Open the Monyx template in Grok Bot and tap <strong>Add to Grok Bot</strong>. To build your own instead, copy the <a href="TEMPLATE.md">template</a> (instructions, routines and approval rules) and add the skill file below.</li>
+<li>Open the Monyx template in Grok Bot and tap <strong>Add to Grok Bot</strong>. To build your own instead, copy the <a href="../grok-bot/TEMPLATE.md">template</a> (instructions, routines and approval rules) and add the skill file below.</li>
 <li>When Grok Bot asks for the <strong>Monyx key</strong> credential, paste the key.</li>
 <li>Say "what's my Monyx balance?" to check it works. Then try "ask Maya for $5 for coffee".</li>
 </ol>
-<div class="btnrow"><a class="primary" href="SKILL.md">Skill file (SKILL.md)</a><a href="TEMPLATE.md">Bot template</a><a href="../app/">Open Monyx</a></div>
+<div class="btnrow"><a class="primary" href="../grok-bot/SKILL.md">Skill file (SKILL.md)</a><a href="../grok-bot/TEMPLATE.md">Bot template</a><a href="../app/">Open Monyx</a></div>
 
 <h2>Why it's safe</h2>
 <ul>
@@ -64,7 +64,7 @@
 <h2>For developers</h2>
 <p>The same API works with any assistant that can make HTTPS calls. Base URL:</p>
 <pre>https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/monyx-pay</pre>
-<p>Send <code>Authorization: Bearer mx_…</code>. Endpoints: <code>GET /agent/me</code>, <code>GET /agent/activity</code>, <code>GET /agent/people?q=</code>, <code>GET|POST /agent/requests</code>, <code>GET|POST /agent/drafts</code>. The <a href="SKILL.md">skill file</a> documents each one.</p>
+<p>Send <code>Authorization: Bearer mx_…</code>. Endpoints: <code>GET /agent/me</code>, <code>GET /agent/activity</code>, <code>GET /agent/people?q=</code>, <code>GET|POST /agent/requests</code>, <code>GET|POST /agent/drafts</code>. The <a href="../grok-bot/SKILL.md">skill file</a> documents each one.</p>
 <pre>curl -X POST $BASE/agent/drafts \
   -H "Authorization: Bearer $MONYX_KEY" -H "Content-Type: application/json" \
   -d '{"to":"@maya","usd":42.5,"note":"🎟️ Concert tickets","reason":"You said you owe Maya"}'</pre>

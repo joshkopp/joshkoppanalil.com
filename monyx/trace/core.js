@@ -172,7 +172,7 @@ function sleep(ms) {
 }
 
 export function makeBudget(max = MAX_RPC) {
-  return { used: 0, max, exhausted: false };
+  return { used: 0, max, exhausted: false, failed: 0 };
 }
 
 export function makeRpc(url, budget, fetchImpl, opts = {}) {
@@ -224,6 +224,8 @@ export function makeRpc(url, budget, fetchImpl, opts = {}) {
       }
       return body.result;
     }
+    // Network trouble (timeouts, 429s, 5xx after retries). Counted so a Normal result is never built on missing data.
+    budget.failed = (budget.failed || 0) + 1;
     throw last || new Error("RPC failed");
   };
 }
@@ -462,6 +464,17 @@ export async function runTrace({ address, rpcUrl, riskList, fetchImpl, limits, n
       truncated,
       note: ADVICE,
       ms: (now || Date.now)() - started,
+    };
+  }
+
+  // No listed wallet found, but some lookups failed: that's "we couldn't finish", not "Normal".
+  if (budget.failed > 0) {
+    return {
+      ok: false,
+      error: "incomplete",
+      message: "Part of the network didn't answer, so we couldn't finish the source check.",
+      rpcCallsUsed: budget.used,
+      note: ADVICE,
     };
   }
 

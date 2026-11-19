@@ -87,7 +87,9 @@ async function prices() {
   const data = Object.entries(COINS).map(([sym, info]) => {
     const row = feed.find((f) => f.pair === sym + "USD");
     if (!row) return null;
-    return { symbol: sym, name: info.name, color: info.color, price: Number(row.price), change24h: Number(row.percentChange24h) * 100, spark: sparkCache!.data[sym] || [], url: `https://exchange.gemini.com/trade/${sym}USD` };
+    // The newest 6-hour candle can be hours old, so the chart always ends on the live price.
+    const price = Number(row.price);
+    return { symbol: sym, name: info.name, color: info.color, price, change24h: Number(row.percentChange24h) * 100, spark: [...(sparkCache!.data[sym] || []), price], url: `https://exchange.gemini.com/trade/${sym}USD` };
   }).filter(Boolean);
   priceCache = { t: Date.now(), data };
   return data;

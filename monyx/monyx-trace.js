@@ -138,6 +138,8 @@
       else sheetEl.appendChild(label);
       box = label.querySelector("#riskok");
     }
+    // The app gates the button itself (it knows about other checks); standalone pages use this simple rule.
+    if (sheetEl.dataset && sheetEl.dataset.gated) return;
     go.disabled = !box.checked;
     box.onchange = () => {
       go.disabled = !box.checked;
@@ -161,7 +163,11 @@
         return result;
       })
       .catch((err) => {
-        el.innerHTML = errorHtml(err && err.message);
+        // Timeouts and dropped connections get a plain sentence, never the browser's raw error text.
+        const plain = err && err.status ? err.message
+          : err && (err.name === "AbortError" || /abort/i.test(String(err.message))) ? "The check took too long to answer."
+          : "The check couldn't reach the network.";
+        el.innerHTML = errorHtml(plain);
         if (opts && typeof opts.onError === "function") opts.onError(err);
         return null;
       });

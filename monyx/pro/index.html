@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Geist:wght@400;500;600;650;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=100">
+<link rel="stylesheet" href="styles.css?v=101">
 <link rel="alternate" type="text/plain" href="../llms.txt" title="Agent instructions">
 </head>
 <body>
@@ -54,12 +54,13 @@
   </header>
 
   <main class="main">
+    <h1 class="sr-only">Monyx developer tools</h1>
 
     <!-- WALLET -->
     <section class="view" id="v-wallet">
       <div class="empty" id="walletEmpty">
         <h2 class="display">A wallet that can see where money goes.</h2>
-        <p class="lede">Monyx developer tools hold devnet SOL, traces any address on mainnet or devnet, and runs a market where software agents pay per API call. Pick a key to start.</p>
+        <p class="lede">These developer tools give you a devnet SOL wallet, trace any address on mainnet or devnet, and run a market where software agents pay per API call. Pick a key to start.</p>
         <div class="choose">
           <button class="pick" id="useBuiltin">
             <b>Create a Monyx key</b>
@@ -114,7 +115,7 @@
     <!-- TRACER -->
     <section class="view" id="v-trace" hidden>
       <form class="query" id="traceForm" autocomplete="off">
-        <input id="traceAddr" spellcheck="false" placeholder="Any Solana address">
+        <input id="traceAddr" spellcheck="false" placeholder="Any Solana address" aria-label="Solana address to trace">
         <div class="seg" id="traceNet"><button type="button" data-net="devnet" class="on">Devnet</button><button type="button" data-net="mainnet">Mainnet</button></div>
         <select id="traceLimit" title="Transactions to scan"><option>15</option><option selected>25</option><option>40</option></select>
         <button class="primary" type="submit">Trace</button>
@@ -180,7 +181,7 @@
           </div>
           <form class="task" id="agentForm" autocomplete="off">
             <label>Task</label>
-            <div class="taskline"><span>Brief me on</span><input id="agentTarget" spellcheck="false" placeholder="address"><div class="seg" id="agentNet"><button type="button" data-net="devnet" class="on">Devnet</button><button type="button" data-net="mainnet">Mainnet</button></div></div>
+            <div class="taskline"><span>Brief me on</span><input id="agentTarget" spellcheck="false" placeholder="address" aria-label="Address for the agent to brief you on"><div class="seg" id="agentNet"><button type="button" data-net="devnet" class="on">Devnet</button><button type="button" data-net="mainnet">Mainnet</button></div></div>
             <button class="primary" type="submit" id="agentRun">Run agent</button>
           </form>
           <ol class="exchange" id="agentLog"></ol>
@@ -220,7 +221,7 @@
 <script src="../vendor/buffer.js?v=8" defer></script>
 <script src="../vendor/solana-web3.js?v=8" defer></script>
 <script src="../vendor/qrcode.js" defer></script>
-<script src="trace.js?v=2" defer></script>
-<script src="app.js?v=3" defer></script>
+<script src="trace.js?v=3" defer></script>
+<script src="app.js?v=4" defer></script>
 </body>
 </html>

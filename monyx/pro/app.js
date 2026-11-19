@@ -237,7 +237,9 @@
     const limit = +$('#traceLimit').value;
     status(`<span class="spin"></span>Reading ${limit} transactions from ${net}…<div class="progress"><i id="prog" style="width:0"></i></div>`);
     try {
-      const rep = await T.trace(rpcUrl(net), address, limit, (d, n) => { const p = $('#prog'); if (p && n) p.style.width = `${(d / n) * 100}%`; });
+      // Give up after 45 s with a clear message instead of spinning forever on a slow public RPC.
+      let stop; const timeout = new Promise((_, rej) => { stop = setTimeout(() => rej(new Error('The network is slow right now, so the trace stopped after 45 seconds. Try 15 transactions, or set your own RPC.')), 45000); });
+      const rep = await Promise.race([T.trace(rpcUrl(net), address, limit, (d, n) => { const p = $('#prog'); if (p && n) p.style.width = `${(d / n) * 100}%`; }), timeout]).finally(() => clearTimeout(stop));
       rep.network = net; TR.report = rep;
       const rec = store.get('monyx.pro.recent', []).filter((r) => r.a !== address);
       rec.unshift({ a: address, n: net }); store.set('monyx.pro.recent', rec.slice(0, 6));

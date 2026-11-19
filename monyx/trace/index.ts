@@ -143,10 +143,11 @@ Deno.serve(async (req: Request) => {
     });
     if (!result.ok) {
       console.error("[trace] not ok", result.error);
-      const status = result.error === "bad_address" ? 400 : 500;
+      const status = result.error === "bad_address" ? 400 : result.error === "incomplete" ? 503 : 500;
       return json(result, status, origin);
     }
-    cache.set(address, result);
+    // A Normal result that stopped early (call budget) is only kept briefly; a listed match is solid.
+    if (!(result.tier === "Normal" && result.truncated)) cache.set(address, result);
     return json(result, 200, origin);
   } catch (_err) {
     console.error("[trace] failed:", String((_err as any)?.message || _err).replace(/https?:\/\/\S+/g, "<url>"));

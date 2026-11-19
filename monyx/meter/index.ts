@@ -72,7 +72,7 @@ const LABELS: Record<string, string> = {
   "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": "USDC",
   "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB": "USDT",
   "So11111111111111111111111111111111111111112": "Wrapped SOL",
-  [PAY_TO]: "Monyx treasury",
+  [PAY_TO]: "Monyx API treasury",
 };
 const label = (a: string) => LABELS[a] ?? null;
 
@@ -448,13 +448,15 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   const url = new URL(req.url);
   const path = url.pathname.replace(/^.*?\/monyx-market/, "") || "/";
+  // Inside Supabase the request URL is plain http; the public address is always https.
+  const PUBLIC_BASE = `https://${url.host}`;
   try {
     if (path === "/" || path === "/catalog") {
       return json({
         name: "Monyx API Market", version: 1,
         payment: { protocol: "x402-style HTTP 402", network: "solana-devnet", asset: "SOL", payTo: PAY_TO, header: "X-PAYMENT" },
-        base: `${url.origin}/functions/v1/monyx-market/api/`,
-        apis: APIS.map((a) => ({ name: a.name, title: a.title, summary: a.summary, priceLamports: a.lamports, priceSol: a.lamports / 1e9, params: a.params, example: a.example, url: `${url.origin}/functions/v1/monyx-market/api/${a.name}` })),
+        base: `${PUBLIC_BASE}/functions/v1/monyx-market/api/`,
+        apis: APIS.map((a) => ({ name: a.name, title: a.title, summary: a.summary, priceLamports: a.lamports, priceSol: a.lamports / 1e9, params: a.params, example: a.example, url: `${PUBLIC_BASE}/functions/v1/monyx-market/api/${a.name}` })),
       });
     }
     if (path === "/ledger") {
@@ -503,7 +505,7 @@ Deno.serve(async (req) => {
     if ("signature" in api.params && !params.signature) throw new UserError("`signature` is required");
 
     const payment = req.headers.get("x-payment");
-    if (!payment) return await quote(api, params, url.toString());
+    if (!payment) return await quote(api, params, `${PUBLIC_BASE}${url.pathname}${url.search}`);
 
     const s = await settle(api, params, payment.trim());
     if (s.err) return s.err;

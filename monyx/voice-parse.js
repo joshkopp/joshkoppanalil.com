@@ -71,12 +71,15 @@
     let t = ' ' + raw.toLowerCase()
       .replace(/[‘’]/g, "'")
       .replace(/(\d),(\d{3})/g, '$1$2')
+      .replace(/(\d+(?:\.\d+)?)\s?k\b/g, (m, n) => String(Math.round(parseFloat(n) * 1000))) // 1.5k, 2k
+      .replace(/(^|[\s$])\.(\d)/g, '$10.$2') // .50 → 0.50
+      .replace(/([a-z])-([a-z])/g, '$1 $2') // twenty-five → twenty five
       .replace(/\$\s*/g, ' $')
       .replace(/@\s*/g, ' @')
       .replace(/\bunderscore\b/g, '_')
       .replace(/,/g, ' , ')
       .replace(/[^a-z0-9$@_.,'\s-]/g, ' ')
-      .replace(/(\D)\.(\s|$)/g, '$1 ')
+      .replace(/\.(?=\s|$)/g, ' ') // a sentence-ending period never sticks to the amount or the name
       .replace(/\s+/g, ' ') + ' ';
     t = ' ' + wordsToDigits(t.trim().split(' ')).join(' ') + ' ';
     // "monyxtester two 0.25" → "monyxtester2 0.25": a single digit between a name and another number
@@ -93,7 +96,7 @@
     else if (/\b(balance|how much (money )?(do|have) i|how much is in my|how much have i got|what('s| is| do i have) in my (account|wallet))\b/.test(t)) intent = 'balance';
     else if (/\b(who (paid|sent) me|what did i (get|receive)|did (anyone|anybody|someone) (pay|send)|recent (payments|activity|transactions)|read (me )?(my )?(payments|activity|transactions)|my (payments|activity|transactions)|any (new )?(payments|money))\b/.test(t)) intent = 'activity';
     else if (/\bsplit\b/.test(t)) intent = 'split';
-    else if (/\b(request|ask|charge|bill|collect|invoice)\b|\bowes? me\b|\bget (\$?\d|[a-z]+ \$?\d).* from\b/.test(t)) intent = 'request';
+    else if (/\b(request|ask|charge|bill|collect|invoice)\b|\bowes? me\b|\b(get|give me|send me) (\$?\d|[a-z]+ \$?\d).* from\b/.test(t)) intent = 'request';
     else if (/\b(send|pay|give|transfer|venmo|zelle|tip|owe)\b/.test(t)) intent = 'pay';
 
     // ---- amount ----

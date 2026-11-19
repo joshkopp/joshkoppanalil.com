@@ -19,18 +19,19 @@
     'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 'USDC',
     'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 'USDT',
     'So11111111111111111111111111111111111111112': 'Wrapped SOL',
-    '4DJ1z4aUMe4VLg9qxaCHmfNhFKqyCaP7RC6dQBJFQvuw': 'Monyx treasury',
+    '4DJ1z4aUMe4VLg9qxaCHmfNhFKqyCaP7RC6dQBJFQvuw': 'Monyx API treasury',
+    '9JBSMxHPKMDLyUMhwV2NzFNUikNoQfnJj82NyBoPNJRs': 'Monyx bank',
   };
   const label = (a) => PROGRAMS[a] || null;
   const keyStr = (k) => (typeof k === 'string' ? k : k.pubkey);
   const sol = (l) => Math.round(l) / 1e9;
 
-  async function rpc(url, method, params = [], tries = 4, fetchImpl = root.fetch) {
+  async function rpc(url, method, params = [], tries = 3, fetchImpl = root.fetch) {
     let last;
     for (let i = 0; i < tries; i++) {
       let r;
       try {
-        const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 15000);
+        const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 8000);
         r = await fetchImpl(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }), signal: ctl.signal });
         clearTimeout(to);
       } catch (e) { last = e; await sleep(300 * 2 ** i); continue; }

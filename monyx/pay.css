@@ -748,3 +748,20 @@ body[data-mode="basic"] .tabbar { grid-template-columns: repeat(4, 1fr); }
 .steps .adv[open] { padding-bottom: 18px; margin-bottom: 18px; border-bottom: 1px solid var(--line2); }
 .steps .adv .btn + .btn, .steps .adv #go { margin-top: 12px; }
 .steps .foot { gap: 12px; }
+.item.gcoin .gspark { display: grid; justify-items: center; }
+.item.gcoin .gspark small { font-size: 10px; color: var(--faint); margin-top: -2px; }
+/* Long amounts ($9,999.99) keep a margin from the edge on every screen size */
+.padamt[data-len="7"] { --fs: 60px; } .padamt[data-len="8"], .padamt[data-len="9"] { --fs: 54px; }
+@media (min-width: 900px) and (hover: hover) { .padamt[data-len="7"] { --fs: 70px; } .padamt[data-len="8"], .padamt[data-len="9"] { --fs: 64px; } }
+@media (max-width: 360px) { .padamt[data-len="6"] { --fs: 62px; } .padamt[data-len="7"] { --fs: 52px; } .padamt[data-len="8"], .padamt[data-len="9"] { --fs: 46px; } }
+/* Toasts sit at the bottom, above the tab bar, so they never cover the header, greeting or keypad pills */
+.toast { top: auto; bottom: calc(24px + env(safe-area-inset-bottom)); animation: rise .25s cubic-bezier(.2, .9, .2, 1); }
+body.has-tabs .toast { bottom: calc(104px + env(safe-area-inset-bottom)); }
+@media (min-width: 900px) { body.has-tabs .toast { bottom: calc(28px + env(safe-area-inset-bottom)); } }
+@keyframes rise { from { transform: translate(-50%, 12px); opacity: 0; } }
+/* Every sheet has a close button; on desktop sheets sit in the middle and never run off the screen */
+.sheet { position: relative; }
+.sheet-x { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--card2, #EDF4E8); color: var(--ink); display: grid; place-items: center; cursor: pointer; z-index: 2; }
+.sheet-x svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
+.sheet > h2:first-of-type { padding-right: 44px; }
+@media (min-width: 900px) { .sheet-wrap { align-items: center; padding: 24px; } .sheet { border-radius: 26px; max-height: calc(100vh - 48px); } }
