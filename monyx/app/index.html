@@ -26,7 +26,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Geist:wght@400;500;600;650;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../pay.css?v=29">
+<link rel="stylesheet" href="../pay.css?v=31">
 </head>
 <body>
 <div class="shell">
@@ -46,14 +46,10 @@
     <a href="#home" data-tab="home"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
     <a href="#invest" data-tab="invest"><svg viewBox="0 0 24 24"><path d="M4 18l5-6 4 3 7-9M15 6h5v5"/></svg><span>Invest</span></a>
     <a href="#pay" data-tab="pay" class="tab-pay" aria-label="Pay or request"><i aria-hidden="true">$</i><span>Pay or request</span></a>
+    <a href="#predict" data-tab="predict" class="tab-pro"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg><span>Predict</span></a>
+    <a href="#trace" data-tab="trace" class="tab-pro tab-side"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="12" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8.3 7.2 15.7 10.8M8.3 16.8l7.4-3.6"/></svg><span>Trace</span></a>
     <a href="#activity" data-tab="activity"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg><span>Activity</span></a>
     <a href="#me" data-tab="me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg><span>Me</span></a>
-    <div class="tabpro" role="group" aria-labelledby="tabproh"><span class="tabpro-h" id="tabproh">Pro tools</span>
-      <a href="../pro/#trace" data-pro><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="12" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8.3 7.2 15.7 10.8M8.3 16.8l7.4-3.6"/></svg><span>Tracer</span></a>
-      <a href="../pro/#market" data-pro><svg viewBox="0 0 24 24"><path d="M4 9h16l-1.5 10h-13zM8 9V7a4 4 0 0 1 8 0v2"/></svg><span>API market</span></a>
-      <a href="../pro/#agents" data-pro><svg viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V5M9 13h.01M15 13h.01"/></svg><span>Agents</span></a>
-      <a href="../pro/#wallet" data-pro><svg viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="13" rx="3"/><path d="M15 12.5h2.5"/></svg><span>Pro wallet</span></a>
-    </div>
   </nav>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
@@ -62,7 +58,7 @@
 <script src="../vendor/solana-web3.js?v=1" defer></script>
 <script src="../vendor/qrcode.js?v=1" defer></script>
 <script src="../voice-parse.js?v=4" defer></script>
-<script src="../pay.js?v=37" defer></script>
+<script src="../pay.js?v=39" defer></script>
 <script src="../monyx-trace.js?v=1" defer></script>
 </body>
 </html>

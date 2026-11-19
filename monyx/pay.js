@@ -137,12 +137,36 @@
     if (bytes.length !== 64) throw new Error('len');
     return keypairFrom(bytes);
   }
+  // The account key is kept locked on the device. Instead of a lock screen, ask for Face ID (or the
+  // password) right when something needs the key, then carry on. Cancelling just stops that action.
+  async function needKey(why = 'to continue') {
+    if (!S.acct || S.acct.mode !== 'key' || S.kp || S.acct.secret) return;
+    const v = vault.get();
+    if (!v) throw userError('This device doesn’t have your key any more. Log out and sign in again.');
+    if (!isPwVault(v)) { try { await unlockWithPasskey(); return; } catch (e) { throw userError(e.safe ? e.message : 'Face ID didn’t confirm. Try again.'); } }
+    await new Promise((resolve, reject) => {
+      let done = false;
+      sheet(`<h2>Confirm it’s you</h2><p class="sub">Enter your Monyx password ${esc(why)}.</p>
+        <form id="nkf" class="pwrow"><input type="text" name="username" autocomplete="username" value="@${esc((S.acct.user || {}).handle || '')}" hidden><label class="field"><input type="password" id="nkpw" autocomplete="current-password" placeholder="Your password" aria-label="Password"></label></form>
+        <button class="btn btn-dark" id="nkgo" style="width:100%;margin-top:12px">Continue</button><p class="fine" id="nkh" aria-live="polite"></p>`, (el, close) => {
+        const go = $('#nkgo', el), h = $('#nkh', el);
+        setTimeout(() => $('#nkpw', el).focus(), 60);
+        $('#nkf', el).onsubmit = (e) => { e.preventDefault(); go.click(); };
+        go.onclick = async () => {
+          go.disabled = true; go.innerHTML = '<span class="spin"></span>Checking';
+          try { await unlockWithPassword($('#nkpw', el).value); done = true; close(); resolve(); }
+          catch (e) { go.disabled = false; go.textContent = 'Continue'; h.className = 'fine bad'; h.textContent = e.safe ? e.message : 'That password didn’t work. Try again.'; }
+        };
+      }, () => { if (!done) reject(userError('Cancelled. Nothing was sent.')); });
+    });
+  }
   async function signText(text) {
     const msg = new TextEncoder().encode(text);
     if (S.acct && S.acct.mode === 'phantom') {
       const r = await phantom().signMessage(msg, 'utf8');
       return b64(r.signature || r);
     }
+    await needKey('to sign in');
     const sk = S.kp.secretKey;
     const key = await crypto.subtle.importKey('jwk', { kty: 'OKP', crv: 'Ed25519', d: b64url(sk.slice(0, 32)), x: b64url(sk.slice(32)), ext: true }, { name: 'Ed25519' }, false, ['sign']);
     return b64(new Uint8Array(await crypto.subtle.sign({ name: 'Ed25519' }, key, msg)));
@@ -254,10 +278,12 @@
     return await api(PAPI + '/relay', { method: 'POST', body: { tx: b64(raw) } }); // sends your session: relay checks it matches the signer
   }
   async function send(toAddress, dollars, note) {
-    const units = toUnits(dollars), t0 = performance.now();
+    const units = toUnits(dollars); let t0 = performance.now();
     try {
       const have = await usdcOf(S.acct.address);
       if (have < units) throw userError(`You have ${money(usd(have))}. Add money to send ${money(dollars)}.`);
+      if (S.acct.mode !== 'phantom') await needKey('to send this payment');
+      t0 = performance.now(); // time the payment itself, not the Face ID prompt
       const r = await usdcSend({ owner: S.acct.address, signer: S.acct.mode === 'phantom' ? 'phantom' : S.kp, to: toAddress, units, note });
       if (r.pending) throw userError("The network is busy, so your payment is still landing. Check Activity in a minute before trying again.");
       S.lastMs = Math.round(performance.now() - t0); // what you actually waited, from tap to confirmed
@@ -812,7 +838,7 @@
   /* home */
   function screenHome() {
     const u = S.acct.user;
-    show(`<header class="top"><a class="me" href="#me">${avatar(u, 'sm')}<span>Hi, ${esc(u.name.split(' ')[0])}</span></a><span class="topr"><span class="pill"><i></i>Test mode</span><button class="bell" id="bell" aria-label="Notifications">${ICON.bell}<i id="bellN" hidden></i></button></span></header>
+    show(`<header class="top"><a class="me" href="#me">${avatar(u, 'sm')}<span>Hi, ${esc(u.name.split(' ')[0])}</span></a><span class="topr">${modePill()}<button class="bell" id="bell" aria-label="Notifications">${ICON.bell}<i id="bellN" hidden></i></button></span></header>
       <section class="balance">
         <div class="label"><span>Balance</span><span class="cur">USD</span></div>
         <div class="amount" id="bal"><div class="skeleton" style="width:60%;height:44px;border-radius:12px"></div></div>
@@ -1429,7 +1455,7 @@
   /* me */
   function screenMe() {
     const u = S.acct.user;
-    show(`<header class="top"><b>Me</b><span class="pill"><i></i>Test mode</span></header>
+    show(`<header class="top"><b>Me</b>${modePill()}</header>
       <section class="profile"><button class="avedit" id="avEdit" aria-label="Change profile photo">${avatar(u, 'lg')}<span class="badge">${ICON.camera}</span></button><div class="name">${esc(u.name)}</div><div class="handle">@${esc(u.handle)}</div></section>
       <section class="qrcard"><div class="qr">${qrSvg(payLink(u.handle))}</div><p>Friends can scan this to pay you</p>
         <div class="btn-row"><button class="btn btn-dark btn-sm" id="share" style="width:100%">Share link</button><button class="btn btn-light btn-sm" id="copy" style="width:100%">Copy link</button></div></section>
@@ -1441,7 +1467,7 @@
       <h3>Mode</h3>
       <div class="modesw" role="radiogroup" aria-label="App mode">
         <button role="radio" data-m="basic" aria-checked="${appMode() === 'basic'}" class="${appMode() === 'basic' ? 'on' : ''}"><b>Basic</b><span>Pay, request, split</span></button>
-        <button role="radio" data-m="pro" aria-checked="${appMode() === 'pro'}" class="${appMode() === 'pro' ? 'on' : ''}"><b>Pro</b><span>Adds Invest and Pro tools</span></button>
+        <button role="radio" data-m="pro" aria-checked="${appMode() === 'pro'}" class="${appMode() === 'pro' ? 'on' : ''}"><b>Pro</b><span>Adds Invest, Predict and Trace</span></button>
       </div>
       <p class="fine"><a href="#" id="quiz">Not sure? Answer 2 questions</a></p>
       <h3>Account</h3>
@@ -1455,7 +1481,7 @@
         ${S.acct.mode === 'key' ? row('link', ICON.key, 'Sign in a new device', 'Approve it with a code, no recovery key needed') : ''}
         ${row('guide', ICON.book, 'How Monyx works', 'A plain-language guide')}
         ${row('details', ICON.info, 'Account details', 'For the curious')}
-        ${row('pro', ICON.tools, 'Monyx Pro', 'Wallet tracer and developer tools')}
+        ${appMode() === 'pro' ? row('trace', ICON.tools, 'Trace an account', 'See where its money came from') : ''}
         ${row('out', ICON.out, 'Log out', '')}
       </div>
       <p class="fine" style="margin-top:22px">Monyx · <a href="../about.html">About</a> · <a href="../privacy/">Privacy</a> · <a href="../terms/">Terms</a></p>`, { tabs: true, tab: 'me' });
@@ -1473,7 +1499,7 @@
     const an = $('[data-r="anywhere"]'); if (an) an.onclick = signInOptionsSheet;
     $('[data-r="details"]').onclick = details;
     $('[data-r="guide"]').onclick = () => (location.href = '../documentation/');
-    $('[data-r="pro"]').onclick = () => { handOff(); location.href = '../pro/'; };
+    const tr = $('[data-r="trace"]'); if (tr) tr.onclick = () => (location.hash = '#trace');
     $('[data-r="out"]').onclick = logout;
     $$('.modesw button').forEach((b) => (b.onclick = () => { if (appMode() !== b.dataset.m) { setMode(b.dataset.m); screenMe(); } }));
     $('#quiz').onclick = (e) => { e.preventDefault(); modeQuiz(screenMe); };
@@ -1497,11 +1523,11 @@
         ${st.passkeys ? '<button class="btn btn-text" id="sorpk">Turn off passkey sign-in</button>' : ''}
       </div>`, (el, close) => {
       const h = $('#soh', el);
-      const need = () => { if (!(S.acct.secret || S.secretMem)) { h.className = 'hint bad'; h.textContent = 'Unlock Monyx first.'; return true; } return false; };
-      $('#sopw', el).onclick = () => { if (need()) return; close(); passwordSheet(signInOptionsSheet, true); };
+      const need = async () => { try { await needKey(); return false; } catch (e) { h.className = 'hint bad'; h.textContent = friendly(e); return true; } };
+      $('#sopw', el).onclick = async () => { if (await need()) return; close(); passwordSheet(signInOptionsSheet, true); };
       const pk = $('#sopk', el);
       if (pk) pk.onclick = async () => {
-        if (need()) return;
+        if (await need()) return;
         pk.disabled = true; pk.innerHTML = '<span class="spin"></span>Waiting for your passkey';
         try {
           const { id, prf } = await newAccountPasskey();
@@ -1587,7 +1613,8 @@
     });
   }
   const row = (id, ico, t, s) => `<button class="item" data-r="${id}"><span class="ico">${ico}</span><div class="mid"><div class="t">${t}</div>${s ? `<div class="s">${s}</div>` : ''}</div>${ICON.chev}</button>`;
-  function showKey() {
+  async function showKey() {
+    try { await needKey('to show your recovery key'); } catch (e) { toast(friendly(e), true); return; }
     const key = recoveryKey();
     sheet(`<h2>Recovery key</h2><p class="sub">Use this to log in on another device.</p>
       <div class="warn strong">${ICON.info.replace('<svg', '<svg width="18" height="18" style="flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8"')}<span><b>Anyone who has this key can take all your money.</b> Monyx will never ask for it. Don't paste it into any website, chat or form, and don't screenshot it.</span></div>
@@ -1677,6 +1704,8 @@
   // Invest (Pro mode): live prediction markets from Gemini's public API. Monyx only shows them.
   // Every "Trade on Gemini" link opens Gemini, which handles the account, the bet and the money.
   // Older test coins bought before this change can still be sold back to cash below.
+  // Top-right badge on every wallet screen: "Pro Mode" in Pro, "Test mode" in Basic. Tapping it goes Home.
+  const modePill = () => appMode() === 'pro' ? '<a class="pill pro" href="#home" aria-label="Pro Mode, go to Home"><i></i>Pro Mode</a>' : '<a class="pill" href="#home" aria-label="Test mode, go to Home"><i></i>Test mode</a>';
   const PRED_CATS = ['All', 'Sports', 'Politics', 'Economics', 'Crypto', 'Culture'];
   async function loadPredictions() {
     if (S.preds && Date.now() - S.preds.t < 60_000) return S.preds;
@@ -1686,22 +1715,83 @@
     S.preds = { t: Date.now(), at: j.at || Date.now(), markets: Array.isArray(j.markets) ? j.markets : [] };
     return S.preds;
   }
-  function screenInvest() {
+  // Predict (Pro): Gemini prediction markets. Kept apart from Invest because it's closer to betting.
+  function screenPredict() {
     S.predCat = S.predCat || 'All';
-    show(`<header class="top"><b>Invest</b><span class="pill pro"><i></i>Pro · Gemini data</span></header>
+    show(`<header class="top"><b>Predict</b>${modePill()}</header>
       <section class="gembox">
         <div class="gemh"><b>Prediction markets</b><span class="gemsrc">Live from Gemini</span></div>
         <p>Yes-or-no markets on real events. The percent is the market's current price for that outcome, which works like the crowd's estimate of its chance.</p>
-        <p class="fine">Data from Gemini's public API. To trade, you open Gemini and use a Gemini account. Monyx never places bets or holds money for them. Gemini Predictions is for US users only.</p>
+        <p class="fine">This is closer to betting than investing. Data from Gemini's public API. To trade, you open Gemini and use a Gemini account. Monyx never places bets or holds money for them. Gemini Predictions is for US users only.</p>
       </section>
       <div class="predcats" role="tablist">${PRED_CATS.map((c) => `<button role="tab" data-c="${c}" class="${c === S.predCat ? 'on' : ''}" aria-selected="${c === S.predCat}">${c}</button>`).join('')}</div>
       <div class="list" id="preds">${'<div class="item"><div class="mid"><div class="skeleton" style="width:70%"></div><div class="skeleton" style="width:40%;margin-top:8px"></div></div></div>'.repeat(4)}</div>
-      <p class="fine" id="predat" style="margin-top:12px"></p>
-      <div id="holdings"></div>`, { tabs: true, tab: 'invest' });
+      <p class="fine" id="predat" style="margin-top:12px"></p>`, { tabs: true, tab: 'predict' });
     $$('.predcats button').forEach((b) => (b.onclick = () => { S.predCat = b.dataset.c; $$('.predcats button').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); }); paintPredictions(); }));
     paintPredictions();
     loadPredictions().then(paintPredictions).catch((e) => { const el = $('#preds'); if (el) el.innerHTML = `<div class="empty">${esc(e.safe ? e.message : 'Live markets from Gemini aren’t loading right now. Try again in a minute.')}</div>`; });
+  }
+  // Invest (Pro): live crypto prices from Gemini. "Trade on Gemini" opens Gemini; Monyx never holds the coins.
+  async function loadPrices() {
+    if (S.gprices && Date.now() - S.gprices.t < 30_000) return S.gprices;
+    const r = await fetch(GAPI + '?kind=prices', { headers: { accept: 'application/json' } });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error(j.message || 'unavailable'), { safe: true });
+    S.gprices = { t: Date.now(), at: j.at || Date.now(), coins: Array.isArray(j.coins) ? j.coins : [] };
+    return S.gprices;
+  }
+  function screenInvest() {
+    show(`<header class="top"><b>Invest</b>${modePill()}</header>
+      <section class="gembox">
+        <div class="gemh"><b>Crypto prices</b><span class="gemsrc">Live from Gemini</span></div>
+        <p>Real market prices for the biggest coins, with the past 7 days beside each one.</p>
+        <p class="fine">Data from Gemini's public API. To buy or sell, you open Gemini and use a Gemini account. Monyx never holds these coins for you.</p>
+      </section>
+      <div class="list" id="gcoins">${'<div class="item"><div class="mid"><div class="skeleton" style="width:50%"></div><div class="skeleton" style="width:30%;margin-top:8px"></div></div></div>'.repeat(5)}</div>
+      <p class="fine" id="gat" style="margin-top:12px"></p>
+      <div id="holdings"></div>`, { tabs: true, tab: 'invest' });
+    loadPrices().then(paintPrices).catch((e) => { const el = $('#gcoins'); if (el) el.innerHTML = `<div class="empty">${esc(e.safe ? e.message : 'Prices from Gemini aren’t loading right now. Try again in a minute.')}</div>`; });
     Promise.all([loadMarkets(), loadPortfolio()]).then(paintInvest).catch(() => {});
+  }
+  function paintPrices() {
+    const el = $('#gcoins'); if (!el || !S.gprices) return;
+    el.innerHTML = S.gprices.coins.length ? S.gprices.coins.map((c) => `<div class="item gcoin">${coin(c)}
+        <div class="mid"><div class="t">${esc(c.name)}</div><div class="s">${esc(c.symbol)} · <span class="${c.change24h >= 0 ? 'up' : 'down'}">${pct(c.change24h)} today</span></div></div>
+        <div class="gspark">${spark(c.spark)}</div>
+        <div style="text-align:right"><div class="amt">${fmtPrice(c.price)}</div><a href="${esc(c.url)}" target="_blank" rel="noopener noreferrer" class="gemlink">Trade on Gemini ↗</a></div></div>`).join('')
+      : '<div class="empty">No prices right now.</div>';
+    const at = $('#gat'); if (at) at.textContent = `Updated ${new Date(S.gprices.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}. Refreshes every 30 seconds.`;
+  }
+  // Trace (Pro): check where an account's money came from, right inside the wallet.
+  const TRACE_DEMO = 'CV3m8fpsm59bxvEZxLP2Mp68fxeqSuCEru6UjuJ6YuJu';
+  function screenTrace(pre) {
+    show(`<header class="top"><b>Trace</b>${modePill()}</header>
+      <section class="gembox">
+        <div class="gemh"><b>Source of funds</b><span class="gemsrc">Two hops back</span></div>
+        <p>Paste an account number or type an @username. Monyx follows the money two hops back on Solana devnet and checks it against a list of flagged accounts.</p>
+        <p class="fine">Risk estimate only, not legal or financial advice. Results are High, Medium, or Normal.</p>
+      </section>
+      <form id="trform" class="trform" autocomplete="off"><input id="trin" placeholder="@username or account number" aria-label="Account to trace" spellcheck="false"><button class="btn btn-dark btn-sm" id="trgo">Check</button></form>
+      <p class="fine" style="text-align:left;margin:8px 2px 0">Try the demo account: <a href="#" id="trdemo">${esc(TRACE_DEMO.slice(0, 4))}…${esc(TRACE_DEMO.slice(-4))}</a></p>
+      <div id="trout" style="margin-top:14px"></div>`, { tabs: true, tab: 'trace' });
+    const inp = $('#trin'), out = $('#trout');
+    const run = async () => {
+      let v = cleanAddr(inp.value.trim()), who = '';
+      if (!v) return;
+      if (!isAddr(v)) {
+        const h = v.replace(/^@/, '');
+        if (!/^[a-z0-9_]{3,20}$/i.test(h)) { out.innerHTML = '<div class="empty">That isn’t an account number or a username.</div>'; return; }
+        out.innerHTML = '<div class="empty">Looking up @' + esc(h) + '…</div>';
+        const u = await lookup(h);
+        if (!u || !u.address) { out.innerHTML = '<div class="empty">No one has that username.</div>'; return; }
+        v = u.address; who = u.name.split(' ')[0];
+      }
+      if (!window.MonyxTrace) { out.innerHTML = '<div class="empty">The tracer didn’t load. Refresh and try again.</div>'; return; }
+      MonyxTrace.mount(out, { address: v, who, token: S.acct && S.acct.token });
+    };
+    $('#trform').onsubmit = (e) => { e.preventDefault(); run(); };
+    $('#trdemo').onclick = (e) => { e.preventDefault(); inp.value = TRACE_DEMO; run(); };
+    if (pre) { inp.value = pre; run(); }
   }
   function paintPredictions() {
     const el = $('#preds'); if (!el || !S.preds) return;
@@ -1868,7 +1958,7 @@
 
   /* ───────── activity ───────── */
   function screenActivity(tab = 'pay') {
-    show(`<header class="top"><b>Activity</b><span class="pill"><i></i>Test mode</span></header>
+    show(`<header class="top"><b>Activity</b>${modePill()}</header>
       <div class="seg" id="seg"><button data-t="pay" class="${tab === 'pay' ? 'on' : ''}">Payments</button><button data-t="trade" class="${tab === 'trade' ? 'on' : ''}">Crypto</button></div>
       ${tab === 'pay' ? '<div id="sentreqs"></div>' : ''}
       <div class="list" id="${tab === 'pay' ? 'feed' : 'trades'}" data-limit="100" data-notrades="1" style="margin-top:14px"><div class="item"><div class="mid"><div class="skeleton" style="width:60%"></div></div></div></div>`, { tabs: true, tab: 'activity' });
@@ -2840,8 +2930,8 @@
       setTimeout(() => inp.focus(), 50);
       inp.oninput = () => { let v = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8); inp.value = v.length > 4 ? v.slice(0, 4) + '-' + v.slice(4) : v; h.textContent = ''; };
       go.onclick = async () => {
+        try { await needKey('to approve the new device'); } catch (e) { h.className = 'hint bad'; h.textContent = friendly(e); return; }
         const secret = S.acct.secret || S.secretMem;
-        if (!secret) { h.className = 'hint bad'; h.textContent = 'Unlock Monyx on this device first.'; return; }
         go.disabled = true;
         try {
           const f = await api('/link/find', { method: 'POST', body: { code: inp.value } });
@@ -2925,11 +3015,9 @@
     const signedIn = !!(S.acct && S.acct.user && S.acct.token);
     // A locked account always unlocks first, including from the site's "Log in" link (#login), so it
     // never looks signed in on one screen and locked on the next. The recovery-key path is the exception.
-    if (signedIn && isLocked() && view !== 'claim') {
-      if (view === 'login' && S.wantRecovery) return screenLogin();
-      S.wantRecovery = false;
-      return screenUnlock();
-    }
+    // A locked key never signs you out: the app opens straight into your session, and Face ID or the
+    // password is asked for only at the moment the key is needed (sending money, showing the key).
+    if (signedIn && view === 'login') { history.replaceState(null, '', '#home'); return screenHome(); }
     if (view === 'pay' && a && !signedIn) {
       store.set('monyx.pending', '#' + h);
       const u = await lookup(a);
@@ -2955,8 +3043,10 @@
     if (view === 'send') return screenPay({ amount: amtCheck(a).n > 0 ? a : '', mode: b === 'r' ? 'request' : 'pay', fromPad: true });
     if (view === 'pay') return screenPay({ to: a, amount: amtCheck(b).n > 0 ? amtCheck(b).n.toFixed(2).replace(/\.00$/, '') : '', note: c ? decodeURIComponent(c) : '' });
     if (view === 'me') return screenMe();
-    if (view === 'invest' && appMode() === 'basic') { toast('Invest is part of Pro mode. Turn it on in Me.'); location.hash = '#home'; return; }
+    if (['invest', 'predict', 'trace'].includes(view) && appMode() === 'basic') { toast('That’s part of Pro mode. Turn it on in Me.'); location.hash = '#home'; return; }
     if (view === 'invest') return screenInvest();
+    if (view === 'predict') return screenPredict();
+    if (view === 'trace') return screenTrace(a && isAddr(a) ? a : '');
     if (view === 'activity') return screenActivity();
     if (view === 'tx') { if (!$('#feed')) screenHome(); return txDetail(a); }
     if (view !== 'home') history.replaceState(null, '', '#home');
@@ -2983,9 +3073,10 @@
     route();
     setInterval(() => { if (S.acct && S.acct.token && !document.hidden) { refreshBalance(); if ($('#feed')) { loadFeed(); loadRequests(); loadDrafts(); } } }, 20000);
     setInterval(pollInbox, 4000); pollInbox();
-    setInterval(() => { if (S.acct && S.acct.token && !isLocked() && !liveOpen() && !S.liveRetry) startLive(); }, 10000);
+    setInterval(() => { if (S.acct && S.acct.token && !liveOpen() && !S.liveRetry) startLive(); }, 10000);
     setInterval(() => { if ($('#feed') && !document.hidden) paintFeed(); }, 60000); // keep "Just now" honest
     setInterval(() => { if ($('#preds') && !document.hidden) loadPredictions().then(paintPredictions).catch(() => {}); }, 60000);
+    setInterval(() => { if ($('#gcoins') && !document.hidden) loadPrices().then(paintPrices).catch(() => {}); }, 30000);
     loadMarkets();
     checkVoice();
     if (S.acct && S.acct.token) api('/me').then((r) => { S.acct.user = r.user; saveAcct(); }).catch((e) => { if (e.status === 401) relogin(); });

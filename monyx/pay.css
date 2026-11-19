@@ -710,3 +710,33 @@ body[data-mode="basic"] [data-r="pro"] { display: none !important; }
 .gemlink { font-weight: 700; color: #2a3f8f; text-decoration: none; white-space: nowrap; }
 .gemlink:hover { text-decoration: underline; }
 .livetag { color: #c0392b; font-weight: 700; }
+
+/* Pro Mode / Test mode badge is a link Home */
+a.pill { text-decoration: none; cursor: pointer; }
+/* Uniform buttons: no heavy black outlines anywhere (soft border like the other cards) */
+.btn-light { background: #fff; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line2); }
+.btn-light:hover { background: var(--mint); box-shadow: inset 0 0 0 1px var(--line2); }
+
+/* Tabs. Pro: Home, Invest, $, Predict, Activity, Me (+ Trace in the desktop sidebar).
+   Basic: Home, $, Activity, Me. */
+body[data-mode="basic"] .tabbar .tab-pro { display: none !important; }
+.tabbar .tab-side { display: none; }
+body[data-mode="pro"] .tabbar { grid-template-columns: repeat(6, 1fr); }
+body[data-mode="basic"] .tabbar { grid-template-columns: repeat(4, 1fr); }
+@media (min-width: 900px) { body[data-mode="pro"] .tabbar .tab-side { display: flex; } }
+
+/* Invest: Gemini crypto prices */
+.item.gcoin { gap: 12px; }
+.item.gcoin .gspark { flex-shrink: 0; width: 72px; }
+.item.gcoin .gemlink { font-size: 12px; }
+.up { color: var(--green); } .down { color: var(--red); }
+@media (max-width: 380px) { .item.gcoin .gspark { display: none; } }
+/* Trace */
+.trform { display: flex; gap: 8px; margin-top: 14px; }
+.trform input { flex: 1; min-width: 0; height: 46px; border-radius: 14px; border: 0; padding: 0 14px; font-size: 15px; background: var(--card, #fff); box-shadow: inset 0 0 0 1px var(--line2); outline: 0; }
+.trform input:focus { box-shadow: inset 0 0 0 2px var(--brand); }
+.trform .btn { width: auto; padding: 0 18px; height: 46px; }
+/* One logo everywhere: the tab icon styles must not outline the Monyx mark. */
+.tabbar a svg.mark rect, svg.mark rect { stroke: none !important; }
+.tabbar a svg.mark { width: 30px; height: 30px; }
+@media (max-width: 440px) { .item.gcoin .gspark { display: none; } }

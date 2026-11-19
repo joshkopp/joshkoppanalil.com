@@ -31,10 +31,10 @@
   <a href="#paying">Paying &amp; requesting</a>
   <a href="#split">Splitting a bill</a>
   <a href="#adding">Adding money</a>
-  <a href="#crypto">Invest</a>
+  <a href="#crypto">Invest &amp; Predict</a>
   <a href="#safety">Safety &amp; privacy</a>
   <a href="#test">Test mode</a>
-  <a href="#pro">Monyx Pro</a>
+  <a href="#pro">Pro mode</a>
   <a href="#faq">Questions</a>
 </nav>
 
@@ -87,8 +87,8 @@
     <li><strong>Save to your password manager.</strong> Monyx can save your recovery key to iCloud Keychain, Google Password Manager or 1Password, filed under your @username.</li>
   </ul>
   <h3>Logging in</h3>
-  <p>To log in, your device proves it holds the key by signing a short message that names the site, plus a one-time code from Monyx and the time. Monyx checks the signature, and that the code is fresh and unused, then lets you in for 30 days. A copied signature can't be reused, and one collected by a look-alike site won't work here. The key itself is never sent anywhere.</p>
-  <p>On a new device, tap <strong>Log in</strong> and choose how:</p>
+  <p>To log in, your device proves it holds the key by signing a short message that names the site, plus a one-time code from Monyx and the time. Monyx checks the signature, and that the code is fresh and unused, then lets you in. You stay signed in on that device until you tap <strong>Log out</strong>: opening the wallet goes straight to your account, and Monyx only asks for Face ID, your fingerprint or your password at the moment you send money or view your recovery key. A copied signature can't be reused, and one collected by a look-alike site won't work here. The key itself is never sent anywhere.</p>
+  <p>On a new device, open the wallet, tap <strong>I already have an account</strong> and choose how:</p>
   <ul>
     <li><strong>Passkey:</strong> Face ID or fingerprint, if your passkey has synced to this device.</li>
     <li><strong>Password:</strong> your @username and sign-in password.</li>
@@ -135,11 +135,14 @@
     <li><strong>Need more for testing?</strong> Circle, which issues USDC, runs a free test faucet. The Add money screen links to it.</li>
   </ul>
 
-  <h2 id="crypto"><span class="n">07</span>Invest: prediction markets</h2>
-  <p>The <strong>Invest</strong> tab (in Pro mode; switch modes in the Me tab) shows live prediction markets from <strong>Gemini</strong>: yes-or-no questions about real events in sports, politics, the economy, crypto and culture. Each outcome shows a percent, which is its current market price and works like the crowd's estimate of how likely it is. The data comes from Gemini's public API and refreshes every minute.</p>
-  <p>To trade one, tap <strong>Trade on Gemini</strong>. That opens Gemini, where you use your own Gemini account. Gemini Predictions is for US users only.</p>
-  <div class="note warn"><span class="dot"></span><p><strong>Monyx only shows the markets.</strong> It never places bets, holds positions or touches money for them. Everything about a trade (your account, the money, the payout) is between you and Gemini.</p></div>
+  <h2 id="crypto"><span class="n">07</span>Invest &amp; Predict</h2>
+  <p>Both tabs are part of <strong>Pro mode</strong> (switch modes in the Me tab). Monyx only shows the data. Every <strong>Trade on Gemini</strong> button opens Gemini, where you use your own Gemini account.</p>
+  <h3>Invest: crypto prices</h3>
+  <p>Live prices for Bitcoin, Ethereum, Solana and other big coins from <strong>Gemini</strong>'s public price feed, with today's change and a 7-day chart. Prices refresh every 30 seconds.</p>
   <p>If you bought test coins in Monyx before Invest moved to Gemini, they're listed under <strong>Your test coins</strong>, and you can sell them back to cash any time.</p>
+  <h3>Predict: prediction markets</h3>
+  <p>Yes-or-no markets from Gemini on real events in sports, politics, the economy, crypto and culture. Each outcome shows a percent, which is its current market price and works like the crowd's estimate of how likely it is. It has its own tab because it's closer to betting than investing. Gemini Predictions is for US users only.</p>
+  <div class="note warn"><span class="dot"></span><p><strong>Monyx only shows the markets and prices.</strong> It never places bets, buys coins, holds positions or touches money for them. Everything about a trade is between you and Gemini.</p></div>
 
   <h2 id="safety"><span class="n">08</span>Safety &amp; privacy</h2>
   <h3>What Monyx knows</h3>
@@ -164,11 +167,12 @@
   <p>Monyx is in <strong>test mode</strong> right now, which is why you'll see a "Test mode" tag. The app, the payments and the network are all real software doing real work, but they run on Solana's <strong>test network</strong> with <strong>test dollars</strong> (test USDC). Test dollars have no value: you can't cash them out, and you can't lose real money. It's a safe way to try everything.</p>
   <p>Your balance is in <strong>USDC</strong>, a digital dollar, so $1 is always $1. It doesn't move with crypto prices.</p>
 
-  <h2 id="pro"><span class="n">10</span>Monyx Pro</h2>
-  <p>For the curious and for developers. Open it from the Me tab.</p>
+  <h2 id="pro"><span class="n">10</span>Pro mode</h2>
+  <p>Pro adds three tabs to the same app, with the same look. The badge in the top right says <strong>Pro Mode</strong>; tap it, or the Monyx logo, to go back to Home.</p>
   <ul>
-    <li><strong>Wallet tracer:</strong> enter any account number to see who it's sent money to and received money from, drawn as a map you can click through.</li>
-    <li><strong>API market:</strong> data services that software and AI agents can pay for one request at a time, a fraction of a cent each, with no sign-up. The agent asks, gets a price, pays, and gets the answer. Developer instructions are in <a href="../llms.txt">llms.txt</a>.</li>
+    <li><strong>Invest:</strong> live crypto prices from Gemini.</li>
+    <li><strong>Predict:</strong> live prediction markets from Gemini.</li>
+    <li><strong>Trace:</strong> paste an account number or type an @username to see where its money came from, two hops back, checked against a list of flagged accounts. You get High, Medium or Normal. It's a risk estimate only, not legal or financial advice. The same check runs on its own before you pay someone.</li>
   </ul>
 
   <h2 id="faq"><span class="n">11</span>Questions</h2>
@@ -178,7 +182,7 @@
   <details><summary>Can I undo a payment?</summary><div><p>No, payments are final. Ask the person to send it back.</p></div></details>
   <details><summary>Why did my balance change when I didn't do anything?</summary><div><p>Your dollar balance only changes when money comes in or goes out. Check Activity: a friend may have paid you. Coins in Invest do change value as prices move.</p></div></details>
   <details><summary>Can an AI assistant spend my money?</summary><div><p>No. If you connect Grok Bot (Me → AI assistant), it can see your activity, ask friends for money and <strong>draft</strong> payments. Every draft waits on your home screen until you tap Pay. You set a weekly limit and can remove it any time. <a href="../grok-bot/">How it works</a></p></div></details>
-  <details><summary>Can I use Monyx on more than one device?</summary><div><p>Yes. On the new device, tap Log in and use your passkey, your @username and password, a code from your other device, or your recovery key.</p></div></details>
+  <details><summary>Can I use Monyx on more than one device?</summary><div><p>Yes. On the new device, open the wallet, tap “I already have an account” and use your passkey, your @username and password, a code from your other device, or your recovery key.</p></div></details>
   <details><summary>My friend isn't on Monyx. Can I still pay them?</summary><div><p>Yes. Send them money with a link: they open it, sign up in under a minute, and it's theirs. You can cancel it until they claim it. If they already have a Solana account, you can also paste their account number.</p></div></details>
 </main>
 </div>

@@ -6,6 +6,7 @@
 // never places bets, holds positions, or touches money for them.
 //   GET /monyx-predictions            -> { markets: [...], at, source }
 //   GET /monyx-predictions?category=Sports
+//   GET /monyx-predictions?kind=prices -> { coins: [...] } live crypto prices from Gemini (Invest tab)
 const GEMINI = "https://api.gemini.com/v1/prediction-markets/events";
 const TRADE_URL = "https://www.gemini.com/predictions";
 const ORIGINS = new Set(["https://monyx.pro", "https://www.monyx.pro", "https://joshkoppanalil.com", "https://www.joshkoppanalil.com"]);
@@ -61,13 +62,46 @@ async function load() {
   return data;
 }
 
+// Invest: live crypto prices from Gemini's public price feed, plus a 7-day sparkline from 6-hour candles.
+const COINS: Record<string, { name: string; color: string }> = {
+  BTC: { name: "Bitcoin", color: "#f7931a" }, ETH: { name: "Ethereum", color: "#627eea" }, SOL: { name: "Solana", color: "#9945ff" },
+  XRP: { name: "XRP", color: "#23292f" }, DOGE: { name: "Dogecoin", color: "#c2a633" }, LINK: { name: "Chainlink", color: "#2a5ada" },
+  AVAX: { name: "Avalanche", color: "#e84142" }, LTC: { name: "Litecoin", color: "#345d9d" },
+};
+let priceCache: { t: number; data: any[] } | null = null;
+let sparkCache: { t: number; data: Record<string, number[]> } | null = null;
+async function prices() {
+  if (priceCache && Date.now() - priceCache.t < 30_000) return priceCache.data;
+  const r = await fetch("https://api.gemini.com/v1/pricefeed").catch(() => null);
+  if (!r || !r.ok) { if (priceCache) return priceCache.data; throw new Error("gemini prices unavailable"); }
+  const feed: any[] = await r.json();
+  if (!sparkCache || Date.now() - sparkCache.t > 30 * 60_000) {
+    const sp: Record<string, number[]> = {};
+    await Promise.all(Object.keys(COINS).map(async (sym) => {
+      const c = await fetch(`https://api.gemini.com/v2/candles/${sym.toLowerCase()}usd/6hr`).then((x) => (x.ok ? x.json() : [])).catch(() => []);
+      // Newest first: [time, open, high, low, close, volume]. Keep the last 7 days, oldest first.
+      sp[sym] = (Array.isArray(c) ? c : []).slice(0, 28).map((row: any) => Number(row[4])).filter(Number.isFinite).reverse();
+    }));
+    sparkCache = { t: Date.now(), data: sp };
+  }
+  const data = Object.entries(COINS).map(([sym, info]) => {
+    const row = feed.find((f) => f.pair === sym + "USD");
+    if (!row) return null;
+    return { symbol: sym, name: info.name, color: info.color, price: Number(row.price), change24h: Number(row.percentChange24h) * 100, spark: sparkCache!.data[sym] || [], url: `https://exchange.gemini.com/trade/${sym}USD` };
+  }).filter(Boolean);
+  priceCache = { t: Date.now(), data };
+  return data;
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin") || "";
   const cors = { "Access-Control-Allow-Origin": ORIGINS.has(origin) ? origin : "https://www.monyx.pro", "Vary": "Origin", "Access-Control-Allow-Methods": "GET, OPTIONS", "Access-Control-Allow-Headers": "content-type" };
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   if (req.method !== "GET") return new Response(JSON.stringify({ error: "method_not_allowed", message: "Use GET." }), { status: 405, headers: { ...cors, "content-type": "application/json" } });
   try {
-    const cat = new URL(req.url).searchParams.get("category");
+    const q = new URL(req.url).searchParams;
+    if (q.get("kind") === "prices") return new Response(JSON.stringify({ coins: await prices(), at: priceCache?.t || Date.now(), source: "Gemini public price feed" }), { headers: { ...cors, "content-type": "application/json", "cache-control": "public, max-age=15" } });
+    const cat = q.get("category");
     const markets = (await load()).filter((m: any) => !cat || m.category.toLowerCase() === cat.toLowerCase());
     return new Response(JSON.stringify({ markets, at: cache?.t || Date.now(), source: "Gemini Predictions public API" }), { headers: { ...cors, "content-type": "application/json", "cache-control": "public, max-age=30" } });
   } catch (e) {

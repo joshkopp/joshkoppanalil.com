@@ -9,13 +9,13 @@
 // GET /nonce, then signs
 //   "<site> wants you to sign in to Monyx.\n\nAccount: <address>\nNonce: <nonce>\nTime: <unix ms>"
 // with the account key. The server checks the site is a Monyx site, the nonce is its own, unexpired
-// and unused, the time is within 2 minutes, and the ed25519 signature, then issues a 30-day session.
+// and unused, the time is within 2 minutes, and the ed25519 signature, then issues a session that renews itself while in use.
 // A signature can't be replayed, and a message signed for another site or without our nonce fails.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { Keypair } from "npm:@solana/web3.js@1.95.3";
 
 const SIGNUPS_PER_IP_HOUR = 10;
-const SESSION_DAYS = 30;
+const SESSION_DAYS = 365; // you stay signed in until you log out; sessions renew themselves while you use Monyx
 const HANDLE = /^[a-z0-9][a-z0-9_]{2,19}$/;
 const B58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const RESERVED = new Set(["monyx", "admin", "support", "bank", "help", "official", "team", "security", "pay", "request", "me", "home"]);
@@ -122,6 +122,8 @@ async function me(req: Request) {
   if (!t) return null;
   const { data: s } = await db.from("monyx_sessions").select("user_id, expires_at").eq("token", t).maybeSingle();
   if (!s || new Date(s.expires_at) < new Date()) return null;
+  // Rolling session: when less than ~10 months are left, push it back out to a full year.
+  if (Date.parse(s.expires_at) - Date.now() < 300 * 86400_000) db.from("monyx_sessions").update({ expires_at: new Date(Date.now() + SESSION_DAYS * 86400_000).toISOString() }).eq("token", t).then(() => {});
   const { data: u } = await db.from("monyx_users").select("*").eq("id", s.user_id).single();
   return u;
 }
