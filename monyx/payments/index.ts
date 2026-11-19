@@ -133,10 +133,11 @@ async function bankSends(to: string, units: number, note: string) {
   }
   return sig;
 }
-// Every payment Monyx knows about lands here once, keyed by signature (repeat deliveries are ignored).
+// Every payment Monyx knows about lands here once per leg, keyed by signature + token + receiver, so a
+// transaction that pays USDC and SOL keeps both (repeat deliveries are ignored).
 // A new USDC payment also settles a matching open request or split share automatically.
 async function logPayment(sig: string, from: string | null, to: string, units: number, note: string, source: string, token = "USDC", slot: number | null = null) {
-  const { data } = await db.from("monyx_payments").upsert({ sig, from_addr: from, to_addr: to, units, note: note || null, source, token, slot }, { onConflict: "sig", ignoreDuplicates: true }).select("sig");
+  const { data } = await db.from("monyx_payments").upsert({ sig, from_addr: from, to_addr: to, units, note: note || null, source, token, slot }, { onConflict: "sig,token,to_addr", ignoreDuplicates: true }).select("sig");
   if (data?.length && token === "USDC" && from) await settleRequest(from, to, units, sig).catch((e) => console.error("[monyx-pay] settle:", e));
 }
 async function settleRequest(payerAddr: string, requesterAddr: string, units: number, sig: string) {
@@ -311,7 +312,7 @@ async function qnSignatureOk(req: Request, bodies: string[]) {
     const hex = hexOf(mac.buffer), b64 = btoa(String.fromCharCode(...mac)).toLowerCase();
     if (same(hex, given) || same(b64, given)) return true;
   }
-  console.error("[monyx-pay] qn webhook: signature mismatch", { sigLen: given.length, tokenLen: token.length, tokenPrefix: token.slice(0, 6), bodyLen: bodies[0]?.length, encoding: req.headers.get("content-encoding") });
+  console.error("[monyx-pay] qn webhook: signature mismatch", { sigLen: given.length, bodyLen: bodies[0]?.length, encoding: req.headers.get("content-encoding") });
   return false;
 }
 // Add a wallet to the QuickNode Key-Value list the Stream filter watches.
@@ -330,6 +331,9 @@ async function hmacB64(t: string) {
   return btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(t))))).replace(/[+/=]/g, (c) => ({ "+": "-", "/": "_", "=": "" } as any)[c]);
 }
 const REMIND_HOURS = Number(Deno.env.get("MONYX_REMIND_HOURS")) || 24;
+// Payments from wallets outside Monyx below these amounts are ignored, so nobody can spam a
+// Monyx user with penny payments carrying a note (each would pop up as "you got paid").
+const OUTSIDE_MIN = { USDC: envUsd("MONYX_OUTSIDE_MIN_USD", 0.1), SOL: Math.round((Number(Deno.env.get("MONYX_OUTSIDE_MIN_SOL")) || 0.01) * 1e9) };
 function streamTxs(node: any, out: any[] = [], depth = 0): any[] {
   if (!node || typeof node !== "object" || depth > 6) return out;
   if (node.meta && node.transaction) { out.push(node); return out; }
@@ -429,6 +433,8 @@ Deno.serve(async (req) => {
       try { users.add((await bank()).publicKey.toBase58()); } catch { /* */ }
       let saved = 0;
       for (const e of events) if (users.has(e.to_wallet) || (e.from_wallet && users.has(e.from_wallet))) {
+        const outsider = !e.from_wallet || !users.has(e.from_wallet);
+        if (outsider && e.amount < OUTSIDE_MIN[e.token]) continue;
         await logPayment(e.signature, e.from_wallet, e.to_wallet, e.amount, e.memo, "streams", e.token, e.slot); saved++;
       }
       return json({ ok: true, seen: txs.length, events: events.length, saved });
@@ -691,7 +697,7 @@ Deno.serve(async (req) => {
     if (path === "/claims" && req.method === "POST") {
       const escrow = String(body.escrow || ""); const sig = String(body.sig || "");
       if (!B58.test(escrow)) return fail("That link couldn't be made. Try again.");
-      const { data: p } = await db.from("monyx_payments").select("*").eq("sig", sig).maybeSingle();
+      const { data: p } = await db.from("monyx_payments").select("*").eq("sig", sig).eq("token", "USDC").eq("to_addr", escrow).maybeSingle();
       if (!p || p.from_addr !== user.address || p.to_addr !== escrow) return fail("We couldn't find that payment yet. Try again in a moment.", 409, "not_found");
       const { error } = await db.from("monyx_claims").insert({ escrow, from_user: user.id, units: p.units, note: String(body.note || p.note || "").slice(0, 80) || null, fund_sig: sig, label: String(body.label || "").slice(0, 40) || null });
       if (error) return fail("That link already exists.", 409, "exists");
@@ -752,7 +758,7 @@ Deno.serve(async (req) => {
       const asset = String(body.asset || ""); const sig = String(body.sig || "");
       if (!ASSETS[asset]) return fail("Pick something to buy.");
       const kp = await bank();
-      const { data: p } = await db.from("monyx_payments").select("*").eq("sig", sig).maybeSingle();
+      const { data: p } = await db.from("monyx_payments").select("*").eq("sig", sig).eq("token", "USDC").eq("to_addr", kp.publicKey.toBase58()).maybeSingle();
       if (!p || p.from_addr !== user.address || p.to_addr !== kp.publicKey.toBase58()) return fail("We couldn't find your payment yet. Try again in a moment.", 409, "not_found");
       if (Date.now() - Date.parse(p.created_at) > 3600_000) return fail("That payment is too old to use.", 409, "stale");
       const usd = dollars(Number(p.units));

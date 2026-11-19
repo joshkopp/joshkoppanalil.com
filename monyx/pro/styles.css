@@ -295,3 +295,7 @@ dialog menu { display: flex; justify-content: flex-end; gap: 8px; padding: 0; ma
 /* Empty and loading rows span the whole list instead of squeezing into the icon column. */
 .activity li.muted, .ranks li.muted, .exchange li.muted { display: block; padding: 14px 0; line-height: 1.5; }
 .empty-note { color: var(--mute); font-size: 13px; line-height: 1.55; padding: 12px 0 4px; }
+
+/* Way back to the wallet on phones, where the rail's footer is hidden. */
+.backapp { display: none; font-size: 13px; font-weight: 600; color: inherit; text-decoration: none; margin-right: 12px; white-space: nowrap; }
+@media (max-width: 900px) { .backapp { display: inline-block; } }

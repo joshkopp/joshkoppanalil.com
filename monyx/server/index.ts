@@ -407,7 +407,7 @@ Deno.serve(async (req) => {
         const { data: requester } = await db.from("monyx_users").select("address").eq("id", r.from_user).single();
         let p: any = null;
         for (let i = 0; i < 4 && !p; i++) {
-          ({ data: p } = await db.from("monyx_payments").select("from_addr, to_addr, units").eq("sig", sig).maybeSingle());
+          ({ data: p } = await db.from("monyx_payments").select("from_addr, to_addr, units").eq("sig", sig).eq("token", "USDC").eq("to_addr", requester!.address).maybeSingle());
           if (!p) await new Promise((s) => setTimeout(s, 800));
         }
         if (!p) return fail("Couldn't find that payment yet.", 409, "not_found");

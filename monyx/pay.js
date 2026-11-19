@@ -465,6 +465,7 @@
   const knownUser = () => (savedPk() && savedPk().user) || store.get('monyx.known') || null;
   // A passkey-locked account that was logged out on this device (see logout()).
   const savedPk = () => { const v = vault.get(); return v && v.address && !S.acct ? v : null; };
+  const savedPkReal = () => savedPk(), knownUserReal = () => knownUser();
   async function signInWithPasskey(btn, hint) {
     const v = vault.get(); if (!v) return;
     btn.disabled = true; const label = btn.innerHTML; btn.innerHTML = `<span class="spin"></span>${isPwVault(v) ? 'Checking your password' : 'Waiting for your passkey'}`;
@@ -676,7 +677,11 @@
     S.signup = null;
   }
 
-  function screenLogin() {
+  function screenLogin(otherAcct = false) {
+    // "Use another account" shows the plain login without forgetting the saved one.
+    S.loginOther = otherAcct === true;
+    const savedPk = () => (S.loginOther ? null : savedPkReal()), knownUser = () => (S.loginOther ? null : knownUserReal());
+    const other = S.loginOther && (savedPkReal() || knownUserReal());
     show(`<section class="steps">
       <div class="topline">${knownUser() ? '<span></span>' : `<button class="back" id="back" aria-label="Back">${ICON.back}</button>`}<span></span><span></span></div>
       <div class="body"><h2>Welcome back${knownUser() && knownUser().name ? `, ${esc(knownUser().name.split(' ')[0])}` : ''}</h2>
@@ -696,9 +701,11 @@
         <div class="hint" id="hint"></div>
         ${savedPk() ? `<button class="btn btn-dark" id="go" style="width:100%;margin-top:10px">Log in</button></details>` : ''}</div>
       <div class="foot">${savedPk() ? '' : '<button class="btn btn-dark" id="go" disabled>Log in</button>'}
+        ${knownUser() ? `<button class="btn btn-dark" id="notme">Use another account</button>` : ''}
         <button class="btn btn-light" id="lnk">Use a code from my other device</button>
         <button class="btn btn-text" id="ph">Use a Phantom wallet instead</button>
-        ${knownUser() ? `<p class="fine" style="text-align:center;margin-top:6px">${knownUser().handle ? `Not @${esc(knownUser().handle)}? <a href="#" id="notme">Use another account</a> · ` : ''}<a href="#" id="newacct">Create a new account</a></p>` : ''}</div>
+        ${knownUser() ? `<p class="fine" style="text-align:center;margin-top:6px"><a href="#" id="newacct">Create a new account</a></p>` : ''}
+        ${other ? `<p class="fine" style="text-align:center;margin-top:6px"><a href="#" id="backme">Back to @${esc((savedPkReal() && (savedPkReal().user || {}).handle) || (knownUserReal() || {}).handle || 'your account')}</a></p>` : ''}</div>
     </section>`);
     const rk = $('#rk'), go = $('#go'), hint = $('#hint');
     let mode = 'pw';
@@ -725,7 +732,8 @@
     const ku = knownUser(); if (ku && ku.handle && !$('#lu').value) $('#lu').value = '@' + ku.handle;
     const gp = $('#goPk'); if (gp) gp.onclick = () => signInWithPasskey(gp, $('#pkh'));
     const pkf = $('#pkf'); if (pkf) { pkf.onsubmit = (e) => { e.preventDefault(); gp.click(); }; setTimeout(() => $('#pkpw').focus(), 60); }
-    const nm = $('#notme'); if (nm) nm.onclick = (e) => { e.preventDefault(); store.del('monyx.known'); $('#lu').value = ''; nm.parentElement.remove(); $('h2').textContent = 'Welcome back'; };
+    const nm = $('#notme'); if (nm) nm.onclick = (e) => { e.preventDefault(); screenLogin(true); setTimeout(() => $('#lu') && $('#lu').focus(), 60); };
+    const bm = $('#backme'); if (bm) bm.onclick = (e) => { e.preventDefault(); screenLogin(); };
     const na = $('#newacct'); if (na) na.onclick = (e) => { e.preventDefault(); startSignup(); };
     go.onclick = async () => {
       if (mode === 'pw') {
@@ -1460,7 +1468,7 @@
     const an = $('[data-r="anywhere"]'); if (an) an.onclick = signInOptionsSheet;
     $('[data-r="details"]').onclick = details;
     $('[data-r="guide"]').onclick = () => (location.href = '../documentation/');
-    $('[data-r="pro"]').onclick = () => (location.href = '../pro/');
+    $('[data-r="pro"]').onclick = () => { handOff(); location.href = '../pro/'; };
     $('[data-r="out"]').onclick = logout;
     $$('.modesw button').forEach((b) => (b.onclick = () => { if (appMode() !== b.dataset.m) { setMode(b.dataset.m); screenMe(); } }));
     $('#quiz').onclick = (e) => { e.preventDefault(); modeQuiz(screenMe); };
@@ -2840,6 +2848,19 @@
       };
     });
   }
+  // Going to Monyx Pro and back is a full page load, which would ask for Face ID again. Before
+  // leaving, hand the unlocked key to this tab only (sessionStorage, 10 minutes), and take it back
+  // once on return. Closing the tab or waiting drops it, so the lock still works.
+  function handOff() {
+    try { if (S.kp && S.acct && vault.get()) sessionStorage.setItem('monyx.handoff', JSON.stringify({ a: S.acct.address, s: Array.from(S.kp.secretKey), exp: Date.now() + 600_000 })); } catch { /* */ }
+  }
+  function takeHandOff() {
+    let h = null;
+    try { h = JSON.parse(sessionStorage.getItem('monyx.handoff') || 'null'); sessionStorage.removeItem('monyx.handoff'); } catch { /* */ }
+    if (!h || h.exp < Date.now() || !S.acct || h.a !== S.acct.address || S.kp) return;
+    try { const kp = keypairFrom(h.s); if (kp.publicKey.toBase58() === S.acct.address) { S.secretMem = h.s; S.kp = kp; } } catch { /* */ }
+  }
+  document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('a[data-pro]'); if (a) handOff(); });
   const isLocked = () => !!(S.acct && S.acct.mode === 'key' && !S.acct.secret && !S.kp && vault.get());
   function screenUnlock() {
     const u = S.acct.user || {};
@@ -2924,6 +2945,7 @@
     if (S.acct && S.acct.mode === 'key' && S.acct.secret) { try { S.kp = keypairFrom(S.acct.secret); } catch { S.acct = null; } }
     if (S.acct && S.acct.mode === 'key' && !S.acct.secret && !vault.get()) S.acct.token = null; // no key anywhere: start over
     if (S.acct && !S.acct.token) { S.acct = null; S.kp = null; store.del('monyx.acct'); } // signup interrupted before the account existed
+    takeHandOff();
     window.addEventListener('hashchange', route);
     // Mid-signup the key exists only in memory; warn before it's lost.
     window.addEventListener('beforeunload', (e) => { if (S.holdKey && S.acct && S.acct.token) { e.preventDefault(); e.returnValue = ''; } });

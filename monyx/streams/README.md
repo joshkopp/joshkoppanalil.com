@@ -62,3 +62,8 @@ usually logged a moment before its Stream delivery arrives; the repeat is ignore
   create a new one (it gets a new token, so update the secret).
 - **Nothing arrives**: the filter only sends blocks that touch a wallet in `monyx_wallets`. Open
   the app once after signing up so the wallet gets added.
+- **A tiny payment didn't show up**: payments from wallets outside Monyx under $0.10 USDC (or 0.01 SOL)
+  are ignored on purpose, so nobody can spam people with penny payments and notes. Change it with the
+  `MONYX_OUTSIDE_MIN_USD` / `MONYX_OUTSIDE_MIN_SOL` secrets.
+- Each payment in a transaction is its own row (signature + token + receiver), so a transaction that
+  pays USDC and SOL keeps both.

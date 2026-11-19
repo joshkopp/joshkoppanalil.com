@@ -677,3 +677,12 @@ body[data-mode="basic"] [data-r="pro"] { display: none !important; }
 .padamt #padv { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .padamt { max-width: calc(100% - 24px); justify-self: center; }
 @media (min-width: 900px) and (hover: hover) { .padamt[data-len="10"], .padamt[data-len="11"], .padamt[data-len="12"], .padamt[data-len="13"] { --fs: 56px; } }
+
+/* Pro tools in the desktop sidebar (Pro mode only). On phones they stay under Me. */
+.tabpro { display: none; }
+@media (min-width: 900px) {
+  body[data-mode="pro"] .tabpro { display: flex; flex-direction: column; gap: 2px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line2); }
+  .tabpro-h { padding: 0 16px 6px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); }
+  .tabbar .tabpro a { height: 42px; font-size: 14px; }
+  .tabbar .tabpro a svg { width: 20px; height: 20px; }
+}
