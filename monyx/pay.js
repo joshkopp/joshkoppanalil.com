@@ -734,7 +734,7 @@
     const savedPk = () => (S.loginOther ? null : savedPkReal()), knownUser = () => (S.loginOther ? null : knownUserReal());
     const other = S.loginOther && (savedPkReal() || knownUserReal());
     show(`<section class="steps">
-      <div class="topline">${knownUser() ? '<span></span>' : `<button class="back" id="back" aria-label="Back">${ICON.back}</button>`}<span></span><span></span></div>
+      <div class="topline">${knownUser() ? '' : `<button class="back" id="back" aria-label="Back">${ICON.back}</button>`}<div class="brand">${LOGO}</div><span class="tl-spacer"></span></div>
       <div class="body"><h2>Welcome back${knownUser() && knownUser().name ? `, ${esc(knownUser().name.split(' ')[0])}` : ''}</h2>
         ${savedPk() ? `<div class="pkback">${avatar(savedPk().user || {}, 'sm')}<div><b>${esc((savedPk().user || {}).name || 'Your account')}</b><span>${(savedPk().user || {}).handle ? '@' + esc(savedPk().user.handle) + ' · ' : ''}${isPwVault(savedPk()) ? 'password' : 'passkey'} saved on this device</span></div></div>
         ${isPwVault(savedPk()) ? `<form id="pkf" class="pwrow"><input type="text" name="username" autocomplete="username" value="@${esc((savedPk().user || {}).handle || '')}" hidden><label class="field"><input type="password" id="pkpw" autocomplete="current-password" placeholder="Your password" aria-label="Password"></label></form>` : ''}
