@@ -239,6 +239,18 @@ async function sessionUser(req: Request) {
   const { data: u } = await db.from("monyx_users").select("*").eq("id", s.user_id).single();
   return u;
 }
+// Session tokens seen by /rpc, cached for a few minutes so balance polling doesn't hit the database.
+const rpcSessions = new Map<string, { id: string | null; until: number }>();
+async function rpcCaller(req: Request) {
+  const t = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  if (!t || t.startsWith("mx_")) return null;
+  const c = rpcSessions.get(t); if (c && c.until > Date.now()) return c.id;
+  const { data: s } = await db.from("monyx_sessions").select("user_id, expires_at").eq("token", t).maybeSingle();
+  const id = s && new Date(s.expires_at) > new Date() ? s.user_id : null;
+  if (rpcSessions.size > 5000) rpcSessions.clear();
+  rpcSessions.set(t, { id, until: Date.now() + 300_000 });
+  return id;
+}
 const sha256 = async (s: string) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].map((b) => b.toString(16).padStart(2, "0")).join("");
 async function agentUser(req: Request) {
   const t = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
@@ -361,7 +373,10 @@ Deno.serve(async (req) => {
       if (!ORIGINS.has(origin)) return fail("Browser RPC is only for the Monyx app.", 403, "forbidden");
       const m = String(body?.method || "");
       if (!READ.has(m) || !Array.isArray(body?.params) || JSON.stringify(body.params).length > 2000) return fail("That RPC call isn't allowed.", 400, "bad_rpc");
-      if (limited("rpc" + ip, 900, 600_000)) return fail("Slow down a little.", 429, "rate_limited");
+      // The Origin check only stops other websites; scripts can fake it. So the real limit is by caller:
+      // a signed-in Monyx session gets the normal allowance, anyone else a small one per IP.
+      const who = await rpcCaller(req);
+      if (who ? limited("rpcu" + who, 900, 600_000) : limited("rpc" + ip, 150, 600_000)) return fail("Slow down a little.", 429, "rate_limited");
       // Cache answers: a confirmed transaction never changes, and balances/history are fine 3 seconds stale.
       // Cuts upstream calls (and the 429s they cause) by a lot when several tabs poll.
       const ck = m + JSON.stringify(body.params);
@@ -427,7 +442,10 @@ Deno.serve(async (req) => {
       const [b64, mac] = String(url.searchParams.get("t") || "").split(".");
       let tk: any = null;
       try { if (mac && mac === (await hmacB64(b64))) tk = JSON.parse(atob(b64)); } catch { /* */ }
-      if (!tk || tk.exp < Date.now()) return fail("Please sign in again.", 401, "unauthorized");
+      if (!tk || !tk.n || tk.exp < Date.now()) return fail("Please sign in again.", 401, "unauthorized");
+      // Each ticket opens one stream. A copy that ends up in a log has already been used (and expires in 30 s).
+      const { error: used } = await db.from("monyx_used_logins").insert({ sig: "evt:" + tk.n });
+      if (used) return fail("Please sign in again.", 401, "unauthorized");
       const me = tk.a as string, uid = tk.u as string;
       let since = Number(req.headers.get("last-event-id")) || Number(url.searchParams.get("since")) || Date.now() - 5000;
       const enc = new TextEncoder(), known = new Map<string, any>(), sentPaid = new Set<string>();
@@ -476,6 +494,7 @@ Deno.serve(async (req) => {
               await new Promise((r) => setTimeout(r, 1500));
             }
           } catch (e) { console.error("[monyx-pay] events:", e); }
+          put("event: bye\ndata: {}\n\n");
           if (open) try { ctrl.close(); } catch { /* */ }
         },
       });
@@ -614,8 +633,9 @@ Deno.serve(async (req) => {
     if (path === "/events/ticket" && req.method === "POST") {
       // Make sure QuickNode's filter is watching this wallet (once per account).
       if (!user.kv_synced && (await kvAddWallet(user.address).catch(() => false))) await db.from("monyx_users").update({ kv_synced: true }).eq("id", user.id);
-      // Read-only ticket for your own event stream; reconnects reuse it, so it lasts a few hours.
-      const b64 = btoa(JSON.stringify({ u: user.id, a: user.address, exp: Date.now() + 6 * 3600_000 }));
+      // One-time, 30-second ticket for your own event stream. The app asks for a new one for each connection.
+      const n = [...crypto.getRandomValues(new Uint8Array(12))].map((b) => b.toString(16).padStart(2, "0")).join("");
+      const b64 = btoa(JSON.stringify({ u: user.id, a: user.address, n, exp: Date.now() + 30_000 }));
       return json({ ticket: `${b64}.${await hmacB64(b64)}` });
     }
     // Payment history from Monyx's own log (fed by the relay and QuickNode Streams), newest first.
@@ -753,7 +773,7 @@ Deno.serve(async (req) => {
       const usd = Math.round(qty * p * 100) / 100;
       if (!(qty > 0) || qty > have + 1e-12) return fail(`You have $${(have * p).toFixed(2)} of ${ASSETS[asset].sym} to sell.`);
       if (usd < 0.01) return fail("That's less than a cent. Swap it into another coin instead.");
-      if (!body.all && usd < 0.5) return fail("The smallest sale is $0.50. Use Sell all to cash out a smaller amount.");
+      if (!body.all && usd < 1) return fail("The smallest sale is $1. Use Sell all to cash out a smaller amount.");
       const kp = await bank();
       // A user's sale outranks welcome dollars, so sales may use the floor; only an actually empty bank pauses them.
       if ((await usdcOf(kp.publicKey)) < usd * U) return fail("Selling is paused while the Monyx test bank refills. Swaps still work.", 503, "bank_low");

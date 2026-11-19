@@ -670,3 +670,10 @@ body[data-mode="basic"] [data-r="pro"] { display: none !important; }
 /* Hidden input that catches typed and pasted amounts on the money pad. It must stay focusable, so it's
    clipped instead of display:none. */
 #padcap, .sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; border: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; opacity: 0; caret-color: transparent; }
+/* Long invalid text in the amount stays inside the frame. */
+.padamt { max-width: 100%; overflow: hidden; }
+.padamt[data-len="10"], .padamt[data-len="11"], .padamt[data-len="12"], .padamt[data-len="13"] { --fs: 48px; }
+.padmid { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.padamt #padv { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.padamt { max-width: calc(100% - 24px); justify-self: center; }
+@media (min-width: 900px) and (hover: hover) { .padamt[data-len="10"], .padamt[data-len="11"], .padamt[data-len="12"], .padamt[data-len="13"] { --fs: 56px; } }

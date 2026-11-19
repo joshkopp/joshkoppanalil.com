@@ -33,7 +33,10 @@
   // The text stays in the box so "-1" can't quietly turn into 1 as you keep typing.
   const MINUS = /[-\u2212\u2010-\u2015\ufe63\uff0d]/;
   function amtCheck(raw) {
-    const t = String(raw || '').replace(/[,\s]/g, '');
+    let t = String(raw || '').replace(/\s/g, '');
+    // A comma only counts as a thousands separator ("1,000" or "1,250.50"). Anything else is
+    // rejected rather than guessed, so "1,000" can never become $1.00.
+    if (t.includes(',')) { if (!/^\$?\d{1,3}(,\d{3})+(\.\d*)?$/.test(t)) return { n: NaN, err: 'Use numbers only, like 1000 or 12.50.' }; t = t.replace(/,/g, ''); }
     if (MINUS.test(t)) return { n: NaN, err: 'Amounts can’t be negative.' };
     if (/[^0-9.]/.test(t) || (t.match(/\./g) || []).length > 1) return { n: NaN, err: 'Use numbers only, like 12.50.' };
     if (/\.\d{3}/.test(t)) return { n: NaN, err: 'Dollars only go to 2 decimal places (cents).' };
@@ -56,6 +59,14 @@
     get(k, d = null) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
     del(k) { try { localStorage.removeItem(k); } catch {} },
+  };
+  // Things that belong to one account (contacts, nicknames, pay links) are stored under its address,
+  // so switching accounts on a shared device never mixes them. Older shared copies move to the
+  // first account that reads them.
+  const mineKey = (k) => `${k}.${(S && S.acct && S.acct.address) || 'none'}`;
+  const mine = {
+    get(k, d = null) { if (!S.acct) return d; const pk = mineKey(k); let v = store.get(pk); if (v == null) { const g = store.get(k); if (g != null) { store.set(pk, g); store.del(k); v = g; } } return v == null ? d : v; },
+    set(k, v) { if (S.acct) store.set(mineKey(k), v); },
   };
   const ICON = {
     bell: '<svg viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>',
@@ -84,7 +95,7 @@
   const S = {
     acct: store.get('monyx.acct'),       // { mode, secret?, address, token, user }
     kp: null, cash: null,
-    feed: [], people: store.get('monyx.people', {}), requests: { incoming: [], outgoing: [] },
+    feed: [], people: {}, requests: { incoming: [], outgoing: [] },
     markets: store.get('monyx.markets', null), port: null, bankAddr: store.get('monyx.bank2', null),
     drafts: [], claims: [], inboxAt: Date.now(), lastMs: null,
     signup: null, timers: [],
@@ -135,10 +146,13 @@
     const key = await crypto.subtle.importKey('jwk', { kty: 'OKP', crv: 'Ed25519', d: b64url(sk.slice(0, 32)), x: b64url(sk.slice(32)), ext: true }, { name: 'Ed25519' }, false, ['sign']);
     return b64(new Uint8Array(await crypto.subtle.sign({ name: 'Ed25519' }, key, msg)));
   }
+  // Sign-in proof: a one-time nonce from the server plus this site's name, so a signature can't be
+  // replayed or collected by a look-alike site.
   async function proof(address) {
-    const ts = Date.now();
-    const sig = await signText(`Sign in to Monyx\n\nAccount: ${address}\nTime: ${ts}`);
-    return { address, ts, sig };
+    const { nonce } = await api('/nonce', { auth: false });
+    const site = location.hostname, ts = Date.now();
+    const sig = await signText(`${site} wants you to sign in to Monyx.\n\nAccount: ${address}\nNonce: ${nonce}\nTime: ${ts}`);
+    return { address, ts, sig, nonce, site };
   }
 
   /* ───────── server ───────── */
@@ -180,7 +194,8 @@
     for (let i = 0; i < tries; i++) {
       let j;
       try {
-        const r = await fetch(RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
+        const h = { 'content-type': 'application/json' }; if (S.acct && S.acct.token && RPC.startsWith(PAPI)) h.authorization = `Bearer ${S.acct.token}`;
+        const r = await fetch(RPC, { method: 'POST', headers: h, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
         if (r.status === 429 || r.status >= 500) throw new Error('busy');
         j = await r.json();
       } catch (e) { if (i === tries - 1) throw e; await new Promise((s) => setTimeout(s, 350 * 2 ** i)); continue; }
@@ -238,13 +253,13 @@
     return await api(PAPI + '/relay', { method: 'POST', body: { tx: b64(raw) } }); // sends your session: relay checks it matches the signer
   }
   async function send(toAddress, dollars, note) {
-    const units = toUnits(dollars);
+    const units = toUnits(dollars), t0 = performance.now();
     try {
       const have = await usdcOf(S.acct.address);
       if (have < units) throw userError(`You have ${money(usd(have))}. Add money to send ${money(dollars)}.`);
       const r = await usdcSend({ owner: S.acct.address, signer: S.acct.mode === 'phantom' ? 'phantom' : S.kp, to: toAddress, units, note });
       if (r.pending) throw userError("The network is busy, so your payment is still landing. Check Activity in a minute before trying again.");
-      S.lastMs = r.ms || null;
+      S.lastMs = Math.round(performance.now() - t0); // what you actually waited, from tap to confirmed
       S.cash = Math.max(0, have - units); paintBalance();
       return r.sig;
     } catch (e) {
@@ -263,9 +278,10 @@
     const cacheKey = `monyx.usdcfeed.${me}`;
     if (S.feedOwner !== me) { S.feed = []; S.feedOwner = me; } // never show another account's history
     if (!S.feed.length) S.feed = store.get(cacheKey, []);
+    if (S.feed.length) S.feedReady = me; // cached rows are real; an empty cache just means "not loaded yet"
     // Monyx's own payment log first (fed by the relay and QuickNode Streams): one request, no Solana reads.
     try {
-      const r = await api(`${PAPI}/activity?limit=40`);
+      const r = await api(`${PAPI}/activity?limit=100`);
       if (!S.acct || S.acct.address !== me) return;
       const rows = (r.payments || []).filter((p) => p.token !== 'SOL');
       if (rows.length) {
@@ -275,7 +291,7 @@
         store.set(cacheKey, S.feed);
         notePaid(S.feed.filter((f) => f.amount < 0).map((f) => f.with));
         await resolvePeople(S.feed.map((f) => f.with).filter((a) => a && !S.people[a]));
-        paintFeed(); paintPeople();
+        S.feedReady = me; paintFeed(); paintPeople();
         announceFeed(S.feed.filter((f) => fresh.some((p) => p.sig === f.sig)));
         return;
       }
@@ -297,9 +313,9 @@
       store.set(cacheKey, S.feed);
       notePaid(S.feed.filter((f) => f.ok && f.amount < 0).map((f) => f.with));
       await resolvePeople(S.feed.map((f) => f.with).filter(Boolean));
-      paintFeed(); paintPeople();
+      S.feedReady = me; paintFeed(); paintPeople();
       announceFeed([...got.values()].filter(Boolean));
-    } catch { paintFeed(); }
+    } catch { S.feedReady = me; paintFeed(); }
   }
   function toEntry(tx, s, me) {
     // Who gained and who lost USDC in this transaction.
@@ -316,19 +332,24 @@
     for (const x of ix) if (x.program === 'spl-memo' && typeof x.parsed === 'string') note = x.parsed;
     return { sig: s.signature, time: s.blockTime, ok: !s.err, with: withAddr, note, amount: mine };
   }
+  function syncPeople() {
+    const a = S.acct && S.acct.address;
+    if (a && S.peopleFor !== a) { S.people = mine.get('monyx.people', {}); S.peopleFor = a; }
+  }
   async function resolvePeople(addresses) {
-    if (store.get('monyx.peopleV') !== 2) { S.people = {}; store.set('monyx.people', {}); store.set('monyx.peopleAt', 0); store.set('monyx.peopleV', 2); }
+    if (store.get('monyx.peopleV') !== 3) { store.del('monyx.people'); store.del('monyx.peopleAt'); store.set('monyx.peopleV', 3); }
+    syncPeople();
     const b = S.bankAddr || store.get('monyx.bank2') || BANK_ADDR;
     if (b) S.people[b] = { handle: 'monyx', name: 'Monyx', address: b, bank: true };
-    const fresh = Date.now() - store.get('monyx.peopleAt', 0) < 600_000;
+    const fresh = Date.now() - mine.get('monyx.peopleAt', 0) < 600_000;
     const need = [...new Set(addresses)].filter((a) => a !== b && !(S.people[a] && S.people[a].link) && (!fresh || !S.people[a]));
     if (!need.length) return;
-    if (!fresh) store.set('monyx.peopleAt', Date.now());
+    if (!fresh) mine.set('monyx.peopleAt', Date.now());
     try {
       const { users } = await api(`/resolve?a=${need.join(',')}`);
       for (const a of need) S.people[a] = users[a] || { address: a, unknown: true };
       if (b) S.people[b] = { handle: 'monyx', name: 'Monyx', address: b, bank: true }; // the treasury label is never overwritten
-      store.set('monyx.people', S.people);
+      mine.set('monyx.people', S.people);
     } catch {}
   }
   async function loadRequests() {
@@ -357,7 +378,7 @@
     return `<div class="av ${size}" style="background:${PALETTE[h % PALETTE.length]}">${esc(ini)}${photo}</div>`;
   }
   // Nicknames for addresses outside Monyx. Stored on this device only, never sent to the server.
-  const nicks = () => store.get('monyx.nicks', {});
+  const nicks = () => mine.get('monyx.nicks', {});
   const nickOf = (a) => (a && nicks()[a]) || '';
   const who = (p) => {
     if (p && p.unknown && p.address && nickOf(p.address)) return nickOf(p.address);
@@ -436,9 +457,9 @@
   // so switching accounts on a device never shows the last person's balance, history or requests.
   function clearAccountState(address) {
     if (address) { store.del(`monyx.usdcfeed.${address}`); store.del(`monyx.feed.${address}`); store.del(`monyx.paidTo.${address}`); }
-    stopLive(); S.liveFor = null;
-    S.feed = []; S.cash = null; S.port = null; S.people = S.people || {};
-    S.requests = { incoming: [], outgoing: [] }; S.drafts = []; S.lastMs = null;
+    stopLive(); S.liveFor = null; S.liveSince = null;
+    S.feed = []; S.cash = null; S.port = null; S.people = {}; S.peopleFor = null;
+    S.requests = { incoming: [], outgoing: [] }; S.drafts = []; S.lastMs = null; S.feedReady = null;
     store.del('monyx.feed'); store.del('monyx.pending.sig');
   }
   const knownUser = () => (savedPk() && savedPk().user) || store.get('monyx.known') || null;
@@ -505,18 +526,21 @@
   function stepHandle() {
     const su = S.signup;
     show(stepShell(2, `<h2>Pick your @username</h2><p class="sub">People pay you with this. Short and easy to say out loud works best.</p>
-      <label class="field prefix" style="margin-top:22px"><span>@</span><input id="hd" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40" value="${esc(su.handle)}"></label>
+      <label class="field prefix" style="margin-top:22px"><span>@</span><input id="hd" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="20" value="${esc(su.handle)}"></label>
       <div class="hint" id="hint" aria-live="polite"></div>`,
       `<button class="btn btn-dark" id="next">Create account</button>`));
     const hd = $('#hd'), hint = $('#hint'), next = $('#next');
-    let t, seq = 0;
+    let t, seq = 0, firstCheck = !!su.handle;
     const check = async () => {
       const v = hd.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
       const stripped = v !== hd.value.toLowerCase();
       if (v !== hd.value) hd.value = v;
-      if (stripped) { hint.className = 'hint bad'; hint.textContent = 'Usernames can only use letters, numbers and _.'; }
+      // Say when something was removed instead of changing it silently; the note stays with the result.
+      const pre = stripped ? 'Only letters, numbers and _ work, so we removed the rest. ' : firstCheck ? 'Suggested from your name. ' : '';
+      firstCheck = false;
       su.handle = v; su.avail = false; next.disabled = true;
-      if (v.length < 3) { hint.className = 'hint'; hint.textContent = 'At least 3 letters or numbers.'; return; }
+      if (v.length < 3) { hint.className = stripped ? 'hint bad' : 'hint'; hint.textContent = pre + 'At least 3 letters or numbers.'; return; }
+      if (v.startsWith('_')) { hint.className = 'hint bad'; hint.textContent = pre + 'Start with a letter or number.'; return; }
       if (v.length > 20) { hint.className = 'hint bad'; hint.textContent = `Usernames can be 20 characters at most (that's ${v.length}).`; return; }
       const my = ++seq;
       hint.className = 'hint'; hint.textContent = 'Checking…';
@@ -525,7 +549,7 @@
         if (my !== seq) return;
         su.avail = r.available; next.disabled = !r.available;
         hint.className = 'hint ' + (r.available ? 'ok' : 'bad');
-        hint.textContent = r.available ? `@${v} is yours if you want it.` : `${r.reason || 'Taken'}. Try @${v}${Math.floor(Math.random() * 90 + 10)}?`;
+        hint.textContent = pre + (r.available ? `@${v} is yours if you want it.` : `${r.reason || 'Taken'}. Try @${v}${Math.floor(Math.random() * 90 + 10)}?`);
       } catch { hint.className = 'hint bad'; hint.textContent = "Couldn't check right now."; next.disabled = false; }
     };
     hd.oninput = () => { clearTimeout(t); t = setTimeout(check, 280); };
@@ -816,19 +840,20 @@
   // three are done, or when the person dismisses it.
   function paintStart() {
     const el = $('#start'); if (!el) return;
-    if (store.get('monyx.startHidden')) { el.innerHTML = ''; return; }
+    // Wait for the real history, or "Send your first payment" shows as not done for a moment.
+    if (mine.get('monyx.startHidden') || S.feedReady !== S.acct.address || S.cash == null) { el.innerHTML = ''; return; }
     const steps = [
       { t: 'Add money', s: 'Get free test money to try things out', done: S.cash > 0, go: addMoney },
       { t: 'Send your first payment', s: 'Pay a friend by their @username', done: S.feed.some((f) => f.amount < 0 && f.with && !(S.people[f.with] || {}).bank), go: () => (location.hash = '#pay') },
-      { t: 'Share your pay link', s: 'So friends can pay you', done: !!store.get('monyx.shared'), go: shareLink },
+      { t: 'Share your pay link', s: 'So friends can pay you', done: !!mine.get('monyx.shared'), go: shareLink },
       { t: 'Add a profile photo', s: 'So friends know it’s really you', done: !!S.acct.user.avatar, go: () => { location.hash = '#me'; setTimeout(pickPhoto, 50); } },
     ];
     const n = steps.filter((x) => x.done).length;
-    if (n === steps.length) { store.set('monyx.startHidden', true); el.innerHTML = ''; return; }
+    if (n === steps.length) { mine.set('monyx.startHidden', true); el.innerHTML = ''; return; }
     el.innerHTML = `<section class="start"><div class="start-h"><div><b>Get started</b><span>${n} of ${steps.length} done</span></div><button class="x" id="startX" aria-label="Hide">${ICON.x}</button></div>
       <div class="bar"><i style="width:${(n / steps.length) * 100}%"></i></div>
       ${steps.map((x, i) => `<button class="srow ${x.done ? 'ok' : ''}" data-i="${i}"><span class="ck">${x.done ? ICON.check : i + 1}</span><span class="mid"><b>${x.t}</b><span>${x.s}</span></span>${x.done ? '' : ICON.chev}</button>`).join('')}</section>`;
-    $('#startX').onclick = () => { store.set('monyx.startHidden', true); el.innerHTML = ''; };
+    $('#startX').onclick = () => { mine.set('monyx.startHidden', true); el.innerHTML = ''; };
     $$('.srow', el).forEach((b) => (b.onclick = () => { const x = steps[+b.dataset.i]; if (!x.done) x.go(); }));
   }
   function paintPeople() {
@@ -845,6 +870,7 @@
   function paintFeed() {
     paintStart();
     const el = $('#feed'); if (!el) return;
+    if (!S.feed.length && S.feedReady !== (S.acct && S.acct.address)) { el.innerHTML = `<div class="empty"><span class="spin"></span>Loading your activity…</div>`; return; }
     if (!S.feed.length) { el.innerHTML = `<div class="empty">Nothing here yet.<br>Pay a friend, or share your link from the Me tab to get paid.</div>`; return; }
     const isTrade = (f) => (S.people[f.with] || {}).bank && /^(Sold|Buy) /.test(f.note || '');
     const rows = el.dataset.notrades ? S.feed.filter((f) => !isTrade(f)) : S.feed; // trades live under the Crypto tab
@@ -938,8 +964,8 @@
       amtEl.classList.toggle('neg', !!neg);
       const ok = !neg && parseFloat(v) > 0;
       $('#padpay').disabled = !ok; $('#padreq').disabled = !ok; // buttons look off whenever they'd do nothing
-      if (neg) { vEl.textContent = junk || '−'; sub.textContent = neg === 'junk' ? 'Use numbers only, like 12.50. Press delete to clear it.' : 'Amounts can’t be negative. Press delete to clear it.'; sub.classList.add('bad'); S.padV = ''; return; }
-      amtEl.dataset.len = Math.min(9, txt.length);
+      if (neg) { vEl.textContent = junk || '−'; amtEl.dataset.len = Math.min(13, (junk || '−').length); sub.textContent = neg === 'junk' ? 'Use numbers only, like 12.50. Press delete to clear it.' : 'Amounts can’t be negative. Press delete to clear it.'; sub.classList.add('bad'); S.padV = ''; return; }
+      amtEl.dataset.len = Math.min(13, vEl.textContent.length);
       amtEl.classList.toggle('zero', !v || +v === 0);
       S.padV = v;
       if (S.cash != null) {
@@ -954,10 +980,10 @@
       let next = v;
       if (k === '-' || k === 'junk') {
         if (!neg) junk = v; neg = (neg === true || k === '-') ? true : 'junk';
-        junk += k === '-' ? '−' : (ch || '?'); v = ''; shake(); paint(); return;
+        if (junk.length < 12) junk += k === '-' ? '−' : (ch || '?'); v = ''; shake(); paint(); return;
       }
       if (neg) {
-        if (k === 'del') { junk = junk.slice(0, -1); if (!junk) neg = false; } else junk += k;
+        if (k === 'del') { junk = junk.slice(0, -1); if (!junk) neg = false; } else if (junk.length < 12) junk += k;
         paint(); return;
       }
       if (k === 'del') next = v.slice(0, -1);
@@ -982,7 +1008,7 @@
       if (e.metaKey || e.ctrlKey || e.altKey || document.querySelector('.sheet-wrap')) return;
       const t = e.target; if (t && t.id !== 'padcap' && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
       let k = null;
-      if (/^[0-9]$/.test(e.key)) k = e.key; else if (e.key === '.' || e.key === ',') k = '.'; else if (e.key === 'Backspace' || e.key === 'Delete') k = 'del';
+      if (/^[0-9]$/.test(e.key)) k = e.key; else if (e.key === '.') k = '.'; else if (e.key === ',') { e.preventDefault(); return; } else if (e.key === 'Backspace' || e.key === 'Delete') k = 'del';
       else if (MINUS.test(e.key)) k = '-';
       else if (e.key.length === 1 && /[eE+a-df-zA-DF-Z]/.test(e.key) && (v || neg)) k = 'junk'; // "1e2" must not become 12
       if (k) { e.preventDefault(); press(k, e.key); if (k === '-') return; const b = $(`.key[data-k="${k}"]`); if (b) { b.classList.add('down'); setTimeout(() => b.classList.remove('down'), 120); } return; }
@@ -1017,7 +1043,7 @@
       cap.addEventListener('input', () => {
         const txt = cap.value; cap.value = '';
         for (const ch of txt) {
-          if (/[0-9]/.test(ch)) press(ch); else if (ch === '.' || ch === ',') press('.');
+          if (/[0-9]/.test(ch)) press(ch); else if (ch === '.') press('.'); else if (ch === ',') continue;
           else if (MINUS.test(ch)) press('-'); else if (ch.trim()) press('junk', ch);
         }
       });
@@ -1326,7 +1352,7 @@
         const lc = name.toLowerCase();
         const taken = lc === 'monyx' || Object.values(S.people || {}).some((p) => p && !p.unknown && p.handle && p.handle.toLowerCase() === lc);
         if (taken) { err.textContent = 'That name is already a Monyx username. Pick another.'; return; }
-        const all = nicks(); all[address] = name; store.set('monyx.nicks', all);
+        const all = nicks(); all[address] = name; mine.set('monyx.nicks', all);
         close(); toast(`Saved "${esc(name)}"`); onDone && onDone();
       };
     });
@@ -1380,7 +1406,7 @@
     });
   }
   async function shareLink() {
-    store.set('monyx.shared', true);
+    mine.set('monyx.shared', true);
     const url = payLink(S.acct.user.handle);
     const text = `Pay me on Monyx: @${S.acct.user.handle}`;
     if (navigator.share) { try { await navigator.share({ title: 'Monyx', text, url }); return; } catch {} }
@@ -1424,7 +1450,7 @@
     $('#tTalk').onchange = (e) => { S.voice.talk = e.target.checked; store.set('monyx.talkback', S.voice.talk); if (S.voice.talk) say('Okay, I’ll talk back.'); else stopSpeaking(); };
     $('#tAnn').onchange = (e) => { S.voice.announce = e.target.checked; store.set('monyx.announce', S.voice.announce); if (S.voice.announce) say('I’ll read new payments out loud.', { force: true }); };
     $('#avEdit').onclick = () => (u.avatar ? photoMenu() : pickPhoto());
-    $('#copy').onclick = () => { store.set('monyx.shared', true); copy(payLink(u.handle), 'Link copied'); };
+    $('#copy').onclick = () => { mine.set('monyx.shared', true); copy(payLink(u.handle), 'Link copied'); };
     $('[data-r="add"]').onclick = addMoney;
     $('[data-r="ai"]').onclick = assistantSheet;
     $('[data-r="links"]').onclick = linksSheet;
@@ -1603,9 +1629,9 @@
   // A buy is a payment plus a server call. If the call fails after the
   // payment lands, the signature is kept here and finished on the next load.
   const pendingBuys = {
-    list: () => store.get('monyx.pendingBuys', []),
-    add(asset, sig) { store.set('monyx.pendingBuys', [...this.list(), { asset, sig, t: Date.now() }]); },
-    remove(sig) { store.set('monyx.pendingBuys', this.list().filter((p) => p.sig !== sig)); },
+    list: () => mine.get('monyx.pendingBuys', []),
+    add(asset, sig) { mine.set('monyx.pendingBuys', [...this.list(), { asset, sig, t: Date.now() }]); },
+    remove(sig) { mine.set('monyx.pendingBuys', this.list().filter((p) => p.sig !== sig)); },
     async settle() {
       for (const p of this.list()) {
         try { await api(PAPI + '/trade/buy', { method: 'POST', body: { asset: p.asset, sig: p.sig } }); this.remove(p.sig); }
@@ -1757,8 +1783,8 @@
     const h = holdingOf(a.id); if (!h) return;
     amountSheet({
       title: `Sell ${esc(a.name)}`, sub: `Money goes back to your Monyx cash. You own ${esc(fmtQty(h.qty, a.symbol))}.`,
-      max: h.value, maxLabel: 'Sell all', cta: `Sell ${esc(a.symbol)}`, min: 0.5,
-      belowMin: 'The smallest sale is $0.50. Tap Sell all to cash out everything, however small.',
+      max: h.value, maxLabel: 'Sell all', cta: `Sell ${esc(a.symbol)}`, min: 1,
+      belowMin: 'The smallest sale is $1. Tap Sell all to cash out everything, however small.',
       preview: (v) => `You'll sell about ${fmtQty(v / a.price, a.symbol)}`,
       async onGo(v, all, close) {
         const r = await api(PAPI + '/trade/sell', { method: 'POST', body: { asset: a.id, usd: v, all } });
@@ -1942,6 +1968,7 @@
   }
   // Find who they meant: friends first (people you've paid or been paid by), then everyone on Monyx.
   async function findPerson(name) {
+    syncPeople();
     const n = norm(name), first1 = norm(name.split(' ')[0]);
     const me = S.acct && S.acct.user;
     if (me && (norm(me.handle) === n || norm(me.handle) === norm(name.replace(/^@/, '')) || norm(me.name) === n)) throw userError("That's you. You can't pay yourself.");
@@ -2092,7 +2119,7 @@
         <div class="vres" id="vres"></div>
       </div>
       <div class="tries" id="tries">${examples().map((x) => `<button>${esc(x)}</button>`).join('')}</div>
-      <form class="field typeit" id="typeit"><input id="tq" placeholder="Or type it: ${esc(sampleCmd().replace('$', ''))}" autocomplete="off" enterkeyhint="go" aria-label="Type a command"><button class="go" aria-label="Go">${ICON.chev}</button></form>
+      <form class="field typeit" id="typeit"><input id="tq" placeholder="Or type it: ${esc(sampleCmd())}" autocomplete="off" enterkeyhint="go" aria-label="Type a command"><button class="go" aria-label="Go">${ICON.chev}</button></form>
       <p class="fine">You always tap to confirm before money moves.</p>`, (el, close) => {
       const orb = $('#orb', el), heard = $('#heard', el), said = $('#said', el), vres = $('#vres', el);
       const setState = (st) => { orb.className = 'orb ' + st; };
@@ -2112,7 +2139,7 @@
           if (r && r.go) { close(); r.go(); return; }
           heard.textContent = typeof r === 'string' ? '' : 'Here you go';
         } catch (e) {
-          setState('');
+          setState(''); vres.innerHTML = ''; // drop "Looking for …" so only the answer shows
           heard.textContent = friendly(e);
           say(friendly(e).replace(/[“”]/g, ''));
           $('#tries', el).hidden = false;
@@ -2221,9 +2248,9 @@
      link can move the money to their own Monyx account; until then the
      sender can cancel and get it back. */
   const links = {
-    all: () => store.get('monyx.links', []),
-    add(l) { store.set('monyx.links', [l, ...this.all()].slice(0, 50)); },
-    get: (escrow) => store.get('monyx.links', []).find((l) => l.escrow === escrow),
+    all: () => mine.get('monyx.links', []),
+    add(l) { mine.set('monyx.links', [l, ...this.all()].slice(0, 50)); },
+    get: (escrow) => mine.get('monyx.links', []).find((l) => l.escrow === escrow),
   };
   const linkUrl = (secret) => `${SITE}#claim/${secret}`;
   function rememberLinkPeople() {
@@ -2412,25 +2439,30 @@
     stopLive(); S.liveFor = S.acct.address;
     let t;
     try { t = await api(`${PAPI}/events/ticket`, { method: 'POST' }); } catch (e) { if (e.status === 401) return relogin(); S.liveRetry = setTimeout(() => { S.liveRetry = null; startLive(); }, 15000); return; }
-    const es = new EventSource(`${PAPI}/events?t=${encodeURIComponent(t.ticket)}&since=${Date.now() - 2000}`);
+    // The ticket works once and expires in seconds, so a copy in a log is useless. When the server ends
+    // the stream (every couple of minutes) it says "bye" and we reopen with a fresh ticket.
+    const since = S.liveSince || Date.now() - 2000;
+    const es = new EventSource(`${PAPI}/events?t=${encodeURIComponent(t.ticket)}&since=${since}`);
     S.live = es;
-    es.addEventListener('payment', (ev) => onLivePayment(JSON.parse(ev.data)));
-    es.addEventListener('request_paid', (ev) => {
-      const r = JSON.parse(ev.data); if (announced.has('rq' + r.id)) return; announced.add('rq' + r.id);
+    const safe = (fn) => (ev) => { try { if (ev.lastEventId) S.liveSince = Math.max(S.liveSince || 0, Number(ev.lastEventId) || 0); fn(JSON.parse(ev.data)); } catch (e) { console.warn('[monyx] skipped a live update', e); } };
+    es.addEventListener('bye', () => { if (S.live !== es) return; es.close(); S.live = null; S.liveFor = null; startLive(); });
+    es.addEventListener('payment', safe(onLivePayment));
+    es.addEventListener('request_paid', safe((r) => {
+      if (announced.has('rq' + r.id)) return; announced.add('rq' + r.id);
       const n = r.by ? first(r.by) : 'Someone';
       toast(`<b>${esc(n)}</b> paid your <b>${money(r.usd)}</b> request${r.note ? ` · ${esc(r.note)}` : ''}`, false, 5000);
       if (S.voice.announce) say(`${n} paid your ${spoken(r.usd)} request${r.note ? ` for ${plainNote(r.note)}` : ''}.`);
       loadRequests();
-    });
-    es.addEventListener('reminder', (ev) => {
-      const r = JSON.parse(ev.data); if (announced.has('rm' + r.id)) return; announced.add('rm' + r.id);
+    }));
+    es.addEventListener('reminder', safe((r) => {
+      if (announced.has('rm' + r.id)) return; announced.add('rm' + r.id);
       const n = r.from ? first(r.from) : 'Someone';
       toast(`Reminder: <b>${esc(n)}</b> asked you for <b>${money(r.usd)}</b>${r.note ? ` · ${esc(r.note)}` : ''}. <a href="#activity">Pay it</a>`, false, 8000);
       if (S.voice.announce) say(`Reminder: ${n} is still waiting on ${spoken(r.usd)}${r.note ? ` for ${plainNote(r.note)}` : ''}.`);
       loadRequests();
-    });
-    // EventSource reconnects by itself; a closed stream (expired ticket, sign-out) gets a fresh ticket.
-    es.onerror = () => { if (es.readyState === 2 && S.live === es) { S.live = null; S.liveFor = null; S.liveRetry = setTimeout(() => { S.liveRetry = null; startLive(); }, 5000); } };
+    }));
+    // A dropped connection can't reuse its ticket, so close it and come back with a fresh one.
+    es.onerror = () => { if (S.live !== es) return; es.close(); S.live = null; S.liveFor = null; S.liveRetry = setTimeout(() => { S.liveRetry = null; startLive(); }, 3000); };
   }
   async function onLivePayment(p) {
     if (announced.has(p.sig)) return; announced.add(p.sig);

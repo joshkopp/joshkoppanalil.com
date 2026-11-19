@@ -5,16 +5,18 @@
 // This server never touches anyone's money. Users hold their own keys in the
 // browser. It maps @usernames to account addresses and stores requests.
 //
-// Proof of ownership: to register or log in, the browser signs
-//   "Sign in to Monyx\n\nAccount: <address>\nTime: <unix ms>"
-// with the account key. The server checks the ed25519 signature and that the
-// time is within 5 minutes, then issues a 30-day session token.
+// Proof of ownership: to register or log in, the browser first gets a one-time nonce from
+// GET /nonce, then signs
+//   "<site> wants you to sign in to Monyx.\n\nAccount: <address>\nNonce: <nonce>\nTime: <unix ms>"
+// with the account key. The server checks the site is a Monyx site, the nonce is its own, unexpired
+// and unused, the time is within 2 minutes, and the ed25519 signature, then issues a 30-day session.
+// A signature can't be replayed, and a message signed for another site or without our nonce fails.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { Keypair } from "npm:@solana/web3.js@1.95.3";
 
 const SIGNUPS_PER_IP_HOUR = 10;
 const SESSION_DAYS = 30;
-const HANDLE = /^[a-z0-9_]{3,20}$/;
+const HANDLE = /^[a-z0-9][a-z0-9_]{2,19}$/;
 const B58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const RESERVED = new Set(["monyx", "admin", "support", "bank", "help", "official", "team", "security", "pay", "request", "me", "home"]);
 
@@ -60,18 +62,28 @@ function b58decode(s: string) {
   return new Uint8Array(out);
 }
 const b64decode = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
-const signText = (address: string, ts: number) => `Sign in to Monyx\n\nAccount: ${address}\nTime: ${ts}`;
-// Each signed sign-in message works once. A copied message can't be replayed to open a second session.
-async function proves(address: string, ts: number, sig: string) {
-  if (!B58.test(address) || !Number.isFinite(ts) || Math.abs(Date.now() - ts) > 2 * 60_000) return false;
+const SITES = new Set(["monyx.pro", "www.monyx.pro", "joshkoppanalil.com", "www.joshkoppanalil.com"]);
+const signText = (site: string, address: string, nonce: string, ts: number) => `${site} wants you to sign in to Monyx.\n\nAccount: ${address}\nNonce: ${nonce}\nTime: ${ts}`;
+const nonceMac = async (body: string) => (await hmac("nonce:" + body)).replace(/[^A-Za-z0-9]/g, "").slice(0, 22);
+async function newNonce() {
+  const n = [...crypto.getRandomValues(new Uint8Array(12))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const body = `${n}.${Date.now() + 5 * 60_000}`;
+  return `${body}.${await nonceMac(body)}`;
+}
+// Each nonce (and so each signed sign-in message) works once. A copied message can't be replayed.
+async function proves(b: any) {
+  const address = String(b?.address || ""), ts = Number(b?.ts), sig = String(b?.sig || ""), nonce = String(b?.nonce || ""), site = String(b?.site || "");
+  if (!B58.test(address) || !Number.isFinite(ts) || Math.abs(Date.now() - ts) > 2 * 60_000 || !SITES.has(site)) return false;
+  const [n, exp, mac] = nonce.split(".");
+  if (!n || !mac || !(Number(exp) > Date.now()) || mac !== (await nonceMac(`${n}.${exp}`))) return false;
   let ok = false;
   try {
     const key = await crypto.subtle.importKey("raw", b58decode(address), { name: "Ed25519" }, false, ["verify"]);
-    ok = await crypto.subtle.verify({ name: "Ed25519" }, key, b64decode(sig), new TextEncoder().encode(signText(address, ts)));
+    ok = await crypto.subtle.verify({ name: "Ed25519" }, key, b64decode(sig), new TextEncoder().encode(signText(site, address, nonce, ts)));
   } catch { return false; }
   if (!ok) return false;
-  const { error } = await db.from("monyx_used_logins").insert({ sig });
-  if (error) return false; // already used
+  const { error } = await db.from("monyx_used_logins").insert({ sig: "n:" + n });
+  if (error) return false; // nonce already used
   if (Math.random() < 0.05) db.from("monyx_used_logins").delete().lt("used_at", new Date(Date.now() - 3600_000).toISOString()).then(() => {});
   return true;
 }
@@ -137,7 +149,7 @@ Deno.serve(async (req) => {
     if (["/check", "/search", "/resolve"].includes(path) && req.method !== "GET") return fail("Use GET.", 405, "method_not_allowed");
     if (path === "/check") {
       const h = (url.searchParams.get("handle") || "").toLowerCase();
-      if (!HANDLE.test(h)) return json({ available: false, reason: "3–20 letters, numbers or _" });
+      if (!HANDLE.test(h)) return json({ available: false, reason: "Use 3–20 letters, numbers or _, starting with a letter or number" });
       if (RESERVED.has(h)) return json({ available: false, reason: "That one's reserved" });
       const { data } = await db.from("monyx_users").select("id").eq("handle", h).maybeSingle();
       return json({ available: !data, reason: data ? "Taken" : null });
@@ -249,12 +261,15 @@ Deno.serve(async (req) => {
       return json({ salt: b.salt, iv: b.iv, ct: b.ct, address: u.address });
     }
 
+    if (path === "/nonce" && req.method === "GET") {
+      return json({ nonce: await newNonce() });
+    }
     if (path === "/register" && req.method === "POST") {
       const handle = String(body.handle || "").toLowerCase().replace(/^@/, "");
       const name = String(body.name || "").trim().slice(0, 40);
       if (!name) return fail("Tell us your name.");
-      if (!HANDLE.test(handle) || RESERVED.has(handle)) return fail("Pick a username with 3–20 letters, numbers or _.");
-      if (!(await proves(body.address, Number(body.ts), String(body.sig || "")))) return fail("Couldn't verify this device's key. Try again.", 401, "unauthorized");
+      if (!HANDLE.test(handle) || RESERVED.has(handle)) return fail("Pick a username with 3–20 letters, numbers or _, starting with a letter or number.");
+      if (!(await proves(body))) return fail("Couldn't verify this device's key. Try again.", 401, "unauthorized");
       const hour = new Date(Date.now() - 3600_000).toISOString();
       const { count } = await db.from("monyx_users").select("*", { count: "exact", head: true }).eq("ip", ip).gte("created_at", hour);
       if ((count ?? 0) >= SIGNUPS_PER_IP_HOUR) return fail("Too many new accounts from here. Try again in an hour.", 429, "rate_limited");
@@ -267,7 +282,7 @@ Deno.serve(async (req) => {
       return json({ token: t, user: pub(u) }); // the app then asks monyx-pay for welcome dollars
     }
     if (path === "/login" && req.method === "POST") {
-      if (!(await proves(body.address, Number(body.ts), String(body.sig || "")))) return fail("Couldn't verify this key.", 401, "unauthorized");
+      if (!(await proves(body))) return fail("Couldn't verify this key.", 401, "unauthorized");
       const { data: u } = await db.from("monyx_users").select("*").eq("address", body.address).maybeSingle();
       if (!u) return fail("No account for this key yet.", 404, "no_account");
       return json({ token: await newSession(u.id), user: pub(u) });
