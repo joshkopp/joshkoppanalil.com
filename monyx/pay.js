@@ -2879,7 +2879,7 @@
       catch (err) { b.disabled = false; $('#uh').className = 'fine bad'; $('#uh').textContent = err.safe ? err.message : 'That didn’t unlock. Try again, or use your recovery key.'; }
     };
     const uf = $('#unf'); if (uf) { uf.onsubmit = (e) => { e.preventDefault(); $('#un').click(); }; setTimeout(() => $('#unpw').focus(), 50); }
-    $('#rk').onclick = () => { location.hash = '#login'; screenLogin(); };
+    $('#rk').onclick = () => { S.wantRecovery = true; location.hash = '#login'; screenLogin(); };
   }
   // Save the recovery key in the browser's password manager (iCloud Keychain,
   // Google Password Manager, 1Password…), filed under @username.
@@ -2904,7 +2904,13 @@
     const h = location.hash.slice(1);
     const [view, a, b, c] = h.split('/');
     const signedIn = !!(S.acct && S.acct.user && S.acct.token);
-    if (signedIn && isLocked() && view !== 'login' && view !== 'claim') return screenUnlock();
+    // A locked account always unlocks first, including from the site's "Log in" link (#login), so it
+    // never looks signed in on one screen and locked on the next. The recovery-key path is the exception.
+    if (signedIn && isLocked() && view !== 'claim') {
+      if (view === 'login' && S.wantRecovery) return screenLogin();
+      S.wantRecovery = false;
+      return screenUnlock();
+    }
     if (view === 'pay' && a && !signedIn) {
       store.set('monyx.pending', '#' + h);
       const u = await lookup(a);
