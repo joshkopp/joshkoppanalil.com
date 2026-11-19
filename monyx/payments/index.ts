@@ -285,15 +285,22 @@ function paymentEvents(t: any): PayEvent[] {
   return out;
 }
 const hexOf = (b: ArrayBuffer) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
-async function qnSignatureOk(req: Request, body: string) {
-  const token = Deno.env.get("QN_STREAM_TOKEN"); if (!token) return false;
-  const nonce = req.headers.get("x-qn-nonce") || "", ts = req.headers.get("x-qn-timestamp") || "", given = (req.headers.get("x-qn-signature") || "").toLowerCase();
-  if (!nonce || !ts || !given) return false;
+// Checks X-QN-Signature = HMAC-SHA256(token, nonce + timestamp + body). QuickNode signs the
+// decompressed JSON; the on-the-wire text is tried too in case a proxy already unzipped it.
+// A failure is logged with what was missing (never the token), so setup problems are visible.
+async function qnSignatureOk(req: Request, bodies: string[]) {
+  const token = (Deno.env.get("QN_STREAM_TOKEN") || "").trim(); if (!token) return false;
+  const nonce = req.headers.get("x-qn-nonce") || "", ts = req.headers.get("x-qn-timestamp") || "", given = (req.headers.get("x-qn-signature") || "").trim().toLowerCase();
+  if (!nonce || !ts || !given) { console.error("[monyx-pay] qn webhook: missing headers", { nonce: !!nonce, ts: !!ts, sig: !!given, encoding: req.headers.get("content-encoding") }); return false; }
   const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(token), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const want = hexOf(await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(nonce + ts + body)));
-  if (want.length !== given.length) return false;
-  let diff = 0; for (let i = 0; i < want.length; i++) diff |= want.charCodeAt(i) ^ given.charCodeAt(i);
-  return diff === 0;
+  const same = (a: string, b: string) => { if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
+  for (const body of [...new Set(bodies)]) {
+    const mac = new Uint8Array(await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(nonce + ts + body)));
+    const hex = hexOf(mac.buffer), b64 = btoa(String.fromCharCode(...mac)).toLowerCase();
+    if (same(hex, given) || same(b64, given)) return true;
+  }
+  console.error("[monyx-pay] qn webhook: signature mismatch", { sigLen: given.length, tokenLen: token.length, tokenPrefix: token.slice(0, 6), bodyLen: bodies[0]?.length, encoding: req.headers.get("content-encoding") });
+  return false;
 }
 // Add a wallet to the QuickNode Key-Value list the Stream filter watches.
 const QN_LIST = "monyx_wallets";
@@ -334,9 +341,10 @@ Deno.serve(async (req) => {
   const path = url.pathname.replace(/^.*?\/monyx-pay(?=\/|$)/, "") || "/";
   const ip = (req.headers.get("x-forwarded-for") || "?").split(",")[0].trim();
   // Streams may gzip its webhook body; signatures are computed over the decompressed text.
-  let raw = "";
+  let raw = "", wire = "";
   if (req.method === "POST") {
     let bytes = new Uint8Array(await req.arrayBuffer());
+    wire = new TextDecoder().decode(bytes);
     if (/gzip/i.test(req.headers.get("content-encoding") || "") || (bytes[0] === 0x1f && bytes[1] === 0x8b)) {
       try { bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer()); }
       catch { return fail("Couldn't read that body.", 400); }
@@ -393,7 +401,7 @@ Deno.serve(async (req) => {
       // X-QN-Signature (HMAC-SHA256 of nonce + timestamp + body). The older ?key= check is only
       // accepted while no token is configured.
       const hasToken = !!Deno.env.get("QN_STREAM_TOKEN");
-      const okSig = hasToken ? await qnSignatureOk(req, raw) : false;
+      const okSig = hasToken ? await qnSignatureOk(req, [raw, wire]) : false;
       const want = Deno.env.get("QN_STREAMS_KEY");
       if (!okSig && (hasToken || !want || url.searchParams.get("key") !== want)) return fail("Not allowed.", 401, "unauthorized");
       // filter.js sends { matches: [...] }; without a filter Streams sends raw blocks.
@@ -429,11 +437,13 @@ Deno.serve(async (req) => {
       };
       const body_ = new ReadableStream({
         async start(ctrl) {
-          const send = (event: string, data: unknown, id?: number) => ctrl.enqueue(enc.encode(`${id ? `id: ${id}\n` : ""}event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
-          ctrl.enqueue(enc.encode("retry: 2000\n\n"));
+          let open = true;
+          const put = (t: string) => { if (!open) return; try { ctrl.enqueue(enc.encode(t)); } catch { open = false; } };
+          const send = (event: string, data: unknown, id?: number) => put(`${id ? `id: ${id}\n` : ""}event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+          put("retry: 2000\n\n");
           const t0 = Date.now(); let tick = 0;
           try {
-            while (!req.signal.aborted && Date.now() - t0 < 120_000) {
+            while (open && !req.signal.aborted && Date.now() - t0 < 120_000) {
               const { data: pays } = await db.from("monyx_payments").select("sig, from_addr, to_addr, units, note, source, token, created_at")
                 .or(`to_addr.eq.${me},from_addr.eq.${me}`).gt("created_at", new Date(since).toISOString()).order("created_at").limit(25);
               if (pays?.length) {
@@ -461,12 +471,12 @@ Deno.serve(async (req) => {
                   send("reminder", { id: r.id, usd: Number(r.usd), note: r.note, from: pub(u), since: r.created_at });
                 }
               }
-              if (tick % 10 === 0) ctrl.enqueue(enc.encode(": still here\n\n"));
+              if (tick % 10 === 0) put(": still here\n\n");
               tick++;
               await new Promise((r) => setTimeout(r, 1500));
             }
           } catch (e) { console.error("[monyx-pay] events:", e); }
-          try { ctrl.close(); } catch { /* */ }
+          if (open) try { ctrl.close(); } catch { /* */ }
         },
       });
       return new Response(body_, { headers: { ...cors, "content-type": "text/event-stream", "cache-control": "no-cache, no-transform", "x-accel-buffering": "no" } });
