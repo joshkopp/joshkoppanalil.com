@@ -686,3 +686,27 @@ body[data-mode="basic"] [data-r="pro"] { display: none !important; }
   .tabbar .tabpro a { height: 42px; font-size: 14px; }
   .tabbar .tabpro a svg { width: 20px; height: 20px; }
 }
+
+/* Invest: Gemini prediction markets (Pro mode) */
+.pill.pro { background: #eef3ff; color: #2a3f8f; } .pill.pro i { background: #2a3f8f; }
+.gembox { background: var(--card); border-radius: 22px; box-shadow: inset 0 0 0 1px var(--line2); padding: 16px 18px; margin: 4px 0 14px; }
+.gembox p { margin: 8px 0 0; font-size: 14px; line-height: 1.45; color: var(--ink2); }
+.gembox .fine { text-align: left; margin-top: 8px; }
+.gemh { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.gemh b { font-size: 17px; }
+.gemsrc { font-size: 12px; font-weight: 700; color: #2a3f8f; background: #eef3ff; border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+.predcats { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 12px; scrollbar-width: none; }
+.predcats::-webkit-scrollbar { display: none; }
+.predcats button { flex: none; border: 0; border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 14px; font-weight: 600; background: var(--card); color: var(--ink2); box-shadow: inset 0 0 0 1px var(--line2); cursor: pointer; }
+.predcats button.on { background: var(--ink); color: #fff; box-shadow: none; }
+.item.pred { align-items: stretch; cursor: default; }
+.item.pred .t { white-space: normal; line-height: 1.3; margin: 2px 0 8px; }
+.odds { display: grid; gap: 6px; }
+.odd { position: relative; display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; border-radius: 10px; background: rgba(0, 0, 0, .035); overflow: hidden; font-size: 14px; }
+.odd span { position: relative; z-index: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px; }
+.odd b { position: relative; z-index: 1; font-variant-numeric: tabular-nums; }
+.odd i { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(62, 107, 48, .14); border-radius: 10px; }
+.predfoot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; color: var(--mute); }
+.gemlink { font-weight: 700; color: #2a3f8f; text-decoration: none; white-space: nowrap; }
+.gemlink:hover { text-decoration: underline; }
+.livetag { color: #c0392b; font-weight: 700; }

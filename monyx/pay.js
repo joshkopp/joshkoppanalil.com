@@ -10,6 +10,7 @@
   const API = 'https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/monyx';
   const VAPI = API + '-voice';
   const PAPI = API + '-pay';
+  const GAPI = API + '-predictions'; // live prediction markets from Gemini (read-only)
   // Reads go through monyx-pay's /rpc proxy (private endpoint, no public-devnet 429s).
   let RPC = PAPI + '/rpc';
   const USDC = '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU'; // Circle's devnet USDC
@@ -1669,38 +1670,52 @@
   const holdingOf = (id) => (S.port && S.port.holdings.find((h) => h.id === id)) || null;
   const assetById = (id) => (S.markets && S.markets.assets.find((a) => a.id === id)) || null;
 
+  // Invest (Pro mode): live prediction markets from Gemini's public API. Monyx only shows them.
+  // Every "Trade on Gemini" link opens Gemini, which handles the account, the bet and the money.
+  // Older test coins bought before this change can still be sold back to cash below.
+  const PRED_CATS = ['All', 'Sports', 'Politics', 'Economics', 'Crypto', 'Culture'];
+  async function loadPredictions() {
+    if (S.preds && Date.now() - S.preds.t < 60_000) return S.preds;
+    const r = await fetch(GAPI, { headers: { accept: 'application/json' } });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error(j.message || 'unavailable'), { safe: true });
+    S.preds = { t: Date.now(), at: j.at || Date.now(), markets: Array.isArray(j.markets) ? j.markets : [] };
+    return S.preds;
+  }
   function screenInvest() {
-    show(`<header class="top"><b>Invest</b><span class="pill"><i></i>Test mode</span></header>
-      <section class="balance">
-        <div class="label"><span>Your crypto</span><span id="pvchg"></span></div>
-        <div class="amount" id="pv"><div class="skeleton" style="width:50%;height:44px;border-radius:12px"></div></div>
-        <div class="btn-row"><button class="btn btn-light" id="swapBtn">${ICON.swap.replace('<svg', '<svg width="18" height="18" style="fill:none;stroke:currentColor;stroke-width:1.8"')}Swap</button><button class="btn btn-dark" id="buyBtn">Buy crypto</button></div>
+    S.predCat = S.predCat || 'All';
+    show(`<header class="top"><b>Invest</b><span class="pill pro"><i></i>Pro · Gemini data</span></header>
+      <section class="gembox">
+        <div class="gemh"><b>Prediction markets</b><span class="gemsrc">Live from Gemini</span></div>
+        <p>Yes-or-no markets on real events. The percent is the market's current price for that outcome, which works like the crowd's estimate of its chance.</p>
+        <p class="fine">Data from Gemini's public API. To trade, you open Gemini and use a Gemini account. Monyx never places bets or holds money for them. Gemini Predictions is for US users only.</p>
       </section>
-      <div id="holdings"></div>
-      <h3>Markets</h3>
-      <div class="list" id="mkts">${'<div class="item"><div class="mid"><div class="skeleton" style="width:60%"></div></div></div>'.repeat(4)}</div>
-      <p class="fine" style="margin-top:16px">Prices from CoinGecko, refreshed every minute.<br>Test mode: trades use play money.</p>`, { tabs: true, tab: 'invest' });
-    $('#buyBtn').onclick = () => pickAsset('What do you want to buy?', null, buySheet);
-    $('#swapBtn').onclick = () => swapSheet();
-    paintInvest();
-    Promise.all([loadMarkets(), loadPortfolio(), refreshBalance()]).then(paintInvest);
+      <div class="predcats" role="tablist">${PRED_CATS.map((c) => `<button role="tab" data-c="${c}" class="${c === S.predCat ? 'on' : ''}" aria-selected="${c === S.predCat}">${c}</button>`).join('')}</div>
+      <div class="list" id="preds">${'<div class="item"><div class="mid"><div class="skeleton" style="width:70%"></div><div class="skeleton" style="width:40%;margin-top:8px"></div></div></div>'.repeat(4)}</div>
+      <p class="fine" id="predat" style="margin-top:12px"></p>
+      <div id="holdings"></div>`, { tabs: true, tab: 'invest' });
+    $$('.predcats button').forEach((b) => (b.onclick = () => { S.predCat = b.dataset.c; $$('.predcats button').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); }); paintPredictions(); }));
+    paintPredictions();
+    loadPredictions().then(paintPredictions).catch((e) => { const el = $('#preds'); if (el) el.innerHTML = `<div class="empty">${esc(e.safe ? e.message : 'Live markets from Gemini aren’t loading right now. Try again in a minute.')}</div>`; });
+    Promise.all([loadMarkets(), loadPortfolio()]).then(paintInvest).catch(() => {});
+  }
+  function paintPredictions() {
+    const el = $('#preds'); if (!el || !S.preds) return;
+    const list = S.preds.markets.filter((m) => S.predCat === 'All' || (m.category || '').toLowerCase() === S.predCat.toLowerCase()).slice(0, 15);
+    const vol = (v) => (v >= 1000 ? `$${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : `$${Math.round(v)}`);
+    el.innerHTML = list.length ? list.map((m) => `<div class="item pred">
+        <div class="mid"><div class="s">${esc(m.category)}${m.sub ? ' · ' + esc(m.sub) : ''}${m.live ? ' · <span class="livetag">Live</span>' : ''}</div>
+          <div class="t">${esc(m.title)}</div>
+          <div class="odds">${m.outcomes.map((o) => `<div class="odd"><span>${esc(o.label)}</span><b>${o.chance}%</b><i style="width:${o.chance}%"></i></div>`).join('')}</div>
+          <div class="predfoot"><span>${vol(m.volume24h || 0)} traded today</span><a href="${esc(m.url)}" target="_blank" rel="noopener noreferrer" class="gemlink">Trade on Gemini ↗</a></div></div></div>`).join('')
+      : `<div class="empty">No open ${S.predCat === 'All' ? '' : esc(S.predCat.toLowerCase()) + ' '}markets right now.</div>`;
+    const at = $('#predat'); if (at) at.textContent = `Updated ${new Date(S.preds.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}. Refreshes every minute.`;
   }
   function paintInvest() {
-    const pv = $('#pv'); if (!pv) return;
-    if (S.port) {
-      const [d, c] = S.port.total.toFixed(2).split('.');
-      pv.innerHTML = `<small>$</small>${Number(d).toLocaleString('en-US')}<span class="cents">.${c}</span>`;
-      // Everything on Invest uses the same 7-day window as the charts.
-      const c7 = (h) => chg7(h.spark) ?? h.change24h;
-      const day = S.port.holdings.reduce((a, h) => a + (c7(h) != null ? h.value - h.value / (1 + c7(h) / 100) : 0), 0);
-      $('#pvchg').innerHTML = S.port.total > 0 ? `<span class="${day >= 0 ? 'up' : 'down'}">${day >= 0 ? '+' : '−'}${money(Math.abs(day))} past 7 days</span>` : '';
-      $('#holdings').innerHTML = S.port.holdings.length ? `<h3>Your coins</h3><div class="list">${S.port.holdings.map((h) => `<button class="item" data-a="${esc(h.id)}">${coin(h)}<div class="mid"><div class="t">${esc(h.name)}</div><div class="s">${esc(fmtQty(h.qty, h.symbol))}</div></div><div style="text-align:right"><div class="amt">${money(h.value)}</div><div class="s ${c7(h) >= 0 ? 'up' : 'down'}">${pct(c7(h))} · 7d</div></div></button>`).join('')}</div>`
-        : `<div class="hint" style="text-align:center;margin:14px 0 0">You don't own any crypto yet. Start with as little as $1.</div>`;
-    }
-    if (S.markets) {
-      $('#mkts').innerHTML = S.markets.assets.map((a) => `<button class="item" data-a="${esc(a.id)}">${coin(a)}<div class="mid"><div class="t">${esc(a.name)}</div><div class="s">${esc(a.symbol)}</div></div>${spark(a.spark)}<div style="text-align:right;min-width:84px"><div class="amt">${fmtPrice(a.price)}</div><div class="s ${(chg7(a.spark) ?? a.change24h) >= 0 ? 'up' : 'down'}">${chg7(a.spark) != null ? pct(chg7(a.spark)) + ' · 7d' : pct(a.change24h) + ' · 24h'}</div></div></button>`).join('');
-    }
-    $$('[data-a]').forEach((b) => (b.onclick = () => assetSheet(assetById(b.dataset.a) || holdingOf(b.dataset.a))));
+    const el = $('#holdings'); if (!el || !S.port) return;
+    // Coins bought in test mode before Invest moved to Gemini: you can still sell them back to cash.
+    el.innerHTML = S.port.holdings.length ? `<h3>Your test coins</h3><p class="fine" style="text-align:left;margin:-4px 0 10px">From the old test-mode Invest. You can sell them back to cash any time.</p><div class="list">${S.port.holdings.map((h) => `<button class="item" data-a="${esc(h.id)}">${coin(h)}<div class="mid"><div class="t">${esc(h.name)}</div><div class="s">${esc(fmtQty(h.qty, h.symbol))}</div></div><div style="text-align:right"><div class="amt">${money(h.value)}</div><div class="s">Sell</div></div></button>`).join('')}</div>` : '';
+    $$('#holdings [data-a]').forEach((b) => (b.onclick = () => { const h = holdingOf(b.dataset.a); if (h) sellSheet(assetById(h.id) || h); }));
   }
   function assetSheet(a) {
     if (!a) return;
@@ -2966,6 +2981,7 @@
     setInterval(pollInbox, 4000); pollInbox();
     setInterval(() => { if (S.acct && S.acct.token && !isLocked() && !liveOpen() && !S.liveRetry) startLive(); }, 10000);
     setInterval(() => { if ($('#feed') && !document.hidden) paintFeed(); }, 60000); // keep "Just now" honest
+    setInterval(() => { if ($('#preds') && !document.hidden) loadPredictions().then(paintPredictions).catch(() => {}); }, 60000);
     loadMarkets();
     checkVoice();
     if (S.acct && S.acct.token) api('/me').then((r) => { S.acct.user = r.user; saveAcct(); }).catch((e) => { if (e.status === 401) relogin(); });
