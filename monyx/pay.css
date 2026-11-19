@@ -666,3 +666,7 @@ body[data-mode="basic"] [data-r="pro"] { display: none !important; }
 .lmode button { border: 0; background: transparent; border-radius: 9px; padding: 8px; font: inherit; font-weight: 600; font-size: 14px; color: var(--faint); cursor: pointer; }
 .lmode button.on { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
 #lpk svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; margin-right: 8px; }
+
+/* Hidden input that catches typed and pasted amounts on the money pad. It must stay focusable, so it's
+   clipped instead of display:none. */
+#padcap, .sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; border: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; opacity: 0; caret-color: transparent; }
