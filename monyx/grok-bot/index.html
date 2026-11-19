@@ -37,9 +37,9 @@
 <h2>What it can do</h2>
 <table>
 <tr><th>Ask it</th><th>What happens</th></tr>
-<tr><td>"Ask Maya and Jordan for their share of the $1,800 rent on the 1st"</td><td>A routine sends each of them a $600 request every month</td></tr>
-<tr><td>"Dinner was $84 with Maya, Jordan and Sam"</td><td>Three $21 requests, one per friend</td></tr>
-<tr><td>"I owe Maya for the concert tickets, 42.50"</td><td>A $42.50 draft appears in Monyx under "Waiting for your OK"</td></tr>
+<tr><td>"Ask Josh and Andy for their share of the $1,800 rent on the 1st"</td><td>A routine sends each of them a $600 request every month</td></tr>
+<tr><td>"Dinner was $84 with Josh, Andy and Sam"</td><td>Three $21 requests, one per friend</td></tr>
+<tr><td>"I owe Josh for the concert tickets, 42.50"</td><td>A $42.50 draft appears in Monyx under "Waiting for your OK"</td></tr>
 <tr><td>"How did I do this week?"</td><td>A summary of who paid you, who you paid, and what's still open</td></tr>
 <tr><td>"Who hasn't paid me back?"</td><td>Your open requests, oldest first, with an offer to nudge</td></tr>
 </table>
@@ -49,7 +49,7 @@
 <li>In Monyx, open <strong>Me → AI assistant</strong>, give it a name and a weekly limit, and tap <strong>Create key</strong>. Copy the key; you'll only see it once.</li>
 <li>Open the Monyx template in Grok Bot and tap <strong>Add to Grok Bot</strong>. To build your own instead, copy the <a href="../grok-bot/TEMPLATE.md">template</a> (instructions, routines and approval rules) and add the skill file below.</li>
 <li>When Grok Bot asks for the <strong>Monyx key</strong> credential, paste the key.</li>
-<li>Say "what's my Monyx balance?" to check it works. Then try "ask Maya for $5 for coffee".</li>
+<li>Say "what's my Monyx balance?" to check it works. Then try "ask Josh for $5 for coffee".</li>
 </ol>
 <div class="btnrow"><a class="primary" href="../grok-bot/SKILL.md">Skill file (SKILL.md)</a><a href="../grok-bot/TEMPLATE.md">Bot template</a><a href="../app/">Open Monyx</a></div>
 
@@ -67,7 +67,7 @@
 <p>Send <code>Authorization: Bearer mx_…</code>. Endpoints: <code>GET /agent/me</code>, <code>GET /agent/activity</code>, <code>GET /agent/people?q=</code>, <code>GET|POST /agent/requests</code>, <code>GET|POST /agent/drafts</code>. The <a href="../grok-bot/SKILL.md">skill file</a> documents each one.</p>
 <pre>curl -X POST $BASE/agent/drafts \
   -H "Authorization: Bearer $MONYX_KEY" -H "Content-Type: application/json" \
-  -d '{"to":"@maya","usd":42.5,"note":"🎟️ Concert tickets","reason":"You said you owe Maya"}'</pre>
+  -d '{"to":"@josh","usd":42.5,"note":"🎟️ Concert tickets","reason":"You said you owe Josh"}'</pre>
 
 </main></div>
 <footer><div class="bar"><span>Monyx · Test mode: balances are test dollars with no real value.</span><nav><a href="../about.html">About</a><a href="../privacy/">Privacy</a><a href="../terms/">Terms</a><a href="../documentation/">Guide</a><a href="https://github.com/joshkopp/monyx/issues">Contact</a></nav></div></footer>

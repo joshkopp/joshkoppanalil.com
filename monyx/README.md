@@ -1,6 +1,6 @@
 # Monyx
 
-**Just say who to pay.** Monyx is a voice-first dollar wallet on Solana. Say "send Maya 20 for pizza", read the plain-English preview, tap Pay. Before anything goes out, Monyx checks the destination for scams. No seed phrase to memorize, no gas, no tokens to understand. Test mode on Solana devnet.
+**Just say who to pay.** Monyx is a voice-first dollar wallet on Solana. Say "send Josh 20 for pizza", read the plain-English preview, tap Pay. Before anything goes out, Monyx checks the destination for scams. No seed phrase to memorize, no gas, no tokens to understand. Test mode on Solana devnet.
 
 - Live: https://www.monyx.pro (marketing site) and https://www.monyx.pro/app/ (the wallet)
 - Built by Josh Koppanalil and Andrew Hu for the UBC 2026 hackathon
@@ -9,7 +9,7 @@
 
 | Feature | How it works |
 | --- | --- |
-| **Voice payments** | ElevenLabs speech-to-text turns "send Jordan 12.50 for movie tickets" into a payment preview; `voice-parse.js` handles pay, request, split, balance and activity. Monyx reads risky payments back out loud. |
+| **Voice payments** | The browser's speech recognition turns "send Andy 12.50 for movie tickets" into a payment preview; `voice-parse.js` handles pay, request, split, balance and activity. Monyx reads risky payments back out loud. |
 | **Send-time risk check** | Every payment is tagged **High**, **Medium** or **Normal** before you can send. High: look-alike addresses (same first and last 4 characters as someone you've paid, or as your own), usernames one letter off from a contact, program or mint addresses, invalid addresses, your own account. Medium: not on Monyx, brand-new account, or $20+ and over half your balance to someone new. Nicknames can be added to outside addresses. On High the Pay button stays disabled until you tick "I understand". |
 | **Passkey or password lock** | Signup asks for a lock. Passkey: the account key is encrypted with AES-GCM under a key derived (HKDF) from the passkey's WebAuthn PRF output, so browser storage only holds ciphertext. Devices without PRF use a password instead (PBKDF2, 600k iterations). |
 | **Replay-proof sign-in** | The device signs "<site> wants you to sign in to Monyx" with a one-time server nonce and the time. Each nonce works once; the live-updates ticket is also one-time and expires in 30 s. |
@@ -48,7 +48,7 @@ Source files:
 - `trace/` + `monyx-trace.js`: the "where did this money come from?" check on the pay sheet
 - `predictions/index.ts`: `monyx-predictions` (Gemini crypto prices for Invest, prediction markets for Predict)
 - `streams/`: QuickNode Streams filter, sample block and local test
-- `voice/index.ts`: `monyx-voice` (ElevenLabs STT and TTS)
+- `voice/index.ts`: `monyx-voice`, an optional speech server that the app no longer uses
 - `meter/index.ts`: `monyx-market` (pay-per-call API market over x402)
 - `vendor/`: bundled Solana web3.js, so the site has no runtime CDN dependencies
 
@@ -67,7 +67,7 @@ Dollars are Circle's devnet USDC (`4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`
 - **SOL:** https://faucet.solana.com. About 0.000005 SOL per payment, plus about 0.002 SOL the first time someone receives USDC.
 
 ### Voice
-Add the Supabase secret `ELEVENLABS_API_KEY` (optional `ELEVENLABS_VOICE_ID`). Without it the app falls back to the browser's speech recognition, and typing always works.
+Voice uses the browser's built-in speech recognition and speech synthesis, so there's nothing to set up. Browsers without it (Firefox) type the same commands.
 
 ### Faster RPC
 The public devnet RPC rate-limits under load. Create a QuickNode Solana Devnet endpoint and set `SOLANA_RPC` (server) and `PUBLIC_RPC` (browsers, served from `/monyx-pay/info`).

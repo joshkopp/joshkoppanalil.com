@@ -1,7 +1,7 @@
 // Monyx voice: turn what someone said into something the app can do.
-//   "send maya 20 for pizza"            → pay      maya   $20   "🍕 Pizza"
-//   "request twelve fifty from jordan"  → request  jordan $12.50
-//   "split 60 for dinner with maya and jordan" → split [maya, jordan] $60 "🍽️ Dinner"
+//   "send josh 20 for pizza"            → pay      josh   $20   "🍕 Pizza"
+//   "request twelve fifty from andy"  → request  andy $12.50
+//   "split 60 for dinner with josh and andy" → split [josh, andy] $60 "🍽️ Dinner"
 //   "what's my balance"                 → balance
 //   "who paid me"                       → activity
 // It only understands; it never acts. The app shows a confirmation for anything
@@ -87,7 +87,7 @@
     // different person. If the guess is wrong, the app finds no exact match and asks who you meant.
     t = t.replace(/ (@?[a-z_][a-z0-9_]{2,}) (\d) (\$?\d+(?:\.\d{1,2})?)(?= )/g, (m, name, d, amt) =>
       (STOP.has(name.replace(/^@/, '')) ? m : ` ${name}${d} ${amt}`));
-    // Glue "@ maya" and "maya _ c" back together.
+    // Glue "@ josh" and "josh _ c" back together.
     t = t.replace(/ _ /g, '_').replace(/@ /g, '@');
 
     // ---- intent ----
@@ -123,7 +123,7 @@
     let rest = t;
     if (nm) {
       let n = nm[1];
-      // "for dinner with maya and jordan": the names after "with" are people, not the note.
+      // "for dinner with josh and andy": the names after "with" are people, not the note.
       const w = n.match(/^(.*?)\b(with|between|among|to|from)\b(.*)$/);
       if (w && w[1].trim()) { n = w[1]; rest = t.slice(0, nm.index) + ' ' + w[2] + ' ' + w[3]; }
       else rest = t.slice(0, nm.index);

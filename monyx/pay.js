@@ -8,7 +8,6 @@
 (() => {
   'use strict';
   const API = 'https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/monyx';
-  const VAPI = API + '-voice';
   const PAPI = API + '-pay';
   const GAPI = API + '-predictions'; // live prediction markets from Gemini (read-only)
   // Reads go through monyx-pay's /rpc proxy (private endpoint, no public-devnet 429s).
@@ -102,7 +101,7 @@
     markets: store.get('monyx.markets', null), port: null, bankAddr: store.get('monyx.bank2', null),
     drafts: [], claims: [], inboxAt: Date.now(), lastMs: null,
     signup: null, timers: [],
-    voice: { server: store.get('monyx.voiceServer', null), talk: store.get('monyx.talkback', true), announce: store.get('monyx.announce', true), feedSeen: false, reqSeen: null },
+    voice: { talk: store.get('monyx.talkback', true), announce: store.get('monyx.announce', true), feedSeen: false, reqSeen: null },
   };
   const usd = (units) => units / U;
   const toUnits = (dollars) => Math.round(dollars * U);
@@ -429,7 +428,7 @@
     if (p && p.unknown && p.address && nickOf(p.address)) return nickOf(p.address);
     return p && !p.unknown ? (p.bank ? 'Monyx' : p.name) : (p ? short(p.address) : 'Someone');
   };
-  // Full names in toasts, chips and receipts, so two people called Maya can't be confused.
+  // Full names in toasts, chips and receipts, so two people called Josh can't be confused.
   const first = (p) => who(p);
   function when(t) {
     if (!t) return 'Pending';
@@ -507,11 +506,11 @@
     show(`<section class="welcome">
       <div class="brand">${LOGO}</div>
       <div class="art"><div class="stage">
-        <div class="bubble b1"><div class="av sm" style="background:#e0574f">MA</div><div><b>Maya paid you</b><span>🍕 Friday pizza</span></div><span class="amt in">+$14.00</span></div>
-        <div class="bubble b2 say"><span class="mic">${ICON.mic}</span><div><b>“Pay Jordan 42.50 for tickets”</b><span>Ready to send · tap to confirm</span></div></div>
+        <div class="bubble b1"><div class="av sm" style="background:#e0574f">MA</div><div><b>Josh paid you</b><span>🍕 Friday pizza</span></div><span class="amt in">+$14.00</span></div>
+        <div class="bubble b2 say"><span class="mic">${ICON.mic}</span><div><b>“Pay Andy 42.50 for tickets”</b><span>Ready to send · tap to confirm</span></div></div>
       </div></div>
       <h1>Just say<br>who to pay.</h1>
-      <p class="sub">Tell Monyx “send Maya 20 for pizza” and it’s ready to go. Split dinner, ask for money back, hear when you get paid. No bank details, no fees.</p>
+      <p class="sub">Tell Monyx “send Josh 20 for pizza” and it’s ready to go. Split dinner, ask for money back, hear when you get paid. No bank details, no fees.</p>
       ${banner || ''}
       <div class="cta">
         <button class="btn btn-dark" id="goSignup">Create your account</button>
@@ -2104,21 +2103,13 @@
   }
 
   /* ───────── voice: talk to pay ─────────
-     Tap the mic and say it: "send Maya 20 for pizza". ElevenLabs (through the
-     monyx server, which holds the key) turns speech into text; voice-parse.js
-     turns text into a payment; the normal confirm sheet still needs a tap.
-     Without ElevenLabs we fall back to the browser's own speech recognition. */
+     Tap the mic and say it: "send Josh 20 for pizza". The browser's own speech recognition turns
+     speech into text (nothing is recorded or sent to a voice service); voice-parse.js turns text into
+     a payment; the normal confirm sheet still needs a tap. Browsers without speech recognition
+     (Firefox) get the same flow by typing. Talk-back uses the browser's built-in voice. */
   const BrowserSR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const canRecord = () => !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
-  const voiceMode = () => (S.voice.server && canRecord() ? 'eleven' : BrowserSR ? 'browser' : S.voice.server == null && canRecord() ? 'eleven' : null);
-  async function checkVoice() {
-    try { const { on } = await api(VAPI + '/status', { auth: false }); S.voice.server = !!on; store.set('monyx.voiceServer', S.voice.server); } catch {}
-  }
-  let audioEl = null; const sayCache = new Map();
-  function stopSpeaking() {
-    if (audioEl) { audioEl.pause(); audioEl = null; }
-    if (window.speechSynthesis) speechSynthesis.cancel();
-  }
+  const voiceMode = () => (BrowserSR ? 'browser' : null);
+  function stopSpeaking() { if (window.speechSynthesis) speechSynthesis.cancel(); }
   function browserSay(text) {
     if (!window.speechSynthesis) return;
     const u = new SpeechSynthesisUtterance(text); u.rate = 1.04; u.lang = 'en-US';
@@ -2128,14 +2119,6 @@
   async function say(text, { force = false } = {}) {
     if (!text || (!S.voice.talk && !force)) return;
     stopSpeaking();
-    if (S.voice.server && S.acct && S.acct.token) {
-      try {
-        let b64 = sayCache.get(text);
-        if (!b64) { b64 = (await api(VAPI + '/say', { method: 'POST', body: { text } })).audio; if (sayCache.size > 30) sayCache.clear(); sayCache.set(text, b64); }
-        audioEl = new Audio('data:audio/mpeg;base64,' + b64);
-        await audioEl.play(); return;
-      } catch (e) { if (e && e.code === 'voice_off') { S.voice.server = false; store.set('monyx.voiceServer', false); } }
-    }
     try { browserSay(text); } catch {}
   }
   // Dollars said the way people say them: $20 → "20 dollars", $12.50 → "12 dollars and 50 cents".
@@ -2153,7 +2136,7 @@
     return list;
   };
   const norm = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-  function near(a, b) { // edit distance ≤ 1, for "jordon" → "jordan"
+  function near(a, b) { // edit distance ≤ 1, for "jordon" → "andy"
     if (Math.abs(a.length - b.length) > 1 || a.length < 4) return a === b;
     let i = 0, j = 0, e = 0;
     while (i < a.length && j < b.length) {
@@ -2209,8 +2192,8 @@
   // Act on a sentence. Anything that moves money ends at a screen that needs a tap.
   async function doVoice(text, setStatus) {
     const v = window.MonyxVoice.parse(text);
-    if (v.negative) throw userError('Amounts have to be more than $0. Try “send Jordan 5 for coffee”.');
-    if (v.amount === 0 && ['pay', 'request', 'split'].includes(v.intent)) throw userError('Amounts have to be more than $0. Try “send Jordan 5 for coffee”.');
+    if (v.negative) throw userError('Amounts have to be more than $0. Try “send Andy 5 for coffee”.');
+    if (v.amount === 0 && ['pay', 'request', 'split'].includes(v.intent)) throw userError('Amounts have to be more than $0. Try “send Andy 5 for coffee”.');
     if (v.intent === 'topup') return { go: () => { addMoney(); } };
     if (v.intent === 'balance') {
       if (S.cash == null) await refreshBalance();
@@ -2351,49 +2334,6 @@
       };
       const fail = (msg) => { cleanup(); setState(''); heard.textContent = msg; $('#tries', el).hidden = false; };
 
-      async function startEleven() {
-        try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
-        catch { return fail('Monyx needs the microphone. Allow it in your browser, or type below.'); }
-        if (done) return cleanup();
-        const type = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg'].find((t) => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || '';
-        rec = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
-        const parts = [];
-        rec.ondataavailable = (e) => e.data && e.data.size && parts.push(e.data);
-        rec.onstop = async () => {
-          if (stream) stream.getTracks().forEach((t) => t.stop());
-          if (done) return; // closed, or they typed instead
-          if (!heardSpeech) return fail('I didn’t hear anything. Tap the mic and try again.');
-          setState('thinking'); heard.textContent = 'Listening back…';
-          const blob = new Blob(parts, { type: rec.mimeType || type || 'audio/webm' });
-          try {
-            const hints = knownPeople().flatMap((p) => [p.name, p.handle]).slice(0, 50);
-            const { text } = await api(VAPI + '/listen', { method: 'POST', body: { audio: b64(new Uint8Array(await blob.arrayBuffer())), mime: blob.type, hints } });
-            if (!text) return fail('I didn’t catch that. Try again.');
-            run(text);
-          } catch (e) {
-            if (e.code === 'voice_off') { S.voice.server = false; store.set('monyx.voiceServer', false); if (BrowserSR) { setState(''); heard.textContent = 'Tap the mic and try once more'; return; } }
-            fail(friendly(e));
-          }
-        };
-        // Stop by itself once they've said something and gone quiet.
-        let heardSpeech = false, quietSince = 0; const t0 = performance.now();
-        ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const an = ctx.createAnalyser(); an.fftSize = 512; ctx.createMediaStreamSource(stream).connect(an);
-        const buf = new Uint8Array(an.fftSize);
-        const tick = () => {
-          if (done || rec.state === 'inactive') return;
-          an.getByteTimeDomainData(buf);
-          let sum = 0; for (const x of buf) sum += (x - 128) ** 2;
-          const level = Math.sqrt(sum / buf.length) / 128;
-          orb.style.setProperty('--lv', Math.min(1, level * 6).toFixed(2));
-          const now = performance.now();
-          if (level > 0.035) { heardSpeech = true; quietSince = 0; } else if (heardSpeech && !quietSince) quietSince = now;
-          if ((heardSpeech && quietSince && now - quietSince > 1300) || now - t0 > 12000 || (!heardSpeech && now - t0 > 7000)) { rec.stop(); return; }
-          raf = requestAnimationFrame(tick);
-        };
-        rec.start(); setState('on'); heard.textContent = 'Listening… say it like you’d tell a friend';
-        raf = requestAnimationFrame(tick);
-      }
       function startBrowser() {
         sr = new BrowserSR(); sr.lang = 'en-US'; sr.interimResults = true; sr.maxAlternatives = 1;
         let final = '';
@@ -2409,7 +2349,7 @@
       const start = () => {
         done = false; said.textContent = ''; vres.innerHTML = ''; $('#tries', el).hidden = true;
         const m = voiceMode();
-        if (m === 'eleven') startEleven(); else if (m === 'browser') startBrowser(); else fail('Voice isn’t available in this browser. Type it below.');
+        if (m === 'browser') startBrowser(); else fail('Voice isn’t available in this browser. Type it below.');
       };
       orb.onclick = () => {
         if (orb.classList.contains('on')) { if (rec && rec.state === 'recording') rec.stop(); else if (sr) sr.stop(); return; }
@@ -3189,7 +3129,6 @@
     setInterval(() => { if ($('#preds') && !document.hidden) loadPredictions().then(paintPredictions).catch(() => {}); }, 60000);
     setInterval(() => { if ($('#gcoins') && !document.hidden) loadPrices().then(paintPrices).catch(() => {}); }, 30000);
     loadMarkets();
-    checkVoice();
     if (S.acct && S.acct.token) api('/me').then((r) => { S.acct.user = r.user; saveAcct(); }).catch((e) => { if (e.status === 401) relogin(); });
   }
   boot();

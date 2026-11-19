@@ -12,7 +12,7 @@ Solana devnet ─▶ QuickNode Stream (filter.js + KV list "monyx_wallets")
                monyx-pay /qn/webhook ─▶ monyx_payments (signature = key, repeats ignored)
                      │                       │  also settles matching open requests
                      ▼                       ▼
-               /events (SSE) ─▶ app: toast + "Maya paid you $20 for pizza"
+               /events (SSE) ─▶ app: toast + "Josh paid you $20 for pizza"
                /activity      ─▶ app: Activity tab
 ```
 
@@ -49,7 +49,7 @@ usually logged a moment before its Stream delivery arrives; the repeat is ignore
   before a first payment.
 - **Splits and requests settle themselves:** when a payment arrives that matches an open request
   (same two people, same amount), it's marked paid and the requester hears
-  "Jordan paid your $20 request".
+  "Andy paid your $20 request".
 - **Reminders:** requests still unpaid after `MONYX_REMIND_HOURS` get one reminder, pushed to
   the person who owes it.
 

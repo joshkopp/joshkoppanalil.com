@@ -2,7 +2,7 @@
 // Deployed as the Supabase edge function "monyx-voice", separate from "monyx"
 // so a voice problem can never take payments down.
 //
-// The app records a short sentence ("send Maya 20 for pizza"), this function
+// The app records a short sentence ("send Josh 20 for pizza"), this function
 // turns it into text, and the app turns the text into a payment the person
 // still has to confirm with a tap. Voice never moves money on its own.
 // The ElevenLabs key lives only here (secret ELEVENLABS_API_KEY).
@@ -28,7 +28,7 @@ async function me(req: Request) {
   return { id: s.user_id as string };
 }
 
-// Speech-to-text turns "send Maya 20 for pizza" into text; the app turns the
+// Speech-to-text turns "send Josh 20 for pizza" into text; the app turns the
 // text into a payment the person still has to confirm with a tap. Voice never
 // moves money on its own. Text-to-speech reads confirmations and incoming
 // payments aloud. The key stays here; browsers never see it.

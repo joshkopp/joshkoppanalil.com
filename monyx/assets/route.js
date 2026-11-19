@@ -1,4 +1,4 @@
-/* Old Monyx links (monyx.pro/#pay/maya, #claim/…, #home) went straight to the
+/* Old Monyx links (monyx.pro/#pay/josh, #claim/…, #home) went straight to the
    wallet. The wallet now lives in app/, so send those links there. */
 (function () {
   var h = location.hash;
