@@ -1304,9 +1304,13 @@
       ${draftId ? `<div class="voiced">${ICON.spark}<span>Drafted by your assistant. Check it, then tap Pay.</span></div>` : ''}
       ${voiced ? `<div class="voiced">${ICON.mic}<span>Filled in by voice. Check it, then tap Pay.</span></div>` : ''}
       ${rc.html}
+      <div id="trace-slot"></div>
       ${short_ ? `<div class="warn">You have ${money(usd(S.cash))}. Add ${money(dollars - usd(S.cash))} more to pay this.</div><button class="btn btn-dark" id="addm">Add money</button>` : `<button class="btn btn-dark" id="go">Pay ${money(dollars)}</button>`}`, (el, close) => {
       if (short_) { $('#addm', el).onclick = () => { close(); addMoney(); }; return; }
       if (rc.r.tier === 'high') { const g = $('#go', el), c = $('#riskok', el); g.disabled = true; c.onchange = () => (g.disabled = !c.checked); }
+      // Where did this account's money come from? Up to 2 hops back on devnet (monyx-trace.js + the
+      // "trace" function). Runs after the sheet opens; a High result also needs the "I checked" box.
+      if (window.MonyxTrace && to.address && !to.bank) MonyxTrace.mount($('#trace-slot', el), { address: to.address, sheet: el, who: first(to) });
       if (voiced && rc.r.tier !== 'normal') say(`${TIER[rc.r.tier]}. ${rc.r.tier === 'high' ? 'Please check before you send.' : 'Take a second look.'}`);
       $('#go', el).onclick = async (e) => {
         const b = e.currentTarget; b.disabled = true; b.innerHTML = '<span class="spin"></span>Sending';

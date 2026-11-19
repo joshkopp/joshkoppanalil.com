@@ -15,6 +15,7 @@
 | **Replay-proof sign-in** | The device signs "<site> wants you to sign in to Monyx" with a one-time server nonce and the time. Each nonce works once; the live-updates ticket is also one-time and expires in 30 s. |
 | **Sign in anywhere** | Optional server backups hold only ciphertext: passkey backups are keyed by credential id; password backups are released only after a login proof (the server stores an HMAC of it, never the password) and wrong guesses are rate-limited per IP and per account. A new device can also be approved from a signed-in one (ECDH P-256 + AES-GCM, with matching safety emojis). |
 | **Basic / Pro mode** | Basic is pay, request and split. Pro adds Invest. A short quiz suggests one at signup. |
+| **Source tracer** | Before you pay, `trace/` (edge function `trace`, from the team's tracer package) follows the recipient's incoming SOL/USDC up to 2 hops on devnet and matches senders against `trace/risk-list.json`. High needs the "I checked" tick. Capped at 100 RPC calls per check, cached 10 min. Demo addresses are in `trace/README.md`. |
 | **Invest = Gemini prediction markets** | `predictions/index.ts` (edge function `monyx-predictions`) reads Gemini's public `/v1/prediction-markets/events`, keeps the 40 busiest open markets with their top outcomes, and caches for a minute. Each market links out to Gemini to trade; Monyx never holds bets or money. Hidden in Basic. |
 | **Recovery key** | Every account gets a backup key (save to password manager, copy or download). It always works, even without a passkey, password or second device. |
 | **No fees** | Gasless relay: the client builds the USDC transfer with the Monyx bank as fee payer, signs its part, and `/monyx-pay/relay` validates the instructions before co-signing. Users never need SOL. |
@@ -43,6 +44,7 @@ Source files:
 - `voice-parse.js`: sentence → intent parser (tests: `node voice-parse.test.js`)
 - `server/index.ts`: Supabase edge function `monyx` (accounts, usernames, requests, avatars, sign-in backups, device links)
 - `payments/index.ts`: `monyx-pay` (relay, test dollars, pay links, Streams webhook, live events, activity, agent API)
+- `trace/` + `monyx-trace.js`: the "where did this money come from?" check on the pay sheet
 - `predictions/index.ts`: `monyx-predictions` (Gemini prediction markets for Invest)
 - `streams/`: QuickNode Streams filter, sample block and local test
 - `voice/index.ts`: `monyx-voice` (ElevenLabs STT and TTS)

@@ -1,0 +1,22 @@
+{
+  "updated": "2026-11-19",
+  "network": "solana-devnet",
+  "note": "Demo labels for Solana devnet only: wallets the Monyx team made and labeled on Nov 19, 2026 so a judge can see a 2-hop path live. Not real-world addresses. A real launch would use public sources such as the OFAC SDN list and known hack addresses.",
+  "demo": {
+    "high_2_hops": "CV3m8fpsm59bxvEZxLP2Mp68fxeqSuCEru6UjuJ6YuJu",
+    "high_1_hop": "AFDv2jabn9xZtjB6pa1D2iSSWEesR7XVwr8BDarW6zEF",
+    "medium_1_hop": "5ViskngPpuFcScZrzzsZt6TuoaZKC2ZfUKgFjbdUPjiD"
+  },
+  "wallets": [
+    {
+      "address": "HcwHwZLTjbhEcCtb9rdm1E4Xjm6pJoLuTFPH1L6iXvr5",
+      "label": "Scam wallet (demo)",
+      "tier": "High"
+    },
+    {
+      "address": "8cmSX8eE3h86ZSVub8h3yzASidTn7pv2XsMUPScrYffv",
+      "label": "Mixer (demo)",
+      "tier": "Medium"
+    }
+  ]
+}
