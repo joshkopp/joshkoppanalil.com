@@ -567,7 +567,7 @@
     const body = `<div class="lockhero">${ICON.lock}</div>
       <h2>${login ? 'Lock Monyx on this device' : 'Lock it with Face ID or a fingerprint'}</h2>
       <p class="sub">Your account key is encrypted on this device and only opens with your face, fingerprint or device PIN. It's never saved in plain text.</p>
-      <ul class="lockpts"><li>No password or seed phrase to memorize</li><li>Your key never leaves this device</li>${login ? '' : '<li>You also get a backup key, saved to your password manager</li>'}</ul>
+      <ul class="lockpts"><li>No password or seed phrase to memorize</li><li>Sign in on your other devices with the same passkey</li>${login ? '' : '<li>You also get a backup key, saved to your password manager</li>'}</ul>
       <div class="hint" id="hint" aria-live="polite"></div>
       <button class="btn btn-light" id="usepw" style="width:100%;margin-top:6px">Use a password instead</button>
       <details class="adv" id="adv"><summary>Advanced</summary><p>Skipping stores your key unencrypted in this browser. Anyone with access to this device could copy it.</p><button class="btn btn-light btn-sm" id="skip">Skip and store it unencrypted</button></details>`;

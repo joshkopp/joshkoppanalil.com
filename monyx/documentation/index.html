@@ -73,23 +73,32 @@
 
   <h2 id="account"><span class="n">03</span>Your account</h2>
   <h3>Signing up</h3>
-  <p>Signing up takes three steps: your name, an @username, and saving your recovery key. There's no password and no email.</p>
+  <p>Signing up takes four steps: your name, an @username, a lock (Face ID, fingerprint or a password), and saving your recovery key. There's no email.</p>
   <h3>What actually happens</h3>
-  <p>When you sign up, your browser creates a private <strong>key</strong>: a long secret code that works like the only key to a safe. It never leaves your device. From it comes your <strong>account number</strong>, which is public, like a mailbox address. Monyx saves just three things: your name, your username, and which account number belongs to it.</p>
+  <p>When you sign up, your browser creates a private <strong>key</strong>: a long secret code that works like the only key to a safe. It's made on your device, and only a locked copy ever leaves it (see below). From it comes your <strong>account number</strong>, which is public, like a mailbox address. Monyx saves just three things: your name, your username, and which account number belongs to it.</p>
   <h3>Your recovery key</h3>
-  <p>Your recovery key <em>is</em> that private key, written out so you can save it. You need it to log in on a new phone or after clearing your browser.</p>
-  <div class="note warn"><span class="dot"></span><p><strong>Monyx can't reset it.</strong> There's no "forgot password" because we never had it. If you lose your recovery key and your browser data, the account can't be recovered. And anyone who has it can spend your balance, so never share it, not even with someone claiming to be Monyx.</p></div>
+  <p>Your recovery key <em>is</em> that private key, written out so you can save it. It's your last way back in: if you can't use a passkey, a password or another device, it still works.</p>
+  <div class="note warn"><span class="dot"></span><p><strong>Monyx can't reset it.</strong> There's no "forgot password" because we never had your password or your key. If you lose your recovery key and every other way to sign in, the account can't be recovered. And anyone who has it can spend your balance, so never share it, not even with someone claiming to be Monyx.</p></div>
   <h3>Keeping your key safe</h3>
-  <p>Two optional extras make your key both safer and easier:</p>
+  <p>Signup asks you to lock your key. You can change it later in the Me tab.</p>
   <ul>
-    <li><strong>Save to your password manager.</strong> When you sign up, Monyx can save your recovery key to iCloud Keychain, Google Password Manager or 1Password, filed under your @username. Next time, the login screen fills itself in.</li>
-    <li><strong>Lock with a passkey.</strong> In the Me tab, turn on the passkey lock and your key is stored <em>encrypted</em> on your phone. Monyx then only opens with Face ID, your fingerprint or your device PIN. Even someone who gets into your browser's storage sees only scrambled data.</li>
+    <li><strong>Lock with a passkey.</strong> Your key is stored <em>encrypted</em> on your device and only opens with Face ID, your fingerprint or your device PIN. Even someone who gets into your browser's storage sees only scrambled data. Monyx also keeps a copy locked with the same passkey, so if your passkey syncs (iCloud Keychain, Google Password Manager) it signs you in on your other devices too.</li>
+    <li><strong>Lock with a password.</strong> For devices without passkeys. Your key is encrypted with the password on your device. Leave "Also use it to sign in on other devices" on and Monyx keeps a copy locked with it, so your @username and password work anywhere. The password itself never leaves your device, and wrong guesses are limited.</li>
+    <li><strong>Save to your password manager.</strong> Monyx can save your recovery key to iCloud Keychain, Google Password Manager or 1Password, filed under your @username.</li>
   </ul>
   <h3>Logging in</h3>
-  <p>To log in, your device proves it holds the key by signing a short message ("Sign in to Monyx", plus the time). Monyx checks the signature and lets you in for 30 days. The key itself is never sent anywhere. If you already use a <strong>Phantom</strong> crypto wallet, you can log in with that instead.</p>
+  <p>To log in, your device proves it holds the key by signing a short message ("Sign in to Monyx", plus the time). Monyx checks the signature and lets you in for 30 days. The key itself is never sent anywhere.</p>
+  <p>On a new device, tap <strong>Log in</strong> and choose how:</p>
+  <ul>
+    <li><strong>Passkey:</strong> Face ID or fingerprint, if your passkey has synced to this device.</li>
+    <li><strong>Password:</strong> your @username and sign-in password.</li>
+    <li><strong>A code from your other device:</strong> tap <em>Use a code from my other device</em>, then approve it on a device where you're signed in. Check that the emojis match on both screens before you approve.</li>
+    <li><strong>Recovery key:</strong> paste it. This always works.</li>
+  </ul>
+  <p>If you already use a <strong>Phantom</strong> crypto wallet, you can log in with that instead.</p>
 
   <h2 id="paying"><span class="n">04</span>Paying &amp; requesting</h2>
-  <p>Tap the purple <strong>+</strong> button, type an amount, choose who it's for, and add a note if you want.</p>
+  <p>Tap the <strong>$</strong> button in the middle of the tab bar, type an amount, choose who it's for, and add a note if you want.</p>
   <div class="flow">
     <div class="step"><b>You confirm</b>Your device signs the payment with your key</div>
     <div class="arrow">→</div>
@@ -110,7 +119,7 @@
     <tr><td>Account number</td><td>You can also paste any Solana account number, even for someone not on Monyx. Double-check it first, because payments can't be undone.</td></tr>
   </table>
   <h3>Requests</h3>
-  <p>Tap <strong>Request</strong> instead of Pay and they'll see it on their home screen with <em>Pay</em> and <em>Decline</em> buttons. When they pay, Monyx checks the network to confirm the money really arrived, then marks the request paid. You can cancel a request you sent any time.</p>
+  <p>Tap <strong>Request</strong> instead of Pay and they'll see it on their home screen with <em>Pay</em> and <em>Decline</em> buttons. When the money arrives, Monyx marks the request paid on its own and tells you. It works even if they paid from another wallet, as long as it's the same amount. You can cancel a request you sent any time.</p>
   <h3>Payments are final</h3>
   <p>Like handing someone cash, a payment can't be reversed once it's sent. If you pay the wrong person, ask them to send it back.</p>
 
@@ -127,7 +136,7 @@
   </ul>
 
   <h2 id="crypto"><span class="n">07</span>Buying crypto</h2>
-  <p>The <strong>Invest</strong> tab has nine popular coins: Bitcoin, Ethereum, Solana, XRP, Dogecoin, Cardano, Chainlink, Avalanche and Litecoin. Prices are live and update every minute.</p>
+  <p>The <strong>Invest</strong> tab (in Pro mode; switch modes in the Me tab) has nine popular coins: Bitcoin, Ethereum, Solana, XRP, Dogecoin, Cardano, Chainlink, Avalanche and Litecoin. Prices are live and update every minute.</p>
   <table>
     <tr><th>Action</th><th>What happens</th></tr>
     <tr><td>Buy</td><td>You pay from your Monyx cash, and Monyx adds the coin to your account at the live price. The smallest buy is $1.</td></tr>
@@ -149,7 +158,8 @@
   <h3>What Monyx never has</h3>
   <ul>
     <li>Your recovery key or private key</li>
-    <li>A password, email or bank details. We never ask for them.</li>
+    <li>Your password. Only a locked copy of your key is kept, and only if you turn on sign-in from other devices.</li>
+    <li>An email or bank details. We never ask for them.</li>
   </ul>
   <div class="note warn"><span class="dot"></span><p><strong>Payments are public.</strong> Solana is a public network, so anyone can look up an account number and see its payments, amounts and notes. They won't see your name unless they already know which account is yours. Keep anything private out of payment notes.</p></div>
   <h3>When something goes wrong</h3>
@@ -168,12 +178,12 @@
 
   <h2 id="faq"><span class="n">11</span>Questions</h2>
   <details><summary>Does Monyx charge fees?</summary><div><p>No. The Solana network charges a fee of a fraction of a cent per payment, and Monyx pays it for you. You never pay a fee or need any crypto to send dollars.</p></div></details>
-  <details><summary>I lost my recovery key. Can you help?</summary><div><p>If you're still logged in on a device, open the Me tab, tap <strong>Recovery key</strong> and save it now. If you've lost both the key and your logged-in device, the account can't be recovered. Nobody holds a copy, including us.</p></div></details>
+  <details><summary>I lost my recovery key. Can you help?</summary><div><p>If you're still logged in on a device, open the Me tab, tap <strong>Recovery key</strong> and save it now. If you're not, you can still sign in with your passkey, your sign-in password or a code from another device, and then save it. If you've lost all of those, the account can't be recovered. Monyx only holds a locked copy it can't open.</p></div></details>
   <details><summary>Someone asked for my recovery key. Should I give it?</summary><div><p>Never. Anyone with it can empty your account. Monyx will never ask for it.</p></div></details>
   <details><summary>Can I undo a payment?</summary><div><p>No, payments are final. Ask the person to send it back.</p></div></details>
   <details><summary>Why did my balance change when I didn't do anything?</summary><div><p>Your dollar balance only changes when money comes in or goes out. Check Activity: a friend may have paid you. Coins in Invest do change value as prices move.</p></div></details>
   <details><summary>Can an AI assistant spend my money?</summary><div><p>No. If you connect Grok Bot (Me → AI assistant), it can see your activity, ask friends for money and <strong>draft</strong> payments. Every draft waits on your home screen until you tap Pay. You set a weekly limit and can remove it any time. <a href="../grok-bot/">How it works</a></p></div></details>
-  <details><summary>Can I use Monyx on more than one device?</summary><div><p>Yes. On the new device, choose "I already have an account" and paste your recovery key.</p></div></details>
+  <details><summary>Can I use Monyx on more than one device?</summary><div><p>Yes. On the new device, tap Log in and use your passkey, your @username and password, a code from your other device, or your recovery key.</p></div></details>
   <details><summary>My friend isn't on Monyx. Can I still pay them?</summary><div><p>Yes. Send them money with a link: they open it, sign up in under a minute, and it's theirs. You can cancel it until they claim it. If they already have a Solana account, you can also paste their account number.</p></div></details>
 </main>
 </div>

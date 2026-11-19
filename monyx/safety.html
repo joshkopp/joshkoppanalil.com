@@ -100,13 +100,14 @@
           <ul class="checks">
             <li><span class="badge badge-high">High</span> The account number starts and ends like someone in your history, but the middle is different. That's address poisoning.</li>
             <li><span class="badge badge-high">High</span> The @username is one letter off from someone you know, and you've never paid it.</li>
+            <li><span class="badge badge-high">High</span> The account number copies the start and end of your own.</li>
             <li><span class="badge badge-high">High</span> The address belongs to a program or to the USDC token itself, not to a person. Money sent there can get stuck.</li>
             <li><span class="badge badge-medium">Medium</span> The account isn't on Monyx, so there's no name or photo to check against.</li>
             <li><span class="badge badge-medium">Medium</span> The Monyx account was made in the last day.</li>
-            <li><span class="badge badge-medium">Medium</span> It's more than half your balance, to someone you've never paid.</li>
+            <li><span class="badge badge-medium">Medium</span> It's $20 or more and over half your balance, to someone you've never paid.</li>
             <li><span class="badge badge-normal">Normal</span> You've paid them before, or it's simply your first payment to a real Monyx account with nothing else odd.</li>
           </ul>
-          <p>On High, the Pay button stays off until you tick "I checked this with them." The check runs on your device, from what the app already knows. Nothing extra is sent anywhere.</p>
+          <p>On High, the Pay button stays off until you tick "I checked this with them." The check runs on your device, from what the app already knows plus your own Monyx payment history.</p>
       </div>
     </section>
 

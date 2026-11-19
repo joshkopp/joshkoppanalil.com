@@ -31,8 +31,8 @@
 
 <p class="kicker">Privacy</p>
 <h1>What Monyx knows about you</h1>
-<p class="updated">Last updated November 17, 2026</p>
-<p class="lede">Short version: Monyx stores your name, your username and your account number. We never have your recovery key, a password, your email or your bank details. Payments themselves are public on the Solana network.</p>
+<p class="updated">Last updated November 18, 2026</p>
+<p class="lede">Short version: Monyx stores your name, your username and your account number. We never see your recovery key, your password, your email or your bank details. Payments themselves are public on the Solana network.</p>
 
 <h2>What we store</h2>
 <ul>
@@ -41,6 +41,7 @@
 <li><strong>A payment log:</strong> payments Monyx helped send (we pay the network fee), with amount, note and the accounts involved. This is the same information that's already public on the network.</li>
 <li><strong>Invest:</strong> the coins you hold and your trades. In test mode these are kept in Monyx's own ledger, not on the network.</li>
 <li><strong>AI assistant keys:</strong> if you connect one, we keep a scrambled (hashed) copy of the key, its name and its weekly limit, plus any payments it drafts.</li>
+<li><strong>Sign-in backups (if you turn them on):</strong> a copy of your account key locked with your passkey or password. We can't open it. For passwords we keep only a scrambled check value, never the password, and count wrong guesses so nobody can try thousands. If you sign in with a code from another device, we briefly pass along a locked message between the two devices.</li>
 <li><strong>Basic security data:</strong> the IP address used to create an account or claim test dollars, so we can limit abuse. Server logs are kept briefly to fix problems.</li>
 </ul>
 
@@ -49,8 +50,9 @@
 
 <h2>What we never have</h2>
 <ul>
-<li>Your <strong>recovery key</strong> (private key). It is created in your browser and stays there. Monyx can't see it, reset it, or move your money.</li>
-<li>A password, email address, phone number or bank details. We don't ask for them.</li>
+<li>Your <strong>recovery key</strong> (private key). It is created in your browser. If you turn on sign-in backups, only a locked copy leaves your device. Monyx can't see it, reset it, or move your money.</li>
+<li>Your password. It never leaves your device; only the locked backup does.</li>
+<li>An email address, phone number or bank details. We don't ask for them.</li>
 </ul>
 
 <h2>Voice</h2>
@@ -63,7 +65,7 @@
 <ul>
 <li><strong>Supabase</strong>: hosts our database, storage (profile photos) and server functions.</li>
 <li><strong>ElevenLabs</strong>: voice, as above.</li>
-<li><strong>QuickNode</strong>: watches the network for incoming payments, so we can tell you the moment you're paid.</li>
+<li><strong>QuickNode</strong>: watches the network for payments to Monyx accounts, so we can tell you the moment you're paid. Your account number is on the watch list it keeps.</li>
 <li><strong>CoinGecko</strong>: coin prices.</li>
 <li><strong>GitHub Pages</strong>: serves this website.</li>
 <li><strong>Google Fonts</strong>: the typeface. Your browser fetches it from Google.</li>
