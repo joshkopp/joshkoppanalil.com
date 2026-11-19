@@ -6,7 +6,7 @@ body { margin: 0; background: var(--bg); color: var(--ink2); font: 17px/1.65 "Ge
 a { color: var(--ink); text-decoration-color: var(--faint); text-underline-offset: 3px; }
 a:hover { text-decoration-color: var(--brand); }
 ::selection { background: var(--brand); color: #fff; }
-.mk { width: 28px; height: 28px; flex-shrink: 0; } .mk rect { fill: var(--brand); } .mk path { fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.mk { width: 28px; height: 28px; flex-shrink: 0; } .mk rect { fill: var(--pastel, #CEE4C3); } .mk path { fill: none; stroke: var(--ink, #0D2A1D); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
 
 header { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
 .bar { max-width: 1080px; margin: 0 auto; height: 64px; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; }

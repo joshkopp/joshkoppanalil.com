@@ -968,5 +968,5 @@ html, body { overflow-x: clip; }
 /* One logo everywhere: the green "m" mark plus the word, linking home. */
 .logo { align-items: center; gap: 9px; }
 .logo .mk { width: 28px; height: 28px; flex-shrink: 0; }
-.logo .mk rect { fill: #3E6B30; }
-.logo .mk path { fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.logo .mk rect { fill: #CEE4C3; }
+.logo .mk path { fill: none; stroke: #0D2A1D; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }

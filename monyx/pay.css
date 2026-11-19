@@ -81,8 +81,8 @@ p { margin: 0 0 12px; }
 /* ── brand ── */
 .logo { display: inline-flex; align-items: center; gap: 9px; font-weight: 700; font-size: 22px; letter-spacing: -.045em; }
 .mark { width: 30px; height: 30px; flex-shrink: 0; display: block; }
-.mark rect { fill: var(--brand); }
-.mark path { fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.mark rect { fill: var(--pastel, #CEE4C3); }
+.mark path { fill: none; stroke: var(--ink, #0D2A1D); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ── buttons & fields ── */
 .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 54px; border-radius: 16px; border: 0; font-weight: 600; font-size: 16px; letter-spacing: -.01em; transition: transform .1s, background .15s, opacity .15s, box-shadow .15s; text-decoration: none; }

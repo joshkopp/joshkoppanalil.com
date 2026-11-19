@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Geist:wght@400;500;600;650;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../page.css?v=4">
+<link rel="stylesheet" href="../page.css?v=5">
 </head>
 <body>
 <header><div class="bar">
@@ -40,7 +40,7 @@
 <li><strong>Your profile:</strong> your name, @username, account number (public key) and, if you add one, your profile photo.</li>
 <li><strong>Requests and pay links</strong> you send or receive: who, how much, the note, and whether they were paid.</li>
 <li><strong>A payment log:</strong> payments Monyx helped send (we pay the network fee), with amount, note and the accounts involved. This is the same information that's already public on the network.</li>
-<li><strong>Invest:</strong> the prediction markets come from Gemini's public API; we don't send Gemini anything about you, and trading happens on Gemini under its own privacy policy. Test coins bought before that change stay in Monyx's own ledger until you sell them.</li>
+<li><strong>Invest and Predict:</strong> crypto prices and prediction markets come from Gemini's public API. We don't send Gemini anything about you, and trading happens on Gemini under its own privacy policy. Test coins bought before Invest moved to Gemini stay in Monyx's own records until you sell them.</li>
 <li><strong>AI assistant keys:</strong> if you connect one, we keep a scrambled (hashed) copy of the key, its name and its weekly limit, plus any payments it drafts.</li>
 <li><strong>Sign-in backups (if you turn them on):</strong> a copy of your account key locked with your passkey or password. We can't open it. For passwords we keep only a scrambled check value, never the password, and count wrong guesses so nobody can try thousands. If you sign in with a code from another device, we briefly pass along a locked message between the two devices.</li>
 <li><strong>Basic security data:</strong> the IP address used to create an account or claim test dollars, so we can limit abuse. Server logs are kept briefly to fix problems.</li>
@@ -67,7 +67,8 @@
 <li><strong>Supabase</strong>: hosts our database, storage (profile photos) and server functions.</li>
 <li><strong>ElevenLabs</strong>: voice, as above.</li>
 <li><strong>QuickNode</strong>: watches the network for payments to Monyx accounts, so we can tell you the moment you're paid. Your account number is on the watch list it keeps.</li>
-<li><strong>CoinGecko</strong>: coin prices.</li>
+<li><strong>Gemini</strong>: crypto prices and prediction markets for Invest and Predict. It never receives anything about you.</li>
+<li><strong>CoinGecko</strong>: prices for test coins bought before Invest moved to Gemini.</li>
 <li><strong>GitHub Pages</strong>: serves this website.</li>
 <li><strong>Google Fonts</strong>: the typeface. Your browser fetches it from Google.</li>
 </ul>

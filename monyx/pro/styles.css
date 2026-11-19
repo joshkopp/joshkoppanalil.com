@@ -42,8 +42,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .mark { display: flex; align-items: center; gap: 8px; padding: 0 22px 26px; text-decoration: none; color: var(--bone); }
 .mark-k { display: inline-flex; align-items: center; gap: 9px; font: 700 21px/1 var(--sans); letter-spacing: -.045em; }
 .mark-k svg { width: 28px; height: 28px; }
-.mark-k svg rect { fill: var(--sig); }
-.mark-k svg path { fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.mark-k svg rect { fill: #CEE4C3; }
+.mark-k svg path { fill: none; stroke: #0D2A1D; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
 .mark-sub { font: 600 11px var(--sans); color: var(--sig-ink); background: color-mix(in srgb, var(--sig) 14%, transparent); padding: 3px 7px; border-radius: 6px; align-self: center; }
 .nav { display: flex; flex-direction: column; }
 .nav a { display: flex; gap: 14px; align-items: baseline; padding: 9px 22px; text-decoration: none; color: var(--mute); border-left: 2px solid transparent; transition: color .15s; }

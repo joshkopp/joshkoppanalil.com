@@ -31,7 +31,7 @@
 ```
 /                 marketing site (index, features, how-it-works, safety, about, faq)
 /app/             the wallet (app/index.html loads ../pay.js and ../pay.css)
-/pro/             Monyx Pro: wallet tracer, agent API market, ledger
+/pro/             Developer tools: wallet tracer, agent API market, ledger
 /grok-bot/        Grok Bot setup page and SKILL.md
 /documentation/   API docs
 /privacy/ /terms/ legal pages
