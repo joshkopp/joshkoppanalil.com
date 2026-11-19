@@ -459,6 +459,11 @@ Deno.serve(async (req) => {
         const need = addrs.filter((a) => a && !known.has(a));
         if (need.length) { const m = await names(need); for (const a of need) known.set(a, m.get(a) || null); }
       };
+      let keepAlive: (v?: unknown) => void = () => {};
+      // Keep this worker alive while the stream is open; otherwise an idle instance can be dropped
+      // early and the stream dies without the browser noticing.
+      // @ts-ignore EdgeRuntime is provided by Supabase
+      try { EdgeRuntime.waitUntil(new Promise((r) => (keepAlive = r))); } catch { /* */ }
       const body_ = new ReadableStream({
         async start(ctrl) {
           let open = true;
@@ -495,14 +500,17 @@ Deno.serve(async (req) => {
                   send("reminder", { id: r.id, usd: Number(r.usd), note: r.note, from: pub(u), since: r.created_at });
                 }
               }
-              if (tick % 10 === 0) put(": still here\n\n");
+              // Heartbeat the app can see. If these stop, it reconnects and catches up from the last payment.
+              if (tick % 3 === 0) put("event: ping\ndata: {}\n\n");
               tick++;
               await new Promise((r) => setTimeout(r, 1500));
             }
           } catch (e) { console.error("[monyx-pay] events:", e); }
           put("event: bye\ndata: {}\n\n");
           if (open) try { ctrl.close(); } catch { /* */ }
+          keepAlive();
         },
+        cancel() { keepAlive(); },
       });
       return new Response(body_, { headers: { ...cors, "content-type": "text/event-stream", "cache-control": "no-cache, no-transform", "x-accel-buffering": "no" } });
     }

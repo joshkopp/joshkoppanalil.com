@@ -34,11 +34,13 @@
   // The text stays in the box so "-1" can't quietly turn into 1 as you keep typing.
   const MINUS = /[-\u2212\u2010-\u2015\ufe63\uff0d]/;
   function amtCheck(raw) {
-    let t = String(raw || '').replace(/\s/g, '');
+    let t = String(raw || '').replace(/[\s\u200b-\u200d\ufeff]/g, '');
+    // A minus anywhere is "negative", whatever else is wrong; a leading $ is fine ("$1,000" is $1,000).
+    if (MINUS.test(t)) return { n: NaN, err: 'Amounts can’t be negative.' };
+    t = t.replace(/^\$/, '');
     // A comma only counts as a thousands separator ("1,000" or "1,250.50"). Anything else is
     // rejected rather than guessed, so "1,000" can never become $1.00.
-    if (t.includes(',')) { if (!/^\$?\d{1,3}(,\d{3})+(\.\d*)?$/.test(t)) return { n: NaN, err: 'Use numbers only, like 1000 or 12.50.' }; t = t.replace(/,/g, ''); }
-    if (MINUS.test(t)) return { n: NaN, err: 'Amounts can’t be negative.' };
+    if (t.includes(',')) { if (!/^\d{1,3}(,\d{3})+(\.\d*)?$/.test(t)) return { n: NaN, err: 'Use numbers only, like 1000 or 12.50.' }; t = t.replace(/,/g, ''); }
     if (/[^0-9.]/.test(t) || (t.match(/\./g) || []).length > 1) return { n: NaN, err: 'Use numbers only, like 12.50.' };
     if (/\.\d{3}/.test(t)) return { n: NaN, err: 'Dollars only go to 2 decimal places (cents).' };
     return { n: t ? parseFloat(t) : NaN, err: '' };
@@ -286,7 +288,8 @@
       t0 = performance.now(); // time the payment itself, not the Face ID prompt
       const r = await usdcSend({ owner: S.acct.address, signer: S.acct.mode === 'phantom' ? 'phantom' : S.kp, to: toAddress, units, note });
       if (r.pending) throw userError("The network is busy, so your payment is still landing. Check Activity in a minute before trying again.");
-      S.lastMs = Math.round(performance.now() - t0); // what you actually waited, from tap to confirmed
+      // Network time as the relay measured it (on the wire to confirmed). Falls back to the whole wait if the server didn't say.
+      S.lastMs = r.ms > 0 ? r.ms : Math.round(performance.now() - t0);
       S.cash = Math.max(0, have - units); paintBalance();
       return r.sig;
     } catch (e) {
@@ -361,7 +364,7 @@
   }
   function syncPeople() {
     const a = S.acct && S.acct.address;
-    if (a && S.peopleFor !== a) { S.people = mine.get('monyx.people', {}); S.peopleFor = a; }
+    if (a && S.peopleFor !== a) { S.people = mine.get('monyx.people', {}); S.peopleFor = a; rememberLinkPeople(); }
   }
   async function resolvePeople(addresses) {
     if (store.get('monyx.peopleV') !== 3) { store.del('monyx.people'); store.del('monyx.peopleAt'); store.set('monyx.peopleV', 3); }
@@ -369,7 +372,9 @@
     const b = S.bankAddr || store.get('monyx.bank2') || BANK_ADDR;
     if (b) S.people[b] = { handle: 'monyx', name: 'Monyx', address: b, bank: true };
     const fresh = Date.now() - mine.get('monyx.peopleAt', 0) < 600_000;
-    const need = [...new Set(addresses)].filter((a) => a !== b && !(S.people[a] && S.people[a].link) && (!fresh || !S.people[a]));
+    S.askedUnknown = S.askedUnknown || new Set(); // an address saved as "unknown" is asked about again once per page load
+    const need = [...new Set(addresses)].filter((a) => a !== b && !(S.people[a] && S.people[a].link) && (!fresh || !S.people[a] || (S.people[a].unknown && !S.askedUnknown.has(a))));
+    need.forEach((a) => S.askedUnknown.add(a));
     if (!need.length) return;
     if (!fresh) mine.set('monyx.peopleAt', Date.now());
     try {
@@ -892,6 +897,7 @@
     $$('.srow', el).forEach((b) => (b.onclick = () => { const x = steps[+b.dataset.i]; if (!x.done) x.go(); }));
   }
   function paintPeople() {
+    syncPeople(); // names saved on this device show right away after a reload, before the network answers
     const el = $('#ppl'); if (!el) return;
     const seen = new Set(); const list = [];
     for (const f of S.feed) {
@@ -903,6 +909,7 @@
     $$('.person', el).forEach((b) => (b.onclick = () => (location.hash = `#pay/${b.dataset.h}`)));
   }
   function paintFeed() {
+    syncPeople();
     paintStart();
     const el = $('#feed'); if (!el) return;
     if (!S.feed.length && S.feedReady !== (S.acct && S.acct.address)) { el.innerHTML = `<div class="empty"><span class="spin"></span>Loading your activity…</div>`; return; }
@@ -1018,7 +1025,7 @@
         if (junk.length < 12) junk += k === '-' ? '−' : (ch || '?'); v = ''; shake(); paint(); return;
       }
       if (neg) {
-        if (k === 'del') { junk = junk.slice(0, -1); if (!junk) neg = false; } else if (junk.length < 12) junk += k;
+        if (k === 'del') { junk = [...junk].slice(0, -1).join(''); if (!junk.replace(/[\s\u200b-\u200d\ufeff]/g, '')) { junk = ''; neg = false; sub.classList.remove('bad'); sub.textContent = ''; } } else if (junk.length < 12) junk += k;
         paint(); return;
       }
       if (k === 'del') next = v.slice(0, -1);
@@ -1057,7 +1064,7 @@
       const txt = (e.clipboardData && e.clipboardData.getData('text')) || ''; if (!txt) return;
       e.preventDefault();
       const r = amtCheck(txt.replace(/^\s*\$/, ''));
-      if (r.err) { neg = MINUS.test(txt) ? true : 'junk'; junk = txt.trim().replace(/-/g, '−').slice(0, 12); v = ''; shake(); paint(); return; }
+      if (r.err) { neg = MINUS.test(txt) ? true : 'junk'; junk = txt.replace(/[\s\u200b-\u200d\ufeff]/g, '').replace(/-/g, '−').slice(0, 12); v = ''; shake(); paint(); return; }
       if (r.n > 10000) { sub.textContent = 'You can send up to $10,000 at a time.'; sub.classList.add('bad'); return shake(); }
       v = String(txt).replace(/[,\s$]/g, ''); neg = false; paint();
     };
@@ -1777,13 +1784,15 @@
     const inp = $('#trin'), out = $('#trout');
     const run = async () => {
       let v = cleanAddr(inp.value.trim()), who = '';
-      if (!v) return;
+      // One style and one wording for every input problem, so both cases read the same.
+      const nope = (m) => { out.innerHTML = `<div class="empty">${m} Enter an @username or a Solana account number.</div>`; };
+      if (!v) return nope('There’s nothing to check yet.');
       if (!isAddr(v)) {
         const h = v.replace(/^@/, '');
-        if (!/^[a-z0-9_]{3,20}$/i.test(h)) { out.innerHTML = '<div class="empty">That isn’t an account number or a username.</div>'; return; }
+        if (!/^[a-z0-9_]{3,20}$/i.test(h)) return nope('That isn’t a username or an account number.');
         out.innerHTML = '<div class="empty">Looking up @' + esc(h) + '…</div>';
         const u = await lookup(h);
-        if (!u || !u.address) { out.innerHTML = '<div class="empty">No one has that username.</div>'; return; }
+        if (!u || !u.address) return nope(`No one on Monyx is @${esc(h)}.`);
         v = u.address; who = u.name.split(' ')[0];
       }
       if (!window.MonyxTrace) { out.innerHTML = '<div class="empty">The tracer didn’t load. Refresh and try again.</div>'; return; }
@@ -2068,6 +2077,7 @@
   };
   const plainNote = (n) => { const t = (n || '').replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, ''); return /^[A-Z][a-z]/.test(t) ? t[0].toLowerCase() + t.slice(1) : t; };
   const knownPeople = () => {
+    syncPeople();
     const seen = new Set(); const list = [];
     for (const p of Object.values(S.people)) if (p && !p.unknown && !p.bank && p.handle && p.handle !== S.acct.user.handle && !seen.has(p.handle)) { seen.add(p.handle); list.push(p); }
     return list;
@@ -2370,8 +2380,20 @@
     get: (escrow) => mine.get('monyx.links', []).find((l) => l.escrow === escrow),
   };
   const linkUrl = (secret) => `${SITE}#claim/${secret}`;
+  // Pay links show as "Link for Sam" in activity. Labels come from this device's saved links and, so they
+  // survive a reload or another device, from the server's copy of your links.
   function rememberLinkPeople() {
-    for (const l of links.all()) S.people[l.escrow] = { address: l.escrow, name: l.label ? `Link for ${l.label}` : 'Pay link', link: true };
+    const put = (escrow, label) => { S.people[escrow] = { address: escrow, name: label ? `Link for ${label}` : 'Pay link', link: true }; };
+    for (const l of links.all()) put(l.escrow, l.label);
+    for (const [e, lb] of Object.entries(S.linkLabels || {})) if (!S.people[e] || !S.people[e].link || lb) put(e, lb);
+  }
+  async function loadLinkLabels() {
+    if (!S.acct || !S.acct.token) return;
+    try {
+      const { claims } = await api(PAPI + '/claims');
+      S.linkLabels = Object.fromEntries((claims || []).map((c) => [c.escrow, c.label || '']));
+      syncPeople(); rememberLinkPeople(); if ($('#feed')) paintFeed();
+    } catch { /* labels are a nicety */ }
   }
   function confirmLink(dollars, note, label) {
     const after = S.cash != null ? usd(S.cash) - dollars : null;
@@ -2549,19 +2571,24 @@
      it's logged (from the relay, or from QuickNode Streams for money arriving from outside Monyx),
      plus requests that got paid and reminders. The 4-second inbox poll below only runs while the
      live connection is down. */
-  const liveOpen = () => !!(S.live && S.live.readyState === 1);
+  // Open and recently heard from (the server sends a ping every few seconds). A silent stream counts as closed.
+  const liveOpen = () => !!(S.live && S.live.readyState === 1 && Date.now() - (S.liveLast || 0) < 8000);
   function stopLive() { if (S.live) { S.live.close(); S.live = null; } clearTimeout(S.liveRetry); S.liveRetry = null; }
   async function startLive() {
     if (!window.EventSource || !S.acct || !S.acct.token || S.liveFor === S.acct.address && S.live && S.live.readyState !== 2) return;
-    stopLive(); S.liveFor = S.acct.address;
+    if (S.liveStarting) return;
+    stopLive(); S.liveFor = S.acct.address; S.liveStarting = true;
     let t;
-    try { t = await api(`${PAPI}/events/ticket`, { method: 'POST' }); } catch (e) { if (e.status === 401) return relogin(); S.liveRetry = setTimeout(() => { S.liveRetry = null; startLive(); }, 15000); return; }
+    try { t = await api(`${PAPI}/events/ticket`, { method: 'POST' }); } catch (e) { S.liveStarting = false; if (e.status === 401) return relogin(); S.liveRetry = setTimeout(() => { S.liveRetry = null; startLive(); }, 15000); return; }
+    S.liveStarting = false;
     // The ticket works once and expires in seconds, so a copy in a log is useless. When the server ends
     // the stream (every couple of minutes) it says "bye" and we reopen with a fresh ticket.
     const since = S.liveSince || Date.now() - 2000;
     const es = new EventSource(`${PAPI}/events?t=${encodeURIComponent(t.ticket)}&since=${since}`);
-    S.live = es;
-    const safe = (fn) => (ev) => { try { if (ev.lastEventId) S.liveSince = Math.max(S.liveSince || 0, Number(ev.lastEventId) || 0); fn(JSON.parse(ev.data)); } catch (e) { console.warn('[monyx] skipped a live update', e); } };
+    S.live = es; S.liveLast = Date.now();
+    es.onopen = () => { S.liveLast = Date.now(); };
+    es.addEventListener('ping', () => { S.liveLast = Date.now(); });
+    const safe = (fn) => (ev) => { S.liveLast = Date.now(); try { if (ev.lastEventId) S.liveSince = Math.max(S.liveSince || 0, Number(ev.lastEventId) || 0); fn(JSON.parse(ev.data)); } catch (e) { console.warn('[monyx] skipped a live update', e); } };
     es.addEventListener('bye', () => { if (S.live !== es) return; es.close(); S.live = null; S.liveFor = null; startLive(); });
     es.addEventListener('payment', safe(onLivePayment));
     es.addEventListener('request_paid', safe((r) => {
@@ -2597,7 +2624,7 @@
   }
   async function pollInbox() {
     if (!S.acct || !S.acct.token || document.hidden) return;
-    if (liveOpen()) { inboxPrimed = true; S.inboxAt = Date.now() - 2000; return; } // live stream has it covered
+    if (liveOpen()) { inboxPrimed = true; S.inboxAt = Math.min(Date.now(), S.liveLast || Date.now()) - 10000; return; } // live stream has it covered; if it dies, polling resumes from just before it went quiet
     try {
       const r = await api(`${PAPI}/inbox?since=${S.inboxAt}`);
       const fresh = r.payments.filter((p) => !announced.has(p.sig));
@@ -2957,19 +2984,8 @@
       };
     });
   }
-  // Going to Monyx Pro and back is a full page load, which would ask for Face ID again. Before
-  // leaving, hand the unlocked key to this tab only (sessionStorage, 10 minutes), and take it back
-  // once on return. Closing the tab or waiting drops it, so the lock still works.
-  function handOff() {
-    try { if (S.kp && S.acct && vault.get()) sessionStorage.setItem('monyx.handoff', JSON.stringify({ a: S.acct.address, s: Array.from(S.kp.secretKey), exp: Date.now() + 600_000 })); } catch { /* */ }
-  }
-  function takeHandOff() {
-    let h = null;
-    try { h = JSON.parse(sessionStorage.getItem('monyx.handoff') || 'null'); sessionStorage.removeItem('monyx.handoff'); } catch { /* */ }
-    if (!h || h.exp < Date.now() || !S.acct || h.a !== S.acct.address || S.kp) return;
-    try { const kp = keypairFrom(h.s); if (kp.publicKey.toBase58() === S.acct.address) { S.secretMem = h.s; S.kp = kp; } } catch { /* */ }
-  }
-  document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('a[data-pro]'); if (a) handOff(); });
+  // Pro tools live inside the app now, so the unlocked key never leaves memory. Clear any handoff an older build left behind.
+  try { sessionStorage.removeItem('monyx.handoff'); } catch { /* */ }
   const isLocked = () => !!(S.acct && S.acct.mode === 'key' && !S.acct.secret && !S.kp && vault.get());
   function screenUnlock() {
     const u = S.acct.user || {};
@@ -3040,6 +3056,7 @@
     if (S.acct.user) store.set('monyx.known', vaultUser(S.acct.user));
     if (!liveOpen() && S.liveFor !== S.acct.address) startLive();
     if (view === 'pay' && !a) return screenPad();
+    if (view === 'request') return screenPay({ amount: amtCheck(a).n > 0 ? a : '', mode: 'request', fromPad: !!a }); // #request and #request/5
     if (view === 'send') return screenPay({ amount: amtCheck(a).n > 0 ? a : '', mode: b === 'r' ? 'request' : 'pay', fromPad: true });
     if (view === 'pay') return screenPay({ to: a, amount: amtCheck(b).n > 0 ? amtCheck(b).n.toFixed(2).replace(/\.00$/, '') : '', note: c ? decodeURIComponent(c) : '' });
     if (view === 'me') return screenMe();
@@ -3060,20 +3077,22 @@
     if (S.acct && S.acct.mode === 'key' && S.acct.secret) { try { S.kp = keypairFrom(S.acct.secret); } catch { S.acct = null; } }
     if (S.acct && S.acct.mode === 'key' && !S.acct.secret && !vault.get()) S.acct.token = null; // no key anywhere: start over
     if (S.acct && !S.acct.token) { S.acct = null; S.kp = null; store.del('monyx.acct'); } // signup interrupted before the account existed
-    takeHandOff();
     window.addEventListener('hashchange', route);
     // Mid-signup the key exists only in memory; warn before it's lost.
     window.addEventListener('beforeunload', (e) => { if (S.holdKey && S.acct && S.acct.token) { e.preventDefault(); e.returnValue = ''; } });
     store.del('monyx.rpc');
     document.body.dataset.mode = appMode();
-    rememberLinkPeople();
+    rememberLinkPeople(); loadLinkLabels();
     loadInfo();
     // Broken profile photos fall back to initials. (Delegated, so no inline handlers: the CSP forbids them.)
     document.addEventListener('error', (e) => { if (e.target && e.target.matches && e.target.matches('img[data-fallback]')) e.target.remove(); }, true);
     route();
     setInterval(() => { if (S.acct && S.acct.token && !document.hidden) { refreshBalance(); if ($('#feed')) { loadFeed(); loadRequests(); loadDrafts(); } } }, 20000);
-    setInterval(pollInbox, 4000); pollInbox();
-    setInterval(() => { if (S.acct && S.acct.token && !liveOpen() && !S.liveRetry) startLive(); }, 10000);
+    setInterval(pollInbox, 3000); pollInbox();
+    // Coming back to a background tab: catch up right away instead of waiting for the next timer.
+    document.addEventListener('visibilitychange', () => { if (document.hidden || !S.acct || !S.acct.token) return; if (!liveOpen()) { S.liveFor = null; startLive(); } pollInbox(); refreshBalance(); if ($('#feed')) loadFeed(); });
+    // Watchdog: reconnect when the live stream is closed or has gone quiet; it resumes from the last payment it saw.
+    setInterval(() => { if (S.acct && S.acct.token && !liveOpen() && !S.liveRetry && !S.liveStarting) { S.liveFor = null; startLive(); } }, 2000);
     setInterval(() => { if ($('#feed') && !document.hidden) paintFeed(); }, 60000); // keep "Just now" honest
     setInterval(() => { if ($('#preds') && !document.hidden) loadPredictions().then(paintPredictions).catch(() => {}); }, 60000);
     setInterval(() => { if ($('#gcoins') && !document.hidden) loadPrices().then(paintPrices).catch(() => {}); }, 30000);
