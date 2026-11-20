@@ -1250,7 +1250,9 @@
       if (!prefill.to) q.focus();
     };
     renderTo();
-    if (prefill.to) lookup(prefill.to).then((u) => {
+    // A link can carry an account number instead of a @username (#pay/<address>/5).
+    if (prefill.to && isAddr(cleanAddr(prefill.to))) { const ad = cleanAddr(prefill.to); syncPeople(); st.to = S.people[ad] && !S.people[ad].unknown ? S.people[ad] : { address: ad, unknown: true }; renderTo(); valid(); }
+    else if (prefill.to) lookup(prefill.to).then((u) => {
       if (!u) return toast(`No one has @${esc(prefill.to)}`, true);
       if (u.handle === S.acct.user.handle) return toast('That’s your own link. Share it so friends can pay you.');
       st.to = u; renderTo(); (amt.value ? note : amt).focus();
