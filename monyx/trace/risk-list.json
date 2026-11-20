@@ -18,5 +18,11 @@
       "label": "Mixer (demo)",
       "tier": "Medium"
     }
+  ],
+  "trusted": [
+    {
+      "address": "9JBSMxHPKMDLyUMhwV2NzFNUikNoQfnJj82NyBoPNJRs",
+      "label": "Monyx test bank (pays welcome and daily test dollars)"
+    }
   ]
 }

@@ -78,6 +78,17 @@ export function isMainnetUrl(url) {
   return /solana-mainnet|mainnet-beta|mainnet\.solana|\/mainnet/i.test(u) && !/devnet/.test(u);
 }
 
+// Wallets we know and don't walk through (Monyx's own test bank pays every welcome dollar, so its long
+// history would eat the whole call budget and tell us nothing). Listed in risk-list.json under "trusted".
+export function loadTrusted(list) {
+  const out = new Set();
+  for (const w of (list && !Array.isArray(list) && list.trusted) || []) {
+    const a = cleanAddr(w && (w.address || w));
+    if (isAddr(a)) out.add(a);
+  }
+  return out;
+}
+
 export function loadRiskMap(list) {
   const wallets = Array.isArray(list) ? list : (list && list.wallets) || [];
   const map = new Map();
@@ -175,21 +186,42 @@ export function makeBudget(max = MAX_RPC) {
   return { used: 0, max, exhausted: false, failed: 0 };
 }
 
+// Free public RPCs rate-limit per IP, so calls from this worker are spaced out a little,
+// and confirmed transactions (which never change) are remembered between checks.
+// Solana's public devnet allows about 40 calls per 10 s per method per IP, so each method gets its own pace.
+const TX_CACHE = new Map();
+const nextSlot = new Map();
+async function paced(method, gapMs) {
+  const now = Date.now();
+  const at = Math.max(now, nextSlot.get(method) || 0);
+  nextSlot.set(method, at + gapMs);
+  if (at > now) await sleep(at - now);
+}
+
 export function makeRpc(url, budget, fetchImpl, opts = {}) {
   const fetchFn = fetchImpl || fetch;
   const timeoutMs = opts.timeoutMs || 12000;
-  const retries = opts.retries == null ? 4 : opts.retries;
+  const retries = opts.retries == null ? 5 : opts.retries;
+  const gapMs = opts.gapMs == null ? 260 : opts.gapMs;
+  const backoffMs = opts.backoffMs == null ? 900 : opts.backoffMs;
 
   return async function rpc(method, params) {
+    const txKey = method === "getTransaction" && params && params[0] ? String(params[0]) : null;
+    if (txKey && TX_CACHE.has(txKey)) return TX_CACHE.get(txKey);
     if (budget.used >= budget.max) {
       budget.exhausted = true;
       throw Object.assign(new Error("rpc budget"), { budget: true });
+    }
+    if (budget.deadline && Date.now() > budget.deadline) {
+      budget.exhausted = true;
+      throw Object.assign(new Error("rpc deadline"), { budget: true });
     }
     budget.used += 1;
 
     let last = null;
     for (let i = 0; i < retries; i++) {
       let res;
+      if (gapMs) await paced(method, gapMs);
       try {
         const ctl = new AbortController();
         const to = setTimeout(() => ctl.abort(), timeoutMs);
@@ -209,7 +241,7 @@ export function makeRpc(url, budget, fetchImpl, opts = {}) {
       if (res.status === 429 || res.status >= 500) {
         last = new Error("RPC " + res.status);
         if (i === retries - 1) break;
-        await sleep(600 * 2 ** i);
+        await sleep(backoffMs * 2 ** i);
         continue;
       }
       let body;
@@ -222,10 +254,16 @@ export function makeRpc(url, budget, fetchImpl, opts = {}) {
       if (body.error) {
         throw Object.assign(new Error(body.error.message || "RPC error"), { rpc: true });
       }
+      if (txKey && body.result) {
+        if (TX_CACHE.size > 3000) TX_CACHE.clear();
+        TX_CACHE.set(txKey, body.result);
+      }
       return body.result;
     }
     // Network trouble (timeouts, 429s, 5xx after retries). Counted so a Normal result is never built on missing data.
     budget.failed = (budget.failed || 0) + 1;
+    budget.why = budget.why || {};
+    budget.why[method] = String((last && last.message) || "failed").slice(0, 40);
     throw last || new Error("RPC failed");
   };
 }
@@ -375,7 +413,9 @@ export async function runTrace({ address, rpcUrl, riskList, fetchImpl, limits, n
   const maxRpc = (limits && limits.maxRpc) || MAX_RPC;
   const maxHops = limits && limits.maxHops != null ? limits.maxHops : MAX_HOPS;
   const budget = makeBudget(maxRpc);
+  if (limits && limits.deadlineMs) budget.deadline = started + limits.deadlineMs;
   const riskMap = loadRiskMap(riskList || []);
+  const trusted = loadTrusted(riskList || []);
   const rpc = makeRpc(rpcUrl, budget, fetchImpl, limits || {});
 
   const self = riskMap.get(target);
@@ -443,6 +483,7 @@ export async function runTrace({ address, rpcUrl, riskList, fetchImpl, limits, n
         if (betterMatch(best, candidate)) best = candidate;
         continue; // no need to walk through a listed wallet
       }
+      if (trusted.has(t.from)) continue; // a known wallet: nothing to learn by walking through it
       if (hop < maxHops && !visited.has(t.from) && !budget.exhausted) {
         queue.push({ address: t.from, hop, chain });
       }
@@ -474,6 +515,7 @@ export async function runTrace({ address, rpcUrl, riskList, fetchImpl, limits, n
       error: "incomplete",
       message: "Part of the network didn't answer, so we couldn't finish the source check.",
       rpcCallsUsed: budget.used,
+      failedCalls: budget.why || {},
       note: ADVICE,
     };
   }

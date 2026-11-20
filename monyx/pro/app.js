@@ -60,7 +60,11 @@
     clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), ms);
   }
   async function copy(text, what = 'Copied') {
-    try { await navigator.clipboard.writeText(text); toast(what); } catch { toast('Copy failed', true); }
+    try { await navigator.clipboard.writeText(text); toast(what); return true; } catch { /* fall back below */ }
+    const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;font-size:16px';
+    document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch { /* */ } ta.remove();
+    toast(ok ? what : "Couldn't copy. Select the text and copy it.", !ok); return ok;
   }
 
   /* ───────────────────────── state ───────────────────────── */

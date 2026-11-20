@@ -458,7 +458,20 @@
     const t = $('#toast'); t.innerHTML = html; t.className = 'toast' + (bad ? ' bad' : ''); t.hidden = false;
     clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), ms);
   }
-  async function copy(text, msg = 'Copied') { try { await navigator.clipboard.writeText(text); toast(msg); } catch { toast("Couldn't copy", true); } }
+  // Clipboard API first; older or locked-down browsers (in-app browsers, some iPhones) fall back to a hidden textarea.
+  function copyFallback(text) {
+    const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;font-size:16px';
+    (document.querySelector('.sheet') || document.body).appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0, text.length);
+    let ok = false; try { ok = document.execCommand('copy'); } catch { /* */ }
+    ta.remove(); return ok;
+  }
+  async function copy(text, msg = 'Copied') {
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch { ok = copyFallback(text); }
+    toast(ok ? msg : "Couldn't copy. Press and hold the text to copy it.", !ok);
+    return ok;
+  }
   function sheet(html, onMount, onClose) {
     const wrap = document.createElement('div');
     wrap.className = 'sheet-wrap';
@@ -506,7 +519,7 @@
     show(`<section class="welcome">
       <div class="brand">${LOGO}</div>
       <div class="art"><div class="stage">
-        <div class="bubble b1"><div class="av sm" style="background:#e0574f">MA</div><div><b>Josh paid you</b><span>🍕 Friday pizza</span></div><span class="amt in">+$14.00</span></div>
+        <div class="bubble b1"><div class="av sm" style="background:#e0574f">S</div><div><b>Sam paid you</b><span>🍕 Friday pizza</span></div><span class="amt in">+$14.00</span></div>
         <div class="bubble b2 say"><span class="mic">${ICON.mic}</span><div><b>“Pay Andy 42.50 for tickets”</b><span>Ready to send · tap to confirm</span></div></div>
       </div></div>
       <h1>Just say<br>who to pay.</h1>
@@ -1397,6 +1410,7 @@
       // Where did this account's money come from? Up to 2 hops back on devnet (monyx-trace.js + the "trace" function).
       if (gate.checking) MonyxTrace.mount($('#trace-slot', el), { address: to.address, sheet: el, who: first(to),
         onResult: () => { gate.checking = false; setTimeout(sync, 0); },
+        onRetry: () => { gate.checking = true; sync(); },
         onError: () => {
           gate.checking = false;
           const slot = $('#trace-slot', el), card = slot && slot.querySelector('.monyx-trace-card');
@@ -1489,8 +1503,8 @@
       <p class="fine" id="tnote" style="text-align:center">$5 the first time, then $2 a day.</p>
       <h3>Need more for testing?</h3>
       <p class="sub" style="font-size:14px">Circle gives out free test USDC (20 every 2 hours). Copy your account number, open the faucet, choose <b>Solana Devnet</b>, and paste it.</p>
-      <div class="addr-box" style="font:500 13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;background:var(--card2);color:var(--ink);border-radius:12px;padding:10px 12px;margin:8px 0">${esc(S.acct.address)}</div>
-      <div class="btn-row"><button class="btn btn-light btn-sm" id="cpa" style="width:100%">Copy account number</button><a class="btn btn-light btn-sm" id="fct" style="width:100%" href="https://faucet.circle.com" target="_blank" rel="noopener">Open faucet</a></div>
+      <div class="addr-box" id="adbox" style="user-select:all;-webkit-user-select:all;font:500 13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;background:var(--card2);color:var(--ink);border-radius:12px;padding:10px 12px;margin:8px 0">${esc(S.acct.address)}</div>
+      <div class="btn-row"><button class="btn btn-light btn-sm" id="cpa" style="width:100%">Copy number</button><a class="btn btn-light btn-sm" id="fct" style="width:100%" href="https://faucet.circle.com" target="_blank" rel="noopener">Open faucet</a></div>
       <h3>Or get paid by a friend</h3>
       <button class="btn btn-light" id="share">Share my pay link</button>
 `, (el, close) => {
@@ -1503,7 +1517,7 @@
           const r = await api(PAPI + '/topup', { method: 'POST' });
           if (r.status === 'sent') { close(); toast(`${money(r.usd)} added. Enjoy!`); say(`Added ${spoken(r.usd)}.`); refreshBalance(); loadFeed(); return; }
           b.disabled = false; b.textContent = 'Add free test dollars';
-          note.textContent = r.status === 'wait' ? `You've had today's test dollars. More ${r.next ? `after ${new Date(r.next).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'tomorrow'}.`
+          note.textContent = r.status === 'wait' ? `You've had today's test dollars. More ${r.next ? `${new Date(r.next).toDateString() === new Date().toDateString() ? 'after' : 'tomorrow after'} ${new Date(r.next).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'tomorrow'}.`
             : r.status === 'bank_empty' ? 'Free dollars are paused while Monyx refills. Use the Circle faucet below, or ask a friend to pay you.'
             : r.status === 'limit' ? 'That’s the limit for today on this network.' : 'That didn’t work. Try again in a minute.';
           note.style.color = 'var(--red)';

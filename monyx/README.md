@@ -47,7 +47,6 @@ Source files:
 - `payments/index.ts`: `monyx-pay` (relay, test dollars, pay links, on-chain watcher, live events, activity, agent API)
 - `trace/` + `monyx-trace.js`: the "where did this money come from?" check on the pay sheet
 - `predictions/index.ts`: `monyx-predictions` (Gemini crypto prices for Invest, prediction markets for Predict)
-- `voice/index.ts`: `monyx-voice`, an optional speech server that the app no longer uses
 - `meter/index.ts`: `monyx-market` (pay-per-call API market over x402)
 - `vendor/`: bundled Solana web3.js, so the site has no runtime CDN dependencies
 

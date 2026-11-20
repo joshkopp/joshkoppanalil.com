@@ -23,6 +23,7 @@
     s.textContent = `
 .monyx-trace-card { margin-top: 10px; }
 .monyx-trace-card.is-loading { opacity: .72; }
+.monyx-trace-card .mt-retry { margin-top: 8px; font: inherit; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 999px; border: 1px solid currentColor; background: transparent; color: inherit; cursor: pointer; }
 .monyx-trace-path { list-style: none; margin: 12px 0 0; padding: 0; }
 .monyx-trace-path li { display: grid; gap: 2px; padding: 8px 0; border-top: 1px solid var(--line, rgba(13,42,29,.07)); font-size: 13.5px; }
 .monyx-trace-path li:first-child { border-top: 0; padding-top: 0; }
@@ -92,6 +93,7 @@
     return `<div class="risk risk-normal monyx-trace-card" role="status">
       <p class="risk-line">We couldn’t finish the source check.</p>
       <p class="risk-fine">${esc(message || "Try again in a moment.")} ${esc(ADVICE)}</p>
+      <button type="button" class="mt-retry">Check again</button>
     </div>`;
   }
 
@@ -168,6 +170,11 @@
           : err && (err.name === "AbortError" || /abort/i.test(String(err.message))) ? "The check took too long to answer."
           : "The check couldn't reach the network.";
         el.innerHTML = errorHtml(plain);
+        const again = el.querySelector(".mt-retry");
+        if (again) again.onclick = () => {
+          if (opts && typeof opts.onRetry === "function") opts.onRetry();
+          mount(el, opts);
+        };
         if (opts && typeof opts.onError === "function") opts.onError(err);
         return null;
       });
