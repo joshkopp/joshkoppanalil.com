@@ -1482,14 +1482,19 @@
     return close;
   }
 
-  /* add money: test dollars straight from Monyx, no faucet needed */
+  /* add money: test dollars from Monyx, plus Circle's faucet for more */
   async function addMoney() {
     sheet(`<h2>Add money</h2><p class="sub">Monyx is in test mode, so dollars are free. They're test USDC with no real value.</p>
       <button class="btn btn-dark" id="topup" style="margin:18px 0 6px">Add free test dollars</button>
       <p class="fine" id="tnote" style="text-align:center">$5 the first time, then $2 a day.</p>
+      <h3>Need more for testing?</h3>
+      <p class="sub" style="font-size:14px">Circle gives out free test USDC (20 every 2 hours). Copy your account number, open the faucet, choose <b>Solana Devnet</b>, and paste it.</p>
+      <div class="addr-box" style="font:500 13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;background:var(--card2);color:var(--ink);border-radius:12px;padding:10px 12px;margin:8px 0">${esc(S.acct.address)}</div>
+      <div class="btn-row"><button class="btn btn-light btn-sm" id="cpa" style="width:100%">Copy account number</button><a class="btn btn-light btn-sm" id="fct" style="width:100%" href="https://faucet.circle.com" target="_blank" rel="noopener">Open faucet</a></div>
       <h3>Or get paid by a friend</h3>
       <button class="btn btn-light" id="share">Share my pay link</button>
 `, (el, close) => {
+      $('#cpa', el).onclick = () => copy(S.acct.address, 'Account number copied');
       $('#share', el).onclick = () => { close(); shareLink(); };
       const b = $('#topup', el), note = $('#tnote', el);
       b.onclick = async () => {
@@ -1499,7 +1504,7 @@
           if (r.status === 'sent') { close(); toast(`${money(r.usd)} added. Enjoy!`); say(`Added ${spoken(r.usd)}.`); refreshBalance(); loadFeed(); return; }
           b.disabled = false; b.textContent = 'Add free test dollars';
           note.textContent = r.status === 'wait' ? `You've had today's test dollars. More ${r.next ? `after ${new Date(r.next).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'tomorrow'}.`
-            : r.status === 'bank_empty' ? 'Free dollars are paused while Monyx refills. Try again later, or ask a friend to pay you.'
+            : r.status === 'bank_empty' ? 'Free dollars are paused while Monyx refills. Use the Circle faucet below, or ask a friend to pay you.'
             : r.status === 'limit' ? 'That’s the limit for today on this network.' : 'That didn’t work. Try again in a minute.';
           note.style.color = 'var(--red)';
         } catch (e) { b.disabled = false; b.textContent = 'Try again'; showError(e); }
