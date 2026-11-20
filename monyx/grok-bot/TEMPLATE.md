@@ -24,7 +24,7 @@ Add the file `SKILL.md` from https://www.monyx.pro/grok-bot/SKILL.md as a skill 
 
 ## Credential
 - Name: **MONYX_KEY**
-- Description: "Your Monyx assistant key. In Monyx, open Me → AI assistant → Create key. It starts with mx_."
+- Description: "Your Monyx assistant key. In Monyx, switch to Pro, then open Me → Pro settings → AI assistant → Create key. It starts with mx_."
 - Used as: `Authorization: Bearer <MONYX_KEY>`
 
 ## Approval rules

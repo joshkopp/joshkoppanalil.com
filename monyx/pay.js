@@ -79,6 +79,7 @@
     set(k, v) { if (S.acct) store.set(mineKey(k), v); },
   };
   const ICON = {
+    moon: '<svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>',
     bell: '<svg viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>',
     back: '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
     x: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
@@ -526,6 +527,8 @@
     if (S.padText) { document.removeEventListener('keypress', S.padText); S.padText = null; }
     document.body.classList.toggle('has-tabs', !!tabs);
     document.body.classList.toggle('padmode', !!pad);
+    // Phones have no sidebar, so every screen header starts with the Monyx mark, linking to the home page.
+    html = html.replace('<header class="top">', `<header class="top"><a class="toplogo" href="../" aria-label="Monyx home">${MARK}</a>`);
     app.innerHTML = `<div class="screen">${html}</div>`;
     $('#tabbar').hidden = !tabs;
     $$('#tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.tab === tab));
@@ -1585,16 +1588,24 @@
         <label class="item toggle"><span class="ico">${ICON.mic}</span><div class="mid"><div class="t">Monyx talks back</div><div class="s">Hear confirmations out loud</div></div><input type="checkbox" id="tTalk" ${S.voice.talk ? 'checked' : ''}><i class="sw"></i></label>
         <label class="item toggle"><span class="ico">${ICON.speaker}</span><div class="mid"><div class="t">Read payments aloud</div><div class="s">“${esc((knownPeople()[0] || { name: 'Alex' }).name.split(' ')[0])} sent you $14 for pizza”</div></div><input type="checkbox" id="tAnn" ${S.voice.announce ? 'checked' : ''}><i class="sw"></i></label>
       </div>
+      <h3>Appearance</h3>
+      <div class="list menu">
+        <label class="item toggle"><span class="ico">${ICON.moon}</span><div class="mid"><div class="t">Dark mode</div><div class="s">Also changes the Monyx website</div></div><input type="checkbox" id="tDark" ${window.monyxTheme && window.monyxTheme.get() === 'dark' ? 'checked' : ''}><i class="sw"></i></label>
+      </div>
       <h3>Mode</h3>
       <div class="modesw" role="radiogroup" aria-label="App mode">
         <button role="radio" data-m="basic" aria-checked="${appMode() === 'basic'}" class="${appMode() === 'basic' ? 'on' : ''}"><b>Basic</b><span>Pay, request, split</span></button>
         <button role="radio" data-m="pro" aria-checked="${appMode() === 'pro'}" class="${appMode() === 'pro' ? 'on' : ''}"><b>Pro</b><span>Adds Invest, Predict and Trace</span></button>
       </div>
       <p class="fine"><a href="#" id="quiz">Not sure? Answer 2 questions</a></p>
+      ${appMode() === 'pro' ? `<h3>Pro settings</h3>
+      <div class="list menu">
+        ${row('ai', ICON.spark, 'AI assistant', 'Set up Grok Bot to draft payments')}
+        ${row('trace', ICON.tools, 'Trace an account', 'See where its money came from')}
+      </div>` : ''}
       <h3>Account</h3>
       <div class="list menu">
         ${row('add', ICON.plus, 'Add money', 'Free test dollars')}
-        ${row('ai', ICON.spark, 'AI assistant', 'Connect Grok Bot to draft payments')}
         ${row('links', ICON.link, 'Pay links', 'Money you sent with a link')}
         ${S.acct.mode === 'key' ? row('key', ICON.key, 'Recovery key', 'Back up or move to a new device') : ''}
         ${S.acct.mode === 'key' ? (() => { const lv = lockedVault(); return row('lock', ICON.lock, lv ? (isPwVault(lv) ? 'Password lock is on' : 'Passkey lock is on') : 'Lock this device', lv ? (isPwVault(lv) ? 'Asked before money moves' : 'Face ID or fingerprint before money moves') : S.acct.secret ? 'Your key is stored unencrypted here. Lock it' : 'With a passkey or a password'); })() : ''}
@@ -1602,17 +1613,17 @@
         ${S.acct.mode === 'key' ? row('link', ICON.key, 'Sign in a new device', 'Approve it with a code, no recovery key needed') : ''}
         ${row('guide', ICON.book, 'How Monyx works', 'A plain-language guide')}
         ${row('details', ICON.info, 'Account details', 'For the curious')}
-        ${appMode() === 'pro' ? row('trace', ICON.tools, 'Trace an account', 'See where its money came from') : ''}
         ${row('out', ICON.out, 'Log out', '')}
       </div>
       <p class="fine" style="margin-top:22px">Monyx · <a href="../about.html">About</a> · <a href="../privacy/">Privacy</a> · <a href="../terms/">Terms</a></p>`, { tabs: true, tab: 'me' });
     $('#share').onclick = shareLink;
     $('#tTalk').onchange = (e) => { S.voice.talk = e.target.checked; store.set('monyx.talkback', S.voice.talk); if (S.voice.talk) say('Okay, I’ll talk back.'); else stopSpeaking(); };
     $('#tAnn').onchange = (e) => { S.voice.announce = e.target.checked; store.set('monyx.announce', S.voice.announce); if (S.voice.announce) say('I’ll read new payments out loud.', { force: true }); };
+    $('#tDark').onchange = (e) => { if (window.monyxTheme) window.monyxTheme.set(e.target.checked ? 'dark' : 'light'); };
     $('#avEdit').onclick = () => (u.avatar ? photoMenu() : pickPhoto());
     $('#copy').onclick = () => { mine.set('monyx.shared', true); copy(payLink(u.handle), 'Link copied'); };
     $('[data-r="add"]').onclick = addMoney;
-    $('[data-r="ai"]').onclick = assistantSheet;
+    const ai = $('[data-r="ai"]'); if (ai) ai.onclick = assistantSheet;
     $('[data-r="links"]').onclick = linksSheet;
     const k = $('[data-r="key"]'); if (k) k.onclick = showKey;
     const lk = $('[data-r="lock"]'); if (lk) lk.onclick = lockSheet;

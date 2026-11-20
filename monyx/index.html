@@ -22,10 +22,11 @@
   <meta property="og:description" content="Monyx is a voice-first dollar wallet. Say who to pay, see a plain-English preview, and let Monyx check for scams before it sends. Demo on Solana devnet.">
   <meta property="og:url" content="https://www.monyx.pro/">
   <script src="assets/route.js"></script>
+  <script src="assets/theme.js?v=1"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/styles.css?v=9">
+  <link rel="stylesheet" href="assets/styles.css?v=10">
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -97,9 +98,9 @@
       <div class="wrap split reveal">
         <div class="copy">
           <p class="kicker">Why we built this</p>
-          <h2>Most wallets will let you send to a typo.</h2>
-          <p>That's the whole story. No second look, no "wait, is this the same person?" A friend of ours almost paid the wrong person because two addresses looked the same at both ends. There's no undo on that, which still sits with us.</p>
-          <p>The look-alike address thing is called address poisoning: a close copy shows up in your history so you paste the wrong one. A token with a copied logo is another one. And people get rushed. We've all been rushed.</p>
+          <h2>Crypto shouldn't punish you for being new.</h2>
+          <p>Most wallets expect you to spot fake tokens, sketchy links, and look-alike addresses on your own. When we were starting out, we fell for those traps and lost money with no way to undo it.</p>
+          <p>Monyx checks who you're paying before anything leaves your wallet and tells you what's happening in plain English.</p>
         </div>
         <div class="visual">
           <div class="card">
@@ -311,7 +312,7 @@
         <div class="copy">
           <p class="kicker">An assistant that can't spend</p>
           <h2>Let Grok Bot handle the asking. You keep the sending.</h2>
-          <p>Connect Grok Bot with a key from your Me tab and it can ask friends for rent, check who owes you, and draft payments. Drafts wait on your home screen under "Waiting for your OK." The key has no way to move money on its own. Every draft goes through the same preview and check as a payment you start yourself.</p>
+          <p>Set up Grok Bot in Pro settings and it can ask friends for rent, check who owes you, and draft payments. Drafts wait on your home screen under "Waiting for your OK." The key has no way to move money on its own. Every draft goes through the same preview and check as a payment you start yourself.</p>
         </div>
         <div class="visual">
           <div class="card">
@@ -333,9 +334,20 @@
       <div class="wrap">
         <div class="story reveal">
           <p class="kicker">How this started</p>
-          <h2>We got into crypto the usual student way.</h2>
-          <p>A little late, a little lost, and suddenly responsible for money in apps that assumed we already knew the rules. Then we watched friends almost mess it up. Look-alike addresses. Tokens that weren't what they said. A group chat that made a send feel urgent.</p>
-          <p>So we built Monyx at the UBC 2026 hackathon. <a class="text-link" href="about.html">The rest of the story, and the two of us</a>.</p>
+          <h2>We used to think crypto wasn't for us.</h2>
+          <p>We thought crypto was this complicated thing only super smart, technical people used. When we finally jumped in and tried it ourselves, we got scammed a lot. Fake tokens, bad links, and wallets that never gave us a heads-up before our money was gone.</p>
+          <p>So we built Monyx so beginners don't have to learn the hard way. <a class="text-link" href="about.html">Read more about the two of us</a>.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- V2.1 teaser: what's coming next. -->
+    <section class="band band-white" id="next" style="padding-top:0">
+      <div class="wrap">
+        <div class="card teaser reveal">
+          <p class="kicker">What's next</p>
+          <h2>Coming in V2.1</h2>
+          <p>We're just getting started. Next up for Monyx V2.1: faster on-chain tracing and real-time alerts with QuickNode, built-in swap APIs so you can trade tokens right inside the wallet, multi-chain support beyond Solana, and more features on the way.</p>
         </div>
       </div>
     </section>
@@ -373,7 +385,7 @@
           <a href="https://www.monyx.pro/">monyx.pro</a>
         </p>
       </div>
-      <p class="legal">Monyx Wallet. UBC 2026 hackathon project. Devnet demo only. Risk labels are informational, not legal or financial advice.</p>
+      <p class="legal">Monyx Wallet. Devnet demo only. Risk labels are informational, not legal or financial advice.</p>
     </div>
   </footer>
   <script src="assets/main.js?v=2" defer></script>

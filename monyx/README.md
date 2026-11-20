@@ -3,7 +3,7 @@
 **Just say who to pay.** Monyx is a voice-first dollar wallet on Solana. Say "send Josh 20 for pizza", read the plain-English preview, tap Pay. Before anything goes out, Monyx checks the destination for scams. No seed phrase to memorize, no gas, no tokens to understand. Test mode on Solana devnet.
 
 - Live: https://www.monyx.pro (marketing site) and https://www.monyx.pro/app/ (the wallet)
-- Built by Josh Koppanalil and Andrew Hu for the UBC 2026 hackathon
+- Built by Josh Koppanalil and Andrew Hu
 
 ## What it does
 

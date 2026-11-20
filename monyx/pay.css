@@ -765,3 +765,76 @@ body.has-tabs .toast { bottom: calc(104px + env(safe-area-inset-bottom)); }
 .sheet-x svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
 .sheet > h2:first-of-type { padding-right: 44px; }
 @media (min-width: 900px) { .sheet-wrap { align-items: center; padding: 24px; } .sheet { border-radius: 26px; max-height: calc(100vh - 48px); } }
+/* Phones: the Monyx mark at the start of each screen header, linking home. Laptops show it in the sidebar. */
+.top .toplogo { display: inline-flex; flex: none; margin-right: 10px; border-radius: 9px; }
+.top .toplogo svg.mark { width: 30px; height: 30px; }
+.top > :nth-child(2) { margin-right: auto; min-width: 0; }
+.top .me span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (min-width: 900px) { .top .toplogo { display: none; } }
+
+/* ════════════════════════════════════════════════════════════════════
+   Dark mode (Me → Appearance, saved as monyx.theme and shared with the website).
+   Deep green-black surfaces with mint text. The pastel pieces (balance card,
+   money pad, primary buttons, the $ tab) stay pastel with dark ink, so the
+   ink variables are set back to dark inside them.
+   ════════════════════════════════════════════════════════════════════ */
+:root[data-theme="dark"], :root:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0E1712; --card: #16231B; --card2: #1D2E24; --sheet: #121D17;
+  --ink: #E4F0DC; --ink2: #C3D6C6; --mute: #A3B9A8; --faint: #7F9A86;
+  --line: rgba(228, 240, 220, .08); --line2: rgba(228, 240, 220, .16);
+  --mint: #1D3025;
+  --brand: #9FD08A; --brand-hover: #B5DEA3; --brand-soft: #203826; --brand-ink: #B8E0A6;
+  --green: #9FD08A; --red: #FF8A80; --amber: #F2C46D; --amber-soft: rgba(242, 196, 109, .1);
+  --sk: #22342A;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px -16px rgba(0, 0, 0, .6);
+}
+/* Pastel surfaces keep dark ink. */
+[data-theme="dark"] .balance, [data-theme="dark"] .btn-dark, [data-theme="dark"] .tabbar .tab-pay,
+[data-theme="dark"] .orb, [data-theme="dark"] .risk-normal .tier, [data-theme="dark"] .lockhero,
+[data-theme="dark"] body.padmode .screen, [data-theme="dark"] .pad, [data-theme="dark"] .mark {
+  --ink: #0D2A1D; --ink2: #2E4A3C; --mute: #3D5C48; --faint: #556E61;
+  --line: rgba(13, 42, 29, .08); --line2: rgba(13, 42, 29, .16); --card: #ffffff; --card2: #EDF4E8;
+  --brand: #3E6B30; --brand-ink: #2F5424; --brand-soft: #E6F1DF; --green: #3E6B30; --red: #B3261E;
+  color: var(--ink);
+}
+[data-theme="dark"] .mark path { stroke: #0D2A1D; }
+[data-theme="dark"] .btn-dark:hover { background: var(--pastel-2); }
+[data-theme="dark"] .btn-light { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line2); }
+[data-theme="dark"] .btn-light:hover { background: var(--card2); }
+[data-theme="dark"] .balance .btn-light { background: rgba(255, 255, 255, .6); color: #0D2A1D; box-shadow: none; }
+[data-theme="dark"] .balance .btn-light:hover { background: #fff; }
+[data-theme="dark"] .balance .btn-dark { background: #0D2A1D; color: #fff; }
+/* Things that sat white text on the brand green: the green is light now, so the text goes dark. */
+[data-theme="dark"] .emojis button.on, [data-theme="dark"] .qopts button.on, [data-theme="dark"] .typeit .go,
+[data-theme="dark"] .avedit .badge, [data-theme="dark"] .swapflip, [data-theme="dark"] .srow.ok .ck { color: #0D2A1D; }
+[data-theme="dark"] ::selection { background: #3E6B30; color: #fff; }
+[data-theme="dark"] .predcats button.on { background: var(--ink); color: var(--bg); }
+/* Glass tab bar */
+[data-theme="dark"] .tabbar, [data-theme="dark"] body.padmode .tabbar {
+  background: linear-gradient(180deg, rgba(30, 46, 37, .86), rgba(22, 35, 27, .9)) !important;
+  border-color: rgba(228, 240, 220, .1) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .06), 0 18px 40px -18px rgba(0, 0, 0, .7) !important;
+}
+[data-theme="dark"] .tabbar::before { opacity: 0; }
+[data-theme="dark"] .tabbar a.on { background: rgba(228, 240, 220, .1); box-shadow: inset 0 0 0 1px rgba(228, 240, 220, .12); }
+[data-theme="dark"] .tabbar .tab-pay, [data-theme="dark"] .tabbar .tab-pay.on { background: var(--pastel); color: #0D2A1D; }
+[data-theme="dark"] .tabbar .tab-pay.on { box-shadow: 0 0 0 2px #9FD08A; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { [data-theme="dark"] .tabbar { background: rgba(22, 35, 27, .97) !important; } }
+/* Money pad on laptops sits on the page, not the whole screen. */
+[data-theme="dark"] .key:hover { background: rgba(255, 255, 255, .35); }
+/* Risk cards */
+[data-theme="dark"] .risk-medium { background: #2A2416; box-shadow: inset 0 0 0 1px #5A4A22; }
+[data-theme="dark"] .risk-high { background: #2E1A18; box-shadow: inset 0 0 0 1.5px #6B3029; }
+[data-theme="dark"] .risk-ok { color: #FFB4AA; }
+[data-theme="dark"] .risk-ok input { accent-color: #FF8A80; }
+/* Gemini blue and other small chips */
+[data-theme="dark"] .pill.pro, [data-theme="dark"] .gemsrc { background: #1C2540; color: #B9C8FF; }
+[data-theme="dark"] .pill.pro i { background: #B9C8FF; }
+[data-theme="dark"] .gemlink { color: #A9BCFF; }
+[data-theme="dark"] .livetag { color: #FF8A80; }
+[data-theme="dark"] .odd { background: rgba(255, 255, 255, .05); }
+[data-theme="dark"] .odd i { background: rgba(159, 208, 138, .18); }
+[data-theme="dark"] .lmode button.on { box-shadow: 0 1px 3px rgba(0, 0, 0, .4); }
+[data-theme="dark"] .qrcard .qr { box-shadow: none; }
+[data-theme="dark"] .tabbar .tab-pay { box-shadow: 0 10px 24px -10px rgba(0, 0, 0, .6); }
