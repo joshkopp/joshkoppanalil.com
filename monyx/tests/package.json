@@ -1,0 +1,13 @@
+{
+  "name": "monyx-tests",
+  "private": true,
+  "type": "module",
+  "description": "Tests for Monyx: amounts, addresses, the relay's transaction check, the source tracer and the voice parser.",
+  "scripts": {
+    "test": "node app.test.mjs && node relay.test.mjs && node trace.test.mjs && node ../voice-parse.test.js"
+  },
+  "devDependencies": {
+    "@solana/web3.js": "1.95.3",
+    "esbuild": "^0.24.0"
+  }
+}

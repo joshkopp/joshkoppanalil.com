@@ -21,14 +21,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Geist:wght@400;500;600;650;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=101">
+<link rel="stylesheet" href="styles.css?v=102">
 <link rel="alternate" type="text/plain" href="../llms.txt" title="Agent instructions">
 </head>
 <body>
 <div class="frame">
 
   <aside class="rail">
-    <a class="mark" href="../" aria-label="Monyx home"><span class="mark-k"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M10 21v-7.2a3 3 0 0 1 6 0V21m0-7.2a3 3 0 0 1 6 0V21"/></svg>monyx</span><span class="mark-sub">Pro</span></a>
+    <a class="mark" href="../" aria-label="Monyx home"><span class="mark-k"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M10 21v-7.2a3 3 0 0 1 6 0V21m0-7.2a3 3 0 0 1 6 0V21"/></svg>monyx</span><span class="mark-sub">Dev tools</span></a>
     <nav class="nav" id="nav">
       <a href="#wallet" data-view="wallet"><i>01</i>Wallet</a>
       <a href="#trace" data-view="trace"><i>02</i>Tracer</a>
@@ -115,7 +115,7 @@
     <!-- TRACER -->
     <section class="view" id="v-trace" hidden>
       <form class="query" id="traceForm" autocomplete="off">
-        <input id="traceAddr" spellcheck="false" placeholder="Any Solana address" aria-label="Solana address to trace">
+        <input id="traceAddr" spellcheck="false" placeholder="Any Solana account number" aria-label="Solana address to trace">
         <div class="seg" id="traceNet"><button type="button" data-net="devnet" class="on">Devnet</button><button type="button" data-net="mainnet">Mainnet</button></div>
         <select id="traceLimit" title="Transactions to scan"><option>15</option><option selected>25</option><option>40</option></select>
         <button class="primary" type="submit">Trace</button>
@@ -221,7 +221,7 @@
 <script src="../vendor/buffer.js?v=8" defer></script>
 <script src="../vendor/solana-web3.js?v=8" defer></script>
 <script src="../vendor/qrcode.js" defer></script>
-<script src="trace.js?v=3" defer></script>
-<script src="app.js?v=7" defer></script>
+<script src="trace.js?v=4" defer></script>
+<script src="app.js?v=8" defer></script>
 </body>
 </html>

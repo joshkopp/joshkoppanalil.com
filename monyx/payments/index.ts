@@ -398,7 +398,7 @@ Deno.serve(async (req) => {
     if ((path === "/info" || path === "/markets") && req.method !== "GET") return fail("Use GET.", 405, "method_not_allowed");
     if (path === "/info") {
       const kp = await bank();
-      return json({ bank: kp.publicKey.toBase58(), usdc: USDC.toBase58(), bankUsd: dollars(await usdcOf(kp.publicKey)), rpc: PUBLIC_RPC });
+      return json({ bank: kp.publicKey.toBase58(), usdc: USDC.toBase58(), rpc: PUBLIC_RPC });
     }
     if (path === "/markets") return json({ assets: await markets() });
     const cm = path.match(/^\/claims\/([1-9A-HJ-NP-Za-km-z]{32,44})$/);
@@ -611,6 +611,9 @@ Deno.serve(async (req) => {
     }
 
     // ----- signed-in app routes -----
+    // Paths that don't exist answer 404 for everyone, signed in or not.
+    const SIGNED = new Set(["/events/ticket", "/activity", "/paidto", "/topup", "/inbox", "/claims", "/agent-keys", "/drafts", "/portfolio", "/trade/sell"]);
+    if (!SIGNED.has(path) && !/^\/agent-keys\/[0-9a-f-]{36}\/revoke$/.test(path) && !/^\/drafts\/[0-9a-f-]{36}$/.test(path)) return fail("Unknown route.", 404, "not_found");
     const user = await sessionUser(req);
     if (!user) return fail("Please sign in again.", 401, "unauthorized");
 
@@ -730,20 +733,6 @@ Deno.serve(async (req) => {
       const { data: trades } = await db.from("monyx_trades").select("kind, asset_from, asset_to, qty_from, qty_to, usd, sig, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
       return json({ holdings, total: holdings.reduce((a: number, h: any) => a + h.value, 0), trades: trades || [] });
     }
-    if (path === "/trade/buy" && req.method === "POST") {
-      const asset = String(body.asset || ""); const sig = String(body.sig || "");
-      if (!ASSETS[asset]) return fail("Pick something to buy.");
-      const kp = await bank();
-      const { data: p } = await db.from("monyx_payments").select("*").eq("sig", sig).eq("token", "USDC").eq("to_addr", kp.publicKey.toBase58()).maybeSingle();
-      if (!p || p.from_addr !== user.address || p.to_addr !== kp.publicKey.toBase58()) return fail("We couldn't find your payment yet. Try again in a moment.", 409, "not_found");
-      if (Date.now() - Date.parse(p.created_at) > 3600_000) return fail("That payment is too old to use.", 409, "stale");
-      const usd = dollars(Number(p.units));
-      const qty = roundQty(usd / (await price(asset)));
-      const { error } = await db.from("monyx_trades").insert({ user_id: user.id, kind: "buy", asset_from: "cash", asset_to: asset, qty_from: usd, qty_to: qty, usd, sig });
-      if (error) return fail("This payment was already used.", 409, "used");
-      await db.rpc("monyx_adjust", { p_user: user.id, p_asset: asset, p_delta: qty });
-      return json({ asset, symbol: ASSETS[asset].sym, qty, usd });
-    }
     if (path === "/trade/sell" && req.method === "POST") {
       const asset = String(body.asset || "");
       if (!ASSETS[asset]) return fail("Pick something to sell.");
@@ -781,19 +770,6 @@ Deno.serve(async (req) => {
         console.error("[monyx-pay] sell payout:", e);
         return fail("The sale didn't go through. Nothing changed, so you can try again.", 409, "upstream_failed");
       }
-    }
-    if (path === "/trade/swap" && req.method === "POST") {
-      const from = String(body.from || ""), to = String(body.to || "");
-      if (!ASSETS[from] || !ASSETS[to] || from === to) return fail("Pick two different coins.");
-      const pf = await price(from), pt = await price(to);
-      const { data: h } = await db.from("monyx_holdings").select("qty").eq("user_id", user.id).eq("asset", from).maybeSingle();
-      const have = Number(h?.qty || 0);
-      const qtyFrom = body.all ? have : Math.min(have, roundQty(Number(body.usd) / pf));
-      const usd = Math.round(qtyFrom * pf * 100) / 100;
-      if (!(qtyFrom > 0) || usd < 0.01) return fail("Enter an amount to swap.");
-      const { error } = await db.rpc("monyx_swap", { p_user: user.id, p_from: from, p_to: to, p_qty_from: qtyFrom, p_qty_to: roundQty(usd / pt), p_usd: usd });
-      if (error) return fail("You don't have that much to swap.");
-      return json({ from: ASSETS[from].sym, to: ASSETS[to].sym, qtyFrom, qtyTo: roundQty(usd / pt), usd });
     }
     return fail("Unknown route.", 404, "not_found");
   } catch (e: any) {

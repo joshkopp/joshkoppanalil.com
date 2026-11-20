@@ -236,22 +236,29 @@ Deno.serve(async (req) => {
     if (path === "/backup/pw/open" && req.method === "POST") {
       const h = String(body.handle || "").toLowerCase().replace(/^@/, "").slice(0, 40);
       const NOPE = "That username and password don't match. Check both, or use your recovery key or a code from your other device.";
-      // Limits that hold across server instances (stored in the database), shown to the person:
-      // 8 wrong tries per account per 15 minutes, 20 per day, and 30 per network per 15 minutes.
+      // Limits that hold across server instances (stored in the database). Wrong tries are counted per account
+      // AND network, so a stranger can't lock someone out of their own account by typing bad passwords:
+      // 8 per account per network per 15 minutes, 30 per network per 15 minutes, and a high daily cap per
+      // account (200) that only a spread-out guessing attack would reach. Each guess also costs 600k PBKDF2 rounds.
+      const ak = h + "@" + ip;
       if (await tooMany("ip:" + ip, 30, 15)) return fail("Too many tries from this network. Wait 15 minutes.", 429, "rate_limited");
-      if (await tooMany("acct15:" + h, 8, 15)) return fail("Too many wrong passwords for this account. Wait 15 minutes, or use your recovery key.", 429, "rate_limited");
-      if (await tooMany("acctday:" + h, 20, 1440)) return fail("Too many wrong passwords today. Use your recovery key or a code from your other device.", 429, "rate_limited");
+      if (await tooMany("acct15:" + ak, 8, 15)) return fail("Too many wrong passwords for this account. Wait 15 minutes, or use your recovery key.", 429, "rate_limited");
+      if (await tooMany("acctday:" + h, 200, 1440)) return fail("Too many wrong passwords today. Use your recovery key or a code from your other device.", 429, "rate_limited");
       const { data: u } = HANDLE.test(h) ? await db.from("monyx_users").select("id, address").eq("handle", h).maybeSingle() : { data: null };
       const { data: b } = u ? await db.from("monyx_key_backups").select("*").eq("user_id", u.id).eq("kind", "pw").maybeSingle() : { data: null };
       const auth = String(body.auth || "");
       // Only a keyed hash of the login proof is stored; the password and the proof itself never are.
-      const ok = !!b && (b.auth_hash === "h2:" + (await hmac("auth:" + auth)) || b.auth_hash === (await sha256(auth)));
+      const keyed = "h2:" + (await hmac("auth:" + auth));
+      const legacy = !!b && !String(b.auth_hash).startsWith("h2:") && b.auth_hash === (await sha256(auth));
+      const ok = !!b && (b.auth_hash === keyed || legacy);
+      // An account still on the old unkeyed hash is moved to the keyed one the moment its owner signs in.
+      if (ok && legacy) await db.from("monyx_key_backups").update({ auth_hash: keyed }).eq("user_id", u!.id).eq("kind", "pw");
       if (!ok) {
-        const left = await countTry("acct15:" + h, 15, 8);
-        await countTry("acctday:" + h, 1440, 20); await countTry("ip:" + ip, 15, 30);
+        const left = await countTry("acct15:" + ak, 15, 8);
+        await countTry("acctday:" + h, 1440, 200); await countTry("ip:" + ip, 15, 30);
         return fail(left > 0 ? `${NOPE} ${left} ${left === 1 ? "try" : "tries"} left before a 15-minute wait.` : NOPE, 401, "wrong_password");
       }
-      await db.from("monyx_pw_tries").delete().in("key", ["acct15:" + h]);
+      await db.from("monyx_pw_tries").delete().in("key", ["acct15:" + ak]);
       return json({ iv: b!.iv, ct: b!.ct, address: u!.address });
     }
     if (path === "/backup/pk/open" && req.method === "POST") {
@@ -291,6 +298,9 @@ Deno.serve(async (req) => {
     }
 
     // ---------- signed-in routes ----------
+    // A path that doesn't exist is a 404 for everyone, signed in or not.
+    const SIGNED = new Set(["/me", "/avatar", "/backup", "/backup/pk", "/backup/pw", "/backup/remove", "/link/approve", "/link/deny", "/link/find", "/logout", "/requests", "/resolve", "/check"]);
+    if (!SIGNED.has(path) && !/^\/requests\/[0-9a-f-]{36}$/.test(path)) return fail("Unknown route.", 404, "not_found");
     const user = await me(req);
     if (!user) return fail("Please sign in again.", 401, "unauthorized");
 

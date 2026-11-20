@@ -111,12 +111,12 @@ Deno.serve(async (req: Request) => {
   const rpcUrl = envRpc && !/quiknode|quicknode/i.test(envRpc) && !isMainnetUrl(envRpc) ? envRpc : "https://api.devnet.solana.com";
 
   try {
-    // Finish inside the app's 20-second wait: past 15 s we stop and say the check stopped early.
+    // Answer within about 9 s so Pay isn't held up; past that we stop and say the check stopped early.
     const result = await runTrace({
       address,
       rpcUrl,
       riskList,
-      limits: { deadlineMs: 15000 },
+      limits: { deadlineMs: 9000 },
     });
     if (!result.ok) {
       console.error("[trace] not ok", result.error);

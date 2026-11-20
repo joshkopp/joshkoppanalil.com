@@ -42,9 +42,17 @@
     if (t.includes(',')) { if (!/^\d{1,3}(,\d{3})+(\.\d*)?$/.test(t)) return { n: NaN, err: 'Use numbers only, like 1000 or 12.50.' }; t = t.replace(/,/g, ''); }
     if (/[^0-9.]/.test(t) || (t.match(/\./g) || []).length > 1) return { n: NaN, err: 'Use numbers only, like 12.50.' };
     if (/\.\d{3}/.test(t)) return { n: NaN, err: 'Dollars only go to 2 decimal places (cents).' };
-    return { n: t ? parseFloat(t) : NaN, err: '' };
+    return { n: t ? parseFloat(t) : NaN, err: '', t }; // t: the cleaned digits, e.g. "1000" from "US$1,000"
   }
   const numOf = (input) => amtCheck(input.value).n;
+  // Amount boxes already show their own "$": drop a typed or pasted $ / US$ / USD, spaces and invisible characters,
+  // so "$1,000" doesn't read "$$1,000" and a hidden character can't change the number. Minus signs and letters
+  // stay visible (with a message) so nothing quietly turns into a different amount.
+  function cleanAmtBox(el) {
+    const before = el.value;
+    const after = before.replace(/[\s\u200b-\u200d\ufeff\u00a0]/g, '').replace(/^(?:US)?[$＄]|[$＄]$|USD$/i, '');
+    if (after !== before) { const end = el.selectionEnd != null ? Math.max(0, el.selectionEnd - (before.length - after.length)) : after.length; el.value = after; try { el.setSelectionRange(end, end); } catch { /* */ } }
+  }
   const BANK_ADDR = '9JBSMxHPKMDLyUMhwV2NzFNUikNoQfnJj82NyBoPNJRs'; // fallback until /info answers
   // A real account number decodes to exactly 32 bytes; random 43-character strings usually don't.
   const B58A = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -242,7 +250,8 @@
     return PublicKey.findProgramAddressSync([new PublicKey(owner).toBuffer(), new PublicKey(TOKEN).toBuffer(), new PublicKey(USDC).toBuffer()], new PublicKey(ATA_PROGRAM))[0];
   }
   async function usdcOf(owner) {
-    try { return Number((await rpc('getTokenAccountBalance', [ataOf(owner).toBase58()])).value.amount); }
+    // "confirmed" matches when payments are reported done; the default (finalized) lags 15+ seconds behind.
+    try { return Number((await rpc('getTokenAccountBalance', [ataOf(owner).toBase58(), { commitment: 'confirmed' }])).value.amount); }
     // Only "no such account" means $0. Rate limits and other RPC errors must throw, never show a false $0.
     catch (e) { if (e.rpc && /could not find account|invalid param/i.test(e.message || '')) return 0; throw e; }
   }
@@ -251,6 +260,8 @@
     const who0 = S.acct && S.acct.address;
     try { const c = await usdcOf(who0); if (S.acct && S.acct.address === who0) { S.cash = c; paintBalance(); } } catch {}
   }
+  // After a payment event, check again a few times: a busy RPC node can still answer with the old balance.
+  function refreshSoon() { refreshBalance(); [2500, 6000, 12000].forEach((ms) => setTimeout(() => { if (!document.hidden) refreshBalance(); }, ms)); }
   async function loadInfo() {
     try {
       const i = await api(PAPI + '/info', { auth: false });
@@ -428,7 +439,7 @@
     if (p && p.unknown && p.address && nickOf(p.address)) return nickOf(p.address);
     return p && !p.unknown ? (p.bank ? 'Monyx' : p.name) : (p ? short(p.address) : 'Someone');
   };
-  // Full names in toasts, chips and receipts, so two people called Josh can't be confused.
+  // Full names in toasts, chips and receipts, so two people with the same first name can't be confused.
   const first = (p) => who(p);
   function when(t) {
     if (!t) return 'Pending';
@@ -548,7 +559,7 @@
     stopLive(); S.liveFor = null; S.liveSince = null;
     S.feed = []; S.cash = null; S.port = null; S.people = {}; S.peopleFor = null;
     S.linkLabels = {}; S.linkLabelsFor = null; S.linkLabelsLoaded = null; S.askedUnknown = new Set(); missedAlerts.length = 0; // nothing from the last account carries over
-    S.requests = { incoming: [], outgoing: [] }; S.drafts = []; S.lastMs = null; S.feedReady = null;
+    S.requests = { incoming: [], outgoing: [] }; S.drafts = []; S.lastMs = null; S.feedReady = null; S.padV = '';
     store.del('monyx.feed'); store.del('monyx.pending.sig');
   }
   const knownUser = () => (savedPk() && savedPk().user) || store.get('monyx.known') || null;
@@ -1044,12 +1055,12 @@
       <p class="fine" style="margin-top:14px"><a href="https://explorer.solana.com/tx/${sig}?cluster=devnet" target="_blank" rel="noopener">View public receipt</a></p>`, (el, close) => {
       const a = $('#again', el); if (a) a.onclick = () => { close(); location.hash = `#pay/${p.handle}`; };
       const nm = $('#nameit', el); if (nm) nm.onclick = (e) => { e.preventDefault(); close(); nameAddress(f.with, () => txDetail(sig)); };
-    }, () => { if (location.hash === '#tx/' + sig) history.replaceState(null, '', '#home'); });
+    }, () => { if (location.hash === '#tx/' + sig) history.replaceState(null, '', $('#sentreqs') || S.txBack === '#activity' ? '#activity' : '#home'); S.txBack = null; });
   }
 
   /* money pad: the Cash App-style keypad behind the $ tab */
   function screenPad() {
-    let v = S.padV || '';
+    let v = ''; S.padV = ''; // a fresh keypad every time, so an old amount can't sneak into a new payment
     const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'];
     show(`<div class="pad">
       <div class="padtop"><button class="x mic" id="vmic" aria-label="Say who to pay instead">${ICON.mic}</button><span class="padcur">USD</span><span class="x" aria-hidden="true"></span></div>
@@ -1067,7 +1078,8 @@
       vEl.textContent = (neg ? '−' : '') + txt.replace(/^(\d+)/, (d) => Number(d).toLocaleString('en-US'));
       amtEl.classList.toggle('neg', !!neg);
       const ok = !neg && parseFloat(v) > 0;
-      $('#padpay').disabled = !ok; $('#padreq').disabled = !ok; // buttons look off whenever they'd do nothing
+      const over = ok && S.cash != null && parseFloat(v) > usd(Math.max(0, S.cash));
+      $('#padpay').disabled = !ok || over; $('#padreq').disabled = !ok; // buttons look off whenever they'd do nothing; over your balance you can still request
       if (neg) { vEl.textContent = junk || '−'; amtEl.dataset.len = Math.min(13, (junk || '−').length); sub.textContent = neg === 'junk' ? 'Use numbers only, like 12.50. Press delete to clear it.' : 'Amounts can’t be negative. Press delete to clear it.'; sub.classList.add('bad'); S.padV = ''; return; }
       amtEl.dataset.len = Math.min(13, vEl.textContent.length);
       amtEl.classList.toggle('zero', !v || +v === 0);
@@ -1102,6 +1114,7 @@
       const n = parseFloat(v);
       if (neg || !(n > 0)) return shake();
       if (mode === 'pay' && S.cash != null && n > usd(S.cash)) { shake(); toast(`You have ${money(usd(Math.max(0, S.cash)))}. Add money first, or request it instead.`, true); return; }
+      S.padV = ''; // used: the pay screen has it now, and a failed or cancelled payment doesn't leave it behind
       location.hash = `#send/${n.toFixed(2).replace(/\.00$/, '')}${mode === 'request' ? '/r' : ''}`;
     };
     $$('.key').forEach((b) => (b.onclick = () => { press(b.dataset.k); navigator.vibrate && navigator.vibrate(6); }));
@@ -1125,10 +1138,11 @@
       const t = e.target; if (t && t.id !== 'padcap' && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') || document.querySelector('.sheet-wrap')) return;
       const txt = (e.clipboardData && e.clipboardData.getData('text')) || ''; if (!txt) return;
       e.preventDefault();
-      const r = amtCheck(txt.replace(/^\s*\$/, ''));
+      const r = amtCheck(txt);
       if (r.err) { neg = MINUS.test(txt) ? true : 'junk'; junk = txt.replace(/[\s\u200b-\u200d\ufeff]/g, '').replace(/-/g, '−').slice(0, 12); v = ''; shake(); paint(); return; }
       if (r.n > 10000) { sub.textContent = 'You can send up to $10,000 at a time.'; sub.classList.add('bad'); return shake(); }
-      v = String(txt).replace(/[,\s$]/g, ''); neg = false; paint();
+      if (!(r.n > 0)) { shake(); return; }
+      v = r.t.replace(/^0+(?=\d)/, ''); neg = false; paint();
     };
     document.addEventListener('paste', S.padPaste);
     // Characters that arrive as text with no usable key (a typed "−" from a symbol picker or IME).
@@ -1183,6 +1197,7 @@
       $('#vialink').hidden = !!st.to;
     };
     amt.oninput = () => {
+      cleanAmtBox(amt);
       size(); valid();
       const { err } = amtCheck(amt.value), av = $('#avail');
       if (err) { av.className = 'avail bad'; av.textContent = err; }
@@ -1228,8 +1243,9 @@
         $$('.item', res).forEach((b) => (b.onclick = () => { st.to = users[+b.dataset.i]; renderTo(); }));
       };
       paint(recent(), 'Recent');
+      q.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const first_ = $('.item', res); if (first_) { e.preventDefault(); first_.click(); } } });
       let t, seq = 0;
-      q.oninput = () => {
+      q.oninput = (ev) => {
         clearTimeout(t);
         let v = q.value.trim();
         if (!v) { paint(recent(), 'Recent'); return; }
@@ -1239,7 +1255,11 @@
         if (cv.length >= 8 && (S.acct.address.startsWith(cv) || S.acct.address.endsWith(cv))) { res.innerHTML = '<div class="empty">That’s part of your own account number. You can’t pay yourself.</div>'; valid(); return; }
         if (isAddr(v)) {
           if (v === S.acct.address) { res.innerHTML = '<div class="empty">That’s your own account number. You can’t pay yourself.</div>'; valid(); return; }
-          st.to = S.people[v] && !S.people[v].unknown ? S.people[v] : { address: v, unknown: true }; renderTo(); valid(); return;
+          const pick = S.people[v] && !S.people[v].unknown ? S.people[v] : { address: v, unknown: true };
+          // A paste arrives whole, so use it. While typing, a shorter prefix can already decode to a real-looking
+          // account (43 of 44 characters), so show it as a row to tap or confirm with Enter instead of grabbing it.
+          if (ev && ev.inputType === 'insertFromPaste') { st.to = pick; renderTo(); valid(); return; }
+          paint([pick], 'Account number'); valid(); return;
         }
         if (looksAddr(v) && !/^[a-z0-9_]{3,20}$/i.test(v)) { res.innerHTML = '<div class="empty">That’s not a valid account number. Check it and try again.</div>'; st.to = null; valid(); return; }
         res.innerHTML = '<div class="empty searching"><span class="spin"></span>Searching…</div>';
@@ -1415,7 +1435,21 @@
       sync();
       // Where did this account's money come from? Up to 2 hops back on devnet (monyx-trace.js + the "trace" function).
       if (gate.checking) MonyxTrace.mount($('#trace-slot', el), { address: to.address, sheet: el, who: first(to),
-        onResult: () => { gate.checking = false; setTimeout(sync, 0); },
+        onResult: (res) => {
+          gate.checking = false;
+          // The payment's overall label is the higher of the two checks: a flagged source raises Normal to High.
+          const RANK = { normal: 1, medium: 2, high: 3 }, t = String((res && res.tier) || '').toLowerCase();
+          const card = el.querySelector('.risk:not(.monyx-trace-card)');
+          if (card && RANK[t] > RANK[rc.r.tier]) {
+            card.classList.remove('risk-' + rc.r.tier); card.classList.add('risk-' + t);
+            const tag = card.querySelector('.risk-tag'); if (tag) tag.innerHTML = `<span class="tier">${TIER[t]}</span><span>${TIER_HELP[t]}</span>`;
+            let ul = card.querySelector('.risk-why'); if (!ul) { ul = document.createElement('ul'); ul.className = 'risk-why'; tag.after(ul); }
+            ul.insertAdjacentHTML('beforeend', `<li>${esc(res.headline || 'Some of this account’s money came from a flagged source.')}</li>`);
+            rc.r.tier = t;
+            if (voiced) say(`${TIER[t]}. ${t === 'high' ? 'Please check before you send.' : 'Take a second look.'}`);
+          }
+          setTimeout(sync, 0);
+        },
         onRetry: () => { gate.checking = true; sync(); },
         onError: () => {
           gate.checking = false;
@@ -1508,7 +1542,7 @@
       <button class="btn btn-dark" id="topup" style="margin:18px 0 6px">Add free test dollars</button>
       <p class="fine" id="tnote" style="text-align:center">$5 the first time, then $2 a day.</p>
       <h3>Need more for testing?</h3>
-      <p class="sub" style="font-size:14px">Circle gives out free test USDC (20 every 2 hours). Copy your account number, open the faucet, choose <b>Solana Devnet</b>, and paste it.</p>
+      <p class="sub" style="font-size:14px">Circle gives out free test USDC (it limits how often you can ask). Copy your account number, open the faucet, choose <b>Solana Devnet</b>, and paste it.</p>
       <div class="addr-box" id="adbox" style="user-select:all;-webkit-user-select:all;font:500 13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;background:var(--card2);color:var(--ink);border-radius:12px;padding:10px 12px;margin:8px 0">${esc(S.acct.address)}</div>
       <div class="btn-row"><button class="btn btn-light btn-sm" id="cpa" style="width:100%">Copy number</button><a class="btn btn-light btn-sm" id="fct" style="width:100%" href="https://faucet.circle.com" target="_blank" rel="noopener">Open faucet</a></div>
       <h3>Or get paid by a friend</h3>
@@ -1563,7 +1597,7 @@
         ${row('ai', ICON.spark, 'AI assistant', 'Connect Grok Bot to draft payments')}
         ${row('links', ICON.link, 'Pay links', 'Money you sent with a link')}
         ${S.acct.mode === 'key' ? row('key', ICON.key, 'Recovery key', 'Back up or move to a new device') : ''}
-        ${S.acct.mode === 'key' ? row('lock', ICON.lock, isPwVault(vault.get()) ? 'Password lock is on' : vault.get() ? 'Passkey lock is on' : 'Lock this device', isPwVault(vault.get()) ? 'Asked before money moves' : vault.get() ? 'Face ID or fingerprint before money moves' : 'With a passkey or a password') : ''}
+        ${S.acct.mode === 'key' ? (() => { const lv = lockedVault(); return row('lock', ICON.lock, lv ? (isPwVault(lv) ? 'Password lock is on' : 'Passkey lock is on') : 'Lock this device', lv ? (isPwVault(lv) ? 'Asked before money moves' : 'Face ID or fingerprint before money moves') : S.acct.secret ? 'Your key is stored unencrypted here. Lock it' : 'With a passkey or a password'); })() : ''}
         ${S.acct.mode === 'key' ? row('anywhere', ICON.key, 'Sign-in options', 'Password or passkey on any device') : ''}
         ${S.acct.mode === 'key' ? row('link', ICON.key, 'Sign in a new device', 'Approve it with a code, no recovery key needed') : ''}
         ${row('guide', ICON.book, 'How Monyx works', 'A plain-language guide')}
@@ -1627,7 +1661,7 @@
     });
   }
   function lockSheet() {
-    const on = !!vault.get(), pw = isPwVault(vault.get());
+    const on = !!lockedVault(), pw = on && isPwVault(vault.get());
     sheet(`<h2>${on ? (pw ? 'Password lock is on' : 'Passkey lock is on') : 'Lock this device'}</h2>
       <p class="sub">${on ? `Your account key is stored encrypted on this device. Monyx asks for ${pw ? 'your password' : 'Face ID, your fingerprint or your device PIN'} before any money moves, and when you sign in again.` : 'Encrypt your account key on this device, so money only moves after your passkey or password. Anyone who gets into your browser storage sees only scrambled data.'}</p>
       <p class="fine">Keep your recovery key saved too. It's how you get in if you lose this device.</p>
@@ -1755,28 +1789,13 @@
     } catch {}
     return S.markets;
   }
-  // A buy is a payment plus a server call. If the call fails after the
-  // payment lands, the signature is kept here and finished on the next load.
-  const pendingBuys = {
-    list: () => mine.get('monyx.pendingBuys', []),
-    add(asset, sig) { mine.set('monyx.pendingBuys', [...this.list(), { asset, sig, t: Date.now() }]); },
-    remove(sig) { mine.set('monyx.pendingBuys', this.list().filter((p) => p.sig !== sig)); },
-    async settle() {
-      for (const p of this.list()) {
-        try { await api(PAPI + '/trade/buy', { method: 'POST', body: { asset: p.asset, sig: p.sig } }); this.remove(p.sig); }
-        catch (e) { if (['used', 'stale', 'mismatch'].includes(e.code) || Date.now() - p.t > 3600_000) this.remove(p.sig); }
-      }
-    },
-  };
   async function loadPortfolio() {
     if (!S.acct || !S.acct.token) return null;
-    if (pendingBuys.list().length) await pendingBuys.settle();
     try { S.port = await api(PAPI + '/portfolio'); } catch (e) { if (e.status === 401) relogin(); }
     return S.port;
   }
   const coin = (a, size = '') => `<div class="av coin ${size}" style="background:${esc(a.color)}">${esc(a.symbol.slice(0, 4))}</div>`;
   // The sparkline covers 7 days, so the % beside it must too.
-  const chg7 = (arr) => (arr && arr.length > 1 && arr[0] ? ((arr[arr.length - 1] - arr[0]) / arr[0]) * 100 : null);
   const pct = (v) => (v == null ? '' : `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(2)}%`);
   const fmtPrice = (p) => (p >= 1 ? money(p) : '$' + Number(p).toPrecision(3));
   const fmtQty = (q, sym) => `${q >= 1 ? q.toLocaleString('en-US', { maximumFractionDigits: 4 }) : Number(q).toPrecision(4).replace(/0+$/, '').replace(/\.$/, '')} ${sym}`;
@@ -1902,91 +1921,6 @@
     el.innerHTML = S.port.holdings.length ? `<h3>Your test coins</h3><p class="fine" style="text-align:left;margin:-4px 0 10px">From the old test-mode Invest. You can sell them back to cash any time.</p><div class="list">${S.port.holdings.map((h) => `<button class="item" data-a="${esc(h.id)}">${coin(h)}<div class="mid"><div class="t">${esc(h.name)}</div><div class="s">${esc(fmtQty(h.qty, h.symbol))}</div></div><div style="text-align:right"><div class="amt">${money(h.value)}</div><div class="s">Sell</div></div></button>`).join('')}</div>` : '';
     $$('#holdings [data-a]').forEach((b) => (b.onclick = () => { const h = holdingOf(b.dataset.a); if (h) sellSheet(assetById(h.id) || h); }));
   }
-  function assetSheet(a) {
-    if (!a) return;
-    const h = holdingOf(a.id);
-    sheet(`<div class="assethead">${coin(a, 'md')}<div><div class="t">${esc(a.name)}</div><div class="s">${esc(a.symbol)}</div></div></div>
-      <div class="big" style="font-size:40px;font-weight:600;letter-spacing:-.03em;margin-top:14px">${fmtPrice(a.price)}</div>
-      <div class="${(chg7(a.spark) ?? a.change24h) >= 0 ? 'up' : 'down'}" style="font-size:14px;font-weight:500">${chg7(a.spark) != null ? `${pct(chg7(a.spark))} past 7 days` : `${pct(a.change24h)} today`}</div>
-      <div class="bigspark">${spark(a.spark, 320, 110, 2.2)}</div><div class="fine" style="text-align:left;margin:-4px 0 14px">Past 7 days</div>
-      ${h ? `<div class="ledger"><div><span>You own</span><b>${esc(fmtQty(h.qty, a.symbol))}</b></div><div><span>Worth</span><b>${money(h.value)}</b></div></div>` : ''}
-      <div class="btn-row">${h ? `<button class="btn btn-light" id="sell">Sell</button>` : `<button class="btn btn-light" id="swap">Swap into ${esc(a.symbol)}</button>`}<button class="btn btn-dark" id="buy">Buy</button></div>
-      ${h ? `<button class="btn btn-text" id="swap" style="margin-top:4px">Swap ${esc(a.symbol)} for another coin</button>` : ''}`, (el, close) => {
-      $('#buy', el).onclick = () => { close(); buySheet(a); };
-      const sl = $('#sell', el); if (sl) sl.onclick = () => { close(); sellSheet(a); };
-      $('#swap', el).onclick = () => { close(); h ? swapSheet(a.id) : swapSheet(null, a.id); };
-    });
-  }
-  function pickAsset(title, only, cb) {
-    const list = only || (S.markets ? S.markets.assets : []);
-    if (!list.length) { toast('Prices are still loading.', true); return; }
-    sheet(`<h2>${title}</h2><div class="list" style="margin-top:14px">${list.map((a, i) => `<button class="item" data-i="${i}">${coin(a)}<div class="mid"><div class="t">${esc(a.name)}</div><div class="s">${a.qty != null ? esc(fmtQty(a.qty, a.symbol)) : esc(a.symbol)}</div></div><div class="amt">${a.value != null ? money(a.value) : fmtPrice(a.price)}</div></button>`).join('')}</div>`, (el, close) => {
-      $$('[data-i]', el).forEach((b) => (b.onclick = () => { close(); cb(list[+b.dataset.i]); }));
-    });
-  }
-  // Shared dollar-amount sheet for buy and sell.
-  function amountSheet({ title, sub, max, maxLabel, cta, preview, onGo, min = 1, belowMin = '' }) {
-    sheet(`<h2>${title}</h2><p class="sub">${sub}</p>
-      <div class="amountin" style="padding:14px 0 6px"><span>$</span><input id="amt" inputmode="decimal" autocomplete="off" placeholder="0"></div>
-      <div class="avail" id="prev" style="margin:0 0 14px"></div>
-      <div class="emojis" style="justify-content:center;margin-bottom:16px">${[5, 10, 25, 50, 100].filter((v) => v < max).slice(0, 4).map((v) => `<button data-v="${v}">$${v}</button>`).join('')}${max > 0 ? `<button data-v="max">${maxLabel}</button>` : ''}</div>
-      <button class="btn btn-dark" id="go" disabled>${cta}</button>`, (el, close) => {
-      const amt = $('#amt', el), go = $('#go', el), prev = $('#prev', el);
-      let all = false;
-      const upd = () => {
-        const v = numOf(amt);
-        amt.style.width = Math.max(1, (amt.value || '0').length + 0.2) + 'ch';
-        const tooSmall = v > 0 && v < min && !all;
-        const ok = (all ? max > 0 : v >= min) && v <= max + 0.005;
-        go.disabled = !ok;
-        prev.className = 'avail' + (v > max + 0.005 || tooSmall ? ' bad' : '');
-        prev.textContent = v > max + 0.005 ? `You have ${money(max)} available`
-          : tooSmall ? (belowMin || `The smallest amount is ${money(min)}.`)
-          : v > 0 ? preview(v) : `${money(max)} available · ${money(min)} minimum`;
-      };
-      amt.oninput = () => {
-        all = false;
-        upd();
-        const { err } = amtCheck(amt.value);
-        if (err) { go.disabled = true; prev.className = 'avail bad'; prev.textContent = err; }
-      };
-      $$('[data-v]', el).forEach((b) => (b.onclick = () => { all = b.dataset.v === 'max'; amt.value = all ? (Math.round(max * 100) / 100).toFixed(2) : b.dataset.v; upd(); if (all && !go.disabled) prev.textContent = `${maxLabel}: everything you have (${money(max)})`; }));
-      upd(); amt.focus();
-      go.onclick = async () => {
-        go.disabled = true; go.innerHTML = '<span class="spin"></span>Working on it';
-        try { await onGo(numOf(amt), all, close); }
-        catch (e) { go.disabled = false; go.textContent = cta; showError(e, 6000); }
-      };
-    });
-  }
-  function buySheet(a) {
-    const cash = S.cash != null ? Math.max(0, usd(S.cash)) : 0;
-    amountSheet({
-      title: `Buy ${esc(a.name)}`, sub: `Paid from your Monyx cash. 1 ${esc(a.symbol)} = ${fmtPrice(a.price)}`,
-      max: cash, maxLabel: 'All cash', cta: `Buy ${esc(a.symbol)}`,
-      preview: (v) => `You'll get about ${fmtQty(v / a.price, a.symbol)}`,
-      async onGo(v, _all, close) {
-        const g = document.querySelector('.sheet #go');
-        if (g) g.innerHTML = '<span class="spin"></span>Paying';
-        const sig = await send(await bankAddr(), v, `Buy ${a.symbol}`);
-        if (g) g.innerHTML = `<span class="spin"></span>Adding your ${esc(a.symbol)}`;
-        pendingBuys.add(a.id, sig);
-        let r, tries = 0;
-        while (!r) {
-          try { r = await api(PAPI + '/trade/buy', { method: 'POST', body: { asset: a.id, sig } }); }
-          catch (e) {
-            if (e.code === 'used') { pendingBuys.remove(sig); break; }
-            if (++tries >= 3) { close(); toast("Your payment went through. We're still adding the coins and will finish next time you open Monyx.", false, 7000); return; }
-            await new Promise((s) => setTimeout(s, 1500));
-          }
-        }
-        pendingBuys.remove(sig);
-        if (!r) { close(); loadPortfolio(); return; }
-        close(); refreshBalance(); loadPortfolio(); S.feed = [];
-        success(`You bought ${money(r.usd)} of ${esc(a.name)}`, fmtQty(r.qty, r.symbol), sig, null, '#invest');
-      },
-    });
-  }
   function sellSheet(a) {
     const h = holdingOf(a.id); if (!h) return;
     amountSheet({
@@ -1999,51 +1933,6 @@
         close(); refreshBalance(); loadPortfolio(); S.feed = [];
         success(`You sold ${money(r.usd)} of ${esc(a.name)}`, 'The money is back in your balance.', r.signature, null, '#invest');
       },
-    });
-  }
-  function swapSheet(fromId, toId) {
-    const owned = S.port ? S.port.holdings : [];
-    if (!owned.length) { toast('Buy some crypto first, then you can swap it.'); return; }
-    const st = { from: owned.find((h) => h.id === fromId) || owned[0], to: null };
-    st.to = assetById(toId) || S.markets.assets.find((x) => x.id !== st.from.id);
-    if (st.to && st.to.id === st.from.id) st.to = S.markets.assets.find((x) => x.id !== st.from.id);
-    sheet(`<h2>Swap</h2><p class="sub">Trade one coin for another at the live price. No fees, but the price can move a little before it fills.</p>
-      <div class="swapbox"><button class="swaprow" id="sf"></button><button class="swapflip" id="flip" aria-label="Flip">${ICON.swap}</button><button class="swaprow" id="stt"></button></div>
-      <div class="amountin" style="padding:14px 0 6px"><span>$</span><input id="amt" inputmode="decimal" autocomplete="off" placeholder="0"></div>
-      <div class="avail" id="prev" style="margin:0 0 14px"></div>
-      <div class="emojis" style="justify-content:center;margin-bottom:16px"><button data-v="half">Half</button><button data-v="max">All</button></div>
-      <button class="btn btn-dark" id="go" disabled>Swap</button>`, (el, close) => {
-      const amt = $('#amt', el), go = $('#go', el), prev = $('#prev', el);
-      let all = false;
-      const row = (a, label, sub) => `<span class="lbl">${label}</span>${coin(a, 'sm')}<span class="mid"><b>${esc(a.name)}</b><span class="s">${sub}</span></span>${ICON.chev}`;
-      const paint = () => {
-        $('#sf', el).innerHTML = row(st.from, 'From', `${money(st.from.value)} available`);
-        $('#stt', el).innerHTML = row(st.to, 'To', fmtPrice(st.to.price));
-        const v = numOf(amt);
-        amt.style.width = Math.max(1, (amt.value || '0').length + 0.2) + 'ch';
-        const ok = v > 0 && v <= st.from.value + 0.005;
-        go.disabled = !ok;
-        prev.className = 'avail' + (v > st.from.value + 0.005 ? ' bad' : '');
-        prev.textContent = v > st.from.value + 0.005 ? `You have ${money(st.from.value)} of ${st.from.symbol}` : v > 0 ? `${fmtQty(v / st.from.price, st.from.symbol)} → about ${fmtQty(v / st.to.price, st.to.symbol)} (live price)` : ' ';
-      };
-      $('#sf', el).onclick = () => pickAsset('Swap from', owned, (h) => { st.from = h; if (st.to.id === h.id) st.to = S.markets.assets.find((x) => x.id !== h.id); amt.value = ''; paint(); });
-      $('#stt', el).onclick = () => pickAsset('Swap to', S.markets.assets.filter((x) => x.id !== st.from.id), (x) => { st.to = x; paint(); });
-      $('#flip', el).onclick = () => { const h = holdingOf(st.to.id); if (!h) { toast(`You don't own any ${st.to.symbol} yet.`); return; } const f = st.from; st.from = h; st.to = assetById(f.id) || f; amt.value = ''; paint(); };
-      amt.oninput = () => {
-        all = false; paint();
-        const { err } = amtCheck(amt.value);
-        if (err) { go.disabled = true; prev.className = 'avail bad'; prev.textContent = err; }
-      };
-      $$('[data-v]', el).forEach((b) => (b.onclick = () => { all = b.dataset.v === 'max'; amt.value = (all ? Math.round(st.from.value * 100) / 100 : Math.floor(st.from.value / 2 * 100) / 100).toFixed(2); paint(); if (all) prev.textContent = `All of it: ${fmtQty(st.from.qty, st.from.symbol)} → about ${fmtQty(st.from.value / st.to.price, st.to.symbol)}`; }));
-      paint(); amt.focus();
-      go.onclick = async () => {
-        go.disabled = true; go.innerHTML = '<span class="spin"></span>Swapping';
-        try {
-          const r = await api(PAPI + '/trade/swap', { method: 'POST', body: { from: st.from.id, to: st.to.id, usd: numOf(amt), all } });
-          close(); loadPortfolio();
-          success(`Swapped ${money(r.usd)}`, `${fmtQty(r.qtyFrom, r.from)} → ${fmtQty(r.qtyTo, r.to)}`, null, null, '#invest');
-        } catch (e) { go.disabled = false; go.textContent = 'Swap'; showError(e); }
-      };
     });
   }
 
@@ -2067,7 +1956,9 @@
       const a = assetById(t.kind === 'sell' ? t.asset_from : t.asset_to) || { symbol: '?', color: '#999' };
       const title = t.kind === 'buy' ? `Bought <b>${esc(name(t.asset_to))}</b>` : t.kind === 'sell' ? `Sold <b>${esc(name(t.asset_from))}</b>` : `Swapped <b>${esc(name(t.asset_from))}</b> for <b>${esc(name(t.asset_to))}</b>`;
       const sub = t.kind === 'sell' ? fmtQty(Number(t.qty_from), name(t.asset_from)) : fmtQty(Number(t.qty_to), name(t.asset_to));
-      return `<div class="item">${coin(a)}<div class="mid"><div class="t">${title}</div><div class="s">${esc(sub)} · ${when(Date.parse(t.created_at) / 1000)}</div></div><div class="amt ${t.kind === 'sell' ? 'in' : ''}">${t.kind === 'swap' ? money(Number(t.usd)) : money(Number(t.usd) * (t.kind === 'sell' ? 1 : -1), true)}</div></div>`;
+      // Buys and sells moved real USDC, so they open their receipt like any payment. Swaps only changed the ledger.
+      const tag = t.sig && t.kind !== 'swap' ? `a class="item" href="#tx/${esc(t.sig)}"` : 'div class="item"';
+      return `<${tag}>${coin(a)}<div class="mid"><div class="t">${title}</div><div class="s">${esc(sub)} · ${when(Date.parse(t.created_at) / 1000)}${t.kind === 'swap' ? ' · Ledger only' : ''}</div></div><div class="amt ${t.kind === 'sell' ? 'in' : ''}">${t.kind === 'swap' ? money(Number(t.usd)) : money(Number(t.usd) * (t.kind === 'sell' ? 1 : -1), true)}</div></${tag.split(' ')[0]}>`;
     }).join('');
   }
 
@@ -2369,7 +2260,8 @@
           for (const r of e.results) (r.isFinal ? (final += r[0].transcript) : (interim += r[0].transcript));
           said.textContent = `“${(final + interim).trim()}”`;
         };
-        sr.onerror = (e) => fail(e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'Monyx needs the microphone. Allow it in your browser, or type below.' : e.error === 'no-speech' ? 'I didn’t hear anything. Tap the mic and try again.' : 'I couldn’t hear that. Try again, or type it.');
+        // Stopping the mic to run a typed command fires "aborted"; that's not a failure, and it must not cover the answer.
+        sr.onerror = (e) => done || e.error === 'aborted' ? null : fail(e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'Monyx needs the microphone. Allow it in your browser, or type below.' : e.error === 'no-speech' ? 'I didn’t hear anything. Tap the mic and try again.' : 'I couldn’t hear that. Try again, or type it.');
         sr.onend = () => { if (done) return; const txt = final.trim() || said.textContent.replace(/[“”]/g, '').trim(); if (txt) run(txt); else fail('I didn’t hear anything. Tap the mic and try again.'); };
         try { sr.start(); setState('on'); heard.textContent = 'Listening… say it like you’d tell a friend'; } catch { fail('I couldn’t start the microphone. Type it below.'); }
       }
@@ -2666,7 +2558,7 @@
     if (announced.has(p.sig)) return; announced.add(p.sig);
     const other = p.direction === 'in' ? p.from : p.to;
     if (p.person && other) S.people[other] = { ...p.person, address: other };
-    refreshBalance();
+    refreshSoon();
     if ($('#feed')) loadFeed();
     if (p.direction !== 'in' || (p.person && p.person.bank)) return; // your own sends and Monyx payouts stay quiet
     if (!p.person && other) await resolvePeople([other]);
@@ -2708,6 +2600,8 @@
      device PIN. The recovery key always works as a way back in. */
   const b64d = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
   const vault = { get: () => store.get('monyx.vault'), set: (v) => store.set('monyx.vault', v), del: () => store.del('monyx.vault') };
+  // The lock only counts as "on" when it belongs to this account and no plain copy of the key is stored next to it.
+  const lockedVault = () => { const v = vault.get(); return v && S.acct && v.address === S.acct.address && !S.acct.secret ? v : null; };
   const passkeysPossible = () => !!(window.PublicKeyCredential && navigator.credentials && window.isSecureContext);
   const rand = (n) => crypto.getRandomValues(new Uint8Array(n));
   async function vaultKey(prf, salt) {
@@ -3043,26 +2937,6 @@
   }
   // Pro tools live inside the app now, so the unlocked key never leaves memory. Clear any handoff an older build left behind.
   try { sessionStorage.removeItem('monyx.handoff'); } catch { /* */ }
-  const isLocked = () => !!(S.acct && S.acct.mode === 'key' && !S.acct.secret && !S.kp && vault.get());
-  function screenUnlock() {
-    const u = S.acct.user || {};
-    show(`<section class="welcome intro">
-      <div class="brand">${LOGO}</div>
-      <div class="introcard">${avatar(u, 'lg')}<h1>Welcome back${u.name ? `, ${esc(u.name.split(' ')[0])}` : ''}</h1>
-        <p class="sub">${isPwVault(vault.get()) ? 'Monyx is locked with your password.' : 'Monyx is locked with your passkey. Unlock with Face ID, your fingerprint or your device PIN.'}</p></div>
-      ${isPwVault(vault.get()) ? `<form id="unf" class="pwrow"><input type="text" name="username" autocomplete="username" value="@${esc(u.handle || '')}" hidden><label class="field"><input type="password" id="unpw" autocomplete="current-password" placeholder="Your password" aria-label="Password"></label></form>` : ''}
-      <div class="cta"><button class="btn btn-dark" id="un">Unlock</button>
-        <button class="btn btn-text" id="rk">Use my recovery key instead</button></div>
-      <p class="fine" id="uh"></p>
-    </section>`);
-    $('#un').onclick = async (e) => {
-      const b = e.currentTarget; b.disabled = true;
-      try { await unlockSaved($('#unpw') && $('#unpw').value); route(); }
-      catch (err) { b.disabled = false; $('#uh').className = 'fine bad'; $('#uh').textContent = err.safe ? err.message : 'That didn’t unlock. Try again, or use your recovery key.'; }
-    };
-    const uf = $('#unf'); if (uf) { uf.onsubmit = (e) => { e.preventDefault(); $('#un').click(); }; setTimeout(() => $('#unpw').focus(), 50); }
-    $('#rk').onclick = () => { S.wantRecovery = true; location.hash = '#login'; screenLogin(); };
-  }
   // Save the recovery key in the browser's password manager (iCloud Keychain,
   // Google Password Manager, 1Password…), filed under @username.
   async function saveToPasswordManager(key) {
@@ -3128,7 +3002,7 @@
     if (view === 'predict') return screenPredict();
     if (view === 'trace') return screenTrace(a && isAddr(a) ? a : '');
     if (view === 'activity') return screenActivity();
-    if (view === 'tx') { if (!$('#feed')) screenHome(); history.replaceState(null, '', '#tx/' + a); return txDetail(a); } // keep the receipt in the URL so a refresh reopens it
+    if (view === 'tx') { if (!$('#feed')) { S.txBack = '#activity'; screenActivity(); } history.replaceState(null, '', '#tx/' + a); return txDetail(a); } // keep the receipt in the URL so a refresh reopens it
     if (view !== 'home') history.replaceState(null, '', '#home');
     screenHome();
   }
@@ -3153,7 +3027,7 @@
     setInterval(() => { if (S.acct && S.acct.token && !document.hidden) { refreshBalance(); if ($('#feed')) { loadFeed(); loadRequests(); loadDrafts(); } } }, 20000);
     setInterval(pollInbox, 3000); pollInbox();
     // Coming back to a background tab: catch up right away instead of waiting for the next timer.
-    document.addEventListener('visibilitychange', () => { if (document.hidden) { S.hiddenAt = Date.now(); return; } if (!S.acct || !S.acct.token) return; showMissedAlerts(); if (!liveHealthy()) { S.liveFor = null; startLive(); } pollInbox(true).then(showMissedAlerts); refreshBalance(); if ($('#feed')) loadFeed(); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) { S.hiddenAt = Date.now(); return; } if (!S.acct || !S.acct.token) return; showMissedAlerts(); if (!liveHealthy()) { S.liveFor = null; startLive(); } pollInbox(true).then(showMissedAlerts); refreshSoon(); if ($('#feed')) loadFeed(); });
     // Watchdog: reconnect when the live stream is closed or has gone quiet; it resumes from the last payment it saw.
     setInterval(() => { if (S.acct && S.acct.token && !liveHealthy() && !S.liveRetry && !S.liveStarting) { S.liveFor = null; startLive(); } }, 3000);
     setInterval(() => { if ($('#feed') && !document.hidden) paintFeed(); }, 60000); // keep "Just now" honest
@@ -3162,5 +3036,14 @@
     loadMarkets();
     if (S.acct && S.acct.token) api('/me').then((r) => { S.acct.user = r.user; saveAcct(); }).catch((e) => { if (e.status === 401) relogin(); });
   }
+  // Last line of defence: an error nobody caught gets logged and a plain message, never a frozen screen.
+  let lastOops = 0;
+  const oopsToast = () => { if (Date.now() - lastOops > 8000) { lastOops = Date.now(); toast('Something went wrong. Try that again.', true); } };
+  window.addEventListener('unhandledrejection', (e) => {
+    const r = e.reason; console.error('[monyx] unhandled:', r);
+    if (r && (r.name === 'AbortError' || /aborted|Load failed|NetworkError|Failed to fetch/i.test(String(r.message || r)))) return; // network blips are retried elsewhere
+    oopsToast();
+  });
+  window.addEventListener('error', (e) => { if (e.error) { console.error('[monyx] error:', e.error); oopsToast(); } });
   boot();
 })();

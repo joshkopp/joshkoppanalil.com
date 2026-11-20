@@ -505,7 +505,8 @@ Deno.serve(async (req) => {
     if ("signature" in api.params && !params.signature) throw new UserError("`signature` is required");
 
     const payment = req.headers.get("x-payment");
-    if (!payment) return await quote(api, params, `${PUBLIC_BASE}${url.pathname}${url.search}`);
+    // Supabase hands the function its path without /functions/v1; the quote must name the real public URL.
+    if (!payment) return await quote(api, params, `${PUBLIC_BASE}/functions/v1${url.pathname.replace(/^\/functions\/v1/, "")}${url.search}`);
 
     const s = await settle(api, params, payment.trim());
     if (s.err) return s.err;

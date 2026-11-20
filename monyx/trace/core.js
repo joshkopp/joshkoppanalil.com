@@ -5,6 +5,7 @@
 
 export const MAX_HOPS = 2;
 export const MAX_SIGS_PER_WALLET = 10;
+export const MAX_SIGS_DEEPER = 6; // wallets one hop back: their newest few transfers are enough
 export const MAX_RPC = 100;
 export const CACHE_TTL_MS = 10 * 60 * 1000;
 export const RATE_WINDOW_MS = 10 * 60 * 1000;
@@ -268,13 +269,13 @@ export function makeRpc(url, budget, fetchImpl, opts = {}) {
   };
 }
 
-async function signaturesForWallet(rpc, address, budget) {
+async function signaturesForWallet(rpc, address, budget, limit = MAX_SIGS_PER_WALLET) {
   const sigs = [];
   let truncated = false;
   const atas = [];
 
   try {
-    const s1 = await rpc("getSignaturesForAddress", [address, { limit: MAX_SIGS_PER_WALLET }]);
+    const s1 = await rpc("getSignaturesForAddress", [address, { limit }]);
     if (Array.isArray(s1)) sigs.push(...s1);
   } catch (e) {
     if (e && e.budget) return { sigs: [], atas, truncated: true };
@@ -304,7 +305,7 @@ async function signaturesForWallet(rpc, address, budget) {
       break;
     }
     try {
-      const s2 = await rpc("getSignaturesForAddress", [ata, { limit: MAX_SIGS_PER_WALLET }]);
+      const s2 = await rpc("getSignaturesForAddress", [ata, { limit }]);
       if (Array.isArray(s2)) sigs.push(...s2);
     } catch (e) {
       if (e && e.budget) {
@@ -321,13 +322,13 @@ async function signaturesForWallet(rpc, address, budget) {
     if (!s || !s.signature || seen.has(s.signature)) continue;
     seen.add(s.signature);
     unique.push(s);
-    if (unique.length >= MAX_SIGS_PER_WALLET) break;
+    if (unique.length >= limit) break;
   }
   return { sigs: unique, atas, truncated };
 }
 
-async function incomingForWallet(rpc, address, budget) {
-  const { sigs, atas, truncated: already } = await signaturesForWallet(rpc, address, budget);
+async function incomingForWallet(rpc, address, budget, limit) {
+  const { sigs, atas, truncated: already } = await signaturesForWallet(rpc, address, budget, limit);
   let truncated = already;
   const incoming = [];
   const txOpt = { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 };
@@ -455,7 +456,7 @@ export async function runTrace({ address, rpcUrl, riskList, fetchImpl, limits, n
 
     let result;
     try {
-      result = await incomingForWallet(rpc, cur.address, budget);
+      result = await incomingForWallet(rpc, cur.address, budget, cur.hop === 0 ? MAX_SIGS_PER_WALLET : MAX_SIGS_DEEPER);
     } catch (e) {
       if (e && e.budget) {
         truncated = true;

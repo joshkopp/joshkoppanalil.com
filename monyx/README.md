@@ -42,7 +42,8 @@ Old links like `/#pay` or `/#claim/...` are forwarded into `/app/` by `assets/ro
 Source files:
 
 - `pay.js`, `pay.css`: the wallet (risk check, passkey/password lock, sign-in, money pad, live events)
-- `voice-parse.js`: sentence → intent parser (tests: `node voice-parse.test.js`)
+- `voice-parse.js`: sentence → intent parser
+- `tests/`: automated tests (see Tests below)
 - `server/index.ts`: Supabase edge function `monyx` (accounts, usernames, requests, avatars, sign-in backups, device links)
 - `payments/index.ts`: `monyx-pay` (relay, test dollars, pay links, on-chain watcher, live events, activity, agent API)
 - `trace/` + `monyx-trace.js`: the "where did this money come from?" check on the pay sheet
@@ -69,6 +70,13 @@ Voice uses the browser's built-in speech recognition and speech synthesis, so th
 
 ### RPC
 Everything runs on Solana's free public devnet RPC (`https://api.devnet.solana.com`); no paid provider or API key is needed. Browsers read through `/monyx-pay/rpc`, which caches and retries, so the public endpoint's rate limits don't reach users. To use another free devnet endpoint (a Helius or Alchemy free tier, say), set the `SOLANA_RPC` secret.
+
+## Tests
+`cd tests && npm install && npm test` runs 76 checks against the real source files (functions are read straight out of them, so the tests can't drift from what ships):
+- `app.test.mjs`: amounts (commas, `$`/`US$`, hidden characters, negatives, `1e2`, cents) and account numbers (`pay.js`)
+- `relay.test.mjs`: the relay's `checkTx` co-signs a normal payment and refuses 11 attack shapes: wrong fee payer, draining the bank, extra SOL transfer, two transfers, unknown recipient, mismatched recipient, zero or over-cap amounts, unknown programs, unsigned, oversized memo (`payments/index.ts`)
+- `trace.test.mjs`: the source tracer finds a flagged wallet 2 hops back, skips the Monyx bank, survives rate limits, and says "incomplete" (never Normal) when the network is down (`trace/core.js`)
+- `../voice-parse.test.js`: 33 spoken and typed commands
 
 ## Deploying
 Every path is relative. Copy this folder's contents to the site root (keep `CNAME` and `.nojekyll` in the monyx.pro repo).

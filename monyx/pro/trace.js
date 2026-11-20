@@ -52,10 +52,10 @@
     catch (e) { if (TXV > 0 && /version|invalid param/i.test(e.message)) { TXV = 0; return rpc(url, 'getTransaction', [sig, cfg(0)]); } throw e; }
   }
   const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
-  async function pool(items, n, fn, onEach) {
+  async function pool(items, n, fn, onEach, until) {
     const out = new Array(items.length); let i = 0, done = 0;
     await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
-      while (i < items.length) { const k = i++; out[k] = await fn(items[k]); done++; onEach && onEach(done, items.length); }
+      while (i < items.length && !(until && Date.now() > until)) { const k = i++; out[k] = await fn(items[k]); done++; onEach && onEach(done, items.length); }
     }));
     return out;
   }
@@ -133,18 +133,23 @@
     };
   }
 
-  async function trace(url, address, limit, onProgress) {
+  // deadlineMs: stop fetching at this point and report on what arrived, rather than spinning on a slow public RPC.
+  async function trace(url, address, limit, onProgress, deadlineMs) {
+    const until = deadlineMs ? Date.now() + deadlineMs : 0;
+    const late = () => until && Date.now() > until;
     const sigs = await rpc(url, 'getSignaturesForAddress', [address, { limit }]);
     onProgress && onProgress(0, sigs.length);
     const full = await pool(sigs, /devnet/.test(url) ? 2 : 4, (s) =>
-      getTx(url, s.signature).catch(() => null), onProgress);
-    // Public RPCs drop some calls under load; give the misses one slow second pass.
-    for (let i = 0; i < full.length; i++) {
+      getTx(url, s.signature).catch(() => null), onProgress, until);
+    // Public RPCs drop some calls under load; give the misses one slow second pass while there's time.
+    for (let i = 0; i < full.length && !late(); i++) {
       if (full[i]) continue;
       await sleep(250);
       full[i] = await getTx(url, sigs[i].signature).catch(() => null);
     }
-    return analyze(address, sigs.map((s, i) => ({ sig: s, tx: full[i] })));
+    const rep = analyze(address, sigs.map((s, i) => ({ sig: s, tx: full[i] })));
+    rep.stoppedEarly = !!late() && full.some((x) => !x);
+    return rep;
   }
 
   const api = { rpc, getTx, trace, analyze, flows, label, pool, sol };

@@ -228,12 +228,18 @@
     if (S.pubkey) s.unshift(['My wallet', S.pubkey, 'devnet']);
     const recent = store.get('monyx.pro.recent', []);
     $('#traceSamples').innerHTML = '<span>Try</span>' + [...s, ...recent.slice(0, 3).map((r) => [name(r.a), r.a, r.n])]
-      .map(([l, a, n]) => `<button data-a="${a}" data-n="${n}">${esc(l)}<span class="muted"> · ${n}</span></button>`).join('');
+      .map(([l, a, n]) => `<button data-a="${esc(a)}" data-n="${esc(n)}">${esc(l)}<span class="muted"> · ${n}</span></button>`).join('');
   }
   function setSeg(el, net) { $$('button', el).forEach((b) => b.classList.toggle('on', b.dataset.net === net)); }
 
   async function runTrace(address, net, { push = true } = {}) {
-    if (!isAddr(address)) return status('That is not a Solana address.', true);
+    address = String(address || '').trim();
+    // Monyx keeps account numbers private to signed-in people, so @usernames are traced in the app instead.
+    if (!isAddr(address) && /^@?[a-z0-9_]{3,20}$/i.test(address)) {
+      const h = address.replace(/^@/, '').toLowerCase();
+      return status(`To trace <b>@${esc(h)}</b>, open <a href="../app/#trace">Trace in the Monyx app</a> (signed in), or paste their account number here.`, true);
+    }
+    if (!isAddr(address)) return status('That isn’t a Solana account number.', true);
     TR.net = net; setSeg($('#traceNet'), net); $('#traceAddr').value = address;
     if (push) TR.hops.push({ a: address, n: net });
     paintHops();
@@ -241,16 +247,15 @@
     const limit = +$('#traceLimit').value;
     status(`<span class="spin"></span>Reading ${limit} transactions from ${net}…<div class="progress"><i id="prog" style="width:0"></i></div>`);
     try {
-      // Give up after 45 s with a clear message instead of spinning forever on a slow public RPC.
-      let stop; const timeout = new Promise((_, rej) => { stop = setTimeout(() => rej(new Error('The network is slow right now, so the trace stopped after 45 seconds. Try 15 transactions, or set your own RPC.')), 45000); });
-      const rep = await Promise.race([T.trace(rpcUrl(net), address, limit, (d, n) => { const p = $('#prog'); if (p && n) p.style.width = `${(d / n) * 100}%`; }), timeout]).finally(() => clearTimeout(stop));
+      // Stop after 25 s and show what arrived, instead of spinning on a slow public RPC.
+      const rep = await T.trace(rpcUrl(net), address, limit, (d, n) => { const p = $('#prog'); if (p && n) p.style.width = `${(d / n) * 100}%`; }, 25000);
       rep.network = net; TR.report = rep;
       const rec = store.get('monyx.pro.recent', []).filter((r) => r.a !== address);
       rec.unshift({ a: address, n: net }); store.set('monyx.pro.recent', rec.slice(0, 6));
       $('#traceOut').hidden = false;
       renderGraph(rep); renderStats(rep); renderRanks(rep); renderTimeline(rep);
       const miss = rep.timeline.filter((t) => !t.parsed).length;
-      status(rep.scanned ? `${rep.scanned} transactions scanned${miss ? `, ${miss} could not be fetched (RPC limits)` : ''}. <a href="${addrUrl(address, net)}" target="_blank" rel="noopener">Explorer</a>` : 'No transactions found for this address on ' + net + '.');
+      status(rep.scanned ? `${rep.scanned} transactions scanned${miss ? `, ${miss} could not be fetched (${rep.stoppedEarly ? 'stopped after 25 seconds on a slow network' : 'RPC limits'})` : ''}. <a href="${addrUrl(address, net)}" target="_blank" rel="noopener">Explorer</a>` : 'No transactions found for this address on ' + net + '.');
       paintSamples();
     } catch (e) { status(esc(msg(e)), true); }
   }
@@ -314,7 +319,7 @@
     $('#ranks').innerHTML = rep.counterparties.slice(0, 22).map((c, i) => {
       const v = c.receivedSol + c.sentSol;
       const toks = Object.keys(c.tokens || {}).length;
-      return `<li data-i="${i}" data-a="${c.address}"><span class="i">${String(i + 1).padStart(2, '0')}</span><span class="a">${c.label ? `<em>${esc(c.label)}</em>` : ''}${esc(c.address)}</span><span class="v">${v ? fmtSol(v, 3) + ' SOL' : toks ? `${toks} token${toks > 1 ? 's' : ''}` : '–'} · ${c.txCount}tx</span><span class="bar"><i style="width:${(v / max) * 100}%;background:${colorOf(c)}"></i></span></li>`;
+      return `<li data-i="${i}" data-a="${esc(c.address)}"><span class="i">${String(i + 1).padStart(2, '0')}</span><span class="a">${c.label ? `<em>${esc(c.label)}</em>` : ''}${esc(c.address)}</span><span class="v">${v ? fmtSol(v, 3) + ' SOL' : toks ? `${toks} token${toks > 1 ? 's' : ''}` : '–'} · ${c.txCount}tx</span><span class="bar"><i style="width:${(v / max) * 100}%;background:${colorOf(c)}"></i></span></li>`;
     }).join('') || '<li class="muted"><span></span><span>None in this window</span><span></span></li>';
   }
   function renderTimeline(rep) {
@@ -743,5 +748,10 @@ print(pull("pulse", net="devnet"))`,
     route(); tickPrice(); tickSlot();
     setInterval(tickPrice, 60000); setInterval(tickSlot, 12000); setInterval(refreshBalance, 20000);
   }
+  let lastOops = 0;
+  window.addEventListener('unhandledrejection', (e) => {
+    console.error('[monyx-pro] unhandled:', e.reason);
+    if (Date.now() - lastOops > 8000) { lastOops = Date.now(); toast('Something went wrong. Try that again.', true); }
+  });
   boot();
 })();

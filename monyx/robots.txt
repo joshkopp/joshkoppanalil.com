@@ -1,4 +1,3 @@
 User-agent: *
 Allow: /
-Disallow: /pro/
 Sitemap: https://www.monyx.pro/sitemap.xml

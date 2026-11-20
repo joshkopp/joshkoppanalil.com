@@ -306,3 +306,9 @@ dialog menu { display: flex; justify-content: flex-end; gap: 8px; padding: 0; ma
   .nav::-webkit-scrollbar { display: none; }
   .nav a { flex-shrink: 0; white-space: nowrap; min-height: 40px; align-items: center; }
 }
+/* Narrow screens: the five tabs wrap instead of hiding "Ledger" off the edge. */
+@media (max-width: 900px) {
+  .rail { flex-wrap: wrap; overflow: visible; row-gap: 4px; }
+  .nav { flex-wrap: wrap; overflow: visible; }
+  .nav a { padding: 6px 9px; }
+}
