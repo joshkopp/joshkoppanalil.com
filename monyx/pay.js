@@ -472,6 +472,12 @@
     toast(ok ? msg : "Couldn't copy. Press and hold the text to copy it.", !ok);
     return ok;
   }
+  // Same for forms on full screens (sign in, unlock): Enter submits even with several fields and no submit button.
+  document.addEventListener('keydown', (e) => {
+    if (e.defaultPrevented || e.key !== 'Enter' || e.isComposing || !e.target.matches || !e.target.matches('form input:not([type=checkbox])')) return;
+    const f = e.target.form; if (!f || !f.onsubmit || f.querySelector('button[type=submit], input[type=submit]')) return;
+    e.preventDefault(); f.requestSubmit ? f.requestSubmit() : f.onsubmit(new Event('submit'));
+  });
   function sheet(html, onMount, onClose) {
     const wrap = document.createElement('div');
     wrap.className = 'sheet-wrap';
@@ -714,7 +720,7 @@
     const key = recoveryKey();
     const locked = S.signup && S.signup.locked;
     show(stepShell(S.signup && S.signup.lockStep ? 4 : 3, `${locked ? `<h2>Save a backup key</h2>
-      <p class="sub">Your ${isPwVault(vault.get()) ? 'password' : 'passkey'} opens Monyx on this device. This backup gets you in on a new phone or if you lose this one. We can't reset it for you.</p>` : `<h2>Save your recovery key</h2>
+      <p class="sub">Your ${isPwVault(vault.get()) ? 'password' : 'passkey'} unlocks Monyx on this device. This backup gets you in on a new phone or if you lose this one. We can't reset it for you.</p>` : `<h2>Save your recovery key</h2>
       <p class="sub">It's the only way back into your account if you switch phones or clear your browser. We can't reset it for you.</p>`}
       <div class="keybox" id="kb" title="Tap to reveal" role="button" tabindex="0">Tap to reveal</div>
       <button class="btn btn-dark btn-sm" id="pm" style="margin-top:10px;width:100%">Save to my password manager</button>
@@ -1557,7 +1563,7 @@
         ${row('ai', ICON.spark, 'AI assistant', 'Connect Grok Bot to draft payments')}
         ${row('links', ICON.link, 'Pay links', 'Money you sent with a link')}
         ${S.acct.mode === 'key' ? row('key', ICON.key, 'Recovery key', 'Back up or move to a new device') : ''}
-        ${S.acct.mode === 'key' ? row('lock', ICON.lock, isPwVault(vault.get()) ? 'Password lock is on' : vault.get() ? 'Passkey lock is on' : 'Lock this device', isPwVault(vault.get()) ? 'Your password opens Monyx here' : vault.get() ? 'Face ID or fingerprint opens Monyx' : 'With a passkey or a password') : ''}
+        ${S.acct.mode === 'key' ? row('lock', ICON.lock, isPwVault(vault.get()) ? 'Password lock is on' : vault.get() ? 'Passkey lock is on' : 'Lock this device', isPwVault(vault.get()) ? 'Asked before money moves' : vault.get() ? 'Face ID or fingerprint before money moves' : 'With a passkey or a password') : ''}
         ${S.acct.mode === 'key' ? row('anywhere', ICON.key, 'Sign-in options', 'Password or passkey on any device') : ''}
         ${S.acct.mode === 'key' ? row('link', ICON.key, 'Sign in a new device', 'Approve it with a code, no recovery key needed') : ''}
         ${row('guide', ICON.book, 'How Monyx works', 'A plain-language guide')}
@@ -1623,7 +1629,7 @@
   function lockSheet() {
     const on = !!vault.get(), pw = isPwVault(vault.get());
     sheet(`<h2>${on ? (pw ? 'Password lock is on' : 'Passkey lock is on') : 'Lock this device'}</h2>
-      <p class="sub">${on ? `Your account key is stored encrypted on this device. Monyx opens with ${pw ? 'your password' : 'Face ID, your fingerprint or your device PIN'}.` : 'Encrypt your account key on this device so Monyx only opens with your passkey or a password. Anyone who gets into your browser storage sees only scrambled data.'}</p>
+      <p class="sub">${on ? `Your account key is stored encrypted on this device. Monyx asks for ${pw ? 'your password' : 'Face ID, your fingerprint or your device PIN'} before any money moves, and when you sign in again.` : 'Encrypt your account key on this device, so money only moves after your passkey or password. Anyone who gets into your browser storage sees only scrambled data.'}</p>
       <p class="fine">Keep your recovery key saved too. It's how you get in if you lose this device.</p>
       ${on ? '' : passkeysPossible() ? '' : '<p class="fine">This browser can’t use passkeys, so use a password.</p>'}
       <button class="btn btn-dark" id="lkgo" style="margin-top:14px" ${!on && !passkeysPossible() ? 'hidden' : ''}>${on ? `Turn off ${pw ? 'password' : 'passkey'} lock` : 'Set up a passkey'}</button>
@@ -1633,7 +1639,7 @@
         const b = e.currentTarget; b.disabled = true;
         try {
           if (on) { disablePasskeyLock(); toast(pw ? 'Password lock turned off' : 'Passkey lock turned off'); }
-          else { await enablePasskeyLock(); toast('Locked. Monyx now opens with your passkey.'); }
+          else { await enablePasskeyLock(); toast('Locked. Monyx asks for your passkey before money moves.'); }
           close(); screenMe();
         } catch (err) { b.disabled = false; showError(err, 6000); }
       };
@@ -2543,7 +2549,9 @@
           const r = await usdcSend({ owner: escrow, signer: kp, to: S.acct.address, units, note: mine ? 'Link cancelled' : (info.note || 'Claimed link'), closeEscrow: true });
           S.lastMs = r.ms || null;
           // A cancelled link is your own money coming back, not a person paying you.
-          S.people[escrow] = { ...info.from, address: escrow, link: true, cancelled: !!mine, name: mine ? 'Your cancelled pay link' : info.from.name };
+          // Keep the link's own name ("Link for Mom") so your original payment row still reads right.
+          const was = S.people[escrow];
+          S.people[escrow] = { ...info.from, address: escrow, link: true, cancelled: !!mine, name: (was && was.link && was.name) || (mine ? 'Your pay link' : info.from.name) };
           close(); refreshBalance(); store.del('monyx.pending');
           success(mine ? `${money(info.usd)} is back in your balance` : `${money(info.usd)} from ${esc(info.from.name)} (@${esc(info.from.handle)}) is yours`, info.note, r.sig);
           if (!mine) say(`${info.from.name.split(' ')[0]} sent you ${spoken(info.usd)}. It's in your balance.`);
@@ -2662,7 +2670,9 @@
     if ($('#feed')) loadFeed();
     if (p.direction !== 'in' || (p.person && p.person.bank)) return; // your own sends and Monyx payouts stay quiet
     if (!p.person && other) await resolvePeople([other]);
-    const who_ = S.people[other]; const n = who_ && !who_.unknown ? first(who_) : 'Someone';
+    const who_ = S.people[other];
+    if ((who_ && who_.link) || /^Link cancelled$/.test(p.note || '')) return; // a claimed or cancelled link already showed its own success screen
+    const n = who_ && !who_.unknown ? first(who_) : 'Someone';
     const amt = p.token === 'SOL' ? `${(+p.amount).toLocaleString('en-US', { maximumFractionDigits: 4 })} SOL` : money(p.amount);
     const said = p.token === 'SOL' ? `${(+p.amount).toLocaleString('en-US', { maximumFractionDigits: 4 })} SOL` : spoken(p.amount);
     alertMe(`<b>${esc(n)}</b> paid you <b>${amt}</b>${p.note ? ` · ${esc(p.note)}` : ''}`);
@@ -2678,7 +2688,7 @@
       fresh.forEach((p) => announced.add(p.sig));
       if (fresh.length) S.inboxAt = Math.max(S.inboxAt, ...fresh.map((p) => p.at - 1));
       if (!inboxPrimed) { inboxPrimed = true; return; }
-      const incoming = fresh.filter((p) => p.from !== S.acct.address);
+      const incoming = fresh.filter((p) => p.from !== S.acct.address && !/^Link cancelled$/.test(p.note || '') && !(S.people[p.from] && S.people[p.from].link));
       if (!incoming.length) return;
       await resolvePeople(incoming.map((p) => p.from).filter(Boolean));
       const lines = incoming.slice(0, 2).map((p) => {

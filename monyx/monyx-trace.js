@@ -9,7 +9,7 @@
   const TIER_HELP = {
     High: "Pause here. Check with the person you’re paying before you send.",
     Medium: "Worth a second look. Not a hard stop.",
-    Normal: "Nothing on the risk list in the last 2 hops. Still read the line above.",
+    Normal: "No flagged money found. Not a guarantee.",
   };
 
   const esc = (s) =>
