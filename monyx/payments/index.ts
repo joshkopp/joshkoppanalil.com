@@ -11,8 +11,8 @@
 //   2. Hands out free test dollars from the bank (/topup).
 //   3. Claim links: pay someone who isn't on Monyx. The money sits in a fresh
 //      one-off account whose key lives only in the link (/claims).
-//   4. Live "you got paid": every relayed payment, plus anything QuickNode
-//      Streams sees arriving from outside Monyx, lands in /inbox.
+//   4. Live "you got paid": every relayed payment, plus payments from outside
+//      Monyx found on-chain while the app is open, land in /inbox.
 //
 // It also runs the test-mode exchange (ledger coins bought with USDC) and the
 // agent API that Grok Bot uses to draft payments and send requests. Drafts
@@ -21,10 +21,12 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { Buffer } from "node:buffer";
 import { Connection, Keypair, PublicKey, SystemProgram, Transaction, TransactionInstruction } from "npm:@solana/web3.js@1.95.3";
 
-// The public devnet RPC rate-limits hard under load. Set SOLANA_RPC (e.g. a
-// QuickNode devnet endpoint) for the server, and PUBLIC_RPC for browsers.
-const RPC = Deno.env.get("SOLANA_RPC") || "https://api.devnet.solana.com";
-const PUBLIC_RPC = Deno.env.get("PUBLIC_RPC") || "https://api.devnet.solana.com";
+// Solana's free public devnet RPC by default. SOLANA_RPC can point at another free devnet endpoint
+// (a Helius or Alchemy free tier, say); old QuickNode addresses are ignored now that plan is used up.
+const DEVNET = "https://api.devnet.solana.com";
+const pickRpc = (v?: string) => (v && !/quiknode|quicknode/i.test(v) ? v.trim() : DEVNET);
+const RPC = pickRpc(Deno.env.get("SOLANA_RPC"));
+const PUBLIC_RPC = pickRpc(Deno.env.get("PUBLIC_RPC"));
 const USDC = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"); // Circle's devnet USDC
 const TOKEN = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 const ATA_PROGRAM = new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
@@ -39,7 +41,7 @@ const RELAYS_PER_HOUR = 40, NEW_ACCOUNTS_PER_DAY = 15;
 const B58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
 const ORIGINS = new Set(["https://monyx.pro", "https://www.monyx.pro", "https://joshkoppanalil.com", "https://www.joshkoppanalil.com"]);
-// Only our own sites may call this API from a browser. Servers (Grok Bot, QuickNode) send no Origin and aren't affected.
+// Only our own sites may call this API from a browser. Servers (Grok Bot) send no Origin and aren't affected.
 const cors: Record<string, string> = {
   "Access-Control-Allow-Origin": "https://www.monyx.pro",
   "Vary": "Origin",
@@ -271,7 +273,7 @@ async function names(addrs: string[]) {
 }
 const dollars = (units: number) => Math.round(units / 10_000) / 100;
 
-// Streams payloads: find every transaction, and for each one work out who got USDC.
+// Payments inside one Solana transaction: who got USDC (or SOL), from whom, and the memo.
 // Payment events from one transaction: USDC from token balances, SOL from lamport balances.
 // Accepts both the compact shape filter.js returns and a raw Solana block transaction.
 type PayEvent = { signature: string; slot: number | null; time: number | null; from_wallet: string | null; to_wallet: string; amount: number; token: "SOL" | "USDC"; memo: string };
@@ -297,34 +299,6 @@ function paymentEvents(t: any): PayEvent[] {
   for (const [k, d] of sol) if (d >= 1_000_000 && !tok.has(k)) out.push({ signature: sig, slot, time, from_wallet: sFrom && sFrom[1] < 0 ? sFrom[0] : null, to_wallet: k, amount: d, token: "SOL", memo });
   return out;
 }
-const hexOf = (b: ArrayBuffer) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
-// Checks X-QN-Signature = HMAC-SHA256(token, nonce + timestamp + body). QuickNode signs the
-// decompressed JSON; the on-the-wire text is tried too in case a proxy already unzipped it.
-// A failure is logged with what was missing (never the token), so setup problems are visible.
-async function qnSignatureOk(req: Request, bodies: string[]) {
-  const token = (Deno.env.get("QN_STREAM_TOKEN") || "").trim(); if (!token) return false;
-  const nonce = req.headers.get("x-qn-nonce") || "", ts = req.headers.get("x-qn-timestamp") || "", given = (req.headers.get("x-qn-signature") || "").trim().toLowerCase();
-  if (!nonce || !ts || !given) { console.error("[monyx-pay] qn webhook: missing headers", { nonce: !!nonce, ts: !!ts, sig: !!given, encoding: req.headers.get("content-encoding") }); return false; }
-  const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(token), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const same = (a: string, b: string) => { if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
-  for (const body of [...new Set(bodies)]) {
-    const mac = new Uint8Array(await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(nonce + ts + body)));
-    const hex = hexOf(mac.buffer), b64 = btoa(String.fromCharCode(...mac)).toLowerCase();
-    if (same(hex, given) || same(b64, given)) return true;
-  }
-  console.error("[monyx-pay] qn webhook: signature mismatch", { sigLen: given.length, bodyLen: bodies[0]?.length, encoding: req.headers.get("content-encoding") });
-  return false;
-}
-// Add a wallet to the QuickNode Key-Value list the Stream filter watches.
-const QN_LIST = "monyx_wallets";
-async function kvAddWallet(address: string) {
-  const key = Deno.env.get("QN_API_KEY"); if (!key) return false;
-  const h = { "content-type": "application/json", accept: "application/json", "x-api-key": key };
-  let r = await fetch(`https://api.quicknode.com/kv/rest/v1/lists/${QN_LIST}/items`, { method: "POST", headers: h, body: JSON.stringify({ item: address }) });
-  if (r.status === 404) r = await fetch("https://api.quicknode.com/kv/rest/v1/lists", { method: "POST", headers: h, body: JSON.stringify({ key: QN_LIST, items: [address] }) });
-  if (!r.ok) console.error("[monyx-pay] kv add:", r.status, (await r.text()).slice(0, 200));
-  return r.ok;
-}
 // Short-lived ticket for the event stream (EventSource can't send an Authorization header).
 async function hmacB64(t: string) {
   const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
@@ -334,19 +308,38 @@ const REMIND_HOURS = Number(Deno.env.get("MONYX_REMIND_HOURS")) || 24;
 // Payments from wallets outside Monyx below these amounts are ignored, so nobody can spam a
 // Monyx user with penny payments carrying a note (each would pop up as "you got paid").
 const OUTSIDE_MIN = { USDC: envUsd("MONYX_OUTSIDE_MIN_USD", 0.1), SOL: Math.round((Number(Deno.env.get("MONYX_OUTSIDE_MIN_SOL")) || 0.01) * 1e9) };
-function streamTxs(node: any, out: any[] = [], depth = 0): any[] {
-  if (!node || typeof node !== "object" || depth > 6) return out;
-  if (node.meta && node.transaction) { out.push(node); return out; }
-  for (const v of Array.isArray(node) ? node : Object.values(node)) streamTxs(v, out, depth + 1);
-  return out;
+// Raw JSON-RPC call (plain account keys as strings, which paymentEvents expects).
+async function rpcRaw(method: string, params: unknown[]) {
+  for (let i = 0; i < 3; i++) {
+    const r = await fetch(RPC, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) }).catch(() => null);
+    if (r && r.ok) { const j = await r.json().catch(() => null); if (j && !j.error) return j.result; }
+    await new Promise((x) => setTimeout(x, 400 * 2 ** i));
+  }
+  return null;
 }
-function usdcMoves(tx: any) {
-  const delta = new Map<string, number>();
-  for (const [list, sign] of [[tx.meta.preTokenBalances, -1], [tx.meta.postTokenBalances, 1]] as const)
-    for (const b of list || []) if (b.mint === USDC.toBase58() && b.owner) delta.set(b.owner, (delta.get(b.owner) || 0) + sign * Number(b.uiTokenAmount?.amount || 0));
-  const memo = (tx.meta.logMessages || []).map((l: string) => l.match(/Memo \(len \d+\): "(.*)"$/)).find(Boolean);
-  const from = [...delta.entries()].sort((a, b) => a[1] - b[1])[0];
-  return { sig: tx.transaction.signatures?.[0], delta, from: from && from[1] < 0 ? from[0] : null, note: memo ? memo[1].slice(0, 80) : "" };
+// Money that arrives from outside Monyx: while someone has the app open, their live stream asks
+// Solana for the newest transactions on their wallet and USDC account and logs any payment Monyx
+// didn't relay itself. Free (public RPC), and only runs for people who are actually watching.
+async function watchChain(me: string, sinceMs: number, seen: Set<string>) {
+  const addrs = [me, ata(new PublicKey(me)).toBase58()];
+  const lists = await Promise.all(addrs.map((a) => rpcRaw("getSignaturesForAddress", [a, { limit: 6, commitment: "confirmed" }])));
+  const sigs = [...new Set(lists.flat().filter((x: any) => x && !x.err && !seen.has(x.signature) && (x.blockTime || 0) * 1000 >= sinceMs).map((x: any) => x.signature))] as string[];
+  for (const x of lists.flat()) if (x) seen.add(x.signature);
+  if (!sigs.length) return 0;
+  const { data: known } = await db.from("monyx_payments").select("sig").in("sig", sigs);
+  const have = new Set((known || []).map((r: any) => r.sig));
+  let saved = 0;
+  for (const sig of sigs.filter((x) => !have.has(x)).slice(0, 4)) {
+    const tx = await rpcRaw("getTransaction", [sig, { encoding: "json", maxSupportedTransactionVersion: 0, commitment: "confirmed" }]);
+    if (!tx) continue;
+    for (const e of paymentEvents(tx)) {
+      if (e.to_wallet !== me) continue;
+      const { data: fromUser } = e.from_wallet ? await db.from("monyx_users").select("id").eq("address", e.from_wallet).maybeSingle() : { data: null };
+      if (!fromUser && e.amount < OUTSIDE_MIN[e.token]) continue; // ignore penny spam from outside wallets
+      await logPayment(e.signature, e.from_wallet, e.to_wallet, e.amount, e.memo, "chain", e.token, e.slot); saved++;
+    }
+  }
+  return saved;
 }
 
 Deno.serve(async (req) => {
@@ -356,7 +349,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^.*?\/monyx-pay(?=\/|$)/, "") || "/";
   const ip = (req.headers.get("x-forwarded-for") || "?").split(",")[0].trim();
-  // Streams may gzip its webhook body; signatures are computed over the decompressed text.
+  // Bodies may arrive gzipped; read the decompressed text.
   let raw = "", wire = "";
   if (req.method === "POST") {
     let bytes = new Uint8Array(await req.arrayBuffer());
@@ -370,8 +363,8 @@ Deno.serve(async (req) => {
   let body: any = {}; try { body = raw ? JSON.parse(raw) : {}; } catch { /* */ }
   try {
     // ----- public -----
-    // Read-only RPC proxy: browsers read balances and history through the private SOLANA_RPC
-    // instead of hammering the public devnet endpoint (which answers 429 under load).
+    // Read-only RPC proxy: browsers read balances and history through this server (cached, retried)
+    // instead of each hitting the public devnet endpoint directly (which answers 429 under load).
     if (path === "/rpc" && req.method === "POST") {
       const READ = new Set(["getTokenAccountBalance", "getSignaturesForAddress", "getTransaction", "getLatestBlockhash", "getSignatureStatuses", "getAccountInfo", "getBalance"]);
       if (!ORIGINS.has(origin)) return fail("Browser RPC is only for the Monyx app.", 403, "forbidden");
@@ -415,33 +408,8 @@ Deno.serve(async (req) => {
       const { data: from } = await db.from("monyx_users").select(PUBLIC).eq("id", c.from_user).single();
       return json({ from: pub(from), usd: dollars(c.units), note: c.note, status: c.status });
     }
-    if ((path === "/streams" || path === "/qn/webhook") && req.method === "POST") {
-      // QuickNode Streams webhook. With QN_STREAM_TOKEN set, every delivery must carry a valid
-      // X-QN-Signature (HMAC-SHA256 of nonce + timestamp + body). The older ?key= check is only
-      // accepted while no token is configured.
-      const hasToken = !!Deno.env.get("QN_STREAM_TOKEN");
-      const okSig = hasToken ? await qnSignatureOk(req, [raw, wire]) : false;
-      const want = Deno.env.get("QN_STREAMS_KEY");
-      if (!okSig && (hasToken || !want || url.searchParams.get("key") !== want)) return fail("Not allowed.", 401, "unauthorized");
-      // filter.js sends { matches: [...] }; without a filter Streams sends raw blocks.
-      const txs = Array.isArray(body?.matches) ? body.matches : Array.isArray(body?.data?.matches) ? body.data.matches : streamTxs(body);
-      const events = txs.flatMap(paymentEvents);
-      const wallets = [...new Set(events.flatMap((e) => [e.to_wallet, e.from_wallet]).filter(Boolean))] as string[];
-      if (!wallets.length) return json({ ok: true, seen: txs.length, saved: 0 });
-      const { data: known } = await db.from("monyx_users").select("address").in("address", wallets);
-      const users = new Set((known || []).map((u: any) => u.address));
-      try { users.add((await bank()).publicKey.toBase58()); } catch { /* */ }
-      let saved = 0;
-      for (const e of events) if (users.has(e.to_wallet) || (e.from_wallet && users.has(e.from_wallet))) {
-        const outsider = !e.from_wallet || !users.has(e.from_wallet);
-        if (outsider && e.amount < OUTSIDE_MIN[e.token]) continue;
-        await logPayment(e.signature, e.from_wallet, e.to_wallet, e.amount, e.memo, "streams", e.token, e.slot); saved++;
-      }
-      return json({ ok: true, seen: txs.length, events: events.length, saved });
-    }
-
     // ----- live events (Server-Sent Events) -----
-    // The app opens /events?t=<ticket>. New payments (from the relay and from QuickNode Streams),
+    // The app opens /events?t=<ticket>. New payments (from the relay and from the on-chain watcher),
     // requests that got paid and reminders for unpaid ones are pushed as they land. The connection
     // ends after ~2 minutes and EventSource reconnects on its own, resuming from Last-Event-ID.
     if (path === "/events" && req.method === "GET") {
@@ -470,7 +438,7 @@ Deno.serve(async (req) => {
           const put = (t: string) => { if (!open) return; try { ctrl.enqueue(enc.encode(t)); } catch { open = false; } };
           const send = (event: string, data: unknown, id?: number) => put(`${id ? `id: ${id}\n` : ""}event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
           put("retry: 2000\n\n");
-          const t0 = Date.now(); let tick = 0;
+          const t0 = Date.now(); let tick = 0; const chainSeen = new Set<string>(); const watchFrom = Date.now() - 120_000;
           try {
             while (open && !req.signal.aborted && Date.now() - t0 < 120_000) {
               const { data: pays } = await db.from("monyx_payments").select("sig, from_addr, to_addr, units, note, source, token, created_at")
@@ -483,6 +451,8 @@ Deno.serve(async (req) => {
                   send("payment", { sig: p.sig, direction: incoming ? "in" : "out", from: p.from_addr, to: p.to_addr, amount: p.token === "SOL" ? p.units / 1e9 : dollars(p.units), token: p.token, note: p.note, via: p.source, at, person: known.get(incoming ? p.from_addr : p.to_addr) || null }, at);
                 }
               }
+              // Every ~6 s, look on-chain for money that arrived from outside Monyx (logged rows go out on the next pass).
+              if (tick % 4 === 2) await watchChain(me, watchFrom, chainSeen).catch((e) => console.error("[monyx-pay] watch:", e));
               if (tick % 4 === 0) {
                 // Requests you made that just got paid (settled automatically from the payment).
                 const { data: paid } = await db.from("monyx_requests").select("id, to_user, usd, note, updated_at").eq("from_user", uid).eq("status", "paid").gt("updated_at", new Date(Date.now() - 15_000).toISOString());
@@ -645,14 +615,12 @@ Deno.serve(async (req) => {
     if (!user) return fail("Please sign in again.", 401, "unauthorized");
 
     if (path === "/events/ticket" && req.method === "POST") {
-      // Make sure QuickNode's filter is watching this wallet (once per account).
-      if (!user.kv_synced && (await kvAddWallet(user.address).catch(() => false))) await db.from("monyx_users").update({ kv_synced: true }).eq("id", user.id);
       // One-time, 30-second ticket for your own event stream. The app asks for a new one for each connection.
       const n = [...crypto.getRandomValues(new Uint8Array(12))].map((b) => b.toString(16).padStart(2, "0")).join("");
       const b64 = btoa(JSON.stringify({ u: user.id, a: user.address, n, exp: Date.now() + 30_000 }));
       return json({ ticket: `${b64}.${await hmacB64(b64)}` });
     }
-    // Payment history from Monyx's own log (fed by the relay and QuickNode Streams), newest first.
+    // Payment history from Monyx's own log (fed by the relay and the on-chain watcher), newest first.
     if (path === "/activity" && req.method === "GET") {
       const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit")) || 40));
       let q = db.from("monyx_payments").select("sig, from_addr, to_addr, units, note, source, token, created_at").or(`to_addr.eq.${user.address},from_addr.eq.${user.address}`).order("created_at", { ascending: false }).limit(limit);

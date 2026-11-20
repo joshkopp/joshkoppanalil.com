@@ -178,7 +178,7 @@ export function makeBudget(max = MAX_RPC) {
 export function makeRpc(url, budget, fetchImpl, opts = {}) {
   const fetchFn = fetchImpl || fetch;
   const timeoutMs = opts.timeoutMs || 12000;
-  const retries = opts.retries == null ? 3 : opts.retries;
+  const retries = opts.retries == null ? 4 : opts.retries;
 
   return async function rpc(method, params) {
     if (budget.used >= budget.max) {
@@ -209,7 +209,7 @@ export function makeRpc(url, budget, fetchImpl, opts = {}) {
       if (res.status === 429 || res.status >= 500) {
         last = new Error("RPC " + res.status);
         if (i === retries - 1) break;
-        await sleep(400 * 2 ** i);
+        await sleep(600 * 2 ** i);
         continue;
       }
       let body;

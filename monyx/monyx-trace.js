@@ -1,6 +1,6 @@
 // Monyx source-trace add-on. Include AFTER pay.js:
 //   <script src="../monyx-trace.js?v=1" defer></script>
-// Calls the private "trace" Edge Function (QuickNode stays on the server).
+// Calls the private "trace" Edge Function (the RPC stays on the server).
 // Renders a card that matches the existing risk check on the confirm sheet.
 (() => {
   "use strict";

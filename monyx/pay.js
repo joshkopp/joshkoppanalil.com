@@ -315,7 +315,7 @@
     if (S.feedOwner !== me) { S.feed = []; S.feedOwner = me; } // never show another account's history
     if (!S.feed.length) S.feed = store.get(cacheKey, []);
     if (S.feed.length) S.feedReady = me; // cached rows are real; an empty cache just means "not loaded yet"
-    // Monyx's own payment log first (fed by the relay and QuickNode Streams): one request, no Solana reads.
+    // Monyx's own payment log first (fed by the relay and the on-chain watcher): one request, no Solana reads.
     try {
       const r = await api(`${PAPI}/activity?limit=100`);
       if (!S.acct || S.acct.address !== me) return;
@@ -2585,12 +2585,12 @@
   }
 
   /* ───────── live "you got paid" ─────────
-     Payments Monyx relays, and anything QuickNode Streams sees arrive from
+     Payments Monyx relays, and anything the on-chain watcher sees arrive from
      outside, show up in the inbox within a few seconds. */
   const announced = new Set();
   let inboxPrimed = false;
   /* Live events: one EventSource to monyx-pay /events. The server pushes each payment the moment
-     it's logged (from the relay, or from QuickNode Streams for money arriving from outside Monyx),
+     it's logged (from the relay, or from the on-chain watcher for money arriving from outside Monyx),
      plus requests that got paid and reminders. The 4-second inbox poll below only runs while the
      live connection is down. */
   // Open and recently heard from (the server sends a ping every few seconds). A silent stream counts as closed.

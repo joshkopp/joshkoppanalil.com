@@ -5,8 +5,8 @@ asks it about the recipient's account; it walks incoming Solana devnet transfers
 matches senders against `risk-list.json`. Labels are only High, Medium or Normal, always with
 "Risk estimate only, not legal or financial advice."
 
-- RPC: `QUICKNODE_DEVNET_URL` if set, otherwise Monyx's existing `SOLANA_RPC` (QuickNode devnet).
-  Mainnet URLs are refused.
+- RPC: Solana's free public devnet endpoint, or `SOLANA_RPC` if it names another devnet endpoint.
+  Mainnet URLs are refused. Each result names the provider in `rpcProvider` (never the URL).
 - Limits: 2 hops, 10 transactions per wallet, 100 RPC calls per trace, 10-minute cache,
   15 checks per visitor per 10 minutes.
 - Frontend: `monyx-trace.js` (site root), loaded after `pay.js`; `confirmPay` mounts it under the

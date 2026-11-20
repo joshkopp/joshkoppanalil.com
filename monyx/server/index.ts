@@ -21,7 +21,7 @@ const B58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const RESERVED = new Set(["monyx", "admin", "support", "bank", "help", "official", "team", "security", "pay", "request", "me", "home"]);
 
 const ORIGINS = new Set(["https://monyx.pro", "https://www.monyx.pro", "https://joshkoppanalil.com", "https://www.joshkoppanalil.com"]);
-// Only our own sites may call this API from a browser. Servers (Grok Bot, QuickNode) send no Origin and aren't affected.
+// Only our own sites may call this API from a browser. Servers (Grok Bot) send no Origin and aren't affected.
 const cors: Record<string, string> = {
   "Access-Control-Allow-Origin": "https://www.monyx.pro",
   "Vary": "Origin",

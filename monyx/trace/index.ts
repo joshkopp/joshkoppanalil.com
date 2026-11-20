@@ -1,10 +1,10 @@
 // Monyx taint-trace Edge Function.
 // Walks incoming Solana devnet transfers up to 2 hops and matches senders
-// against risk-list.json. The QuickNode URL lives in the secret
-// QUICKNODE_DEVNET_URL — never hardcode it, never put it in the frontend.
+// against risk-list.json. Uses Solana's free public devnet RPC by default;
+// SOLANA_RPC may point at another free devnet endpoint (Helius, Alchemy).
+// Never put an RPC URL in the frontend.
 //
 // Deploy (from the repo that already has supabase/):
-//   supabase secrets set QUICKNODE_DEVNET_URL=https://YOUR-DEVNET-ENDPOINT...
 //   supabase functions deploy trace --no-verify-jwt
 //
 // Risk labels are High, Medium, or Normal.
@@ -105,35 +105,10 @@ Deno.serve(async (req: Request) => {
     return json({ ...cached, cached: true }, 200, origin);
   }
 
-  // QuickNode devnet endpoint from the QUICKNODE_DEVNET_URL secret (or Monyx's SOLANA_RPC). Until one is
-  // set, fall back to Solana's public devnet RPC so the check still works (slower, rate-limited).
-  const rpcUrl = (Deno.env.get("QUICKNODE_DEVNET_URL") || Deno.env.get("SOLANA_RPC") || "https://api.devnet.solana.com").trim();
-  if (!rpcUrl || isMainnetUrl(rpcUrl)) console.error("[trace] rpc not usable", { set: !!rpcUrl, mainnet: isMainnetUrl(rpcUrl), host: (() => { try { return new URL(rpcUrl).hostname.split(".").slice(-3).join("."); } catch { return "bad-url"; } })() });
-  if (!rpcUrl) {
-    return json(
-      {
-        ok: false,
-        error: "not_configured",
-        message:
-          "The trace service isn't configured yet. Set the QUICKNODE_DEVNET_URL secret, then redeploy.",
-        note: ADVICE,
-      },
-      500,
-      origin,
-    );
-  }
-  if (isMainnetUrl(rpcUrl)) {
-    return json(
-      {
-        ok: false,
-        error: "mainnet_blocked",
-        message: "This tracer only runs on Solana devnet. Point QUICKNODE_DEVNET_URL at a devnet endpoint.",
-        note: ADVICE,
-      },
-      500,
-      origin,
-    );
-  }
+  // Solana's free public devnet RPC, or SOLANA_RPC if it names another devnet endpoint.
+  // Old QuickNode addresses and mainnet URLs are ignored, so the check always runs on devnet.
+  const envRpc = (Deno.env.get("SOLANA_RPC") || "").trim();
+  const rpcUrl = envRpc && !/quiknode|quicknode/i.test(envRpc) && !isMainnetUrl(envRpc) ? envRpc : "https://api.devnet.solana.com";
 
   try {
     const result = await runTrace({
@@ -147,7 +122,7 @@ Deno.serve(async (req: Request) => {
       return json(result, status, origin);
     }
     // Which network provider answered (a name only, never the URL or its token).
-    (result as any).rpcProvider = /quiknode\.pro|quicknode/i.test(rpcUrl) ? "QuickNode" : /api\.devnet\.solana\.com/.test(rpcUrl) ? "Solana public devnet" : "custom";
+    (result as any).rpcProvider = /api\.devnet\.solana\.com/.test(rpcUrl) ? "Solana public devnet" : /helius/i.test(rpcUrl) ? "Helius" : /alchemy/i.test(rpcUrl) ? "Alchemy" : "custom";
     // A Normal result that stopped early (call budget) is only kept briefly; a listed match is solid.
     if (!(result.tier === "Normal" && result.truncated)) cache.set(address, result);
     return json(result, 200, origin);

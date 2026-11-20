@@ -607,7 +607,7 @@ print(pull("pulse", net="devnet"))`,
 
   function rpcDialog() {
     const d = $('#dlg');
-    $('#dlgBody').innerHTML = `<h3>RPC endpoints</h3><p>The public endpoints rate-limit. Paste a Helius, Triton or QuickNode URL to trace faster. Stored only in this browser.</p>
+    $('#dlgBody').innerHTML = `<h3>RPC endpoints</h3><p>The public endpoints rate-limit. Paste a Helius or Triton URL to trace faster. Stored only in this browser.</p>
       <label class="label">Mainnet</label><input id="rpcM" value="${esc(store.get('monyx.pro.rpc.mainnet') || '')}" placeholder="${DEFAULT_RPC.mainnet}">
       <label class="label" style="display:block;margin-top:12px">Devnet</label><input id="rpcD" value="${esc(store.get('monyx.pro.rpc.devnet') || '')}" placeholder="${DEFAULT_RPC.devnet}">
       <menu><button class="ghost" value="cancel">Cancel</button><button class="primary" value="ok" id="rpcSave">Save</button></menu>`;

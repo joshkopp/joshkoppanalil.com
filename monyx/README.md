@@ -22,7 +22,7 @@
 | **No fees** | Gasless relay: the client builds the USDC transfer with the Monyx bank as fee payer, signs its part, and `/monyx-pay/relay` validates the instructions before co-signing. Users never need SOL. |
 | **Dollars, not tokens** | Balances count only Circle's USDC mint, so fake "USDC" tokens airdropped to you can't fake your balance. |
 | **Pay links** | Send money to anyone with a link. The link holds a one-time escrow key; claiming sweeps and closes the escrow. |
-| **Live alerts** | QuickNode Streams watches every devnet block (filter + Key-Value list of Monyx wallets) and posts matches to a signed webhook. Payments land in one log and reach the app over Server-Sent Events. Matching requests settle themselves, and unpaid ones get a reminder. See `streams/README.md`. |
+| **Live alerts** | While the app is open, the server watches your wallet and USDC account on Solana devnet every few seconds and logs any payment Monyx didn't relay itself. Relayed and outside payments land in one log and reach the app over Server-Sent Events. Matching requests settle themselves, and unpaid ones get a reminder. All on Solana's free public devnet RPC. |
 | **Grok Bot (agent API)** | `mx_` API keys let an AI assistant draft payments and requests with a weekly limit. Drafts land in "Waiting for your OK". A key can never move money by itself. |
 | **Money pad** | Cash App-style keypad behind the $ tab, with keyboard shortcuts on laptops (Enter = Pay, Shift+Enter = Request). |
 
@@ -44,10 +44,9 @@ Source files:
 - `pay.js`, `pay.css`: the wallet (risk check, passkey/password lock, sign-in, money pad, live events)
 - `voice-parse.js`: sentence → intent parser (tests: `node voice-parse.test.js`)
 - `server/index.ts`: Supabase edge function `monyx` (accounts, usernames, requests, avatars, sign-in backups, device links)
-- `payments/index.ts`: `monyx-pay` (relay, test dollars, pay links, Streams webhook, live events, activity, agent API)
+- `payments/index.ts`: `monyx-pay` (relay, test dollars, pay links, on-chain watcher, live events, activity, agent API)
 - `trace/` + `monyx-trace.js`: the "where did this money come from?" check on the pay sheet
 - `predictions/index.ts`: `monyx-predictions` (Gemini crypto prices for Invest, prediction markets for Predict)
-- `streams/`: QuickNode Streams filter, sample block and local test
 - `voice/index.ts`: `monyx-voice`, an optional speech server that the app no longer uses
 - `meter/index.ts`: `monyx-market` (pay-per-call API market over x402)
 - `vendor/`: bundled Solana web3.js, so the site has no runtime CDN dependencies
@@ -69,15 +68,8 @@ Dollars are Circle's devnet USDC (`4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`
 ### Voice
 Voice uses the browser's built-in speech recognition and speech synthesis, so there's nothing to set up. Browsers without it (Firefox) type the same commands.
 
-### Faster RPC
-The public devnet RPC rate-limits under load. Create a QuickNode Solana Devnet endpoint and set `SOLANA_RPC` (server) and `PUBLIC_RPC` (browsers, served from `/monyx-pay/info`).
-
-### QuickNode Streams
-Full steps are in `streams/README.md`. In short:
-1. Create a Stream: Solana Devnet, dataset **Block**, from the latest block. Under "Modify the stream payload", paste `streams/filter.js`.
-2. Destination: Webhook `https://nvfxdzxdlizznrknmunl.supabase.co/functions/v1/monyx-pay/qn/webhook`, compression None, no custom headers.
-3. Supabase secrets: `QN_STREAM_TOKEN` (the Stream's security token; deliveries without a valid `X-QN-Signature` get 401) and `QN_API_KEY` (Key-Value Store access, so Monyx can add each wallet to `monyx_wallets`).
-4. Send devnet USDC to a Monyx account from any wallet; the app announces it within seconds.
+### RPC
+Everything runs on Solana's free public devnet RPC (`https://api.devnet.solana.com`); no paid provider or API key is needed. Browsers read through `/monyx-pay/rpc`, which caches and retries, so the public endpoint's rate limits don't reach users. To use another free devnet endpoint (a Helius or Alchemy free tier, say), set the `SOLANA_RPC` secret.
 
 ## Deploying
 Every path is relative. Copy this folder's contents to the site root (keep `CNAME` and `.nojekyll` in the monyx.pro repo).
