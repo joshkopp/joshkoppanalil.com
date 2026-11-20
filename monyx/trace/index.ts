@@ -119,7 +119,7 @@ Deno.serve(async (req: Request) => {
       limits: { deadlineMs: 9000 },
     });
     if (!result.ok) {
-      console.error("[trace] not ok", result.error);
+      console.error("[trace] not ok", result.error, JSON.stringify((result as any).failedCalls || {}));
       const status = result.error === "bad_address" ? 400 : result.error === "incomplete" ? 503 : 500;
       return json(result, status, origin);
     }
