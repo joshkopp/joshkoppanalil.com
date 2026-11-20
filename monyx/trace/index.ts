@@ -146,6 +146,8 @@ Deno.serve(async (req: Request) => {
       const status = result.error === "bad_address" ? 400 : result.error === "incomplete" ? 503 : 500;
       return json(result, status, origin);
     }
+    // Which network provider answered (a name only, never the URL or its token).
+    (result as any).rpcProvider = /quiknode\.pro|quicknode/i.test(rpcUrl) ? "QuickNode" : /api\.devnet\.solana\.com/.test(rpcUrl) ? "Solana public devnet" : "custom";
     // A Normal result that stopped early (call budget) is only kept briefly; a listed match is solid.
     if (!(result.tier === "Normal" && result.truncated)) cache.set(address, result);
     return json(result, 200, origin);
