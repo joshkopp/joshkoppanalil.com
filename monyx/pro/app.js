@@ -355,7 +355,7 @@
       const l = await r.json();
       l.pulls = Number(l.pulls) || 0; l.payers = Number(l.payers) || 0; l.earnedSol = Number(l.earnedSol) || 0;
       l.recent = Array.isArray(l.recent) ? l.recent : []; l.byApi = l.byApi && typeof l.byApi === 'object' ? l.byApi : {};
-      $(sel).innerHTML = `<div><span>Pulls paid</span><b>${l.pulls.toLocaleString()}</b></div><div><span>SOL earned</span><b>${fmtSol(l.earnedSol, 4)}</b></div><div><span>Payers</span><b>${l.payers.toLocaleString()}</b></div>`;
+      $(sel).innerHTML = `<div><span>Pulls paid</span><b>${l.pulls.toLocaleString()}</b></div><div><span>SOL earned</span><b>${fmtSol(l.earnedSol, 6)}</b></div><div><span>Payers</span><b>${l.payers.toLocaleString()}</b></div>`;
       return l;
     } catch {
       $(sel).innerHTML = '<div><span>Pulls paid</span><b>–</b></div><div><span>SOL earned</span><b>–</b></div><div><span>Payers</span><b>–</b></div>';
