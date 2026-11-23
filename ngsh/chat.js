@@ -41,6 +41,7 @@
     const t = document.createElement('span'); t.className = 'cht'; t.textContent = clean(m.body);
     const tm = document.createElement('time'); tm.textContent = time(m.created_at);
     if (m.admin) { li.classList.add('chadm'); const a = document.createElement('i'); a.className = 'chtag'; a.textContent = 'ADMIN'; n.prepend(a); }
+    if ((m.username || '').toLowerCase() === 'bean') { const pt = document.createElement('i'); pt.className = 'chtag poop'; pt.textContent = 'POOP'; n.prepend(pt); }
     if (m.kind === 'win') { li.append('🏆 ', n, ' ', t, tm); } else li.append(n, t, tm);
     if (Acct.admin) { const x = document.createElement('button'); x.className = 'chdel'; x.title = 'Delete message'; x.textContent = '×'; x.onclick = () => del(m.id); li.append(x); }
     return li;
