@@ -1,0 +1,36 @@
+/* Blueprint theme shared by the project pages (loaded last, after each page's own styles) */
+:root{
+  --bp-navy:#0b1a2e;--bp-cyan:#4fd1ff;--bp-orange:#ff6b35;--bp-line:rgba(79,209,255,.18);
+  --bg:#0b1a2e;--text:#f4f8fc;--muted:#8aa3bd;--dim:#5a7591;--accent:#4fd1ff;--accent2:#a5e8ff;
+  --line:rgba(79,209,255,.16);--line2:rgba(79,209,255,.28);
+  --glass:linear-gradient(160deg,rgba(79,209,255,.09),rgba(255,255,255,.03) 45%,rgba(11,26,46,.5));
+}
+html{background:#0b1a2e}
+body{background:#0b1a2e!important;font-family:"Space Grotesk",system-ui,sans-serif!important}
+/* cyan blueprint grid in place of the old dot grid, no mouse spotlight */
+body::before,.orbs{content:""!important;position:fixed!important;inset:0!important;z-index:-2!important;pointer-events:none!important;
+  background:linear-gradient(rgba(79,209,255,.075) 1px,transparent 1px) -1px -1px/160px 160px,linear-gradient(90deg,rgba(79,209,255,.075) 1px,transparent 1px) -1px -1px/160px 160px,linear-gradient(rgba(79,209,255,.03) 1px,transparent 1px) -1px -1px/32px 32px,linear-gradient(90deg,rgba(79,209,255,.03) 1px,transparent 1px) -1px -1px/32px 32px!important;
+  -webkit-mask-image:radial-gradient(ellipse 120% 90% at 50% 35%,#000 40%,transparent 100%)!important;mask-image:radial-gradient(ellipse 120% 90% at 50% 35%,#000 40%,transparent 100%)!important;opacity:1!important}
+.orbs>*{display:none!important}
+body::after,.spot{display:none!important}
+/* registration marks framing the page */
+html::after{content:"";position:fixed;inset:12px;z-index:1;pointer-events:none;
+  background:linear-gradient(var(--bp-cyan),var(--bp-cyan)) 0 0/18px 1px no-repeat,linear-gradient(var(--bp-cyan),var(--bp-cyan)) 0 0/1px 18px no-repeat,
+  linear-gradient(var(--bp-cyan),var(--bp-cyan)) 100% 0/18px 1px no-repeat,linear-gradient(var(--bp-cyan),var(--bp-cyan)) 100% 0/1px 18px no-repeat,
+  linear-gradient(var(--bp-cyan),var(--bp-cyan)) 0 100%/18px 1px no-repeat,linear-gradient(var(--bp-cyan),var(--bp-cyan)) 0 100%/1px 18px no-repeat,
+  linear-gradient(var(--bp-cyan),var(--bp-cyan)) 100% 100%/18px 1px no-repeat,linear-gradient(var(--bp-cyan),var(--bp-cyan)) 100% 100%/1px 18px no-repeat;opacity:.45}
+::selection{background:#4fd1ff;color:#0b1a2e}
+/* logo */
+.jk-logo{display:inline-flex!important;align-items:center;gap:10px;font:700 17px/1 "Space Grotesk",system-ui,sans-serif!important;letter-spacing:-.03em;color:#f4f8fc!important;text-decoration:none}
+.jk-logo .jk-mark{flex:none;width:30px;height:30px;display:block}
+.jk-logo span{white-space:nowrap}
+@media (max-width:560px){.jk-logo span{display:none}}
+/* header chrome reads like an instrument panel */
+#hdr,header{font-family:"Space Grotesk",system-ui,sans-serif}
+#hdr .links a,#hdr .crumb,#hdr .clock,header nav a{font-family:"JetBrains Mono",ui-monospace,monospace!important;font-size:12px!important;letter-spacing:.08em;text-transform:uppercase}
+#hdr .crumb b{color:#4fd1ff}
+/* labels and small caps in JetBrains Mono, like the spec sheet */
+.eyebrow,.lab,.lab2,.vt,.tg,.cardtop,small{font-family:"JetBrains Mono",ui-monospace,monospace}
+/* primary buttons: blueprint orange for the main action, cyan outline for the rest */
+.btn.primary,.btn.on,.btn.solid{background:#4fd1ff!important;color:#0b1a2e!important;border-color:#4fd1ff!important}
+:focus-visible{outline:2px solid #4fd1ff!important;outline-offset:3px}

@@ -10,7 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <style>
-:root{--bg:#09090b;--panel:#111114;--text:#f4f4f5;--muted:#a1a1aa;--line:#27272a;--accent:#b8f36b;--bad:#f87171;--blue:#60a5fa}
+:root{--bg:#09090b;--panel:#111114;--text:#f4f4f5;--muted:#a1a1aa;--line:#27272a;--accent:#4fd1ff;--bad:#f87171;--blue:#60a5fa}
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;background:radial-gradient(rgba(255,255,255,.045) 1px,transparent 1px) 0 0/28px 28px,var(--bg);color:var(--text);font-family:"DM Sans",system-ui,sans-serif;line-height:1.6}
 a{color:inherit;text-decoration:none}
@@ -22,14 +22,14 @@ h1{font-family:"Space Grotesk",sans-serif;letter-spacing:-.05em;line-height:1.05
 .modes{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .seg button{padding:10px 20px;background:none;border:0;color:var(--muted);font:700 15px "Space Grotesk",sans-serif;cursor:pointer}
-.seg button.on{background:var(--accent);color:#10120b}
+.seg button.on{background:var(--accent);color:#06121f}
 .also{display:flex;flex-wrap:wrap;gap:6px;align-items:center;color:var(--muted);font-size:12px}
 .chip{padding:5px 12px;background:#17171a;border:1px solid var(--line);border-radius:99px;color:#c4c4ca;font:500 13px "DM Sans",sans-serif;cursor:pointer}
 .chip:hover{border-color:var(--accent);color:var(--accent)}
-.chip.on{background:var(--accent);border-color:var(--accent);color:#10120b;font-weight:700}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#06121f;font-weight:700}
 .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
 .fx{flex:1;min-width:220px;display:flex;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding-left:14px}
-.fx:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(184,243,107,.15)}
+.fx:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,209,255,.15)}
 .fx b{font:700 18px "Space Grotesk",sans-serif;color:var(--accent);white-space:nowrap}
 input{min-width:0;background:none;border:0;color:var(--text);font:500 18px "Space Grotesk",sans-serif}
 input:focus{outline:none}input::placeholder{color:#63636b}
@@ -38,7 +38,7 @@ input:focus{outline:none}input::placeholder{color:#63636b}
 .lim:focus-within{border-color:var(--accent)}
 .lim span{color:var(--muted);font-size:12px;white-space:nowrap}
 .lim input{width:84px;padding:14px 0}
-.btn{padding:0 24px;border:1px solid var(--accent);border-radius:12px;background:var(--accent);color:#10120b;font:700 15px "DM Sans",sans-serif;cursor:pointer;min-height:50px}
+.btn{padding:0 24px;border:1px solid var(--accent);border-radius:12px;background:var(--accent);color:#06121f;font:700 15px "DM Sans",sans-serif;cursor:pointer;min-height:50px}
 .btn:hover{filter:brightness(1.08)}
 .pad{display:flex;flex-wrap:wrap;gap:6px 14px;margin:14px 0 0}
 .pg{display:flex;flex-wrap:wrap;gap:5px}
@@ -54,14 +54,16 @@ input:focus{outline:none}input::placeholder{color:#63636b}
 #use{display:none;margin:0 22px 16px;padding:7px 14px;background:none;border:1px solid var(--line);border-radius:9px;color:var(--text);font:700 13px "DM Sans",sans-serif;cursor:pointer}
 #use:hover{border-color:var(--accent);color:var(--accent)}
 canvas{display:block;width:100%;height:260px;border-top:1px solid var(--line)}
-.lg{margin-top:14px;color:#6b6b73;font-size:12px}.lg i{font-style:normal;color:var(--accent)}.lg u{text-decoration:none;color:var(--blue)}
+.lg{margin-top:14px;color:#5a7591;font-size:12px}.lg i{font-style:normal;color:var(--accent)}.lg u{text-decoration:none;color:var(--blue)}
 .shake{animation:sh .4s}@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/blueprint.css">
 </head>
 <body>
 <div class="wrap">
-  <a class="back" href="/">← JK.</a>
+  <a class="back jk-logo" href="/" aria-label="Back to joshkoppanalil.com">← <svg class="jk-mark" viewBox="0 0 64 64" aria-hidden="true"><rect x="1" y="1" width="62" height="62" rx="14" fill="#0b1a2e" stroke="#4fd1ff" stroke-opacity=".45"/><path d="M8 8h6M8 8v6M56 8h-6M56 8v6M8 56h6M8 56v-6M56 56h-6M56 56v-6" stroke="#4fd1ff" stroke-opacity=".5" stroke-width="1.5" fill="none"/><path d="M27 15v24a7.5 7.5 0 0 1-15 0" fill="none" stroke="#f4f8fc" stroke-width="5" stroke-linecap="round"/><path d="M27 33L46 15M33 27.3L46 49" fill="none" stroke="#4fd1ff" stroke-width="5" stroke-linecap="round"/><circle cx="33" cy="27.3" r="3.7" fill="#ff6b35"/></svg><span>Josh Koppanalil</span></a>
   <h1>Calculus Solver</h1>
   <p class="lead">Build a function with the buttons or just type it, then differentiate or integrate. Everything for AB and BC lives in one place.</p>
   <div class="modes">
@@ -190,12 +192,12 @@ function draw(f,H,sh,xr){
   const X=v=>(v-lo)/(hi-lo)*W,Y=v=>Ht-(v-y0)/(y1-y0)*Ht;
   x.strokeStyle='#2f2f35';x.lineWidth=1;x.beginPath();
   if(y0<0&&y1>0){x.moveTo(0,Y(0));x.lineTo(W,Y(0))}if(lo<0&&hi>0){x.moveTo(X(0),0);x.lineTo(X(0),Ht)}x.stroke();
-  if(sh){const p=Math.max(lo,Math.min(...sh)),q=Math.min(hi,Math.max(...sh));x.fillStyle='rgba(184,243,107,.16)';x.beginPath();x.moveTo(X(p),Y(0));
+  if(sh){const p=Math.max(lo,Math.min(...sh)),q=Math.min(hi,Math.max(...sh));x.fillStyle='rgba(79,209,255,.16)';x.beginPath();x.moveTo(X(p),Y(0));
     G.forEach(([a,v])=>{if(a>=p&&a<=q&&isFinite(v))x.lineTo(X(a),Y(Math.max(y0,Math.min(y1,v))))});x.lineTo(X(q),Y(0));x.fill()}
   const line=(P,col)=>{x.strokeStyle=col;x.lineWidth=2.2;x.beginPath();let up=false,pv=0;
     P.forEach(([a,v])=>{if(!isFinite(v)||(Math.abs(v-pv)>(y1-y0)*1.5&&up)){up=false;pv=isFinite(v)?v:0;return}
       up?x.lineTo(X(a),Y(v)):x.moveTo(X(a),Y(v));up=true;pv=v});x.stroke()};
-  if(Hh.length)line(Hh,'#60a5fa');line(G,'#b8f36b');
+  if(Hh.length)line(Hh,'#60a5fa');line(G,'#4fd1ff');
 }
 
 function go(){

@@ -58,10 +58,9 @@ main,header,footer{position:relative;z-index:1}
 /* header */
 .hd{position:fixed;inset:0 0 auto;z-index:60;background:linear-gradient(var(--navy),rgba(11,26,46,0))}
 .hd .wrap{display:flex;align-items:center;gap:28px;height:72px}
-.mark{display:flex;align-items:center;gap:10px;font:700 20px/1 var(--disp);letter-spacing:-.04em}
-.mark i{display:block;width:22px;height:22px;border:1px solid var(--cyan);border-radius:4px;position:relative}
-.mark i::before,.mark i::after{content:"";position:absolute;background:var(--cyan)}
-.mark i::before{left:50%;top:-5px;bottom:-5px;width:1px}.mark i::after{top:50%;left:-5px;right:-5px;height:1px}
+.mark{display:flex;align-items:center;gap:11px;font:700 17px/1 var(--disp);letter-spacing:-.03em}
+.mark .jk-mark{flex:none;width:32px;height:32px;transition:transform .5s var(--ease)}
+.mark:hover .jk-mark{transform:rotate(-8deg) scale(1.06)}
 .nav{display:flex;gap:26px;margin-left:auto;font:500 12px var(--mono);letter-spacing:.1em;text-transform:uppercase}
 .nav a{padding:12px 0;color:#c4d4e4;transition:color .25s}
 .nav a:hover{color:var(--cyan)}
@@ -248,11 +247,30 @@ main,header,footer{position:relative;z-index:1}
   .hsub{grid-template-columns:1fr;padding-right:0}.hsub .lab{display:none}.hsub .go{grid-column:1}
   .fig .mono:last-child{display:none}
   .shead{grid-template-columns:1fr}.shead p{text-align:left}
-  .mon{left:12px;right:12px;bottom:10px;width:auto;display:flex;justify-content:space-between;gap:10px;padding:8px 12px;font-size:10px}
-  .mon .t,.mon .bar,.mon .cur{display:none}
-  .sheet div{grid-template-columns:1fr;gap:2px}
-  .ft{flex-direction:column;align-items:flex-start;padding-bottom:80px}
-  .hero{height:150vh}
+  .mark span{display:none}
+  .mon{left:50%;right:auto;bottom:12px;transform:translateX(-50%);width:max-content;max-width:calc(100% - 24px);display:flex;align-items:center;gap:10px;padding:7px 14px;border-radius:99px;font-size:10px;line-height:1.4;white-space:nowrap}
+  .mon .t,.mon .cur{display:none}
+  .mon .bar{width:44px;margin:0}
+  .mon>div:nth-child(2){order:-1}
+  .sheet div{grid-template-columns:1fr;gap:2px;padding:12px 0}
+  .figbox{max-width:240px}
+  .ft{flex-direction:column;align-items:flex-start;padding-bottom:90px}
+  .hero{height:auto}
+  .hero .pin{position:relative;height:auto;min-height:100svh;padding-top:84px}
+  .hero .flat svg{left:50%;right:auto;top:88px;transform:translateX(-50%);width:min(92vw,440px);opacity:.5}
+  .reg.tl,.reg.tr{top:78px}
+  .h2{font-size:clamp(40px,12vw,56px)}
+  .sec{padding:72px 0}
+  .shead{margin-bottom:28px}
+  .mod .in{padding:18px;gap:14px}
+  .mod h3{font-size:30px}
+  .demo{min-height:200px}
+  .voice{padding:30px 14px 16px}
+  .digits{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .tbody{font-size:14px;min-height:0;padding:18px}
+  .term .tb{height:36px}
+  .cp{min-height:44px}
+  .hsub .go{width:100%;justify-content:center}
 }
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
@@ -269,7 +287,7 @@ main,header,footer{position:relative;z-index:1}
 
 <header class="hd">
   <div class="wrap">
-    <a class="mark" href="#home" aria-label="Josh Koppanalil, home"><i aria-hidden="true"></i>JK</a>
+    <a class="mark" href="#home" aria-label="Josh Koppanalil, home"><svg class="jk-mark" viewBox="0 0 64 64" aria-hidden="true"><rect x="1" y="1" width="62" height="62" rx="14" fill="#0b1a2e" stroke="#4fd1ff" stroke-opacity=".45"/><path d="M8 8h6M8 8v6M56 8h-6M56 8v6M8 56h6M8 56v-6M56 56h-6M56 56v-6" stroke="#4fd1ff" stroke-opacity=".5" stroke-width="1.5" fill="none"/><path d="M27 15v24a7.5 7.5 0 0 1-15 0" fill="none" stroke="#f4f8fc" stroke-width="5" stroke-linecap="round"/><path d="M27 33L46 15M33 27.3L46 49" fill="none" stroke="#4fd1ff" stroke-width="5" stroke-linecap="round"/><circle cx="33" cy="27.3" r="3.7" fill="#ff6b35"/></svg><span>Josh Koppanalil</span></a>
     <nav class="nav" id="nav" aria-label="Main"><a href="#work">Modules</a><a href="#about">Spec</a><a href="#contact">Contact</a></nav>
     <span class="clock">AUSTIN <b id="clock">--:--</b></span>
     <button class="menu" id="menu" aria-controls="nav" aria-expanded="false">MENU</button>
@@ -478,7 +496,8 @@ mods.forEach(m=>{
   if(FINE&&!RM)m.addEventListener('pointermove',e=>{if(e.target.closest('canvas'))return;const r=m.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;m.style.transform=`rotateX(${(-y*5).toFixed(2)}deg) rotateY(${(x*6).toFixed(2)}deg)`});
 });
 // run a demo on hover, and once when it scrolls into view
-const trigger=(el,fn)=>{el.addEventListener('pointerenter',()=>fn(true));el.addEventListener('pointerleave',()=>fn(false));
+const trigger=(el,fn)=>{el.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')fn(true)});el.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')fn(false)});
+  if(!FINE){const d=el.querySelector('.demo');d&&d.addEventListener('click',()=>{fn(false);setTimeout(()=>fn(true),30)})}
   const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){fn(true);if(FINE)setTimeout(()=>{if(!el.matches(':hover'))fn(false)},4200);io.disconnect()}}),{threshold:.6});io.observe(el)};
 
 // ---------- demo 01: voice ----------
