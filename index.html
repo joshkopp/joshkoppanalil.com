@@ -100,6 +100,7 @@ main,header,footer{position:relative;z-index:1}
 .mon .cur::after{content:"_";animation:blink 1s steps(2) infinite;color:var(--cyan)}
 @keyframes blink{50%{opacity:0}}
 
+.prog{position:fixed;left:0;right:0;top:0;z-index:80;height:2px;pointer-events:none}.prog i{display:block;height:100%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);transform-origin:left;transform:scaleX(0)}
 /* ---------- hero ---------- */
 .hero{position:relative;height:190vh}
 .hero .pin{position:sticky;top:0;height:100svh;min-height:560px;display:flex;flex-direction:column;justify-content:flex-end;padding:92px 0 clamp(32px,6vh,64px);overflow:hidden}
@@ -129,8 +130,8 @@ html:not(.m) .flat .lb{display:none}html:not(.m) .flat .ok{opacity:1}
 .dim::before,.dim::after{content:"";flex:1;height:1px;background:var(--cyan-d)}
 .dim span{font:500 10.5px var(--mono);letter-spacing:.14em}
 .dim i{position:absolute;top:-6px;width:1px;height:13px;background:var(--cyan-d)}.dim i:first-child{left:0}.dim i:last-of-type{right:0}
-.hsub{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px clamp(18px,3vw,48px);align-items:start;margin-top:clamp(18px,3vh,32px);padding-right:260px}
-.hsub .go{grid-column:2;justify-self:start}
+.hsub{display:grid;grid-template-columns:minmax(0,1fr);gap:16px clamp(18px,3vw,48px);align-items:start;margin-top:clamp(18px,3vh,32px);padding-right:0}
+.hsub .go{justify-self:start}
 .hsub .lab{position:relative;padding-left:16px;border-left:1px solid var(--cyan)}
 .hsub p{max-width:36em;font-size:clamp(16px,1.3vw,19px);line-height:1.55;color:#c9d7e6}
 .hsub p b{color:var(--white);font-weight:600}
@@ -143,29 +144,33 @@ html:not(.m) .flat .lb{display:none}html:not(.m) .flat .ok{opacity:1}
 .sec{padding:clamp(90px,14vh,160px) 0}
 .shead{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:24px;margin-bottom:clamp(36px,6vh,64px);padding-bottom:18px;border-bottom:1px solid var(--line)}
 .h2{font:700 clamp(44px,7vw,104px)/.92 var(--disp);letter-spacing:-.045em}
-.h2 small{display:block;margin-bottom:14px;font:500 11.5px/1 var(--mono);letter-spacing:.14em;color:var(--cyan)}
+.h2 small{display:block;margin-bottom:14px;font:500 13px/1 var(--mono);letter-spacing:.04em;color:var(--cyan)}
 .shead p{max-width:22em;color:var(--mute);text-align:right}
 
 /* ---------- modules (bento) ---------- */
 .bento{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:clamp(14px,1.6vw,22px);perspective:1400px}
 .m1{grid-column:1/8;grid-row:1/3}.m2{grid-column:8/13}.m3{grid-column:8/13}.m4{grid-column:1/6}.m5{grid-column:6/13}
-.mod{--r:0;position:relative;border-radius:16px;transform-style:preserve-3d;transition:transform .5s var(--ease)}
+.mod{--r:0;position:relative;border-radius:14px;transform-style:preserve-3d;transition:transform .5s var(--ease)}
 .mod .wire,.mod .solid{position:absolute;inset:0;border-radius:inherit;pointer-events:none}
 .mod .wire{border:1px dashed rgba(79,209,255,.6);opacity:calc(1 - var(--r))}
 .mod .wire::before,.mod .wire::after{content:"";position:absolute;width:14px;height:14px;border:solid var(--cyan);border-width:1px 0 0 1px;left:-7px;top:-7px}
 .mod .wire::after{left:auto;top:auto;right:-7px;bottom:-7px;border-width:0 1px 1px 0}
-.mod .solid{opacity:var(--r);background:linear-gradient(160deg,rgba(79,209,255,.11),rgba(255,255,255,.035) 40%,rgba(11,26,46,.55));border:1px solid rgba(79,209,255,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 30px 60px -30px rgba(0,0,0,.8);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.mod .solid{opacity:var(--r);background:rgba(5,13,24,.85);border:1px solid var(--line2);box-shadow:0 40px 80px -40px rgba(0,0,0,.9),0 0 0 1px rgba(79,209,255,.06)}
 .mod.hov .solid{border-color:rgba(79,209,255,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 1px rgba(79,209,255,.35),0 0 40px -6px rgba(79,209,255,.45),0 30px 60px -30px rgba(0,0,0,.8)}
-.mod .in{position:relative;display:flex;flex-direction:column;height:100%;padding:clamp(20px,2.2vw,30px);gap:16px;opacity:calc(.4 + var(--r)*.6);filter:saturate(var(--r))}
-.mod .hdr{display:flex;justify-content:space-between;gap:12px}
-.mod .hdr a{color:var(--mute);transition:color .25s}.mod .hdr a:hover{color:var(--cyan)}
-.mod h3{font:700 clamp(30px,3vw,46px)/.95 var(--disp);letter-spacing:-.04em}
-.mod p{color:#b9cadb;font-size:15px;line-height:1.55;max-width:34em}
-.demo{position:relative;flex:1;min-height:180px;border:1px solid var(--line);border-radius:10px;background:rgba(7,18,31,.55);overflow:hidden}
-.demo::before{content:attr(data-l);position:absolute;left:10px;top:8px;font:500 9.5px var(--mono);letter-spacing:.12em;color:var(--dim);text-transform:uppercase;z-index:2}
-.stats{display:flex;flex-wrap:wrap;gap:6px 18px;font:500 11.5px var(--mono);letter-spacing:.06em;color:var(--mute);text-transform:uppercase}
+.mod .in{position:relative;display:flex;flex-direction:column;height:100%;opacity:calc(.4 + var(--r)*.6);filter:saturate(var(--r))}
+.mod .tb{display:flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-bottom:1px solid var(--line);font:500 11.5px var(--mono);color:var(--mute);white-space:nowrap}
+.mod .tb i{flex:none;width:11px;height:11px;border-radius:50%;background:#1e3550}.mod .tb i:first-child{background:var(--orange)}
+.mod .tb span{margin-left:10px;overflow:hidden;text-overflow:ellipsis}.mod .tb em{margin-left:auto;font-style:normal;color:var(--dim)}
+.mod.hov .tb i:nth-child(2){background:#ffc857}.mod.hov .tb i:nth-child(3){background:#7dffb0}
+.mod .body{display:flex;flex-direction:column;flex:1;gap:16px;padding:clamp(18px,2vw,26px)}
+.mod h3 .p{color:var(--cyan);font-weight:500}
+.mod h3{font:700 clamp(22px,2.1vw,30px)/1.15 var(--mono);letter-spacing:-.02em;color:var(--white)}
+.mod p{color:#b9cadb;font:400 14px/1.65 var(--mono);max-width:42em}
+.demo{position:relative;flex:1;min-height:180px;border:1px solid var(--line);border-radius:8px;background:rgba(11,26,46,.5);overflow:hidden}
+.demo::before{content:"// " attr(data-l);position:absolute;left:10px;top:8px;font:500 11px var(--mono);color:var(--dim);z-index:2}
+.stats{display:flex;flex-wrap:wrap;gap:2px 14px;font:500 12.5px var(--mono);color:var(--dim)}.stats::before{content:"//";color:var(--dim)}
 .stats b{color:var(--cyan);font-weight:500}
-.cta{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;min-height:44px;padding:0 16px;border-radius:8px;border:1px solid rgba(255,107,53,.55);color:var(--orange);font:700 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;transition:background .25s,color .25s,transform .25s var(--ease)}
+.cta{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;min-height:42px;padding:0 14px;border-radius:7px;border:1px solid rgba(255,107,53,.6);color:var(--orange);font:700 12.5px var(--mono);letter-spacing:.02em;transition:background .25s,color .25s,transform .25s var(--ease)}
 .cta:hover{background:var(--orange);color:#1a0b04;transform:translateY(-1px)}
 .cta svg{width:14px;height:14px}
 .foot{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px}
@@ -206,14 +211,14 @@ html:not(.m) .flat .lb{display:none}html:not(.m) .flat .ok{opacity:1}
 .net text.hit{fill:var(--cyan)}
 
 /* ---------- about ---------- */
-.all{display:inline-flex;align-items:center;gap:10px;margin-top:28px;min-height:44px;font:700 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--cyan)}
+.all{display:inline-flex;align-items:center;gap:10px;margin-top:28px;min-height:44px;font:700 14px var(--mono);color:var(--cyan)}
 .all:hover{color:var(--white)}
 
 /* ---------- spec terminal (neofetch) ---------- */
 #specterm{max-width:none}
 #specterm .tbody{min-height:0}
 .ln.fetch{display:grid;grid-template-columns:300px minmax(0,1fr);gap:clamp(22px,4vw,56px);align-items:start;margin:10px 0 18px}
-.ph{position:relative;margin:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#040b14;aspect-ratio:320/369;cursor:crosshair;outline:none}
+.ph{position:relative;margin:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#040b14;aspect-ratio:527/608;cursor:crosshair;outline:none}
 .ph:focus-visible{box-shadow:0 0 0 2px var(--cyan)}
 .ph canvas,.ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .ph img{filter:grayscale(1) contrast(1.1) brightness(.95) sepia(1) hue-rotate(160deg) saturate(2.2);transition:opacity .45s var(--ease)}
@@ -253,10 +258,10 @@ html:not(.m) .flat .lb{display:none}html:not(.m) .flat .ok{opacity:1}
 .m .hsub p .wd{display:inline-block;opacity:0;transform:translateY(.6em);filter:blur(5px)}
 .m .booted .hsub p .wd{opacity:1;transform:none;filter:none;transition:opacity .8s var(--ease),transform .8s var(--ease),filter .8s var(--ease);transition-delay:calc(var(--i)*35ms + 2.5s)}
 .parts{position:absolute;inset:0;z-index:1;pointer-events:none}
-.parts span{position:absolute;left:0;top:0;display:flex;align-items:center;gap:8px;font:500 10.5px var(--mono);letter-spacing:.12em;color:var(--cyan);white-space:nowrap;opacity:0;will-change:transform,opacity}
+.parts span{position:absolute;left:0;top:0;display:flex;align-items:center;gap:8px;font:500 12px var(--mono);letter-spacing:.02em;color:var(--cyan);white-space:nowrap;opacity:0;will-change:transform,opacity}
 .parts span::before{content:"";width:22px;height:1px;background:var(--cyan-d)}
 .parts span b{color:var(--white);font-weight:500}
-.parts .asm{color:#7dffb0}.parts .asm::before{background:#7dffb0}
+.parts .asm{display:none!important}
 
 /* ---------- contact terminal ---------- */
 .term{max-width:860px;border:1px solid var(--line2);border-radius:14px;background:rgba(5,13,24,.85);box-shadow:0 40px 80px -40px rgba(0,0,0,.9),0 0 0 1px rgba(79,209,255,.06);overflow:hidden}
@@ -312,8 +317,8 @@ html:not(.m) .flat .lb{display:none}html:not(.m) .flat .ok{opacity:1}
   .h2{font-size:clamp(40px,12vw,56px)}
   .sec{padding:72px 0}
   .shead{margin-bottom:28px}
-  .mod .in{padding:18px;gap:14px}
-  .mod h3{font-size:30px}
+  .mod .body{padding:16px;gap:14px}.mod .tb{height:36px}.mod .tb em{display:none}
+  .mod h3{font-size:22px}
   .demo{min-height:200px}
   .voice{padding:30px 14px 16px}
   .digits{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
@@ -333,24 +338,17 @@ html:not(.m) .flat .lb{display:none}html:not(.m) .flat .ok{opacity:1}
 <a class="skip" href="#main">Skip to content</a>
 <div class="grid" aria-hidden="true"></div>
 <div class="grain" aria-hidden="true"></div>
-<div class="xh" id="xh" aria-hidden="true"><i></i><b id="xy">X 0000 · Y 0000</b></div>
+<div class="xh" id="xh" aria-hidden="true"><i></i></div>
 
 <header class="hd">
   <div class="wrap">
     <a class="mark" href="#home" aria-label="Josh Koppanalil, home"><svg class="jk-mark" viewBox="0 0 64 64" aria-hidden="true"><rect x="1" y="1" width="62" height="62" rx="14" fill="#0b1a2e" stroke="#4fd1ff" stroke-opacity=".45"/><path d="M8 8h6M8 8v6M56 8h-6M56 8v6M8 56h6M8 56v-6M56 56h-6M56 56v-6" stroke="#4fd1ff" stroke-opacity=".5" stroke-width="1.5" fill="none"/><path d="M27 15v24a7.5 7.5 0 0 1-15 0" fill="none" stroke="#f4f8fc" stroke-width="5" stroke-linecap="round"/><path d="M27 33L46 15M33 27.3L46 49" fill="none" stroke="#4fd1ff" stroke-width="5" stroke-linecap="round"/><circle cx="33" cy="27.3" r="3.7" fill="#ff6b35"/></svg><span>Josh Koppanalil</span></a>
-    <nav class="nav" id="nav" aria-label="Main"><a href="#work">Modules</a><a href="#about">Spec</a><a href="#contact">Contact</a></nav>
-    <span class="clock">AUSTIN <b id="clock">--:--</b></span>
+    <nav class="nav" id="nav" aria-label="Main"><a href="#work">Work</a><a href="#about">About</a><a href="#contact">Contact</a></nav>
     <button class="menu" id="menu" aria-controls="nav" aria-expanded="false">MENU</button>
   </div>
 </header>
 
-<aside class="mon" aria-hidden="true">
-  <div class="t"><span>SYS.MONITOR</span><i></i></div>
-  <div>SCROLL <b id="mpct">000%</b></div>
-  <div class="bar"><i id="mbar"></i></div>
-  <div><b id="mmod">MODULE 00 / BOOT</b></div>
-  <div class="cur">READY </div>
-</aside>
+<div class="prog" aria-hidden="true"><i id="mbar"></i></div>
 
 <main id="main">
   <!-- HERO -->
@@ -365,23 +363,19 @@ html:not(.m) .flat .lb{display:none}html:not(.m) .flat .ok{opacity:1}
           <g class="pt" style="--x:24px;--y:16px;--r:-16deg;--dl:.85s"><path d="M33 27.3L46 49" stroke-width="4.4"/></g>
           <g class="pt" style="--x:8px;--y:-22px;--r:0deg;--dl:1.15s"><circle cx="33" cy="27.3" r="3.7" fill="#ff6b35" stroke="none"/></g>
           <g class="lb" font-family="JetBrains Mono,monospace" font-size="3.6" fill="#4fd1ff" stroke="none" letter-spacing=".3">
-            <text x="-30" y="-4">P-01 ML MODELS</text><text x="62" y="-12">P-02 SECURITY</text><text x="66" y="70">P-03 CLASSROOM APPS</text><text x="30" y="-12">P-04 MONYX</text>
+            <text x="-30" y="-4">ML models</text><text x="60" y="-12">Security</text><text x="62" y="70">Classroom apps</text><text x="30" y="-12">Monyx</text>
           </g>
-          <text class="ok" x="32" y="80" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="3.6" fill="#7dffb0" stroke="none" letter-spacing=".3">JK-01 · ASSEMBLED</text>
         </svg>
       </div>
       <i class="reg tl" aria-hidden="true"></i><i class="reg tr" aria-hidden="true"></i><i class="reg bl" aria-hidden="true"></i><i class="reg br" aria-hidden="true"></i>
       <div class="wrap" id="herowrap">
-        <div class="fig after" style="--d:.2s"><span class="mono">FIG. 01 · <span>NAME PLATE</span></span><span class="mono">Student and builder · Austin, TX</span></div>
         <h1>
           <span class="sr">Josh Koppanalil</span>
           <svg class="nm" id="nm" viewBox="0 0 1000 280" aria-hidden="true"><text id="n1" x="0" y="118">Josh</text><text id="n2" x="0" y="262">Koppanalil</text></svg>
         </h1>
-        <div class="dim after" style="--d:2.2s" aria-hidden="true"><i></i><span>DRAWN 1:1</span><i></i></div>
         <div class="hsub after">
-          <span class="lab mono">A ·<br>Spec</span>
           <p>Sophomore at <b>Westlake High School</b>. I build machine-learning models, security tools, classroom apps and <b>Monyx</b>, a wallet you pay by voice.</p>
-          <a class="go" href="#work">Inspect the modules ↓</a>
+          <a class="go" href="#work">See my work ↓</a>
         </div>
       </div>
     </div>
@@ -391,77 +385,77 @@ html:not(.m) .flat .lb{display:none}html:not(.m) .flat .ok{opacity:1}
   <section class="sec" id="work" data-mod="MODULE 01 / MONYX">
     <div class="wrap">
       <div class="shead">
-        <h2 class="h2"><small>SECTION B · SELECTED WORK</small>Modules</h2>
-        <p>Five builds, each running live. Hover or tap to run the demo, then open the real thing.</p>
+        <h2 class="h2"><small>~/work</small>Work</h2>
+        <p>Every demo runs live. Try one.</p>
       </div>
       <div class="bento">
         <article class="mod m1" data-mod="MODULE 01 / MONYX"><i class="wire"></i><i class="solid"></i><div class="in">
-          <div class="hdr mono"><span>MOD 01 · PAYMENTS</span><span>monyx.pro</span></div>
-          <h3>Monyx</h3>
+          <div class="tb"><i></i><i></i><i></i><span>josh@austin: ~/work/monyx</span><em>payments</em></div><div class="body">
+                    <h3><span class="p">&gt;</span> Monyx</h3>
           <p>A dollar wallet on Solana you pay by talking to it, or by @username or QR. It reads every payment back in plain English and runs a risk check before anything sends.</p>
-          <div class="demo voice" data-l="Voice input" id="voice">
+          <div class="demo voice" data-l="voice input" id="voice">
             <div class="bars" id="vbars"></div>
             <div class="say" id="say"></div>
           </div>
-          <div class="foot"><div class="stats"><span><b>Solana</b></span><span>Voice</span><span>Supabase</span></div><a class="cta" href="https://monyx.pro/" target="_blank" rel="noopener">Open Monyx <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
-        </div></article>
+          <div class="foot"><div class="stats"><span><b>Solana</b></span><span>Voice</span><span>Supabase</span></div><a class="cta" href="https://monyx.pro/" target="_blank" rel="noopener">open monyx <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
+        </div></div></article>
 
         <article class="mod m2" data-mod="MODULE 02 / FRC PREDICTOR"><i class="wire"></i><i class="solid"></i><div class="in">
-          <div class="hdr mono"><span>MOD 02 · MACHINE LEARNING</span></div>
-          <h3>FRC Match Predictor</h3>
-          <div class="demo frc" data-l="Match setup" id="frc">
+          <div class="tb"><i></i><i></i><i></i><span>josh@austin: ~/work/frc-predictor</span><em>ml</em></div><div class="body">
+                    <h3><span class="p">&gt;</span> FRC Match Predictor</h3>
+          <div class="demo frc" data-l="match setup" id="frc">
             <div class="al r"><b>RED</b><span class="chip">254</span><span class="chip">1678</span><span class="chip">118</span></div>
             <div class="al b"><b>BLUE</b><span class="chip">971</span><span class="chip">2056</span><span class="chip">4414</span></div>
             <div><div class="prob"><i id="pbar"></i></div><div class="pl" style="margin-top:8px"><span id="pr">RED --%</span><span id="pb">BLUE --%</span></div></div>
           </div>
           <div class="stats"><span>Trained on <b>18,000+</b> official 2026 matches</span><span><b>77.3%</b> accurate on unseen matches</span></div>
-          <a class="cta" href="https://frc-predictor-c8bkzggpngxjfjmcdfntmr.streamlit.app/" target="_blank" rel="noopener">Run a prediction <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
-        </div></article>
+          <a class="cta" href="https://frc-predictor-c8bkzggpngxjfjmcdfntmr.streamlit.app/" target="_blank" rel="noopener">run a prediction <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        </div></div></article>
 
         <article class="mod m3" data-mod="MODULE 03 / CHEMISTRY"><i class="wire"></i><i class="solid"></i><div class="in">
-          <div class="hdr mono"><span>MOD 03 · CHEMISTRY</span></div>
-          <h3>Chemistry Lab</h3>
-          <div class="demo" data-l="CH₄ · methane"><canvas class="mol" id="mol" aria-label="Methane molecule you can drag to rotate" role="img"></canvas><span class="hintx">Drag to rotate</span></div>
+          <div class="tb"><i></i><i></i><i></i><span>josh@austin: ~/work/chem-lab</span><em>chemistry</em></div><div class="body">
+                    <h3><span class="p">&gt;</span> Chemistry Lab</h3>
+          <div class="demo" data-l="CH₄ methane"><canvas class="mol" id="mol" aria-label="Methane molecule you can drag to rotate" role="img"></canvas><span class="hintx">Drag to rotate</span></div>
           <div class="stats"><span><b>323</b> compounds</span><span>Lewis structures</span><span>VSEPR</span><span>3D</span></div>
-          <a class="cta" href="/lds/">Open the lab <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
-        </div></article>
+          <a class="cta" href="/lds/">open the lab <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        </div></div></article>
 
         <article class="mod m4" data-mod="MODULE 04 / SORTING"><i class="wire"></i><i class="solid"></i><div class="in">
-          <div class="hdr mono"><span>MOD 04 · ALGORITHMS</span></div>
-          <h3>Sorting Library</h3>
-          <div class="demo" data-l="Bubble sort"><canvas id="sort" aria-hidden="true"></canvas><span class="hintx" id="sortst">Hover to sort</span></div>
+          <div class="tb"><i></i><i></i><i></i><span>josh@austin: ~/work/sorting</span><em>algorithms</em></div><div class="body">
+                    <h3><span class="p">&gt;</span> Sorting Library</h3>
+          <div class="demo" data-l="bubble sort"><canvas id="sort" aria-hidden="true"></canvas><span class="hintx" id="sortst">Hover to sort</span></div>
           <div class="stats"><span><b>38</b> algorithms</span><span><b>9</b> families</span><span>Race any two</span></div>
-          <a class="cta" href="/sorting/">Open the library <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
-        </div></article>
+          <a class="cta" href="/sorting/">open the library <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        </div></div></article>
 
         <article class="mod m5" data-mod="MODULE 05 / DIGITS"><i class="wire"></i><i class="solid"></i><div class="in">
-          <div class="hdr mono"><span>MOD 05 · NEURAL NETWORK</span></div>
-          <h3>Digit Classifier</h3>
-          <div class="demo digits" data-l="Draw with your cursor" id="dig">
+          <div class="tb"><i></i><i></i><i></i><span>josh@austin: ~/work/digits</span><em>neural net</em></div><div class="body">
+                    <h3><span class="p">&gt;</span> Digit Classifier</h3>
+          <div class="demo digits" data-l="draw a digit" id="dig">
             <div class="pad"><canvas id="pad" aria-label="Drawing pad" role="img"></canvas></div>
             <svg class="net" id="net" viewBox="0 0 260 170" aria-hidden="true"></svg>
           </div>
           <div class="stats"><span><b>99.1%</b> on MNIST</span><span>Every layer shown live</span></div>
-          <a class="cta" href="/digits/">Draw a real digit <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
-        </div></article>
+          <a class="cta" href="/digits/">try the full app <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        </div></div></article>
       </div>
-      <a class="all" href="/allproj/index.html">→ Full parts list: every project, searchable</a>
+      <a class="all" href="/allproj/index.html">All projects →</a>
     </div>
   </section>
 
   <!-- ABOUT -->
   <section class="sec" id="about" data-mod="SPEC / ABOUT">
     <div class="wrap">
-      <div class="shead"><h2 class="h2"><small>SECTION C · DATASHEET</small>Spec sheet</h2><p>Operating parameters for one student builder.</p></div>
+      <div class="shead"><h2 class="h2"><small>~/about</small>About</h2></div>
       <div class="term" id="specterm">
-        <div class="tb"><i></i><i></i><i></i><span>josh@austin: ~/spec</span></div>
+        <div class="tb"><i></i><i></i><i></i><span>josh@austin: ~/about</span></div>
         <div class="tbody">
           <div class="ln"><span><span class="p">&gt;</span> <span data-t="neofetch">neofetch</span></span></div>
           <div class="ln fetch" data-fx="ascii">
             <figure class="ph" id="ph" tabindex="0" aria-label="Photo of Josh. Hover to see it as ASCII art, or press Enter to switch.">
-              <canvas id="asc" aria-hidden="true"></canvas><i class="sl" aria-hidden="true"></i><span class="tip" aria-hidden="true"><span class="fine-only">hover</span><span class="touch-only">tap</span> → ascii</span>
-              <img src="work/avatar-320.webp" srcset="work/avatar-320.webp 320w, avatar.jpg 608w" sizes="(max-width:720px) 220px, 300px" alt="Josh sitting on a beach at sunset" width="320" height="369" loading="lazy" crossorigin="anonymous">
-              <figcaption><span>avatar.jpg</span><span id="phm">photo</span></figcaption>
+              <canvas id="asc" aria-hidden="true"></canvas><i class="sl" aria-hidden="true"></i>
+              <img src="work/avatar-portrait.webp" alt="Josh sitting on a beach at sunset" width="527" height="608" loading="lazy">
+              <figcaption><span>avatar.jpg</span><span id="phm"><span class="fine-only">hover</span><span class="touch-only">tap</span></span></figcaption>
             </figure>
             <div class="nf">
               <div class="nfh"><b>josh</b>@<b>austin</b></div>
@@ -489,7 +483,7 @@ html:not(.m) .flat .lb{display:none}html:not(.m) .flat .ok{opacity:1}
   <!-- CONTACT -->
   <section class="sec" id="contact" data-mod="TTY / CONTACT">
     <div class="wrap">
-      <div class="shead"><h2 class="h2"><small>SECTION D · I/O</small>Say hello</h2><p>Click copy and the address goes straight to your clipboard.</p></div>
+      <div class="shead"><h2 class="h2"><small>~/contact</small>Say hello</h2></div>
       <div class="term" id="term">
         <div class="tb"><i></i><i></i><i></i><span>josh@austin: ~/contact</span></div>
         <div class="tbody">
@@ -524,7 +518,7 @@ const MOBILE=matchMedia('(max-width:820px)').matches;
 
 // ---------- name plate: fit the SVG to its text and the screen ----------
 const fitName=()=>{const n1=$('n1'),n2=$('n2'),svg=$('nm');try{const a=n1.getBBox(),b=n2.getBBox();const x=Math.min(a.x,b.x),y=a.y,w=Math.max(a.x+a.width,b.x+b.width)-x,h=b.y+b.height-y;svg.setAttribute('viewBox',`${x-4} ${y-2} ${w+8} ${h+4}`);
-  const wrap=$('herowrap');svg.style.width='100%';const avail=innerHeight-92-Math.min(64,Math.max(32,innerHeight*.06))-(wrap.offsetHeight-svg.getBoundingClientRect().height)-10;const maxW=avail*(w+8)/(h+4);svg.style.width=Math.min(wrap.clientWidth,Math.max(260,maxW))+'px'}catch(e){}};
+  const wrap=$('herowrap');svg.style.width='100%';const avail=innerHeight-92-Math.min(64,Math.max(32,innerHeight*.06))-(wrap.offsetHeight-svg.getBoundingClientRect().height)-10;const maxW=avail*(w+8)/(h+4);svg.style.width=Math.min(wrap.clientWidth*(innerWidth>1100?.66:1),Math.max(260,maxW))+'px'}catch(e){}};
 (document.fonts?document.fonts.ready:Promise.resolve()).then(fitName);fitName();addEventListener('resize',fitName);
 requestAnimationFrame(()=>$('pin').classList.add('booted'));
 
@@ -536,21 +530,21 @@ document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',
 
 // ---------- crosshair cursor ----------
 if(FINE&&!RM){const xh=$('xh'),xy=$('xy');let on=false;const pad=n=>String(Math.round(n)).padStart(4,'0');
-  addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;if(!on){on=true;root.classList.add('xon')}xh.style.transform=`translate3d(${e.clientX}px,${e.clientY}px,0)`;xy.textContent=`X ${pad(e.clientX)} · Y ${pad(e.clientY+scrollY)}`},{passive:true});
+  addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;if(!on){on=true;root.classList.add('xon')}xh.style.transform=`translate3d(${e.clientX}px,${e.clientY}px,0)`},{passive:true});
   document.addEventListener('pointerover',e=>xh.classList.toggle('hot',!!e.target.closest('a,button,input,canvas')));
   document.addEventListener('mouseleave',()=>root.classList.remove('xon'));document.addEventListener('mouseenter',()=>on&&root.classList.add('xon'));}
 
 // ---------- system monitor + modules render in ----------
 const mods=[...document.querySelectorAll('.mod')],secs=[...document.querySelectorAll('section[data-mod]')];
-const mpct=$('mpct'),mbar=$('mbar'),mmod=$('mmod');let lastMod='';
+const mbar=$('mbar');let lastMod='';
 const hero=document.querySelector('.hero');window.__heroP=0;
 function onScroll(){
   const y=scrollY,H=innerHeight,max=Math.max(1,root.scrollHeight-H),p=clamp(y/max);
-  mpct.textContent=String(Math.round(p*100)).padStart(3,'0')+'%';mbar.style.transform=`scaleX(${p})`;
+  mbar.style.transform=`scaleX(${p})`;
   let label=secs[0].dataset.mod;secs.forEach(s=>{if(s.getBoundingClientRect().top<H*.5)label=s.dataset.mod});
   let best=null,bd=1e9;mods.forEach(m=>{const r=m.getBoundingClientRect();if(r.top<H*.75&&r.bottom>H*.25){const d=Math.abs(r.top+r.height/2-H/2);if(d<bd){bd=d;best=m}}});
   if(best&&label.startsWith('MODULE'))label=best.dataset.mod;
-  if(label!==lastMod){mmod.textContent=label;lastMod=label}
+  lastMod=label;
   window.__heroP=clamp(y/Math.max(1,hero.offsetHeight-H));
   if(!RM)mods.forEach(m=>{const r=m.getBoundingClientRect();m.style.setProperty('--r',clamp((H-r.top)/(H*.5)).toFixed(3))});
 }
@@ -628,18 +622,18 @@ const ascii=(()=>{const ph=$('ph'),cv=$('asc'),img=ph.querySelector('img'),mode=
   let G=null,L={x:0,y:0,r:0,tr:0,full:false},raf=0;
   const load=()=>new Promise(r=>{img.loading='eager';img.complete&&img.naturalWidth?r():img.addEventListener('load',r,{once:true})});
   const build=()=>{const w=ph.clientWidth,h=ph.clientHeight;if(!w||!img.naturalWidth)return;
-    const cw=w<260?3.6:4.2,ch=cw*1.72,cols=Math.floor(w/cw),rows=Math.ceil(h/ch);
+    const cw=w<260?3.3:3.7,ch=cw*1.72,cols=Math.floor(w/cw),rows=Math.ceil(h/ch);
     const o=document.createElement('canvas');o.width=cols;o.height=rows;const x=o.getContext('2d');x.imageSmoothingQuality='high';
     const iw=img.naturalWidth,ih=img.naturalHeight,s=Math.max(w/iw,h/ih),sw=w/s,sh=h/s;x.drawImage(img,(iw-sw)/2,(ih-sh)/2,sw,sh,0,0,cols,rows);
     let d;try{d=x.getImageData(0,0,cols,rows).data}catch(e){return}
     const Y=new Float32Array(cols*rows);let lo=1,hi=0;for(let i=0;i<Y.length;i++){const v=(.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2])/255;Y[i]=v;if(v<lo)lo=v;if(v>hi)hi=v}
-    for(let i=0;i<Y.length;i++){const t=(Y[i]-lo)/(hi-lo||1);Y[i]=t*t*(3-2*t)}
+    {const ord=[...Y.keys()].sort((p,q)=>Y[p]-Y[q]);ord.forEach((k,r)=>{const eq=r/(ord.length-1),lin=(Y[k]-lo)/(hi-lo||1);Y[k]=Math.pow(eq*.6+lin*.4,1.1)})}
     const at=(c,r)=>Y[Math.min(rows-1,Math.max(0,r))*cols+Math.min(cols-1,Math.max(0,c))];
     const ch_=new Array(Y.length),col=new Array(Y.length);
     for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const i=r*cols+c,v=Y[i];
       const gx=at(c+1,r-1)+2*at(c+1,r)+at(c+1,r+1)-at(c-1,r-1)-2*at(c-1,r)-at(c-1,r+1),gy=at(c-1,r+1)+2*at(c,r+1)+at(c+1,r+1)-at(c-1,r-1)-2*at(c,r-1)-at(c+1,r-1);
       const m=Math.hypot(gx,gy);let k;
-      if(m>.9){const a=(Math.atan2(gy,gx)*180/Math.PI+180)%180;k=a<22.5||a>=157.5?'|':a<67.5?'\\':a<112.5?'-':'/'}
+      if(m>1.6){const a=(Math.atan2(gy,gx)*180/Math.PI+180)%180;k=a<22.5||a>=157.5?'|':a<67.5?'\\':a<112.5?'-':'/'}
       else k=RAMP[Math.min(RAMP.length-1,v*RAMP.length|0)];
       ch_[i]=k;const t=v*v;col[i]=`rgba(${79+165*t|0},${209+39*t|0},${255-3*t|0},${(.3+.7*v).toFixed(2)})`}
     G={w,h,cw,ch,cols,rows,c:ch_,col};cv.width=w*DPR;cv.height=h*DPR;ph.style.setProperty('--h',h+'px')};
@@ -648,11 +642,10 @@ const ascii=(()=>{const ph=$('ph'),cv=$('asc'),img=ph.querySelector('img'),mode=
     c.font=`600 ${(ch*.9).toFixed(1)}px "JetBrains Mono",ui-monospace,monospace`;c.textBaseline='top';
     const c0=Math.max(0,(L.x-R)/cw|0),c1=Math.min(cols-1,(L.x+R)/cw|0),r0=Math.max(0,(L.y-R)/ch|0),r1=Math.min(rows-1,(L.y+R)/ch|0);
     for(let r=r0;r<=r1;r++)for(let k=c0;k<=c1;k++){const i=r*cols+k,g=G.c[i];if(g===' ')continue;c.fillStyle=G.col[i];c.fillText(g,k*cw,r*ch)}
-    c.restore();if(!L.full){c.strokeStyle='rgba(79,209,255,.8)';c.lineWidth=1;c.beginPath();c.arc(L.x,L.y,R-.5,0,Math.PI*2);c.stroke();
-      c.font='500 9px "JetBrains Mono",monospace';c.fillStyle='#4fd1ff';c.fillText('ASCII',L.x-12,L.y+R+4)}};
+    c.restore();if(!L.full){c.strokeStyle='rgba(79,209,255,.8)';c.lineWidth=1;c.beginPath();c.arc(L.x,L.y,R-.5,0,Math.PI*2);c.stroke()}};
   const tick=()=>{raf=0;L.r+=(L.tr-L.r)*.2;if(Math.abs(L.tr-L.r)<.4)L.r=L.tr;draw();if(L.r!==L.tr)raf=requestAnimationFrame(tick)};
   const kick=()=>{if(!raf)raf=requestAnimationFrame(tick)};
-  const set=(on,full)=>{if(!G)build();L.full=!!full;ph.classList.toggle('lens',on);mode.textContent=on?'ascii':'photo';
+  const set=(on,full)=>{if(!G)build();L.full=!!full;ph.classList.toggle('lens',on);mode.textContent=on?'ascii':(FINE?'hover':'tap');
     if(full){L.x=G.w/2;L.y=G.h/2}L.tr=on?(full?Math.hypot(G.w,G.h)/2+2:Math.min(G.w*.36,112)):0;kick()};
   const pos=e=>{const r=ph.getBoundingClientRect();L.x=e.clientX-r.left;L.y=e.clientY-r.top};
   ph.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;pos(e);set(true,false)});
@@ -709,13 +702,13 @@ function hero3d(THREE){
   const add=(obj,ex,exr,label,dl)=>{const box=new THREE.Box3().setFromObject(obj),c=box.getCenter(new THREE.Vector3());obj.position.sub(c);const g=new THREE.Group();g.add(obj);root3.add(g);
     let el=null;if(label){el=document.createElement('span');el.innerHTML=label;lab.append(el)}
     parts.push({g,home:c,ex:c.clone().add(new THREE.Vector3(...ex)),exr,el,dl,sp:[(Math.random()-.5)*.3,(Math.random()-.5)*.4,(Math.random()-.5)*.2]})};
-  add(solid(fr,.5,C,.24),[0,0,-5],[.55,-.8,.1],'P-00 · <b>CHASSIS</b> · AUSTIN, TX',.0);
-  add(solid(stroke(jPts),.85,0xf4f8fc),[-4.6,.4,1.6],[.3,.45,.4],'P-01 · <b>ML MODELS</b>',.15);
-  add(solid(stroke([P(27,33),P(36.5,24),P(46,15)]),.85),[4.6,1.6,1],[-.5,.4,-.7],'P-02 · <b>SECURITY TOOLS</b>',.3);
-  add(solid(stroke([P(33,27.3),P(39.5,38.15),P(46,49)]),.85),[3.4,-4,1.6],[.6,-.5,.5],'P-03 · <b>CLASSROOM APPS</b>',.45);
-  add(dot,[-1.8,3.7,3.5],[0,0,0],'P-04 · <b>MONYX</b>',.6);
+  add(solid(fr,.5,C,.24),[0,0,-5],[.55,-.8,.1],null,.0);
+  add(solid(stroke(jPts),.85,0xf4f8fc),[-4.6,.4,1.6],[.3,.45,.4],'ML models',.15);
+  add(solid(stroke([P(27,33),P(36.5,24),P(46,15)]),.85),[4.6,1.6,1],[-.5,.4,-.7],'Security tools',.3);
+  add(solid(stroke([P(33,27.3),P(39.5,38.15),P(46,49)]),.85),[3.4,-4,1.6],[.6,-.5,.5],'Classroom apps',.45);
+  add(dot,[-1.8,3.7,3.5],[0,0,0],'Monyx',.6);
   add(brk,[0,0,3],[0,0,.4],null,.2);
-  const asm=document.createElement('span');asm.className='asm';asm.textContent='JK-01 · ASSEMBLED ✓';lab.append(asm);
+  const asm=document.createElement('span');asm.className='asm';asm.textContent='';lab.append(asm);
   let W=0,H=0,mx=0,my=0,tx=0,ty=0,vis=true,raf=0;const t0=performance.now();
   const size=()=>{W=pin.clientWidth;H=pin.clientHeight;r.setSize(W,H,false);cam.aspect=W/H;cam.updateProjectionMatrix();root3.position.set(W>1100?5.3:3.9,1.75,0);root3.scale.setScalar(W>1100?.62:.5)};size();addEventListener('resize',size);
   addEventListener('pointermove',e=>{tx=e.clientX/innerWidth-.5;ty=e.clientY/innerHeight-.5},{passive:true});
@@ -749,10 +742,9 @@ function hero3d(THREE){
   document.querySelectorAll('.hsub p').forEach(p=>splitWords(p,'wd'));
   const io=new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)return;const el=e.target;io.unobserve(el);el.classList.add('in');const sm=el.querySelector('.h2 small');if(sm)scramble(sm)}),{threshold:.35});
   document.querySelectorAll('.shead').forEach(s=>io.observe(s));
-  setTimeout(()=>document.querySelectorAll('.fig .mono').forEach(scramble),300);
-  const once=(el,fn)=>{let busy=false;el.addEventListener('pointerenter',()=>{if(busy)return;busy=true;fn();setTimeout(()=>busy=false,900)})};
+    const once=(el,fn)=>{let busy=false;el.addEventListener('pointerenter',()=>{if(busy)return;busy=true;fn();setTimeout(()=>busy=false,900)})};
   if(FINE){document.querySelectorAll('.nav a,.ft nav a').forEach(a=>once(a,()=>scramble(a)));
-    document.querySelectorAll('.mod').forEach(m=>{const h=m.querySelector('h3'),d=m.querySelector('.hdr span');once(m,()=>{scramble(h);if(d)scramble(d)})})}
+    document.querySelectorAll('.mod').forEach(m=>{const h=m.querySelector('h3'),d=m.querySelector('.tb span');once(m,()=>{scramble(h);if(d)scramble(d)})})}
 })();
 
 // ---------- mobile menu ----------
@@ -761,7 +753,6 @@ function setMenu(o){nav.classList.toggle('open',o);menu.setAttribute('aria-expan
 menu.addEventListener('click',()=>setMenu(!nav.classList.contains('open')));
 
 // ---------- Austin clock ----------
-const clk=$('clock');const tick=()=>{clk.textContent=new Date().toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'})};tick();setInterval(tick,15000);
 $('year').textContent=new Date().getFullYear();
 
 // ---------- Secret access code: type "gam" to enter the back room ----------
