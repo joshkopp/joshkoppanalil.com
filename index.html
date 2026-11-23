@@ -4,15 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0b1a2e">
-<title>Josh Koppanalil · Under the Hood</title>
+<title>Josh Koppanalil · Student &amp; Builder</title>
 <meta name="description" content="I'm Joshua (Josh) Koppanalil, a sophomore at Westlake High School in Austin, TX. I build machine-learning models, security tools, classroom apps and Monyx, a wallet you pay by voice.">
 <link rel="canonical" href="https://joshkoppanalil.com/">
 <meta property="og:title" content="Josh Koppanalil · Student &amp; Builder">
 <meta property="og:description" content="I'm Joshua (Josh) Koppanalil, a sophomore at Westlake High School in Austin, TX. I build machine-learning models, security tools, classroom apps and Monyx, a wallet you pay by voice.">
 <meta property="og:url" content="https://joshkoppanalil.com/">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="Josh Koppanalil">
+<meta property="og:image" content="https://joshkoppanalil.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Josh Koppanalil, student and builder, drawn as a blueprint name plate">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Josh Koppanalil · Student &amp; Builder">
+<meta name="twitter:description" content="Sophomore in Austin, TX building ML models, security tools, classroom apps and Monyx.">
+<meta name="twitter:image" content="https://joshkoppanalil.com/og.png">
 <script type="application/ld+json">
-[{"@context":"https://schema.org","@type":"Person","name":"Joshua Koppanalil","alternateName":"Josh Koppanalil","url":"https://joshkoppanalil.com/","email":"josh.koppanalil@gmail.com","sameAs":["https://github.com/joshkopp"]},
+[{"@context":"https://schema.org","@type":"Person","name":"Joshua Koppanalil","alternateName":"Josh Koppanalil","url":"https://joshkoppanalil.com/","image":"https://joshkoppanalil.com/avatar.jpg","email":"josh.koppanalil@gmail.com","sameAs":["https://github.com/joshkopp"]},
 {"@context":"https://schema.org","@type":"WebSite","name":"Josh Koppanalil","url":"https://joshkoppanalil.com/"}]
 </script>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" sizes="any">
@@ -145,7 +154,6 @@ main,header,footer{position:relative;z-index:1}
 .mod .hdr{display:flex;justify-content:space-between;gap:12px}
 .mod .hdr a{color:var(--mute);transition:color .25s}.mod .hdr a:hover{color:var(--cyan)}
 .mod h3{font:700 clamp(30px,3vw,46px)/.95 var(--disp);letter-spacing:-.04em}
-.mod h3 a:hover{color:var(--cyan)}
 .mod p{color:#b9cadb;font-size:15px;line-height:1.55;max-width:34em}
 .demo{position:relative;flex:1;min-height:180px;border:1px solid var(--line);border-radius:10px;background:rgba(7,18,31,.55);overflow:hidden}
 .demo::before{content:attr(data-l);position:absolute;left:10px;top:8px;font:500 9.5px var(--mono);letter-spacing:.12em;color:var(--dim);text-transform:uppercase;z-index:2}
@@ -192,21 +200,35 @@ main,header,footer{position:relative;z-index:1}
 .net text.hit{fill:var(--cyan)}
 
 /* ---------- about ---------- */
-.spec{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:clamp(28px,5vw,80px)}
-.figbox{position:relative;align-self:start;margin:0;padding:12px;border:1px solid var(--line2);border-radius:12px}
-.figbox img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:6px;filter:grayscale(1) contrast(1.05) brightness(.9)}
-.figbox figcaption{display:flex;justify-content:space-between;margin-top:10px}
-.figbox::before{content:"";position:absolute;inset:12px 12px 40px;border-radius:6px;background:var(--cyan);mix-blend-mode:color;opacity:.35;pointer-events:none;z-index:1}
-.sheet{border-top:1px solid var(--line2)}
-.sheet div{display:grid;grid-template-columns:minmax(120px,.35fr) minmax(0,1fr);gap:20px;padding:14px 0;border-bottom:1px solid var(--line)}
-.sheet dt{font:500 11.5px/1.9 var(--mono);letter-spacing:.12em;color:var(--cyan)}
-.sheet dd{font-size:clamp(17px,1.5vw,21px);color:var(--white)}
-.sheet dd a{border-bottom:1px solid var(--orange);transition:color .25s}.sheet dd a:hover{color:var(--orange)}
-.notes{margin-top:30px;padding:20px 22px;border-left:2px solid var(--cyan);background:rgba(79,209,255,.05);border-radius:0 10px 10px 0}
-.notes .mono{color:var(--cyan);margin-bottom:8px}
-.notes p{font-size:clamp(17px,1.4vw,20px);line-height:1.55;color:#d7e3ee}
 .all{display:inline-flex;align-items:center;gap:10px;margin-top:28px;min-height:44px;font:700 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--cyan)}
 .all:hover{color:var(--white)}
+
+/* ---------- spec terminal (neofetch) ---------- */
+#specterm{max-width:none}
+#specterm .tbody{min-height:0}
+.ln.fetch{display:grid;grid-template-columns:300px minmax(0,1fr);gap:clamp(22px,4vw,56px);align-items:start;margin:10px 0 18px}
+.ph{position:relative;margin:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#040b14;aspect-ratio:320/369;cursor:crosshair;outline:none}
+.ph:focus-visible{box-shadow:0 0 0 2px var(--cyan)}
+.ph canvas,.ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ph img{opacity:0;filter:grayscale(1) contrast(1.1) brightness(.95) sepia(1) hue-rotate(160deg) saturate(2.2);transition:opacity .45s var(--ease)}
+.ph::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px)}
+.ph.real img{opacity:1}.ph.real canvas{opacity:.0}
+.ph canvas{transition:opacity .45s var(--ease)}
+.ph figcaption{position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;justify-content:space-between;padding:6px 10px;font:500 10.5px var(--mono);letter-spacing:.08em;color:var(--mute);background:linear-gradient(transparent,rgba(4,11,20,.9))}
+.ph figcaption span:last-child{color:var(--cyan)}
+.nfh{font-weight:700;color:var(--white)}.nfh b{color:var(--cyan)}
+.nfr{color:var(--dim);line-height:1.2;margin-bottom:6px}
+.nf dl div{display:grid;grid-template-columns:7.5em minmax(0,1fr);gap:0 14px}
+.nf dt{color:var(--cyan);font-weight:700}
+.nf dt::after{content:":";color:var(--dim)}
+.nf dd{color:var(--white)}
+.nf dd a{border-bottom:1px solid var(--orange);transition:color .25s}.nf dd a:hover{color:var(--orange)}
+.sw{display:flex;margin-top:14px}.sw i{width:26px;height:14px}
+.sw i:nth-child(1){background:var(--deep)}.sw i:nth-child(2){background:var(--navy2)}.sw i:nth-child(3){background:var(--dim)}.sw i:nth-child(4){background:var(--cyan)}.sw i:nth-child(5){background:var(--orange)}.sw i:nth-child(6){background:var(--white)}
+.out{max-width:62ch;color:#cfe3f3;font-weight:400}
+.m .fetch .nf dl div,.m .fetch .nfh,.m .fetch .nfr,.m .fetch .sw{opacity:0;transform:translateX(-6px);transition:opacity .3s,transform .3s var(--ease)}
+.m .fetch.go .nf dl div,.m .fetch.go .nfh,.m .fetch.go .nfr,.m .fetch.go .sw{opacity:1;transform:none}
+.m .fetch.go .nfr{transition-delay:.08s}.m .fetch.go .nf dl div:nth-child(1){transition-delay:0.24s}.m .fetch.go .nf dl div:nth-child(2){transition-delay:0.33s}.m .fetch.go .nf dl div:nth-child(3){transition-delay:0.42s}.m .fetch.go .nf dl div:nth-child(4){transition-delay:0.51s}.m .fetch.go .nf dl div:nth-child(5){transition-delay:0.60s}.m .fetch.go .nf dl div:nth-child(6){transition-delay:0.69s}.m .fetch.go .nf dl div:nth-child(7){transition-delay:0.78s}.m .fetch.go .sw{transition-delay:.85s}
 
 /* ---------- contact terminal ---------- */
 .term{max-width:860px;border:1px solid var(--line2);border-radius:14px;background:rgba(5,13,24,.85);box-shadow:0 40px 80px -40px rgba(0,0,0,.9),0 0 0 1px rgba(79,209,255,.06);overflow:hidden}
@@ -237,7 +259,7 @@ main,header,footer{position:relative;z-index:1}
 @media (max-width:1023px){
   .bento{grid-template-columns:repeat(2,minmax(0,1fr))}
   .m1,.m5{grid-column:1/-1;grid-row:auto}.m2,.m3,.m4{grid-column:auto;grid-row:auto}
-  .spec{grid-template-columns:1fr}.figbox{max-width:360px}
+  .ln.fetch{grid-template-columns:240px minmax(0,1fr)}
 }
 @media (max-width:720px){
   .nav{display:none;position:fixed;inset:72px 0 auto;flex-direction:column;gap:0;padding:10px var(--gut) 20px;background:var(--deep);border-bottom:1px solid var(--line)}
@@ -252,8 +274,8 @@ main,header,footer{position:relative;z-index:1}
   .mon .t,.mon .cur{display:none}
   .mon .bar{width:44px;margin:0}
   .mon>div:nth-child(2){order:-1}
-  .sheet div{grid-template-columns:1fr;gap:2px;padding:12px 0}
-  .figbox{max-width:240px}
+  .ln.fetch{grid-template-columns:1fr;gap:18px}.ph{max-width:220px}
+  .nf dl div{grid-template-columns:1fr;margin-bottom:6px}.nf dt{line-height:1.5}
   .ft{flex-direction:column;align-items:flex-start;padding-bottom:90px}
   .hero{height:auto}
   .hero .pin{position:relative;height:auto;min-height:100svh;padding-top:84px}
@@ -344,8 +366,8 @@ main,header,footer{position:relative;z-index:1}
       </div>
       <div class="bento">
         <article class="mod m1" data-mod="MODULE 01 / MONYX"><i class="wire"></i><i class="solid"></i><div class="in">
-          <div class="hdr mono"><span>MOD 01 · PAYMENTS</span><a href="https://monyx.pro/" target="_blank" rel="noopener">monyx.pro ↗</a></div>
-          <h3><a href="https://monyx.pro/" target="_blank" rel="noopener">Monyx</a></h3>
+          <div class="hdr mono"><span>MOD 01 · PAYMENTS</span><span>monyx.pro</span></div>
+          <h3>Monyx</h3>
           <p>A dollar wallet on Solana you pay by talking to it, or by @username or QR. It reads every payment back in plain English and runs a risk check before anything sends.</p>
           <div class="demo voice" data-l="Voice input" id="voice">
             <div class="bars" id="vbars"></div>
@@ -356,7 +378,7 @@ main,header,footer{position:relative;z-index:1}
 
         <article class="mod m2" data-mod="MODULE 02 / FRC PREDICTOR"><i class="wire"></i><i class="solid"></i><div class="in">
           <div class="hdr mono"><span>MOD 02 · MACHINE LEARNING</span></div>
-          <h3><a href="https://frc-predictor-c8bkzggpngxjfjmcdfntmr.streamlit.app/" target="_blank" rel="noopener">FRC Match Predictor</a></h3>
+          <h3>FRC Match Predictor</h3>
           <div class="demo frc" data-l="Match setup" id="frc">
             <div class="al r"><b>RED</b><span class="chip">254</span><span class="chip">1678</span><span class="chip">118</span></div>
             <div class="al b"><b>BLUE</b><span class="chip">971</span><span class="chip">2056</span><span class="chip">4414</span></div>
@@ -368,7 +390,7 @@ main,header,footer{position:relative;z-index:1}
 
         <article class="mod m3" data-mod="MODULE 03 / CHEMISTRY"><i class="wire"></i><i class="solid"></i><div class="in">
           <div class="hdr mono"><span>MOD 03 · CHEMISTRY</span></div>
-          <h3><a href="/lds/">Chemistry Lab</a></h3>
+          <h3>Chemistry Lab</h3>
           <div class="demo" data-l="CH₄ · methane"><canvas class="mol" id="mol" aria-label="Methane molecule you can drag to rotate" role="img"></canvas><span class="hintx">Drag to rotate</span></div>
           <div class="stats"><span><b>323</b> compounds</span><span>Lewis structures</span><span>VSEPR</span><span>3D</span></div>
           <a class="cta" href="/lds/">Open the lab <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
@@ -376,7 +398,7 @@ main,header,footer{position:relative;z-index:1}
 
         <article class="mod m4" data-mod="MODULE 04 / SORTING"><i class="wire"></i><i class="solid"></i><div class="in">
           <div class="hdr mono"><span>MOD 04 · ALGORITHMS</span></div>
-          <h3><a href="/sorting/">Sorting Library</a></h3>
+          <h3>Sorting Library</h3>
           <div class="demo" data-l="Bubble sort"><canvas id="sort" aria-hidden="true"></canvas><span class="hintx" id="sortst">Hover to sort</span></div>
           <div class="stats"><span><b>38</b> algorithms</span><span><b>9</b> families</span><span>Race any two</span></div>
           <a class="cta" href="/sorting/">Open the library <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
@@ -384,7 +406,7 @@ main,header,footer{position:relative;z-index:1}
 
         <article class="mod m5" data-mod="MODULE 05 / DIGITS"><i class="wire"></i><i class="solid"></i><div class="in">
           <div class="hdr mono"><span>MOD 05 · NEURAL NETWORK</span></div>
-          <h3><a href="/digits/">Digit Classifier</a></h3>
+          <h3>Digit Classifier</h3>
           <div class="demo digits" data-l="Draw with your cursor" id="dig">
             <div class="pad"><canvas id="pad" aria-label="Drawing pad" role="img"></canvas></div>
             <svg class="net" id="net" viewBox="0 0 260 170" aria-hidden="true"></svg>
@@ -401,19 +423,34 @@ main,header,footer{position:relative;z-index:1}
   <section class="sec" id="about" data-mod="SPEC / ABOUT">
     <div class="wrap">
       <div class="shead"><h2 class="h2"><small>SECTION C · DATASHEET</small>Spec sheet</h2><p>Operating parameters for one student builder.</p></div>
-      <div class="spec">
-        <figure class="figbox"><img src="work/avatar-320.webp" srcset="work/avatar-320.webp 320w, avatar.jpg 608w" sizes="(max-width:1023px) 360px, 30vw" alt="Josh sitting on a beach at sunset" width="320" height="369" loading="lazy"><figcaption class="mono"><span>FIG. 04</span><span>Field unit</span></figcaption></figure>
-        <div>
-          <dl class="sheet">
-            <div><dt>MODEL</dt><dd>Josh K.</dd></div>
-            <div><dt>LOCATION</dt><dd>Austin, TX</dd></div>
-            <div><dt>SCHOOL</dt><dd>Westlake High School, sophomore</dd></div>
-            <div><dt>STACK</dt><dd>Python, JavaScript, Solana, Supabase</dd></div>
-            <div><dt>INTERESTS</dt><dd>Software, security, machine learning</dd></div>
-            <div><dt>OFF-DUTY</dt><dd>Jet-skiing, mountain biking, soccer, piano</dd></div>
-            <div><dt>STATUS</dt><dd>Building <a href="https://monyx.pro/" target="_blank" rel="noopener">Monyx.pro</a></dd></div>
-          </dl>
-          <div class="notes"><div class="mono">Design notes</div><p>Most of what I make starts as a tool I wanted for myself: for chemistry class, for studying, for my robotics team, for paying friends back.</p></div>
+      <div class="term" id="specterm">
+        <div class="tb"><i></i><i></i><i></i><span>josh@austin: ~/spec</span></div>
+        <div class="tbody">
+          <div class="ln"><span><span class="p">&gt;</span> <span data-t="neofetch">neofetch</span></span></div>
+          <div class="ln fetch" data-fx="ascii">
+            <figure class="ph" id="ph" tabindex="0" aria-label="Photo of Josh. Hover or tap to switch between ASCII and the real photo.">
+              <canvas id="asc" aria-hidden="true"></canvas>
+              <img src="work/avatar-320.webp" srcset="work/avatar-320.webp 320w, avatar.jpg 608w" sizes="(max-width:720px) 220px, 300px" alt="Josh sitting on a beach at sunset" width="320" height="369" loading="lazy" crossorigin="anonymous">
+              <figcaption><span>avatar.jpg</span><span id="phm">ascii</span></figcaption>
+            </figure>
+            <div class="nf">
+              <div class="nfh"><b>josh</b>@<b>austin</b></div>
+              <div class="nfr" aria-hidden="true">-----------</div>
+              <dl>
+                <div><dt>model</dt><dd>Josh K.</dd></div>
+                <div><dt>location</dt><dd>Austin, TX</dd></div>
+                <div><dt>school</dt><dd>Westlake High School, sophomore</dd></div>
+                <div><dt>stack</dt><dd>Python, JavaScript, Solana, Supabase</dd></div>
+                <div><dt>interests</dt><dd>Software, security, machine learning</dd></div>
+                <div><dt>off-duty</dt><dd>Jet-skiing, mountain biking, soccer, piano</dd></div>
+                <div><dt>status</dt><dd>Building <a href="https://monyx.pro/" target="_blank" rel="noopener">monyx.pro</a></dd></div>
+              </dl>
+              <div class="sw" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            </div>
+          </div>
+          <div class="ln"><span><span class="p">&gt;</span> <span data-t="cat design_notes.txt">cat design_notes.txt</span></span></div>
+          <div class="ln"><p class="out">Most of what I make starts as a tool I wanted for myself: for chemistry class, for studying, for my robotics team, for paying friends back.</p></div>
+          <div class="ln"><span><span class="p">&gt;</span> <span class="caret"></span></span></div>
         </div>
       </div>
     </div>
@@ -555,11 +592,38 @@ const trigger=(el,fn)=>{el.addEventListener('pointerenter',e=>{if(e.pointerType=
   const run=on=>{if(on&&!fade&&!RM){fade=1;fadeLoop()}if(!on)fade=0;if(on&&ink===0)auto()};
   trigger(box.closest('.mod'),run);if(RM)auto();})();
 
-// ---------- terminal contact ----------
-(()=>{const lines=[...document.querySelectorAll('.tbody .ln')];let done=false;
+// ---------- ascii portrait (spec terminal) ----------
+const ascii=(()=>{const ph=$('ph'),cv=$('asc'),img=ph.querySelector('img'),mode=$('phm');let grid=null,shown=0;
+  const RAMP=" .'`:-~=+*cvxzoa#%&@";
+  const load=()=>new Promise(r=>{img.loading='eager';img.complete&&img.naturalWidth?r():img.addEventListener('load',r,{once:true})});
+  const sample=()=>{const w=ph.clientWidth,h=ph.clientHeight;if(!w)return;const cols=w<240?46:62,cw=w/cols,ch=cw*1.7,rows=Math.ceil(h/ch);
+    const o=document.createElement('canvas');o.width=cols;o.height=rows;const x=o.getContext('2d');x.drawImage(img,0,0,cols,rows);
+    let d;try{d=x.getImageData(0,0,cols,rows).data}catch(e){return}
+    const L=[];let lo=1,hi=0;for(let i=0;i<cols*rows;i++){const v=(.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2])/255;L.push(v);lo=Math.min(lo,v);hi=Math.max(hi,v)}
+    grid={w,h,cols,rows,cw,ch,L:L.map(v=>{const t=(v-lo)/(hi-lo||1);return Math.pow(t*t*(3-2*t),1.35)})};cv.width=w*DPR;cv.height=h*DPR};
+  const draw=n=>{if(!grid)return;const{cols,cw,ch,L}=grid,c=cv.getContext('2d');c.setTransform(DPR,0,0,DPR,0,0);c.clearRect(0,0,grid.w,grid.h);
+    c.font=`500 ${(ch*.82).toFixed(1)}px "JetBrains Mono",monospace`;c.textBaseline='top';
+    for(let r=0;r<n;r++)for(let k=0;k<cols;k++){const v=L[r*cols+k],ci=Math.min(RAMP.length-1,v*RAMP.length|0);if(ci<1)continue;
+      c.fillStyle=r===n-1&&n<grid.rows?'#f4f8fc':`rgba(79,209,255,${(.22+v*.78).toFixed(2)})`;c.fillText(RAMP[ci],k*cw,r*ch)}};
+  const render=cb=>load().then(()=>{sample();if(!grid){cb&&cb();return}if(RM){shown=grid.rows;draw(shown);cb&&cb();return}
+    let r=0;const step=()=>{r=Math.min(grid.rows,r+2);shown=r;draw(r);r<grid.rows?requestAnimationFrame(step):cb&&cb()};step()});
+  const flip=on=>{ph.classList.toggle('real',on);mode.textContent=on?'photo':'ascii'};
+  if(FINE){ph.addEventListener('pointerenter',()=>flip(true));ph.addEventListener('pointerleave',()=>flip(false))}
+  ph.addEventListener('click',()=>flip(!ph.classList.contains('real')));
+  ph.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip(!ph.classList.contains('real'))}});
+  let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(shown){sample();shown=grid?grid.rows:0;draw(shown)}},150)});
+  return render})();
+
+// ---------- terminals: type each line as it scrolls into view ----------
+document.querySelectorAll('.term').forEach(term=>{const lines=[...term.querySelectorAll('.tbody .ln')];let done=false;
   const typeEl=(el,cb)=>{const t=el.dataset.t;let i=0;el.textContent='';const go=()=>{el.textContent=t.slice(0,++i);i<t.length?setTimeout(go,38):setTimeout(cb,180)};go()};
-  const run=()=>{if(done)return;done=true;let k=0;const next=()=>{if(k>=lines.length)return;const ln=lines[k++];ln.classList.add('on');const tgt=ln.querySelector('[data-t]');tgt?typeEl(tgt,next):setTimeout(next,160)};next()};
-  if(!RM){lines.forEach(l=>{const t=l.querySelector('[data-t]');if(t)t.textContent=''});new IntersectionObserver((e,o)=>{if(e[0].isIntersecting){run();o.disconnect()}},{threshold:.4}).observe($('term'))}})();
+  const run=()=>{if(done)return;done=true;let k=0;const next=()=>{if(k>=lines.length)return;const ln=lines[k++];ln.classList.add('on');const tgt=ln.querySelector('[data-t]');
+    if(tgt)return typeEl(tgt,next);
+    if(ln.dataset.fx==='ascii'){ln.classList.add('go');return ascii(()=>setTimeout(next,200))}
+    setTimeout(next,160)};next()};
+  if(RM){term.querySelectorAll('.fetch').forEach(f=>f.classList.add('go'));if(term.querySelector('.fetch'))ascii();return}
+  lines.forEach(l=>{const t=l.querySelector('[data-t]');if(t)t.textContent=''});
+  new IntersectionObserver((e,o)=>{if(e[0].isIntersecting){run();o.disconnect()}},{threshold:.25}).observe(term)});
 const hint=$('hint');
 document.querySelectorAll('.copy').forEach(btn=>btn.addEventListener('click',async()=>{const text=btn.dataset.copy;
   try{await navigator.clipboard.writeText(text)}catch(e){const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove()}
