@@ -34,3 +34,28 @@ html::after{content:"";position:fixed;inset:12px;z-index:1;pointer-events:none;
 /* primary buttons: blueprint orange for the main action, cyan outline for the rest */
 .btn.primary,.btn.on,.btn.solid{background:#4fd1ff!important;color:#0b1a2e!important;border-color:#4fd1ff!important}
 :focus-visible{outline:2px solid #4fd1ff!important;outline-offset:3px}
+
+/* ---------- terminal windows (matches the homepage) ---------- */
+[data-tw]{position:relative;background:rgba(5,13,24,.86)!important;border:1px solid rgba(79,209,255,.32)!important;border-radius:14px!important;box-shadow:0 40px 80px -40px rgba(0,0,0,.9),0 0 0 1px rgba(79,209,255,.06)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background-image:none!important}
+[data-tw]:hover{border-color:rgba(79,209,255,.6)!important}
+.tw-tb{position:absolute;left:0;right:0;top:0;z-index:4;display:flex;align-items:center;gap:8px;height:38px;padding:0 14px;border-bottom:1px solid rgba(79,209,255,.16);border-radius:13px 13px 0 0;background:rgba(3,9,17,.55);font:500 11.5px/1 "JetBrains Mono",ui-monospace,monospace;color:#8aa3bd;white-space:nowrap;pointer-events:none;overflow:hidden}
+.tw-tb i{flex:none;width:10px;height:10px;border-radius:50%;background:#1e3550}.tw-tb i:first-child{background:#ff6b35}
+.tw-tb span{margin-left:8px;overflow:hidden;text-overflow:ellipsis}
+.tw-tb em{margin-left:auto;font-style:normal;color:#4f6782}
+[data-tw]:hover .tw-tb i:nth-child(2){background:#ffc857}[data-tw]:hover .tw-tb i:nth-child(3){background:#7dffb0}
+.tw-m [data-tw]{opacity:0;transform:translateY(60px) scale(.94) rotateX(10deg)}
+.tw-m [data-tw].tw-on{opacity:1;transform:none;transition:transform 1s cubic-bezier(.34,1.45,.64,1) var(--twd,0s),opacity .5s ease var(--twd,0s)}
+.tw-m [data-tw].tw-done{transition:border-color .25s,transform .4s}
+.tw-m [data-tw].tw-on .tw-tb i:nth-child(1){animation:twl .5s ease calc(var(--twd,0s) + .35s) both}
+.tw-m [data-tw].tw-on .tw-tb i:nth-child(2){animation:twy .9s ease calc(var(--twd,0s) + .5s) both}
+.tw-m [data-tw].tw-on .tw-tb i:nth-child(3){animation:twg .9s ease calc(var(--twd,0s) + .65s) both}
+@keyframes twl{50%{transform:scale(1.5);box-shadow:0 0 10px #ff6b35}}
+@keyframes twy{30%{background:#ffc857;transform:scale(1.5);box-shadow:0 0 10px #ffc857}}
+@keyframes twg{30%{background:#7dffb0;transform:scale(1.5);box-shadow:0 0 10px #7dffb0}}
+.tw-prog{position:fixed;left:0;right:0;top:0;z-index:300;height:2px;pointer-events:none}.tw-prog i{display:block;height:100%;background:#4fd1ff;box-shadow:0 0 10px #4fd1ff;transform-origin:left;transform:scaleX(0)}
+.tw-fx{position:fixed;inset:0;width:100vw;height:100vh;z-index:299;pointer-events:none}
+.tw-clock{font:500 12px "JetBrains Mono",ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:#8aa3bd;white-space:nowrap}
+.tw-clock b{color:#f4f8fc;font-weight:500}
+.tw-clock.fixed{position:fixed;top:22px;right:28px;z-index:50}
+@media (max-width:720px){.tw-clock{display:none}}
+@media (prefers-reduced-motion:reduce){.tw-m [data-tw]{opacity:1!important;transform:none!important}}

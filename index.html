@@ -356,6 +356,7 @@ html:not(.m) .shead::after{transform:scaleX(1)}
   <div class="wrap">
     <a class="mark" href="#home" aria-label="Josh Koppanalil, home"><svg class="jk-mark" viewBox="0 0 64 64" aria-hidden="true"><rect x="1" y="1" width="62" height="62" rx="14" fill="#0b1a2e" stroke="#4fd1ff" stroke-opacity=".45"/><path d="M8 8h6M8 8v6M56 8h-6M56 8v6M8 56h6M8 56v-6M56 56h-6M56 56v-6" stroke="#4fd1ff" stroke-opacity=".5" stroke-width="1.5" fill="none"/><path d="M27 15v24a7.5 7.5 0 0 1-15 0" fill="none" stroke="#f4f8fc" stroke-width="5" stroke-linecap="round"/><path d="M27 33L46 15M33 27.3L46 49" fill="none" stroke="#4fd1ff" stroke-width="5" stroke-linecap="round"/><circle cx="33" cy="27.3" r="3.7" fill="#ff6b35"/></svg><span>Josh Koppanalil</span></a>
     <nav class="nav" id="nav" aria-label="Main"><a href="#work">Work</a><a href="#about">About</a><a href="#contact">Contact</a></nav>
+    <span class="clock">AUSTIN <b id="clock">--:--</b></span>
     <button class="menu" id="menu" aria-controls="nav" aria-expanded="false">MENU</button>
   </div>
 </header>
@@ -786,6 +787,7 @@ function setMenu(o){nav.classList.toggle('open',o);menu.setAttribute('aria-expan
 menu.addEventListener('click',()=>setMenu(!nav.classList.contains('open')));
 
 // ---------- Austin clock ----------
+const clk=$('clock');const tick=()=>{clk.textContent=new Date().toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'})};tick();setInterval(tick,15000);
 $('year').textContent=new Date().getFullYear();
 
 // ---------- Secret access code: type "gam" to enter the back room ----------
