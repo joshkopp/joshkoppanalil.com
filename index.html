@@ -27,7 +27,7 @@
 :root{
   --bg:#0c0c0b;--bg2:#141413;--ink:#f1efe8;--mute:#8f8c84;--dim:#56544f;--line:rgba(241,239,232,.13);
   --lime:#b8f36b;--lime-ink:#10140a;--cream:#f1efe8;--mint:#cee4c3;--forest:#0d2a1d;
-  --gut:clamp(20px,4vw,56px);--max:1360px;
+  --gut:clamp(24px,7vw,128px);--max:1240px;
   --disp:"Bricolage Grotesque",system-ui,sans-serif;--body:"Geist",system-ui,sans-serif;--mono:"Geist Mono",ui-monospace,monospace;
   --ease:cubic-bezier(.16,1,.3,1);
 }
@@ -70,18 +70,16 @@ h1,h2,h3{font-family:var(--disp);font-weight:700;font-variation-settings:"wdth" 
 .cur,.ring{position:fixed;left:0;top:0;z-index:95;pointer-events:none;border-radius:50%;opacity:0;transition:opacity .3s}
 .cur{width:8px;height:8px;margin:-4px 0 0 -4px;background:var(--lime)}
 .ring{display:grid;place-items:center;width:44px;height:44px;margin:-22px 0 0 -22px;border:1px solid rgba(241,239,232,.45);transition:opacity .3s,width .45s var(--ease),height .45s var(--ease),margin .45s var(--ease),background .3s,border-color .3s}
-.ring b{font:600 13px var(--body);color:var(--lime-ink);opacity:0;transition:opacity .2s}
-.ring.big{width:96px;height:96px;margin:-48px 0 0 -48px;background:var(--lime);border-color:var(--lime)}
-.ring.big b{opacity:1}
 .ring.link{width:64px;height:64px;margin:-32px 0 0 -32px;border-color:var(--lime)}
 @media (hover:hover) and (pointer:fine){.m body.cursor-on .cur,.m body.cursor-on .ring{opacity:1}}
 
 /* ---------- hero ---------- */
-.hero{position:relative;height:100svh;min-height:600px;display:flex;flex-direction:column;justify-content:flex-end;padding:0 0 clamp(28px,5vh,56px);overflow:hidden}
+.hero{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:flex-end;padding:104px 0 clamp(28px,5vh,56px);overflow:clip}
 .hero .wrap{position:relative}
 .toprow{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:clamp(18px,3vh,34px)}
-.pic{width:clamp(78px,8vw,120px);aspect-ratio:1;border-radius:50%;overflow:hidden;background:var(--bg2);border:1px solid var(--line)}
-.pic img{width:100%;height:100%;object-fit:cover;filter:grayscale(1);transition:filter .6s}
+.pic{flex:none;width:clamp(84px,8.5vw,128px);aspect-ratio:4/5;border-radius:14px;overflow:hidden;background:var(--bg2)}
+.pic img{width:100%;height:100%;object-fit:cover;object-position:50% 40%;filter:grayscale(1);transition:filter .6s,transform .6s var(--ease)}
+.pic:hover img{transform:scale(1.04)}
 .pic:hover img{filter:none}
 .h1{font-size:var(--fs,15vw);line-height:.82;letter-spacing:-.05em;white-space:nowrap;cursor:default}
 .h1 .line{display:block}
@@ -163,24 +161,20 @@ h1,h2,h3{font-family:var(--disp);font-weight:700;font-variation-settings:"wdth" 
 .px{animation:px 3.6s steps(1) infinite;animation-delay:calc(var(--i)*.09s);opacity:.12}
 @keyframes px{0%{opacity:.12}8%,75%{opacity:1}90%,100%{opacity:.12}}
 
-/* ---------- other work list ---------- */
-.list{margin:clamp(36px,6vh,64px) 0 0;padding:0;list-style:none;border-top:1px solid var(--line)}
-.list a{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 40px;align-items:center;gap:24px;min-height:clamp(84px,11vh,120px);border-bottom:1px solid var(--line);position:relative;overflow:hidden}
-.list a::before{content:"";position:absolute;inset:0;background:var(--lime);transform:scaleY(0);transform-origin:bottom;transition:transform .55s var(--ease)}
-.list a:hover::before{transform:scaleY(1)}
-.list a>*{position:relative}
-.list .t{font:700 clamp(28px,3.6vw,56px)/1 var(--disp);letter-spacing:-.04em;padding-left:0;transition:padding .55s var(--ease),color .3s}
-.list .t .ch{transition:transform .5s var(--ease);transition-delay:calc(var(--i)*18ms)}
-.list a:hover .t{padding-left:clamp(12px,1.6vw,24px);color:var(--lime-ink)}
-.list a:hover .t .ch{transform:translateY(-.08em)}
-.list .f{color:var(--mute);transition:color .3s}
-.list a:hover .f{color:var(--lime-ink)}
-.list svg{width:26px;height:26px;transition:transform .45s var(--ease),color .3s}
-.list a:hover svg{color:var(--lime-ink);transform:rotate(45deg)}
-.all{display:inline-flex;align-items:center;gap:12px;margin-top:36px;min-height:44px;font-weight:600}
-.all span{position:relative}
-.all span::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:1px;background:var(--lime);transform:scaleX(.2);transform-origin:left;transition:transform .5s var(--ease)}
-.all:hover span::after{transform:scaleX(1)}
+/* ---------- see all projects ---------- */
+.seeall{padding:clamp(40px,8vh,90px) 0 clamp(60px,10vh,120px)}
+.cta{position:relative;display:block;padding:clamp(36px,6vh,64px) 0;border-block:1px solid var(--line);overflow:hidden}
+.cta::before{content:"";position:absolute;inset:0;background:var(--lime);transform:scaleY(0);transform-origin:bottom;transition:transform .7s var(--ease)}
+.cta>*{position:relative}
+.cta .mono{display:block;margin-bottom:18px;transition:color .4s}
+.cta .row{display:flex;justify-content:space-between;align-items:center;gap:24px}
+.cta .h2{display:block;font-size:clamp(44px,7.6vw,128px);transition:color .4s,transform .7s var(--ease)}
+.cta .arr{flex:none;display:grid;place-items:center;width:clamp(60px,7vw,112px);aspect-ratio:1;border:1px solid var(--line);border-radius:50%;transition:background .4s,border-color .4s,transform .7s var(--ease)}
+.cta .arr svg{width:42%;height:42%}
+.cta:hover::before{transform:scaleY(1)}
+.cta:hover .mono,.cta:hover .h2{color:var(--lime-ink)}
+.cta:hover .h2{transform:translateX(clamp(10px,1.4vw,22px))}
+.cta:hover .arr{background:var(--lime-ink);border-color:var(--lime-ink);color:var(--lime);transform:rotate(45deg)}
 
 /* ---------- about ---------- */
 .about .grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(32px,6vw,100px);margin-top:clamp(40px,7vh,80px);align-items:start}
@@ -243,8 +237,6 @@ h1,h2,h3{font-family:var(--disp);font-weight:700;font-variation-settings:"wdth" 
   .card{top:calc(76px + var(--k)*10px);height:calc(100svh - 100px)}
   .card p{font-size:15px;margin-top:14px}
   .card .tags{margin-top:14px}.card .go{margin-top:16px}
-  .list a{grid-template-columns:minmax(0,1fr) 30px}
-  .list .f{display:none}
   .cols{grid-template-columns:1fr;gap:24px}
   .ft{flex-direction:column;align-items:flex-start}
 }
@@ -257,7 +249,7 @@ h1,h2,h3{font-family:var(--disp);font-weight:700;font-variation-settings:"wdth" 
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <i class="prog" id="prog" aria-hidden="true"></i>
-<div class="cur" id="cur" aria-hidden="true"></div><div class="ring" id="ring" aria-hidden="true"><b>Open</b></div>
+<div class="cur" id="cur" aria-hidden="true"></div><div class="ring" id="ring" aria-hidden="true"></div>
 
 <header class="hd">
   <div class="wrap">
@@ -313,7 +305,7 @@ h1,h2,h3{font-family:var(--disp);font-weight:700;font-variation-settings:"wdth" 
   </section>
 
   <div class="stack wrap" id="stack">
-    <article class="card c1" style="--k:0"><a href="https://monyx.pro/" target="_blank" rel="noopener" data-cursor="Open">
+    <article class="card c1" style="--k:0"><a href="https://monyx.pro/" target="_blank" rel="noopener">
       <div class="txt">
         <div class="top"><span>01 · Payments</span><span>monyx.pro</span></div>
         <h3>Monyx</h3>
@@ -330,7 +322,7 @@ h1,h2,h3{font-family:var(--disp);font-weight:700;font-variation-settings:"wdth" 
       </svg></div>
     </a></article>
 
-    <article class="card c2" style="--k:1"><a href="https://frc-predictor-c8bkzggpngxjfjmcdfntmr.streamlit.app/" target="_blank" rel="noopener" data-cursor="Try it">
+    <article class="card c2" style="--k:1"><a href="https://frc-predictor-c8bkzggpngxjfjmcdfntmr.streamlit.app/" target="_blank" rel="noopener">
       <div class="txt">
         <div class="top"><span>02 · Machine learning</span><span>Streamlit</span></div>
         <h3>FRC Match Predictor</h3>
@@ -346,7 +338,7 @@ h1,h2,h3{font-family:var(--disp);font-weight:700;font-variation-settings:"wdth" 
       </svg></div>
     </a></article>
 
-    <article class="card c3" style="--k:2"><a href="/lds/" data-cursor="Open">
+    <article class="card c3" style="--k:2"><a href="/lds/">
       <div class="txt">
         <div class="top"><span>03 · Chemistry</span><span>/lds</span></div>
         <h3>Chemistry Lab</h3>
@@ -361,7 +353,7 @@ h1,h2,h3{font-family:var(--disp);font-weight:700;font-variation-settings:"wdth" 
       </svg></div>
     </a></article>
 
-    <article class="card c4" style="--k:3"><a href="/sorting/" data-cursor="Open">
+    <article class="card c4" style="--k:3"><a href="/sorting/">
       <div class="txt">
         <div class="top"><span>04 · Algorithms</span><span>/sorting</span></div>
         <h3>Sorting Library</h3>
@@ -372,7 +364,7 @@ h1,h2,h3{font-family:var(--disp);font-weight:700;font-variation-settings:"wdth" 
       <div class="art" aria-hidden="true"><svg viewBox="0 0 400 300" fill="currentColor" id="bars"></svg></div>
     </a></article>
 
-    <article class="card c5" style="--k:4"><a href="/digits/" data-cursor="Draw">
+    <article class="card c5" style="--k:4"><a href="/digits/">
       <div class="txt">
         <div class="top"><span>05 · Neural network</span><span>/digits</span></div>
         <h3>Digit Classifier</h3>
@@ -384,15 +376,12 @@ h1,h2,h3{font-family:var(--disp);font-weight:700;font-variation-settings:"wdth" 
     </a></article>
   </div>
 
-  <section class="sec" id="more" style="padding-top:clamp(60px,10vh,120px)">
+  <section class="seeall" aria-label="All projects">
     <div class="wrap">
-      <h2 class="h2 split rx">More</h2>
-      <ul class="list">
-        <li><a href="https://joshkopp.github.io/passwordchecker/" target="_blank" rel="noopener" data-cursor="Open"><span class="t split">Password Checker</span><span class="f">Security · entropy and crack time, in the browser</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></li>
-        <li><a href="/onchain/" data-cursor="Open"><span class="t split">Above Board</span><span class="f">Provably fair dice on Solana devnet</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></li>
-        <li><a href="https://joshkopp.github.io/FlashcardGen/" target="_blank" rel="noopener" data-cursor="Open"><span class="t split">Flashcard Generator</span><span class="f">Notes, PDFs or Word docs into flashcards</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></li>
-      </ul>
-      <a class="all" href="/allproj/index.html"><span>Search and filter every project</span> →</a>
+      <a class="cta" href="/allproj/index.html">
+        <span class="mono">Password checker, Above Board, flashcards and the rest</span>
+        <span class="row"><span class="h2 rx split">See all projects</span><span class="arr" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 17 17 7M8 7h9v9"/></svg></span></span>
+      </a>
     </div>
   </section>
 
@@ -460,7 +449,9 @@ document.querySelectorAll('.h1 .dot').forEach(d=>{const w=d.previousElementSibli
 const fit=()=>{
   const tw=el=>{const r=document.createRange();r.selectNodeContents(el);return r.getBoundingClientRect().width};
   const w=$('herowrap').clientWidth,h1=$('h1'),f=$('fit');
-  h1.style.setProperty('--fs','100px');h1.style.setProperty('--fs',Math.min(300,100*w/tw(f)*.985)+'px');
+  h1.style.setProperty('--fs','100px');let fs=Math.min(260,100*w/tw(f)*.985);h1.style.setProperty('--fs',fs+'px');
+  const hw=$('herowrap'),avail=innerHeight-104-Math.max(28,Math.min(56,innerHeight*.05))-12,over=hw.offsetHeight-avail;
+  if(over>0){fs=Math.max(44,fs*(h1.offsetHeight-over)/h1.offsetHeight);h1.style.setProperty('--fs',fs+'px')}
   const b=$('big');b.style.setProperty('--bfs','100px');b.style.setProperty('--bfs',Math.min(440,100*b.parentElement.clientWidth/tw(b)*.985)+'px');
 };
 fit();(document.fonts?document.fonts.ready:Promise.resolve()).then(()=>{fit();cache()});addEventListener('resize',()=>{fit();cache()});
@@ -496,10 +487,10 @@ if(FINE)addEventListener('pointermove',e=>{PX=e.clientX;PY=e.clientY;kick()},{pa
 root.addEventListener('mouseleave',()=>{PX=PY=-1e4;kick()});
 
 // ----- Custom cursor -----
-(()=>{if(!FINE||RM)return;const cur=$('cur'),ring=$('ring'),lab=ring.querySelector('b');let x=0,y=0,rx=0,ry=0,on=false;
+(()=>{if(!FINE||RM)return;const cur=$('cur'),ring=$('ring');let x=0,y=0,rx=0,ry=0,on=false;
   addEventListener('pointermove',e=>{x=e.clientX;y=e.clientY;if(!on){on=true;rx=x;ry=y;document.body.classList.add('cursor-on')}cur.style.transform=`translate3d(${x}px,${y}px,0)`},{passive:true});
   const loop=()=>{rx+=(x-rx)*.18;ry+=(y-ry)*.18;ring.style.transform=`translate3d(${rx}px,${ry}px,0)`;requestAnimationFrame(loop)};loop();
-  document.addEventListener('pointerover',e=>{const c=e.target.closest('[data-cursor]'),l=e.target.closest('a,button,input');ring.classList.toggle('big',!!c);ring.classList.toggle('link',!c&&!!l);if(c)lab.textContent=c.dataset.cursor});
+  document.addEventListener('pointerover',e=>{ring.classList.toggle('link',!!e.target.closest('a,button,input'))});
   document.addEventListener('mouseleave',()=>document.body.classList.remove('cursor-on'));document.addEventListener('mouseenter',()=>on&&document.body.classList.add('cursor-on'));
 })();
 
