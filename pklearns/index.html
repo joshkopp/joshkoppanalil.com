@@ -5,14 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#060504">
-<title>The Back Room · Casino</title>
+<title>The Back Room · 3D Casino</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="casino.css?v=15">
+<link rel="stylesheet" href="world/world.css?v=1">
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
 </head>
 <body>
+<script>/* show a loader while the 3D floor boots, unless this player picked the classic lobby */try{var b3=JSON.parse(localStorage.getItem("br3d")||"{}");if(!b3.lobby2d)document.body.classList.add("w-loading")}catch(e){document.body.classList.add("w-loading")}setTimeout(function(){document.body.classList.remove("w-loading")},20000)</script>
 <canvas id="dust" aria-hidden="true"></canvas>
 
 <header class="top">
@@ -71,6 +74,7 @@
 <script src="chat.js?v=6" defer></script>
 <script src="fun.js?v=1" defer></script>
 <script src="admin.js?v=5" defer></script>
+<script type="module" src="world/main.js?v=1" onerror="document.body.classList.remove('w-loading')"></script>
 <script>
   // every game gets its own section in the stage
   for(const g of GAMES){const s=document.createElement('section');s.className='game';s.id='g-'+g.id;document.getElementById('stage').appendChild(s)}

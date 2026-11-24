@@ -1,0 +1,179 @@
+/* The Back Room 3D floor: HUD, menus and the hand-off between the floor and a game */
+:root { --hud: 1; }
+#w3d { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; display: block; outline: none; touch-action: none; transition: filter .5s var(--ease); }
+#w3d.px { image-rendering: pixelated; image-rendering: crisp-edges; }
+#w3d.hov { cursor: pointer; }
+#whud { display: none; }
+body.world #whud { display: block; }
+body.world #dust { display: none; }
+body.world:not(.ingame) { overflow: hidden; height: 100vh; }
+body.world:not(.ingame) main, body.world:not(.ingame) footer, body.world:not(.ingame) .betbar { display: none !important; }
+body.world .top { position: fixed; left: 0; right: 0; background: linear-gradient(180deg, rgba(6, 5, 4, .78), rgba(6, 5, 4, 0)); border-bottom: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
+body.world .top::after { display: none; }
+body.world.ingame .top { position: sticky; background: linear-gradient(180deg, rgba(6, 5, 4, .92), rgba(6, 5, 4, .7)); backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%); border-bottom: 1px solid var(--line); }
+body.world main { position: relative; z-index: 1; }
+body.world.ingame #w3d { filter: blur(7px) brightness(.38) saturate(1.2); }
+body.world.ingame #whud > :not(.wfade):not(.wtoasts) { display: none !important; }
+body.world.ingame .game.on { background: radial-gradient(120% 80% at 50% 0%, rgba(6, 5, 4, .25), rgba(6, 5, 4, .6)); border-radius: 26px; }
+body.world footer { position: relative; z-index: 1; }
+
+/* loading */
+body.w-loading::after { content: "Opening the doors…"; position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: radial-gradient(600px 400px at 50% 45%, rgba(232, 196, 106, .18), transparent 70%), #060504; color: var(--gold); font: 900 clamp(22px, 4vw, 40px) "Cinzel", serif; letter-spacing: .12em; animation: wlpulse 1.4s ease-in-out infinite; }
+body.w-loading main, body.w-loading footer { visibility: hidden; }
+@keyframes wlpulse { 50% { color: #fff3c4; text-shadow: 0 0 30px rgba(232, 196, 106, .7); } }
+
+/* classic → 3D button */
+.to3d { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 18px auto 0; padding: 14px 28px; border-radius: 18px; border: 1px solid var(--gold); background: linear-gradient(180deg, #2a1f0e, #120d07); color: var(--gold); cursor: pointer; box-shadow: 0 0 30px -8px rgba(232, 196, 106, .6); font-family: inherit; }
+.to3d b { font: 900 18px "Cinzel", serif; letter-spacing: .06em; } .to3d span { font-size: 12px; color: var(--muted); }
+
+/* --- top-left tools */
+.wtl { position: fixed; left: 14px; top: 74px; z-index: 30; display: flex; flex-wrap: wrap; gap: 8px; transform: scale(var(--hud)); transform-origin: 0 0; }
+.wbtn { display: flex; align-items: center; gap: 7px; height: 40px; padding: 0 14px; border-radius: 99px; border: 1px solid var(--line2); background: linear-gradient(180deg, rgba(36, 26, 10, .88), rgba(12, 9, 4, .9)); color: var(--ink); font: 700 13px "DM Sans", sans-serif; cursor: pointer; box-shadow: 0 8px 24px -12px #000; backdrop-filter: blur(8px); transition: .2s var(--ease); }
+.wbtn:hover { border-color: var(--gold); transform: translateY(-1px); }
+.wbtn b { font: 800 15px "Cinzel", serif; color: var(--gold); }
+.wbtn span { color: var(--muted); font-weight: 600; }
+.wbtn.ic { padding: 0 12px; font-size: 16px; }
+.wbtn.ic span { font-size: 12px; }
+.wdot { width: 9px; height: 9px; border-radius: 50%; background: var(--win); box-shadow: 0 0 10px var(--win); }
+.wdot.off { background: #777; box-shadow: none; }
+@media (max-width: 760px) { .wbtn span { display: none; } .wbtn.ic { width: 40px; justify-content: center; padding: 0; } .wtl { top: 68px; left: 10px; gap: 6px; } }
+
+/* --- minimap */
+#wmini { position: fixed; left: 14px; bottom: 14px; z-index: 30; width: calc(240px * var(--hud)); height: calc(176px * var(--hud)); cursor: crosshair; filter: drop-shadow(0 10px 24px rgba(0, 0, 0, .6)); }
+@media (max-width: 760px) { #wmini { width: 140px; height: 103px; left: 10px; bottom: 10px; } body.wtouchon #wmini { top: 116px; bottom: auto; left: 10px; width: 120px; height: 88px; } }
+
+/* --- interaction prompt */
+.wprompt { position: fixed; left: 50%; bottom: 96px; z-index: 31; transform: translateX(-50%) scale(var(--hud)); display: flex; align-items: center; gap: 14px; padding: 12px 22px 12px 12px; border-radius: 20px; border: 1px solid var(--gold); background: linear-gradient(180deg, rgba(40, 28, 10, .94), rgba(12, 9, 4, .96)); box-shadow: 0 16px 40px -10px #000, 0 0 40px -14px rgba(232, 196, 106, .7); max-width: min(520px, calc(100vw - 30px)); animation: wpin .35s var(--pop); pointer-events: none; }
+@keyframes wpin { from { opacity: 0; transform: translateX(-50%) translateY(14px) scale(.9); } }
+.wpk { min-width: 48px; height: 48px; padding: 0 8px; border-radius: 12px; display: grid; place-items: center; background: var(--gg); color: #2a1a04; font: 900 18px "DM Sans"; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .25); }
+.wprompt b { display: block; font: 900 18px "Cinzel", serif; color: var(--gold); letter-spacing: .03em; }
+.wprompt small { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.35; max-width: 400px; }
+body.wtouchon .wprompt { bottom: auto; top: 120px; }
+
+.wcross { position: fixed; left: 50%; top: 50%; z-index: 30; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: rgba(255, 255, 255, .85); box-shadow: 0 0 0 2px rgba(0, 0, 0, .4); pointer-events: none; }
+.wfps { position: fixed; right: 14px; top: 74px; z-index: 30; padding: 4px 10px; border-radius: 8px; background: rgba(0, 0, 0, .6); color: var(--win); font: 700 11px ui-monospace, monospace; }
+.wlock { position: fixed; left: 50%; top: 50%; z-index: 29; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 28px; border-radius: 20px; border: 1px solid var(--line2); background: rgba(8, 6, 3, .72); backdrop-filter: blur(6px); cursor: pointer; text-align: center; animation: wpin .4s var(--ease); }
+.wlock b { font: 900 20px "Cinzel", serif; color: var(--gold); }
+.wlock span { font-size: 12px; color: var(--muted); }
+.wfade { position: fixed; inset: 0; z-index: 150; background: #000; opacity: 0; pointer-events: none; transition: opacity .28s; }
+.wfade.on { opacity: 1; }
+.wtoasts { position: fixed; right: 14px; top: 110px; z-index: 90; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; pointer-events: none; }
+.wtoast { padding: 9px 16px; border-radius: 14px; border: 1px solid var(--line2); background: rgba(14, 10, 4, .92); color: var(--ink); font-size: 13px; font-weight: 600; animation: wtin .35s var(--pop); transition: .4s; max-width: 300px; }
+.wtoast.out { opacity: 0; transform: translateX(20px); }
+@keyframes wtin { from { opacity: 0; transform: translateX(30px); } }
+
+/* --- emote wheel */
+.wwheel { position: fixed; left: 50%; top: 50%; z-index: 95; width: 0; height: 0; }
+.wwheel button { position: absolute; left: 0; top: 0; width: 76px; height: 76px; margin: -38px; transform: translate(var(--x), var(--y)); border-radius: 50%; border: 1px solid var(--line2); background: radial-gradient(circle at 50% 30%, #3a2a12, #120d07); color: var(--ink); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 10px 30px -8px #000; animation: wwin .3s var(--pop) both; transition: .15s; }
+.wwheel button:hover { border-color: var(--gold); transform: translate(var(--x), var(--y)) scale(1.12); }
+.wwheel button span { font-size: 28px; line-height: 1; }
+.wwheel button small { font-size: 10px; color: var(--muted); font-weight: 700; display: flex; gap: 4px; align-items: center; }
+.wwheel kbd, .wp kbd, .wlock kbd { display: inline-block; min-width: 18px; padding: 1px 5px; border-radius: 5px; background: rgba(232, 196, 106, .15); border: 1px solid var(--line2); color: var(--gold); font: 700 11px "DM Sans"; text-align: center; }
+.wwc { position: absolute; left: -40px; top: -16px; width: 80px; text-align: center; font: 900 14px "Cinzel", serif; color: var(--gold); }
+@keyframes wwin { from { opacity: 0; transform: translate(0, 0) scale(.3); } }
+
+/* --- touch */
+#wtouch { position: fixed; inset: 0; z-index: 28; pointer-events: none; }
+.wjoy { position: fixed; width: 110px; height: 110px; margin: -55px; border-radius: 50%; border: 2px solid rgba(232, 196, 106, .45); background: rgba(10, 7, 4, .35); opacity: 0; transition: opacity .15s; pointer-events: none; }
+.wjoy.on { opacity: 1; }
+.wjoy i { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px; border-radius: 50%; background: var(--gg); box-shadow: 0 4px 14px rgba(0, 0, 0, .5); }
+.wtbtns { position: fixed; right: 16px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(2, 56px); gap: 10px; pointer-events: auto; }
+#wtouch.right .wtbtns { right: auto; left: 16px; }
+.wtbtns button { width: 56px; height: 56px; border-radius: 50%; border: 1px solid var(--line2); background: rgba(14, 10, 4, .8); color: var(--ink); font-size: 22px; touch-action: manipulation; }
+.wtbtns .tplay { grid-column: 1 / -1; width: 122px; height: 60px; border-radius: 30px; background: var(--gg); color: #2a1a04; font: 900 18px "Cinzel", serif; letter-spacing: .08em; border: 0; animation: wpin .3s var(--pop); }
+body.wtouchon .chfab { bottom: auto; top: 118px; right: 12px; }
+
+/* --- panels */
+.wp { position: fixed; inset: 0; z-index: 96; display: grid; place-items: center; padding: 16px; background: rgba(3, 2, 1, .55); backdrop-filter: blur(4px); animation: wfin .25s; }
+@keyframes wfin { from { opacity: 0; } }
+.wpbox { position: relative; width: min(480px, 100%); max-height: calc(100vh - 32px); overflow: auto; padding: 24px 24px 22px; border-radius: 24px; border: 1px solid var(--line2); background: radial-gradient(120% 60% at 50% 0%, rgba(232, 196, 106, .12), transparent 60%), linear-gradient(180deg, rgba(28, 20, 9, .98), rgba(9, 7, 4, .98)); box-shadow: 0 40px 90px -20px #000; animation: wpbin .35s var(--pop); scrollbar-width: thin; scrollbar-color: var(--gold3) transparent; }
+.wp.wide .wpbox { width: min(820px, 100%); }
+@keyframes wpbin { from { transform: translateY(20px) scale(.96); opacity: 0; } }
+.wpx { position: absolute; right: 14px; top: 14px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: rgba(255, 255, 255, .04); color: var(--muted); font-size: 22px; cursor: pointer; z-index: 2; }
+.wpx:hover { color: var(--gold); border-color: var(--gold); }
+.wp h2 { margin: 0 40px 4px 0; font: 900 26px "Cinzel", serif; background: var(--gg); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.wp h2 small { font: 700 14px "DM Sans"; color: var(--dim); -webkit-text-fill-color: var(--dim); margin-left: 6px; }
+.wp h4 { margin: 18px 0 8px; font: 800 11px "DM Sans"; letter-spacing: .18em; text-transform: uppercase; color: var(--dim); }
+.wp h4 small { letter-spacing: 0; text-transform: none; font-weight: 600; margin-left: 6px; }
+.wpsub { margin: 0 0 6px; color: var(--muted); font-size: 14px; }
+.wnote { margin: 10px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+.wbig { margin-top: 14px; height: 44px; padding: 0 18px; border-radius: 14px; border: 1px solid var(--line2); background: rgba(232, 196, 106, .06); color: var(--ink); font: 700 14px "DM Sans"; cursor: pointer; transition: .2s; }
+.wbig:hover { border-color: var(--gold); background: rgba(232, 196, 106, .14); }
+.wbig.go { background: var(--gg); color: #2a1a04; border: 0; font-weight: 900; }
+.wbtns { display: flex; flex-wrap: wrap; gap: 10px; }
+.wbtns .wbig { margin-top: 8px; }
+
+.wdir { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 8px; }
+.wdc { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 16px; border: 1px solid var(--line); background: rgba(255, 255, 255, .025); }
+.wdc.wcash { margin-top: 14px; }
+.wdi { width: 44px; height: 44px; flex: none; border-radius: 12px; display: grid; place-items: center; font-size: 22px; background: rgba(232, 196, 106, .1); border: 1px solid var(--line); }
+.wdt { flex: 1; min-width: 0; }
+.wdt b { display: block; font: 800 15px "Cinzel", serif; color: var(--ink); }
+.wdt span { display: block; color: var(--dim); font-size: 12px; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.wdt em { font-style: normal; font-size: 11px; color: var(--win); font-weight: 700; }
+.wdb { display: flex; gap: 6px; flex: none; }
+.wdb button { height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line2); background: transparent; color: var(--ink); font: 700 12px "DM Sans"; cursor: pointer; }
+.wdb button.go { background: var(--gg); color: #2a1a04; border: 0; font-weight: 900; }
+.wdb button:hover { border-color: var(--gold); }
+@media (max-width: 520px) { .wdir { grid-template-columns: 1fr; } }
+
+.wpl { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.wpl li { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 12px; background: rgba(255, 255, 255, .03); border: 1px solid var(--line); }
+.wpl i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .3); }
+.wpl b { font-weight: 800; } .wpl span { flex: 1; color: var(--dim); font-size: 12.5px; text-align: right; }
+.wpl button { height: 30px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--line2); background: transparent; color: var(--gold); font: 700 12px "DM Sans"; cursor: pointer; }
+#wlbin .lb { margin: 14px 0 0; max-width: none; }
+#wlbin .pstats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 10px 0 0; }
+
+/* settings */
+.wtabs { display: flex; gap: 6px; margin: 14px 0 4px; overflow-x: auto; scrollbar-width: none; }
+.wtabs button { flex: none; height: 38px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: var(--muted); font: 700 13px "DM Sans"; cursor: pointer; }
+.wtabs button.on { background: rgba(232, 196, 106, .14); border-color: var(--gold); color: var(--gold); }
+.wsbody { min-height: 360px; }
+.wseg { display: flex; flex-wrap: wrap; gap: 6px; }
+.wseg button { height: 36px; padding: 0 13px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, .03); color: var(--ink); font: 600 13px "DM Sans"; cursor: pointer; transition: .15s; }
+.wseg button:hover { border-color: var(--line2); }
+.wseg button.on { background: var(--gg); color: #2a1a04; border-color: transparent; font-weight: 800; }
+.wstyles { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.wstyles button { text-align: left; padding: 12px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255, 255, 255, .025); color: var(--ink); cursor: pointer; font-family: inherit; transition: .2s; }
+.wstyles button.on { border-color: var(--gold); background: rgba(232, 196, 106, .1); box-shadow: 0 0 0 1px var(--gold) inset; }
+.wstyles .sw { display: flex; gap: 4px; margin-bottom: 8px; } .wstyles .sw i { width: 22px; height: 22px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, .15); }
+.wstyles b { display: block; font: 800 14px "Cinzel", serif; } .wstyles small { color: var(--dim); font-size: 11.5px; line-height: 1.3; display: block; }
+.wrow { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 0; border-bottom: 1px solid rgba(232, 196, 106, .08); }
+.wrow > div:first-child { min-width: 0; }
+.wrow b { display: block; font-weight: 700; font-size: 14px; } .wrow small { display: block; color: var(--dim); font-size: 11.5px; }
+.wtog { flex: none; width: 50px; height: 28px; border-radius: 99px; border: 1px solid var(--line2); background: rgba(255, 255, 255, .06); position: relative; cursor: pointer; transition: .2s; }
+.wtog i { position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--muted); transition: .25s var(--pop); }
+.wtog.on { background: rgba(92, 255, 157, .25); border-color: var(--win); } .wtog.on i { left: 25px; background: var(--win); }
+.wrng { display: flex; align-items: center; gap: 10px; flex: none; }
+.wrng input { width: min(200px, 40vw); accent-color: var(--gold); }
+.wrng output { min-width: 56px; text-align: right; font: 700 13px "DM Sans"; color: var(--gold); font-variant-numeric: tabular-nums; }
+.wkeys { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px; }
+.wkeys button { display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 40px; padding: 0 8px 0 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, .025); color: var(--ink); font: 600 13px "DM Sans"; cursor: pointer; }
+.wkeys button:hover { border-color: var(--gold); }
+.wkeys button.wait { border-color: var(--win); animation: wlpulse 1s infinite; }
+.wkeys kbd { min-width: 44px; padding: 4px 8px; font-size: 12px; }
+.wsw { display: flex; flex-wrap: wrap; gap: 7px; }
+.wsw button { width: 34px; height: 34px; border-radius: 10px; border: 2px solid rgba(255, 255, 255, .12); cursor: pointer; transition: .15s; }
+.wsw button.on { border-color: var(--gold); transform: scale(1.1); box-shadow: 0 0 0 2px #000, 0 0 14px rgba(232, 196, 106, .7); }
+.whelp { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin-top: 12px; }
+.whelp > div { padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255, 255, 255, .025); }
+.whelp h4 { margin: 0 0 6px; color: var(--gold); }
+.whelp p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.6; }
+.wp.set .wpbox { padding-bottom: 26px; }
+@media (max-width: 560px) { .wrow { flex-wrap: wrap; } .wrng input { width: 56vw; } .wpbox { padding: 20px 16px; border-radius: 20px; } }
+body.world:not(.ingame) #gtitle { display: none; }
+
+/* avatar tab: keep yourself in view while you dress up */
+.wp.side { background: transparent; backdrop-filter: none; place-items: center end; }
+.wp.side .wpbox { width: min(440px, 100%); }
+@media (max-width: 760px) {
+  .wp.side { place-items: end center; padding: 8px; }
+  .wp.side .wpbox { max-height: 52vh; }
+  body.world .brand span { display: none; }
+  body.world .top .wrap { gap: 8px; }
+  body.wtouchon .wprompt { top: auto; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); left: 12px; transform: scale(var(--hud)); transform-origin: 0 100%; max-width: calc(100vw - 170px); padding: 10px 14px 10px 10px; gap: 10px; }
+  body.wtouchon .wprompt b { font-size: 15px; }
+  body.wtouchon .wprompt small { display: none; }
+  .wpk { min-width: 40px; height: 40px; font-size: 13px; }
+}
