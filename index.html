@@ -621,9 +621,12 @@ function build(){
   // stats -> first project: the numbers lift away first, then the blue sweeps in, then Monyx builds in as it clears
   tl.to('.st-in .num',{y:-60,opacity:0,duration:.8,stagger:.1,ease:'power2.in'},21.05)
     .to('.xp li',{y:-36,opacity:0,duration:.7,stagger:.06,ease:'power2.in'},21.15)
+    // the wipe lives inside the work scene, so the scene has to be visible the moment the sweep starts (cards hidden until covered)
+    .set(track,{opacity:0},21.68)
+    .set(work,{opacity:1},21.69)
     .fromTo(wipe,{clipPath:wIn},{clipPath:wFull,duration:.95,ease:'power2.inOut'},21.7)
     .set(stats,{opacity:0},22.7)
-    .set(work,{opacity:1},22.7)
+    .set(track,{opacity:1},22.7)
     .to(wipe,{clipPath:wOut,duration:1.05,ease:'power2.inOut'},22.85);
   enter(panels[0],23);
   L('p0',25);
