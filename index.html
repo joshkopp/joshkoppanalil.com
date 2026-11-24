@@ -358,7 +358,7 @@ button,input{font:inherit;color:inherit}
       <div class="nums vel">
         <div class="num fd"><b data-n="20" data-suf="+">20<sup>+</sup></b><span class="mono">Live projects</span></div>
         <div class="num fd"><b data-n="10">10</b><span class="mono">Games made</span></div>
-        <div class="num fd"><b data-n="18" data-suf="k+">18<sup>k+</sup></b><span class="mono">Matches my FRC model learned from</span></div>
+        <div class="num fd"><b data-n="8" data-suf="+">8<sup>+</sup></b><span class="mono">Competitions</span></div>
       </div>
       <ul class="xp" aria-label="Where my time goes">
         <li class="fd"><b>Monyx</b><span><em>Now.</em> Founder and builder of a Solana wallet you pay by voice.</span></li>
@@ -681,14 +681,14 @@ function onFilm(self){
 const yAt=t=>st.start+(st.end-st.start)*(t/tl.duration()),yFor=lab=>yAt(LBL[lab]);
 /* ----- pager: every scroll, swipe or key press glides to the next scene and stops there ----- */
 const PAGER=!/[?&]nosnap/.test(location.search);
-const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+const ease=t=>-(Math.cos(Math.PI*t)-1)/2,STEP=1.8; // every scene change is the same planned glide
 let busy=false,quiet=0,arrived=0,gid=0;
 const LABS=()=>labelsOrder.map(e=>e[0]);
 const here=()=>{let bi=0,bd=1e9;LABS().forEach((k,i)=>{const dd=Math.abs(yFor(k)-scrollY);if(dd<bd){bd=dd;bi=i}});return bi};
 const done=()=>{busy=false;arrived=performance.now()};
-function glide(lab,dur){const y=yFor(lab),u=Math.abs(LBL[lab]-tl.time());
+function glide(lab,dur){const y=yFor(lab);
   if(Math.abs(y-scrollY)<2){done();return}
-  busy=true;dur=dur||clamp(.6+u*.1,.85,2);
+  busy=true;dur=dur||STEP;
   const id=++gid,fin=()=>{if(id===gid)setTimeout(done,60)};setTimeout(fin,dur*1000+500);
   lenis.scrollTo(y,{duration:dur,easing:ease,force:true,lock:true,onComplete:fin})}
 function page(dir){if(busy||!st)return;const L=LABS(),i=here(),j=clamp(i+dir,0,L.length-1);if(j!==i)glide(L[j])}
