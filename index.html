@@ -79,17 +79,9 @@ button,input{font:inherit;color:inherit}
 .tright{display:flex;align-items:center;gap:20px}
 .cta-top{position:relative;font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;padding:10px 0}
 
-.idx{position:fixed;left:var(--gut);bottom:max(20px,env(safe-area-inset-bottom));z-index:60;display:none;align-items:center;gap:18px}
-.film .idx{display:flex}
-.idx .now{font:500 11px var(--mono);letter-spacing:.16em;color:var(--ink);min-width:9.5em}
-.idx .now span{color:var(--acc)}
-.idx .bar{position:relative;width:110px;height:1px;background:var(--line)}
-.idx .bar i{position:absolute;inset:0;background:var(--acc);transform-origin:0 50%;transform:scaleX(0)}
-.idx ol{display:flex;gap:2px}
-.idx a{display:grid;place-items:center;width:24px;height:28px}
-.idx a i{width:6px;height:6px;border-radius:50%;background:transparent;box-shadow:0 0 0 1px rgba(255,255,255,.35);transition:background .3s,box-shadow .3s,transform .3s var(--ease)}
-.idx a:hover i{box-shadow:0 0 0 1px #fff;transform:scale(1.3)}
-.idx a[aria-current] i{background:var(--acc);box-shadow:0 0 0 1px var(--acc),0 0 10px var(--acc)}
+.prog{position:fixed;left:0;right:0;top:0;height:2px;z-index:70;pointer-events:none;display:none}
+.film .prog{display:block}
+.prog i{display:block;height:100%;background:var(--acc);box-shadow:0 0 8px rgba(58,109,255,.7);transform-origin:0 50%;transform:scaleX(0)}
 
 /* cursor */
 .cur{position:fixed;left:0;top:0;z-index:250;pointer-events:none;display:none}
@@ -258,7 +250,6 @@ button,input{font:inherit;color:inherit}
 .film .s-contact{clip-path:circle(0% at 50% 50%)}
 
 @media (max-width:860px){
-  .idx .bar{width:56px}.idx .now{min-width:0}
   .ab-in{grid-template-columns:1fr;gap:28px}
   .ab-side{grid-template-columns:auto minmax(0,1fr);align-items:center;gap:18px}
   .ab-pic{width:84px}
@@ -308,17 +299,7 @@ button,input{font:inherit;color:inherit}
   </div>
 </header>
 
-<nav class="idx" aria-label="Scenes">
-  <div class="bar" aria-hidden="true"><i id="pbar"></i></div>
-  <ol>
-    <li><a href="#intro" data-cursor="jump" aria-label="01 Intro"><i></i></a></li>
-    <li><a href="#about" data-cursor="jump" aria-label="02 About"><i></i></a></li>
-    <li><a href="#stats" data-cursor="jump" aria-label="03 Stats"><i></i></a></li>
-    <li><a href="#work" data-cursor="jump" aria-label="04 Work"><i></i></a></li>
-    <li><a href="#skills" data-cursor="jump" aria-label="05 Skills"><i></i></a></li>
-    <li><a href="#contact" data-cursor="jump" aria-label="06 Contact"><i></i></a></li>
-  </ol>
-</nav>
+<div class="prog" aria-hidden="true"><i id="pbar"></i></div>
 
 <main id="film">
   <!-- 01 -->
@@ -371,19 +352,19 @@ button,input{font:inherit;color:inherit}
     <div class="w-head"><h2 id="work-h">Projects</h2></div>
     <div class="track" id="track">
       <article class="pn" id="p-monyx" data-art="0">
-        <div class="pn-tx"><p class="mono">Payments · building now</p><h3 class="vel"><a class="scr" href="https://monyx.pro/" target="_blank" rel="noopener" data-cursor="open">Monyx</a></h3><p class="one">A dollar wallet on Solana you pay by talking to it. Every payment is read back in plain English and risk-checked before it sends.</p><p class="st">Solana · Voice · Supabase</p><div class="acts"><span class="mag"><a class="btn" href="https://monyx.pro/" target="_blank" rel="noopener" data-cursor="open">Open Monyx <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
+        <div class="pn-tx"><p class="mono">Payments · building now</p><h3><a href="https://monyx.pro/" target="_blank" rel="noopener" data-cursor="open">Monyx</a></h3><p class="one">A dollar wallet on Solana you pay by talking to it. Every payment is read back in plain English and risk-checked before it sends.</p><p class="st">Solana · Voice · Supabase</p><div class="acts"><span class="mag"><a class="btn" href="https://monyx.pro/" target="_blank" rel="noopener" data-cursor="open">Open Monyx <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
         <figure class="pv" aria-hidden="true"><span class="mono tagp">voice → payment</span><svg viewBox="0 0 480 360"></svg></figure>
       </article>
       <article class="pn" id="p-frc" data-art="1">
-        <div class="pn-tx"><p class="mono">Machine learning</p><h3 class="vel"><a class="scr" href="https://frc-predictor-c8bkzggpngxjfjmcdfntmr.streamlit.app/" target="_blank" rel="noopener" data-cursor="open">FRC Predictor</a></h3><p class="one">Pick six robotics teams and it calls the winner before the match is played.</p><p class="st"><b>77.3%</b> accurate on unseen matches · trained on <b>18,000+</b></p><div class="acts"><span class="mag"><a class="btn" href="https://frc-predictor-c8bkzggpngxjfjmcdfntmr.streamlit.app/" target="_blank" rel="noopener" data-cursor="open">Run a prediction <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
+        <div class="pn-tx"><p class="mono">Machine learning</p><h3><a href="https://frc-predictor-c8bkzggpngxjfjmcdfntmr.streamlit.app/" target="_blank" rel="noopener" data-cursor="open">FRC Predictor</a></h3><p class="one">Pick six robotics teams and it calls the winner before the match is played.</p><p class="st"><b>77.3%</b> accurate on unseen matches · trained on <b>18,000+</b></p><div class="acts"><span class="mag"><a class="btn" href="https://frc-predictor-c8bkzggpngxjfjmcdfntmr.streamlit.app/" target="_blank" rel="noopener" data-cursor="open">Run a prediction <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
         <figure class="pv" aria-hidden="true"><span class="mono tagp">red vs blue</span><svg viewBox="0 0 480 360"></svg></figure>
       </article>
       <article class="pn" id="p-chem" data-art="3">
-        <div class="pn-tx"><p class="mono">Chemistry</p><h3 class="vel"><a class="scr" href="/lds/" data-cursor="open">Chemistry Lab</a></h3><p class="one">Type any of 323 compounds and watch its Lewis structure build step by step, then spin it in 3D.</p><p class="st">Lewis structures · VSEPR · element explorer · quiz</p><div class="acts"><span class="mag"><a class="btn" href="/lds/" data-cursor="open">Open the lab <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
+        <div class="pn-tx"><p class="mono">Chemistry</p><h3><a href="/lds/" data-cursor="open">Chemistry Lab</a></h3><p class="one">Type any of 323 compounds and watch its Lewis structure build step by step, then spin it in 3D.</p><p class="st">Lewis structures · VSEPR · element explorer · quiz</p><div class="acts"><span class="mag"><a class="btn" href="/lds/" data-cursor="open">Open the lab <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
         <figure class="pv" aria-hidden="true"><span class="mono tagp">CH₄ · tetrahedral</span><svg viewBox="0 0 480 360"></svg></figure>
       </article>
           <article class="pn pn-more" id="p-more">
-        <div class="pn-tx"><p class="mono">More projects</p><h3 class="vel"><a class="scr" href="/allproj/index.html" data-cursor="view">Everything else</a></h3><p class="one">Neural nets, algorithms, security tools, study apps and experiments. They all live on one page.</p><div class="acts"><span class="mag"><a class="btn" href="/allproj/index.html" data-cursor="view">See all projects <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
+        <div class="pn-tx"><p class="mono">More projects</p><h3><a href="/allproj/index.html" data-cursor="view">Everything else</a></h3><p class="one">Neural nets, algorithms, security tools, study apps and experiments. They all live on one page.</p><div class="acts"><span class="mag"><a class="btn" href="/allproj/index.html" data-cursor="view">See all projects <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
         <nav class="allcard" aria-label="More projects">
           <p class="mono ac-h"><span>A few of the rest</span><span>6 of 20+</span></p>
           <a href="/digits/" data-cursor="play"><b>Digit Classifier</b><span>Neural network</span></a>
@@ -675,12 +656,12 @@ function onFilm(self){
 const yAt=t=>st.start+(st.end-st.start)*(t/tl.duration()),yFor=lab=>yAt(LBL[lab]);
 /* ----- pager: every scroll, swipe or key press glides to the next scene and stops there ----- */
 const PAGER=!/[?&]nosnap/.test(location.search);
-const ease=t=>.45*t+.55*(-(Math.cos(Math.PI*t)-1)/2),STEP=2.2; // every scene change is the same planned glide
-let busy=false,quiet=0,arrived=0,gid=0;
+const ease=t=>.45*t+.55*(-(Math.cos(Math.PI*t)-1)/2),STEP=TOUCH?3:2.2; // every scene change is the same planned glide
+let busy=false,quiet=0,arrived=0,gid=0,gdir=1;
 const LABS=()=>labelsOrder.map(e=>e[0]);
 const here=()=>{let bi=0,bd=1e9;LABS().forEach((k,i)=>{const dd=Math.abs(yFor(k)-scrollY);if(dd<bd){bd=dd;bi=i}});return bi};
 const done=()=>{busy=false;arrived=performance.now()};
-function glide(lab,dur){const y=yFor(lab);
+function glide(lab,dur){const y=yFor(lab);gdir=y>=scrollY?1:-1;
   if(Math.abs(y-scrollY)<2){done();return}
   busy=true;dur=dur||STEP;
   const id=++gid,fin=()=>{if(id===gid)setTimeout(done,60)};setTimeout(fin,dur*1000+500);
@@ -736,7 +717,7 @@ gsap.ticker.add(()=>{
   if(tl&&tl.time()>LBL.p0-4&&tl.time()<LBL.skills){const tx=gsap.getProperty(track,'x'),W=innerWidth;
     panels.forEach((p,i)=>{const dd=(i*W+tx)/W;if(Math.abs(dd)>1.2)return;if(p._pv===undefined){p._pv=p.querySelector('.pv');p._tx=p.querySelector('.pn-tx')}
       if(p._pv)p._pv.style.transform=`translate3d(${(dd*W*(mob?.12:.26)).toFixed(1)}px,0,0)`;p._tx.style.transform=Math.abs(dd)<.001?'':`translate3d(${(dd*W*(mob?.03:.07)).toFixed(1)}px,0,0)`});
-        const f=-tx/W,dst=tl.time()<LBL.p0?0:(vs>=0?Math.ceil(f-.02):Math.floor(f+.02));const di=clamp(dst,0,panels.length-1);wnum.textContent=di===panels.length-1?'+':String(di+1).padStart(2,'0')}
+        const f=(tl.time()-LBL.p0)/4,dst=f<0?0:(gdir>0?Math.ceil(f-.02):Math.floor(f+.02));const di=clamp(dst,0,panels.length-1);wnum.textContent=di===panels.length-1?'+':String(di+1).padStart(2,'0')}
   if(tl&&SK.p<1&&tl.time()>LBL.p0+20&&tl.time()<LBL.contact)applySkills();
 });
 
