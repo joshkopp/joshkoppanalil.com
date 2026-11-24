@@ -616,14 +616,16 @@ function build(){
   const enter=(pn,t)=>{const tx=pn.querySelectorAll('.pn-tx > *'),side=pn.querySelectorAll('.pv svg,.pv .tagp,.allcard');
     // the blue leaves from the right, so the preview (right) comes in first and the text (left) follows once it's uncovered
     if(side.length)tl.fromTo(side,{xPercent:18,opacity:0},{xPercent:0,opacity:1,duration:1.4,stagger:.08,ease:'power3.out'},t);
-    tl.fromTo(tx,{y:64,opacity:0},{y:0,opacity:1,duration:1.2,stagger:.1,ease:'power3.out'},t+.45)};
+    tl.fromTo(tx,{y:64,opacity:0},{y:0,opacity:1,duration:1,stagger:.1,ease:'power3.out'},t+.45)};
   const wIn='inset(0 0% 0 100%)',wFull='inset(0 0% 0 0%)',wOut='inset(0 100% 0 0%)';
-  // stats -> first project: no blue. The numbers lift away one by one, then Monyx builds in behind them
-  tl.to('.st-in .num',{y:-60,opacity:0,duration:1,stagger:.14,ease:'power2.in'},21.15)
-    .to('.xp li',{y:-36,opacity:0,duration:.8,stagger:.07,ease:'power2.in'},21.35)
-    .set(work,{opacity:1},22.3)
-    .set(stats,{opacity:0},22.6);
-  enter(panels[0],22.35);
+  // stats -> first project: the numbers lift away first, then the blue sweeps in, then Monyx builds in as it clears
+  tl.to('.st-in .num',{y:-60,opacity:0,duration:.8,stagger:.1,ease:'power2.in'},21.05)
+    .to('.xp li',{y:-36,opacity:0,duration:.7,stagger:.06,ease:'power2.in'},21.15)
+    .fromTo(wipe,{clipPath:wIn},{clipPath:wFull,duration:.95,ease:'power2.inOut'},21.7)
+    .set(stats,{opacity:0},22.7)
+    .set(work,{opacity:1},22.7)
+    .to(wipe,{clipPath:wOut,duration:1.05,ease:'power2.inOut'},22.85);
+  enter(panels[0],23);
   L('p0',25);
   // projects: the track slides one full-bleed scene at a time, an accent wipe between each
   for(let k=1;k<NP;k++){const t0=25+(k-1)*4+.6;
