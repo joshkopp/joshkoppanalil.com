@@ -35,8 +35,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=panchang@500,600,700&f[]=supreme@400,500,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wdth,wght@75..112.5,300..500&display=swap" rel="stylesheet">
 <script>
 (()=>{const d=document.documentElement,rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
   d.classList.add('js');if(!rm)d.classList.add('film');
@@ -47,13 +47,13 @@
 :root{
   --bg:#08080a;--ink:#f3f4f6;--mute:#8b8f98;--dim:#4a4d55;--line:rgba(255,255,255,.1);
   --acc:#3a6dff;--acc-2:#8fb0ff;
-  --disp:"Clash Display","Space Grotesk",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace;
+  --disp:"Panchang","Unbounded",system-ui,sans-serif;--body:"Supreme","Space Grotesk",system-ui,sans-serif;--mono:"Martian Mono",ui-monospace,monospace;
   --gut:clamp(20px,4.4vw,72px);
   --ease:cubic-bezier(.16,1,.3,1);
 }
 *,*::before,*::after{box-sizing:border-box}
 html{background:var(--bg);color:var(--ink);-webkit-text-size-adjust:100%;overscroll-behavior:none}
-body{margin:0;font:400 16px/1.6 var(--disp);-webkit-font-smoothing:antialiased;overflow-x:clip}
+body{margin:0;font:400 16px/1.6 var(--body);-webkit-font-smoothing:antialiased;overflow-x:clip}
 a{color:inherit;text-decoration:none}
 h1,h2,h3,p,dl,dd,ul,ol,figure{margin:0;padding:0}
 ul,ol{list-style:none}
@@ -63,7 +63,7 @@ button,input{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--acc);outline-offset:4px;border-radius:3px}
 .sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .skip{position:fixed;left:16px;top:-60px;z-index:300;padding:10px 16px;background:var(--acc);color:#fff;font:500 13px var(--mono)}.skip:focus{top:14px}
-.mono{font:500 11.5px/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.mono{font:400 10.5px/1.5 var(--mono);font-stretch:87.5%;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
 .acc-t{color:var(--acc)}
 
 /* grain, motion streaks */
@@ -113,7 +113,7 @@ button,input{font:inherit;color:inherit}
 
 /* buttons: magnetic wrapper, squish on press, underline draws in */
 .mag{display:inline-block}
-.btn{display:inline-flex;align-items:center;gap:12px;min-height:54px;padding:0 26px;border-radius:999px;background:var(--ink);color:#08080a;font:500 15px var(--disp);letter-spacing:.01em;transition:transform .25s var(--ease),background .3s,color .3s}
+.btn{display:inline-flex;align-items:center;gap:12px;min-height:54px;padding:0 26px;border-radius:999px;background:var(--ink);color:#08080a;font:500 15px var(--body);letter-spacing:.01em;transition:transform .25s var(--ease),background .3s,color .3s}
 .btn:active{transform:scale(.93)}
 .btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
 .btn.ghost:hover{box-shadow:inset 0 0 0 1px #fff}
@@ -135,11 +135,12 @@ button,input{font:inherit;color:inherit}
 /* 01 intro */
 .s-intro{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 .vel{will-change:auto}
-.name{font:600 clamp(40px,9.2vw,190px)/1 var(--disp);letter-spacing:-.025em;text-transform:uppercase;white-space:nowrap;transform-origin:0 0}
+.name{font:700 clamp(28px,6vw,150px)/1.04 var(--disp);letter-spacing:-.02em;text-transform:uppercase;white-space:nowrap;transform-origin:0 0}
 .name .c{position:relative;display:inline-block;line-height:1}
+.name.two .sp{display:block;height:0;overflow:hidden}
 .name .c .g,.name .c .s{display:inline-block}
 .name .c .g{position:absolute;left:0;top:0;filter:blur(14px);opacity:0}
-.tagline{margin-top:28px;font:400 clamp(12px,1.05vw,15px)/1 var(--mono);letter-spacing:.18em;color:var(--mute)}
+.tagline{margin-top:30px;font:300 clamp(11px,.95vw,14px)/1 var(--mono);font-stretch:87.5%;letter-spacing:.14em;color:var(--mute)}
 .tagline .caret{display:inline-block;width:.55em;height:1.1em;margin-left:4px;vertical-align:-.2em;background:var(--acc);animation:blink 1s steps(2) infinite}
 @keyframes blink{50%{opacity:0}}
 .hint{position:absolute;left:50%;bottom:max(26px,5vh);transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px}
@@ -150,7 +151,7 @@ button,input{font:inherit;color:inherit}
 /* 02 about */
 .s-about{display:flex;align-items:center;background:#0d0e12}
 .ab-in{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:clamp(30px,6vw,110px);align-items:end;width:100%;max-width:1400px;margin-inline:auto}
-.ab-lines{font:500 clamp(26px,3.3vw,54px)/1.12 var(--disp);letter-spacing:-.02em}
+.ab-lines{font:500 clamp(25px,3.2vw,52px)/1.14 var(--body);letter-spacing:-.02em}
 .ab-lines .ln{display:block;overflow:hidden;padding-bottom:.06em;margin-bottom:-.06em}
 .ab-lines .li{display:block}
 .key{position:relative;display:inline-block}
@@ -160,8 +161,8 @@ button,input{font:inherit;color:inherit}
 .ab-pic{width:clamp(120px,12vw,180px);aspect-ratio:1;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px var(--line)}
 .ab-pic img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;filter:grayscale(1) contrast(1.08)}
 .meta{display:grid;gap:12px}
-.meta div{display:grid;grid-template-columns:8.5em minmax(0,1fr);gap:12px;font:400 13.5px/1.5 var(--mono);color:var(--ink)}
-.meta dt{color:var(--mute);text-transform:uppercase;letter-spacing:.12em;font-size:11px;padding-top:2px}
+.meta div{display:grid;grid-template-columns:8.5em minmax(0,1fr);gap:12px;font:400 15px/1.5 var(--body);color:var(--ink)}
+.meta dt{color:var(--mute);text-transform:uppercase;letter-spacing:.1em;font:400 10px/1.5 var(--mono);font-stretch:87.5%;padding-top:4px}
 .meta a{color:var(--acc)}
 
 /* 03 stats */
@@ -169,26 +170,26 @@ button,input{font:inherit;color:inherit}
 .st-in{width:100%;max-width:1400px;margin-inline:auto}
 .nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(20px,4vw,60px)}
 .num{border-top:1px solid var(--line);padding-top:20px}
-.num b{display:block;font:500 clamp(70px,11vw,190px)/.9 var(--disp);letter-spacing:-.04em;font-variant-numeric:tabular-nums;transform-origin:0 100%}
+.num b{display:block;font:700 clamp(56px,8.4vw,150px)/.95 var(--disp);letter-spacing:-.03em;font-variant-numeric:tabular-nums;transform-origin:0 100%}
 .num b sup{font-size:.35em;vertical-align:.95em;color:var(--acc);margin-left:.05em}
 .num span{display:block;margin-top:14px}
 .xp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;margin-top:clamp(50px,9vh,100px)}
-.xp li{font:400 13px/1.55 var(--mono);color:var(--mute)}
-.xp li b{display:block;margin-bottom:6px;font:500 clamp(16px,1.35vw,20px)/1.2 var(--disp);color:var(--ink);letter-spacing:-.01em}
+.xp li{font:400 14.5px/1.55 var(--body);color:var(--mute)}
+.xp li b{display:block;margin-bottom:6px;font:700 clamp(16px,1.3vw,19px)/1.2 var(--body);color:var(--ink);letter-spacing:-.01em}
 .xp li em{font-style:normal;color:var(--acc)}
 
 /* 04 work */
 .s-work{padding:0}
 .w-head{padding:clamp(100px,14vh,150px) var(--gut) 20px}
-.w-head h2{font:500 clamp(40px,6vw,96px)/.95 var(--disp);letter-spacing:-.03em}
+.w-head h2{font:700 clamp(30px,4.4vw,72px)/1 var(--disp);letter-spacing:-.02em}
 .track{display:grid;gap:0}
 .pn{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:clamp(24px,5vw,90px);align-items:center;min-height:100svh;padding:clamp(90px,12vh,130px) var(--gut) clamp(80px,11vh,120px)}
 .pn-tx{position:relative;z-index:1;display:grid;gap:22px;align-content:center}
 .pn-tx .mono .n{color:var(--acc)}
-.pn h3{font:500 clamp(46px,7.2vw,132px)/.9 var(--disp);letter-spacing:-.035em}
+.pn h3{font:700 clamp(32px,4.3vw,78px)/1 var(--disp);letter-spacing:-.025em}
 .pn h3 a{display:inline-block}
-.pn .one{max-width:30ch;font:400 clamp(17px,1.45vw,22px)/1.45 var(--disp);color:#c9ccd3}
-.pn .st{font:400 12.5px/1.6 var(--mono);color:var(--mute)}
+.pn .one{max-width:32ch;font:400 clamp(17px,1.4vw,21px)/1.5 var(--body);color:#c9ccd3}
+.pn .st{font:400 11.5px/1.6 var(--mono);font-stretch:87.5%;color:var(--mute)}
 .pn .st b{color:var(--ink);font-weight:500}
 .pn .acts{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px}
 .pv{position:relative;aspect-ratio:4/3;border-radius:18px;overflow:hidden;background:radial-gradient(120% 90% at 30% 20%,#16182033,transparent),linear-gradient(160deg,#121318,#0b0b0e);box-shadow:inset 0 0 0 1px var(--line)}
@@ -199,7 +200,7 @@ button,input{font:inherit;color:inherit}
 .allcard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;border-radius:18px;overflow:hidden;background:var(--line);box-shadow:inset 0 0 0 1px var(--line)}
 .allcard .ac-h{grid-column:1/-1;display:flex;justify-content:space-between;padding:16px 20px;background:#0e0f13}
 .allcard a{display:flex;flex-direction:column;justify-content:space-between;gap:18px;min-height:clamp(84px,11vh,120px);padding:18px 20px;background:#0b0b0e;transition:background .35s}
-.allcard a b{font:500 clamp(17px,1.5vw,22px)/1.15 var(--disp);letter-spacing:-.01em}
+.allcard a b{font:500 clamp(17px,1.4vw,21px)/1.15 var(--body);letter-spacing:-.01em}
 .allcard a span{font:400 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
 .allcard a:hover,.allcard a:focus-visible{background:#121522}
 .allcard a:hover span{color:var(--acc)}
@@ -212,10 +213,10 @@ button,input{font:inherit;color:inherit}
 /* 05 skills */
 .s-skills{display:flex;flex-direction:column;justify-content:center}
 .sk-in{width:100%;max-width:1200px;margin-inline:auto}
-.sk-in h2{font:500 clamp(40px,6vw,96px)/.95 var(--disp);letter-spacing:-.03em;margin:14px 0 clamp(34px,6vh,60px)}
+.sk-in h2{font:700 clamp(30px,4.4vw,72px)/1 var(--disp);letter-spacing:-.02em;margin:14px 0 clamp(34px,6vh,60px)}
 .chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.chip{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:64px;padding:0 20px;border-radius:14px;box-shadow:inset 0 0 0 1px var(--line);background:#0e0f13;font:500 clamp(16px,1.4vw,21px)/1.1 var(--disp)}
-.chip small{font:400 10.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.chip{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:64px;padding:0 20px;border-radius:14px;box-shadow:inset 0 0 0 1px var(--line);background:#0e0f13;font:500 clamp(16px,1.35vw,20px)/1.1 var(--body)}
+.chip small{font:400 9.5px var(--mono);font-stretch:87.5%;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
 .chip.k{box-shadow:inset 0 0 0 1px rgba(58,109,255,.55)}
 .chip.k small{color:var(--acc)}
 .sk-off{margin-top:30px}
@@ -223,13 +224,13 @@ button,input{font:inherit;color:inherit}
 /* 06 contact */
 .s-contact{display:flex;flex-direction:column;justify-content:center;background:var(--bg)}
 .ct-in{width:100%;max-width:1400px;margin-inline:auto}
-.big{font:600 clamp(54px,10.5vw,200px)/.88 var(--disp);letter-spacing:-.04em;text-transform:uppercase}
+.big{font:700 clamp(36px,7vw,130px)/.98 var(--disp);letter-spacing:-.025em;text-transform:uppercase}
 .big .wl{display:block;overflow:hidden;padding-bottom:.04em}
 .big .wi{display:inline-block}
 .big .acc-t{color:var(--acc)}
 .ct-row{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:clamp(30px,6vh,56px)}
-.ct-sub{margin-top:22px;max-width:40ch;font:400 clamp(16px,1.3vw,19px)/1.5 var(--disp);color:#c9ccd3}
-.ft{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 28px;margin-top:clamp(50px,10vh,100px);padding-top:20px;border-top:1px solid var(--line);font:400 11.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.ct-sub{margin-top:26px;max-width:40ch;font:400 clamp(16px,1.3vw,19px)/1.5 var(--body);color:#c9ccd3}
+.ft{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 28px;margin-top:clamp(50px,10vh,100px);padding-top:20px;border-top:1px solid var(--line);font:400 10.5px var(--mono);font-stretch:87.5%;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
 .ft nav{display:flex;gap:22px}.ft nav a{display:inline-flex;align-items:center;min-height:44px}
 .acc{width:150px;min-height:36px;padding:2px 0;background:none;border:0;border-bottom:1px solid var(--line);color:var(--ink);font:400 12px var(--mono);letter-spacing:.14em;text-align:center}
 .acc::placeholder{color:var(--dim);text-transform:uppercase}.acc:focus{outline:none;border-color:var(--acc)}
@@ -249,9 +250,10 @@ button,input{font:inherit;color:inherit}
 .film .track{position:absolute;left:0;top:0;bottom:0;display:flex;width:max-content}
 .film .pn{width:100vw;height:100%;min-height:0;flex:none}
 .film .wipe{display:block;position:absolute;left:-20%;right:-20%;top:0;bottom:0;z-index:3;background:var(--acc);transform:skewX(-10deg);clip-path:inset(0 0 0 100%);pointer-events:none}
-.film .wipe b{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) skewX(10deg);font:500 clamp(80px,16vw,280px)/1 var(--disp);letter-spacing:-.04em;color:#08080a}
+.film .wipe b{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) skewX(10deg);font:700 clamp(70px,13vw,230px)/1 var(--disp);letter-spacing:-.04em;color:#08080a}
 .film .w-tag{position:absolute;left:var(--gut);top:max(64px,9vh);z-index:2}
 .film .chips{position:relative}
+.hold,.hold body{overflow:hidden;touch-action:none}
 .film .chip{will-change:transform}
 .film .s-contact{clip-path:circle(0% at 50% 50%)}
 
@@ -264,7 +266,7 @@ button,input{font:inherit;color:inherit}
   .meta div{grid-template-columns:7em minmax(0,1fr);font-size:12px}
   .nums{grid-template-columns:1fr;gap:14px}
   .num{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-top:12px}
-  .num b{font-size:clamp(56px,17vw,90px)}
+  .num b{font-size:clamp(44px,13vw,70px)}
   .num span{margin:0;text-align:right}
   .xp{grid-template-columns:1fr 1fr;gap:16px;margin-top:30px}
   .xp li{font-size:11.5px}
@@ -382,16 +384,15 @@ button,input{font:inherit;color:inherit}
         <figure class="pv" aria-hidden="true"><span class="mono tagp">CH₄ · tetrahedral</span><svg viewBox="0 0 480 360"></svg></figure>
       </article>
           <article class="pn pn-more" id="p-more">
-        <div class="pn-tx"><p class="mono"><span class="n">+</span> &nbsp;More projects</p><h3 class="vel"><a class="scr" href="/allproj/index.html" data-cursor="view">Everything else</a></h3><p class="one">Neural nets, algorithms, security tools, study apps and experiments. They all live on one page.</p><div class="acts"><span class="mag"><a class="btn accent" href="/allproj/index.html" data-cursor="view">See all projects <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
+        <div class="pn-tx"><p class="mono"><span class="n">+</span> &nbsp;More projects</p><h3 class="vel"><a class="scr" href="/allproj/index.html" data-cursor="view">Everything else</a></h3><p class="one">Neural nets, algorithms, security tools, study apps and experiments. They all live on one page.</p><div class="acts"><span class="mag"><a class="btn" href="/allproj/index.html" data-cursor="view">See all projects <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
         <nav class="allcard" aria-label="More projects">
-          <p class="mono ac-h"><span>/allproj</span><span>index</span></p>
+          <p class="mono ac-h"><span>A few of the rest</span><span>6 of 20+</span></p>
           <a href="/digits/" data-cursor="play"><b>Digit Classifier</b><span>Neural network</span></a>
           <a href="/sorting/" data-cursor="play"><b>Sorting Library</b><span>Algorithms</span></a>
           <a href="https://joshkopp.github.io/passwordchecker/" target="_blank" rel="noopener" data-cursor="open"><b>Password Checker</b><span>Security</span></a>
           <a href="/onchain/" data-cursor="play"><b>Above Board</b><span>Provably fair</span></a>
           <a href="https://joshkopp.github.io/FlashcardGen/" target="_blank" rel="noopener" data-cursor="open"><b>Flashcard Generator</b><span>Study tools</span></a>
           <a href="https://joshkopp.github.io/mlaChecker/" target="_blank" rel="noopener" data-cursor="open"><b>MLA Checker</b><span>Writing</span></a>
-          <a class="ac-all" href="/allproj/index.html" data-cursor="view"><b>Open the full list</b><span>→</span></a>
         </nav>
       </article>
 </div>
@@ -458,21 +459,21 @@ button,input{font:inherit;color:inherit}
   const A='#3a6dff',W='#f3f4f6',M='rgba(243,244,246,.28)',D='rgba(243,244,246,.12)';
   const art=[
    ()=>{let s='';for(let i=0;i<40;i++){const h=10+Math.abs(Math.sin(i*.5))*70+((i*7)%5)*6;s+=`<rect x="${60+i*9}" y="${150-h/2}" width="4" height="${h}" rx="2" fill="${i>14&&i<26?A:M}"/>`}
-     return s+`<rect x="60" y="238" width="250" height="40" rx="20" fill="none" stroke="${M}"/><text x="80" y="263" font-family="JetBrains Mono" font-size="13" fill="${W}">“pay maya fourteen for pizza”</text><rect x="170" y="290" width="250" height="40" rx="20" fill="${A}"/><text x="190" y="315" font-family="JetBrains Mono" font-size="13" fill="#fff">✓ $14.00 → @maya · risk ok</text>`},
-   ()=>{const row=(y,c,ns)=>ns.map((n,i)=>`<rect x="${90+i*104}" y="${y}" width="92" height="46" rx="10" fill="none" stroke="${c}"/><text x="${136+i*104}" y="${y+29}" text-anchor="middle" font-family="JetBrains Mono" font-size="16" fill="${W}">${n}</text>`).join('');
-     return `<text x="60" y="${112}" font-family="JetBrains Mono" font-size="11" fill="${M}">RED</text>`+row(84,'rgba(255,120,120,.6)',[254,1678,118])+`<text x="60" y="${184}" font-family="JetBrains Mono" font-size="11" fill="${M}">BLUE</text>`+row(156,A,[971,2056,4414])+`<rect x="90" y="250" width="300" height="10" rx="5" fill="${D}"/><rect x="90" y="250" width="192" height="10" rx="5" fill="${A}"/><text x="90" y="290" font-family="JetBrains Mono" font-size="12" fill="${W}">BLUE 64%</text><text x="390" y="290" text-anchor="end" font-family="JetBrains Mono" font-size="12" fill="${M}">RED 36%</text>`},
+     return s+`<rect x="60" y="238" width="250" height="40" rx="20" fill="none" stroke="${M}"/><text x="80" y="263" font-family="Martian Mono, ui-monospace, monospace" font-size="13" fill="${W}">“pay maya fourteen for pizza”</text><rect x="170" y="290" width="250" height="40" rx="20" fill="${A}"/><text x="190" y="315" font-family="Martian Mono, ui-monospace, monospace" font-size="13" fill="#fff">✓ $14.00 → @maya · risk ok</text>`},
+   ()=>{const row=(y,c,ns)=>ns.map((n,i)=>`<rect x="${90+i*104}" y="${y}" width="92" height="46" rx="10" fill="none" stroke="${c}"/><text x="${136+i*104}" y="${y+29}" text-anchor="middle" font-family="Martian Mono, ui-monospace, monospace" font-size="16" fill="${W}">${n}</text>`).join('');
+     return `<text x="60" y="${112}" font-family="Martian Mono, ui-monospace, monospace" font-size="11" fill="${M}">RED</text>`+row(84,'rgba(255,120,120,.6)',[254,1678,118])+`<text x="60" y="${184}" font-family="Martian Mono, ui-monospace, monospace" font-size="11" fill="${M}">BLUE</text>`+row(156,A,[971,2056,4414])+`<rect x="90" y="250" width="300" height="10" rx="5" fill="${D}"/><rect x="90" y="250" width="192" height="10" rx="5" fill="${A}"/><text x="90" y="290" font-family="Martian Mono, ui-monospace, monospace" font-size="12" fill="${W}">BLUE 64%</text><text x="390" y="290" text-anchor="end" font-family="Martian Mono, ui-monospace, monospace" font-size="12" fill="${M}">RED 36%</text>`},
    ()=>{const seven=[[1,1],[2,1],[3,1],[4,1],[5,1],[5,2],[4,3],[4,4],[3,5],[3,6]];let s='';for(let r=0;r<8;r++)for(let c=0;c<7;c++){const on=seven.some(([x,y])=>x===c&&y===r);s+=`<rect x="${50+c*24}" y="${70+r*24}" width="20" height="20" rx="3" fill="${on?W:D}"/>`}
      const L=[[230,[90,140,190,240,290]],[310,[110,160,210,260]],[390,[70,100,130,160,190,220,250,280]]];L.forEach(([x,ys],li)=>{ys.forEach(y=>{if(li<2)L[li+1][1].forEach(y2=>s+=`<line x1="${x}" y1="${y}" x2="${L[li+1][0]}" y2="${y2}" stroke="${D}"/>`)})});
      L.forEach(([x,ys],li)=>ys.forEach((y,k)=>s+=`<circle cx="${x}" cy="${y}" r="7" fill="${li===2&&k===7?A:'#0b0b0e'}" stroke="${li===2&&k===7?A:M}"/>`));
-     return s+`<text x="410" y="285" font-family="JetBrains Mono" font-size="14" fill="${A}">7</text>`},
+     return s+`<text x="410" y="285" font-family="Martian Mono, ui-monospace, monospace" font-size="14" fill="${A}">7</text>`},
    ()=>{const C=[240,180],H=[[240,70],[140,240],[330,250],[290,150]];return H.map(([x,y],i)=>`<line x1="${C[0]}" y1="${C[1]}" x2="${x}" y2="${y}" stroke="${i===3?M:W}" stroke-width="3" ${i===3?'stroke-dasharray="6 6"':''}/>`).join('')+
-     H.map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="${i===3?18:24}" fill="#0b0b0e" stroke="${A}" stroke-width="2"/><text x="${x}" y="${y+5}" text-anchor="middle" font-family="JetBrains Mono" font-size="14" fill="${W}">H</text>`).join('')+`<circle cx="240" cy="180" r="36" fill="${A}"/><text x="240" y="187" text-anchor="middle" font-family="JetBrains Mono" font-size="20" fill="#fff">C</text><text x="370" y="320" font-family="JetBrains Mono" font-size="12" fill="${M}">109.5°</text>`},
+     H.map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="${i===3?18:24}" fill="#0b0b0e" stroke="${A}" stroke-width="2"/><text x="${x}" y="${y+5}" text-anchor="middle" font-family="Martian Mono, ui-monospace, monospace" font-size="14" fill="${W}">H</text>`).join('')+`<circle cx="240" cy="180" r="36" fill="${A}"/><text x="240" y="187" text-anchor="middle" font-family="Martian Mono, ui-monospace, monospace" font-size="20" fill="#fff">C</text><text x="370" y="320" font-family="Martian Mono, ui-monospace, monospace" font-size="12" fill="${M}">109.5°</text>`},
    ()=>{const v=[3,7,2,9,5,11,4,8,12,6,13,14,15,16,17,18,19,20];let s='';v.forEach((h,i)=>{const hl=i===4||i===5;s+=`<rect x="${60+i*20}" y="${300-h*12}" width="14" height="${h*12}" rx="2" fill="${hl?A:i>11?W:M}"/>`});return s+`<line x1="50" y1="301" x2="430" y2="301" stroke="${D}"/>`},
-   ()=>`<rect x="70" y="100" width="340" height="56" rx="12" fill="none" stroke="${M}"/><text x="94" y="136" font-family="JetBrains Mono" font-size="22" fill="${W}" letter-spacing="4">••••••••••••••</text>`+[0,1,2,3,4].map(i=>`<rect x="${70+i*70}" y="186" width="60" height="8" rx="4" fill="${i<4?A:D}"/>`).join('')+`<text x="70" y="236" font-family="JetBrains Mono" font-size="13" fill="${W}">entropy  71.4 bits</text><text x="70" y="262" font-family="JetBrains Mono" font-size="13" fill="${M}">crack time  ~ 3 centuries</text><text x="70" y="288" font-family="JetBrains Mono" font-size="13" fill="${M}">patterns  none found</text>`,
+   ()=>`<rect x="70" y="100" width="340" height="56" rx="12" fill="none" stroke="${M}"/><text x="94" y="136" font-family="Martian Mono, ui-monospace, monospace" font-size="22" fill="${W}" letter-spacing="4">••••••••••••••</text>`+[0,1,2,3,4].map(i=>`<rect x="${70+i*70}" y="186" width="60" height="8" rx="4" fill="${i<4?A:D}"/>`).join('')+`<text x="70" y="236" font-family="Martian Mono, ui-monospace, monospace" font-size="13" fill="${W}">entropy  71.4 bits</text><text x="70" y="262" font-family="Martian Mono, ui-monospace, monospace" font-size="13" fill="${M}">crack time  ~ 3 centuries</text><text x="70" y="288" font-family="Martian Mono, ui-monospace, monospace" font-size="13" fill="${M}">patterns  none found</text>`,
    ()=>{const die=(x,y,n,c)=>{const p={1:[[0,0]],4:[[-1,-1],[1,-1],[-1,1],[1,1]],6:[[-1,-1],[1,-1],[-1,0],[1,0],[-1,1],[1,1]]}[n];return `<rect x="${x-50}" y="${y-50}" width="100" height="100" rx="18" fill="none" stroke="${c}" stroke-width="2"/>`+p.map(([a,b])=>`<circle cx="${x+a*25}" cy="${y+b*25}" r="8" fill="${c}"/>`).join('')};
-     return die(170,140,4,W)+die(310,140,6,A)+`<text x="70" y="250" font-family="JetBrains Mono" font-size="12" fill="${M}">sealed  sha256 9f3c…e07a</text><text x="70" y="276" font-family="JetBrains Mono" font-size="12" fill="${M}">revealed  seed 41b8…22c1</text><text x="70" y="302" font-family="JetBrains Mono" font-size="12" fill="${A}">✓ roll verified: 10</text>`},
-   ()=>[2,1,0].map(i=>`<rect x="${110+i*18}" y="${80-i*14}" width="260" height="170" rx="14" fill="#0e0f13" stroke="${i?D:M}"/>`).join('')+`<text x="140" y="150" font-family="Clash Display, Space Grotesk, sans-serif" font-size="28" fill="${W}">Mitochondria</text><text x="140" y="182" font-family="JetBrains Mono" font-size="12" fill="${M}">tap to flip · 1 of 24</text><rect x="110" y="282" width="120" height="34" rx="17" fill="${A}"/><text x="170" y="304" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#fff">got it</text><rect x="246" y="282" width="120" height="34" rx="17" fill="none" stroke="${M}"/><text x="306" y="304" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="${W}">again</text>`,
-   ()=>`<rect x="120" y="40" width="240" height="290" rx="6" fill="#0e0f13" stroke="${M}"/><text x="340" y="66" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="${M}">Koppanalil 1</text>`+[0,1,2,3,4,5,6,7,8].map(i=>`<rect x="144" y="${90+i*24}" width="${i===0?120:i===4?150:192}" height="6" rx="3" fill="${i===2||i===5?A:D}"/>`).join('')+`<circle cx="388" cy="141" r="10" fill="${A}"/><text x="388" y="145" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#fff">1</text><circle cx="388" cy="213" r="10" fill="${A}"/><text x="388" y="217" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#fff">2</text>`];
+     return die(170,140,4,W)+die(310,140,6,A)+`<text x="70" y="250" font-family="Martian Mono, ui-monospace, monospace" font-size="12" fill="${M}">sealed  sha256 9f3c…e07a</text><text x="70" y="276" font-family="Martian Mono, ui-monospace, monospace" font-size="12" fill="${M}">revealed  seed 41b8…22c1</text><text x="70" y="302" font-family="Martian Mono, ui-monospace, monospace" font-size="12" fill="${A}">✓ roll verified: 10</text>`},
+   ()=>[2,1,0].map(i=>`<rect x="${110+i*18}" y="${80-i*14}" width="260" height="170" rx="14" fill="#0e0f13" stroke="${i?D:M}"/>`).join('')+`<text x="140" y="150" font-family="Supreme, sans-serif" font-size="28" fill="${W}">Mitochondria</text><text x="140" y="182" font-family="Martian Mono, ui-monospace, monospace" font-size="12" fill="${M}">tap to flip · 1 of 24</text><rect x="110" y="282" width="120" height="34" rx="17" fill="${A}"/><text x="170" y="304" text-anchor="middle" font-family="Martian Mono, ui-monospace, monospace" font-size="12" fill="#fff">got it</text><rect x="246" y="282" width="120" height="34" rx="17" fill="none" stroke="${M}"/><text x="306" y="304" text-anchor="middle" font-family="Martian Mono, ui-monospace, monospace" font-size="12" fill="${W}">again</text>`,
+   ()=>`<rect x="120" y="40" width="240" height="290" rx="6" fill="#0e0f13" stroke="${M}"/><text x="340" y="66" text-anchor="end" font-family="Martian Mono, ui-monospace, monospace" font-size="10" fill="${M}">Koppanalil 1</text>`+[0,1,2,3,4,5,6,7,8].map(i=>`<rect x="144" y="${90+i*24}" width="${i===0?120:i===4?150:192}" height="6" rx="3" fill="${i===2||i===5?A:D}"/>`).join('')+`<circle cx="388" cy="141" r="10" fill="${A}"/><text x="388" y="145" text-anchor="middle" font-family="Martian Mono, ui-monospace, monospace" font-size="11" fill="#fff">1</text><circle cx="388" cy="213" r="10" fill="${A}"/><text x="388" y="217" text-anchor="middle" font-family="Martian Mono, ui-monospace, monospace" font-size="11" fill="#fff">2</text>`];
   document.querySelectorAll('.pn[data-art]').forEach(p=>{const s=p.querySelector('.pv svg'),f=art[+p.dataset.art];if(s&&f)s.innerHTML=f()});
   // headings that scramble on hover: keep the real text
   document.querySelectorAll('.scr').forEach(a=>a.dataset.t=a.textContent);
@@ -571,6 +572,11 @@ const about=$('.s-about'),stats=$('.s-stats'),work=$('.s-work'),skills=$('.s-ski
 const track=$('#track'),panels=$$('.pn'),wipe=$('.wipe'),wnum=$('#wnum'),wcount=$('#wcount');
 const chipsEl=$$('.chip'),pt=$('.pt');
 
+function fitName(){
+  nameEl.style.fontSize='';nameEl.classList.toggle('two',MOB());
+  const cs=$$('#name .c'),lines={};cs.forEach(c=>{if(c.classList.contains('sp'))return;const t=c.offsetTop;(lines[t]=lines[t]||[]).push(c)});
+  let w=0;Object.values(lines).forEach(l=>{const a=l[0],b=l[l.length-1];w=Math.max(w,b.offsetLeft+b.offsetWidth-a.offsetLeft)});
+  const F=parseFloat(getComputedStyle(nameEl).fontSize),fs=Math.min(F*innerWidth*(MOB()?.86:.88)/Math.max(1,w),MOB()?120:170);nameEl.style.fontSize=fs.toFixed(1)+'px'}
 function measureO(){ // where the first O's hole is, so the About scene can open inside it
   gsap.set(nameEl,{clearProps:'transform'});
   const oSpan=chars[1],cs=getComputedStyle(nameEl),F=parseFloat(cs.fontSize);
@@ -609,7 +615,7 @@ function measureChips(){const box=$('#chips').getBoundingClientRect(),cx=box.lef
 const LBL={};
 function build(){
   if(tl){st.kill();tl.kill();gsap.set([about,stats,work,skills,contact,introSc,track,wipe,pt,'#abside','#abl .li','.num b','.xp li','.big .wi','.ct-sub','.ct-row','.ft','.s-contact .mono','.s-skills .mono','#sk-h','.s-stats .mono','.s-about .mono','#tagline','#hint',nameEl],{clearProps:'all'});nameEl.style.transformOrigin=''}
-  splitLines();measureO();
+  splitLines();fitName();measureO();
   const W=innerWidth,mob=MOB(),NP=panels.length;
   tl=gsap.timeline({defaults:{ease:'none'}});
   const L=(n,t)=>{tl.addLabel(n,t);LBL[n]=t};
@@ -680,7 +686,20 @@ function onFilm(self){
   if(k!==curScene){if(curScene>=0)whoosh();curScene=k;SCN.forEach((el,i)=>el.style.pointerEvents=i===k?'auto':'none');nowEl.innerHTML=`<span>${SCENES[k][1]}</span> ${SCENES[k][2]}`;dots.forEach((a,i)=>i===k?a.setAttribute('aria-current','step'):a.removeAttribute('aria-current'))}
 }
 const yFor=lab=>st.start+(st.end-st.start)*(LBL[lab]/tl.duration());
-let quiet=0;const go=(lab,inst)=>{const y=yFor(lab);quiet=performance.now()+(inst?900:0);lenis.scrollTo(y,{immediate:!!inst,duration:Math.min(2.6,.9+Math.abs(y-scrollY)/innerHeight*.12),easing:t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2})};
+// detents: a fast scroll can't flick past a project. It stops on each one for a beat.
+let lastY=scrollY,lastT=performance.now(),holdUntil=0,navUntil=0;
+const DET=()=>Object.keys(LBL).filter(k=>k!=='intro').map(yFor);
+const stopAt=Y=>{holdUntil=performance.now()+520;lenis.stop();if(TOUCH)d.classList.add('hold');scrollTo(0,Y);lenis.scrollTo(Y,{immediate:true,force:true});
+  // stay put until the rest of the gesture (trackpad inertia, queued wheel ticks) has died down, so one fling = one scene
+  const rel=()=>{if(performance.now()<holdUntil)return setTimeout(rel,60);d.classList.remove('hold');lenis.start();lastY=scrollY;lastT=performance.now()};setTimeout(rel,520)};
+const extend=()=>{const n=performance.now();if(n<holdUntil)holdUntil=Math.max(holdUntil,n+200)};
+addEventListener('wheel',extend,{passive:true});addEventListener('touchmove',extend,{passive:true});
+addEventListener('scroll',()=>{const y=scrollY,now=performance.now(),v=Math.abs(y-lastY)/Math.max(1,now-lastT)*1000;
+  if(now<holdUntil||now<navUntil||!st){lastY=y;lastT=now;return}
+  if(v>140){const lo=Math.min(lastY,y),hi=Math.max(lastY,y),hit=DET().filter(Y=>Y>lo+1&&Y<hi-1);
+    if(hit.length){stopAt(y>lastY?Math.min(...hit):Math.max(...hit));return}}
+  lastY=y;lastT=now},{passive:true});
+let quiet=0;const go=(lab,inst)=>{const y=yFor(lab),dur=Math.min(2.6,.9+Math.abs(y-scrollY)/innerHeight*.12);quiet=performance.now()+(inst?900:0);navUntil=performance.now()+(inst?300:dur*1000+150);lenis.scrollTo(y,{immediate:!!inst,duration:dur,force:true,easing:t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2})};
 const HASH={intro:'intro',about:'about',stats:'stats',work:'p0',skills:'skills',contact:'contact'};
 $$('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{const id=a.getAttribute('href').slice(1);if(HASH[id]){e.preventDefault();go(HASH[id]);history.replaceState(null,'','#'+id)}}));
 // keyboard: tabbing into a scene that is off camera brings it on
@@ -703,7 +722,7 @@ gsap.ticker.add(()=>{
 });
 
 // fonts decide letter positions, so build once they're in
-const fontsReady=document.fonts?Promise.race([Promise.all([document.fonts.load('600 100px "Clash Display"'),document.fonts.load('500 100px "Clash Display"')]).catch(()=>{}),new Promise(r=>setTimeout(r,2200))]):Promise.resolve();
+const fontsReady=document.fonts?Promise.race([Promise.all([document.fonts.load('700 100px "Panchang"'),document.fonts.load('500 100px "Supreme"'),document.fonts.load('400 10px "Martian Mono"')]).catch(()=>{}),new Promise(r=>setTimeout(r,2200))]):Promise.resolve();
 fontsReady.catch(()=>{}).then(()=>{build();onFilm(st);
   const h=location.hash.slice(1);if(HASH[h])requestAnimationFrame(()=>go(HASH[h],true));
   let lastW=innerWidth,lastH=innerHeight;addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(()=>{const dw=Math.abs(innerWidth-lastW),dh=Math.abs(innerHeight-lastH);
