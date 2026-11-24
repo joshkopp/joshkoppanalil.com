@@ -52,7 +52,7 @@
   --ease:cubic-bezier(.16,1,.3,1);
 }
 *,*::before,*::after{box-sizing:border-box}
-html{background:var(--bg);color:var(--ink);-webkit-text-size-adjust:100%}
+html{background:var(--bg);color:var(--ink);-webkit-text-size-adjust:100%;overscroll-behavior:none}
 body{margin:0;font:400 16px/1.6 var(--disp);-webkit-font-smoothing:antialiased;overflow-x:clip}
 a{color:inherit;text-decoration:none}
 h1,h2,h3,p,dl,dd,ul,ol,figure{margin:0;padding:0}
@@ -196,6 +196,17 @@ button,input{font:inherit;color:inherit}
 .pv::after{content:"";position:absolute;inset:0;background:radial-gradient(60% 50% at 70% 30%,rgba(58,109,255,.16),transparent 70%);pointer-events:none}
 .pv .tagp{position:absolute;left:18px;top:14px;z-index:1}
 .wipe{display:none}
+.allcard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;border-radius:18px;overflow:hidden;background:var(--line);box-shadow:inset 0 0 0 1px var(--line)}
+.allcard .ac-h{grid-column:1/-1;display:flex;justify-content:space-between;padding:16px 20px;background:#0e0f13}
+.allcard a{display:flex;flex-direction:column;justify-content:space-between;gap:18px;min-height:clamp(84px,11vh,120px);padding:18px 20px;background:#0b0b0e;transition:background .35s}
+.allcard a b{font:500 clamp(17px,1.5vw,22px)/1.15 var(--disp);letter-spacing:-.01em}
+.allcard a span{font:400 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.allcard a:hover,.allcard a:focus-visible{background:#121522}
+.allcard a:hover span{color:var(--acc)}
+.allcard .ac-all{grid-column:1/-1;flex-direction:row;align-items:center;min-height:64px;background:var(--acc)}
+.allcard .ac-all span{color:#fff;font-size:18px}
+.allcard .ac-all:hover{background:#4f7dff}
+.allcard .ac-all:hover span{color:#fff}
 .w-more{padding:0 var(--gut) 60px}
 
 /* 05 skills */
@@ -260,6 +271,12 @@ button,input{font:inherit;color:inherit}
   .pn{grid-template-columns:1fr;align-content:center;gap:24px}
   .pn .pv{order:-1;max-height:34svh;aspect-ratio:auto;height:34svh}
   .pn .one{font-size:16px}
+  .pn-more{align-content:center}
+  .pn-more .allcard{order:2}
+  .allcard a{min-height:58px;gap:6px;padding:12px 14px}
+  .allcard a b{font-size:15px}
+  .allcard .ac-h{padding:10px 14px}
+  .allcard .ac-all{min-height:48px}
   .btn{min-height:48px;padding:0 20px;font-size:14px}
   .chips{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .chip{min-height:50px;padding:0 14px;font-size:15px}
@@ -334,14 +351,14 @@ button,input{font:inherit;color:inherit}
       <p class="mono fd" style="margin-bottom:30px"><span class="acc-t">03</span> &nbsp;By the numbers</p>
       <h2 class="sr" id="stats-h">By the numbers</h2>
       <div class="nums vel">
-        <div class="num fd"><b data-n="9">9</b><span class="mono">Projects built</span></div>
+        <div class="num fd"><b data-n="20" data-suf="+">20<sup>+</sup></b><span class="mono">Live projects</span></div>
         <div class="num fd"><b data-n="10">10</b><span class="mono">Games made</span></div>
-        <div class="num fd"><b data-n="276" data-plus>276<sup>+</sup></b><span class="mono">Commits to this site</span></div>
+        <div class="num fd"><b data-n="18" data-suf="k+">18<sup>k+</sup></b><span class="mono">Matches my FRC model learned from</span></div>
       </div>
       <ul class="xp" aria-label="Where my time goes">
         <li class="fd"><b>Monyx</b><span><em>Now.</em> Founder and builder of a Solana wallet you pay by voice.</span></li>
         <li class="fd"><b>FRC robotics</b><span>Programming subteam. Robot code in LabVIEW, plus a match-prediction model.</span></li>
-        <li class="fd"><b>World Schools Debate</b><span>Long-form team debate on prepared and impromptu motions.</span></li>
+        <li class="fd"><b>Game dev</b><span>Ten browser games built with Three.js and WebGL, from racing to co-op.</span></li>
         <li class="fd"><b>Westlake High</b><span>Sophomore taking AP coursework in Austin, Texas.</span></li>
       </ul>
     </div>
@@ -350,45 +367,34 @@ button,input{font:inherit;color:inherit}
   <!-- 04 -->
   <section class="sc s-work" id="work" aria-labelledby="work-h">
     <div class="w-head"><p class="mono"><span class="acc-t">04</span> &nbsp;Selected work</p><h2 id="work-h">Projects</h2></div>
-    <p class="mono w-tag" aria-hidden="true"><span class="acc-t">04</span> &nbsp;Selected work · <span id="wcount">01 / 09</span></p>
+    <p class="mono w-tag" aria-hidden="true"><span class="acc-t">04</span> &nbsp;Selected work · <span id="wcount">01 / 03</span></p>
     <div class="track" id="track">
-      <article class="pn" id="p-monyx">
+      <article class="pn" id="p-monyx" data-art="0">
         <div class="pn-tx"><p class="mono"><span class="n">01</span> &nbsp;Payments · building now</p><h3 class="vel"><a class="scr" href="https://monyx.pro/" target="_blank" rel="noopener" data-cursor="open">Monyx</a></h3><p class="one">A dollar wallet on Solana you pay by talking to it. Every payment is read back in plain English and risk-checked before it sends.</p><p class="st">Solana · Voice · Supabase</p><div class="acts"><span class="mag"><a class="btn" href="https://monyx.pro/" target="_blank" rel="noopener" data-cursor="open">Open Monyx <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
         <figure class="pv" aria-hidden="true"><span class="mono tagp">voice → payment</span><svg viewBox="0 0 480 360"></svg></figure>
       </article>
-      <article class="pn" id="p-frc">
+      <article class="pn" id="p-frc" data-art="1">
         <div class="pn-tx"><p class="mono"><span class="n">02</span> &nbsp;Machine learning</p><h3 class="vel"><a class="scr" href="https://frc-predictor-c8bkzggpngxjfjmcdfntmr.streamlit.app/" target="_blank" rel="noopener" data-cursor="open">FRC Predictor</a></h3><p class="one">Pick six robotics teams and it calls the winner before the match is played.</p><p class="st"><b>77.3%</b> accurate on unseen matches · trained on <b>18,000+</b></p><div class="acts"><span class="mag"><a class="btn" href="https://frc-predictor-c8bkzggpngxjfjmcdfntmr.streamlit.app/" target="_blank" rel="noopener" data-cursor="open">Run a prediction <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
         <figure class="pv" aria-hidden="true"><span class="mono tagp">red vs blue</span><svg viewBox="0 0 480 360"></svg></figure>
       </article>
-      <article class="pn" id="p-digits">
-        <div class="pn-tx"><p class="mono"><span class="n">03</span> &nbsp;Neural network</p><h3 class="vel"><a class="scr" href="/digits/" data-cursor="play">Digit Classifier</a></h3><p class="one">Draw a digit and a neural network I trained reads it live, layer by layer.</p><p class="st"><b>99.1%</b> on MNIST · runs in your browser</p><div class="acts"><span class="mag"><a class="btn" href="/digits/" data-cursor="play">Try it <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
-        <figure class="pv" aria-hidden="true"><span class="mono tagp">input → 7</span><svg viewBox="0 0 480 360"></svg></figure>
-      </article>
-      <article class="pn" id="p-chem">
-        <div class="pn-tx"><p class="mono"><span class="n">04</span> &nbsp;Chemistry</p><h3 class="vel"><a class="scr" href="/lds/" data-cursor="open">Chemistry Lab</a></h3><p class="one">Type any of 323 compounds and watch its Lewis structure build step by step, then spin it in 3D.</p><p class="st">Lewis structures · VSEPR · element explorer · quiz</p><div class="acts"><span class="mag"><a class="btn" href="/lds/" data-cursor="open">Open the lab <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
+      <article class="pn" id="p-chem" data-art="3">
+        <div class="pn-tx"><p class="mono"><span class="n">03</span> &nbsp;Chemistry</p><h3 class="vel"><a class="scr" href="/lds/" data-cursor="open">Chemistry Lab</a></h3><p class="one">Type any of 323 compounds and watch its Lewis structure build step by step, then spin it in 3D.</p><p class="st">Lewis structures · VSEPR · element explorer · quiz</p><div class="acts"><span class="mag"><a class="btn" href="/lds/" data-cursor="open">Open the lab <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
         <figure class="pv" aria-hidden="true"><span class="mono tagp">CH₄ · tetrahedral</span><svg viewBox="0 0 480 360"></svg></figure>
       </article>
-      <article class="pn" id="p-sort">
-        <div class="pn-tx"><p class="mono"><span class="n">05</span> &nbsp;Algorithms</p><h3 class="vel"><a class="scr" href="/sorting/" data-cursor="play">Sorting Library</a></h3><p class="one">38 sorting algorithms in 9 families, visualized step by step. Race any two head to head.</p><p class="st">Rules, complexity and a race mode</p><div class="acts"><span class="mag"><a class="btn" href="/sorting/" data-cursor="play">Open the library <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
-        <figure class="pv" aria-hidden="true"><span class="mono tagp">bubble sort · pass 6</span><svg viewBox="0 0 480 360"></svg></figure>
+          <article class="pn pn-more" id="p-more">
+        <div class="pn-tx"><p class="mono"><span class="n">+</span> &nbsp;More projects</p><h3 class="vel"><a class="scr" href="/allproj/index.html" data-cursor="view">Everything else</a></h3><p class="one">Neural nets, algorithms, security tools, study apps and experiments. They all live on one page.</p><div class="acts"><span class="mag"><a class="btn accent" href="/allproj/index.html" data-cursor="view">See all projects <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
+        <nav class="allcard" aria-label="More projects">
+          <p class="mono ac-h"><span>/allproj</span><span>index</span></p>
+          <a href="/digits/" data-cursor="play"><b>Digit Classifier</b><span>Neural network</span></a>
+          <a href="/sorting/" data-cursor="play"><b>Sorting Library</b><span>Algorithms</span></a>
+          <a href="https://joshkopp.github.io/passwordchecker/" target="_blank" rel="noopener" data-cursor="open"><b>Password Checker</b><span>Security</span></a>
+          <a href="/onchain/" data-cursor="play"><b>Above Board</b><span>Provably fair</span></a>
+          <a href="https://joshkopp.github.io/FlashcardGen/" target="_blank" rel="noopener" data-cursor="open"><b>Flashcard Generator</b><span>Study tools</span></a>
+          <a href="https://joshkopp.github.io/mlaChecker/" target="_blank" rel="noopener" data-cursor="open"><b>MLA Checker</b><span>Writing</span></a>
+          <a class="ac-all" href="/allproj/index.html" data-cursor="view"><b>Open the full list</b><span>→</span></a>
+        </nav>
       </article>
-      <article class="pn" id="p-pass">
-        <div class="pn-tx"><p class="mono"><span class="n">06</span> &nbsp;Security</p><h3 class="vel"><a class="scr" href="https://joshkopp.github.io/passwordchecker/" target="_blank" rel="noopener" data-cursor="open">Password Checker</a></h3><p class="one">Scores passwords by entropy, common-password lists, patterns and crack time.</p><p class="st">Runs fully in your browser. Nothing is sent anywhere.</p><div class="acts"><span class="mag"><a class="btn" href="https://joshkopp.github.io/passwordchecker/" target="_blank" rel="noopener" data-cursor="open">Check a password <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
-        <figure class="pv" aria-hidden="true"><span class="mono tagp">entropy</span><svg viewBox="0 0 480 360"></svg></figure>
-      </article>
-      <article class="pn" id="p-above">
-        <div class="pn-tx"><p class="mono"><span class="n">07</span> &nbsp;Provably fair</p><h3 class="vel"><a class="scr" href="/onchain/" data-cursor="play">Above Board</a></h3><p class="one">A dice game where the house seals its seed before you bet, so you can recompute every roll yourself.</p><p class="st">Solana devnet · Web Crypto</p><div class="acts"><span class="mag"><a class="btn" href="/onchain/" data-cursor="play">Play Above Board <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
-        <figure class="pv" aria-hidden="true"><span class="mono tagp">seed sealed</span><svg viewBox="0 0 480 360"></svg></figure>
-      </article>
-      <article class="pn" id="p-cards">
-        <div class="pn-tx"><p class="mono"><span class="n">08</span> &nbsp;Study tools</p><h3 class="vel"><a class="scr" href="https://joshkopp.github.io/FlashcardGen/" target="_blank" rel="noopener" data-cursor="open">Flashcards</a></h3><p class="one">Turns notes, PDFs or Word docs into flashcards that weight the terms that matter most.</p><p class="st">Paste notes, get a deck</p><div class="acts"><span class="mag"><a class="btn" href="https://joshkopp.github.io/FlashcardGen/" target="_blank" rel="noopener" data-cursor="open">Make a deck <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
-        <figure class="pv" aria-hidden="true"><span class="mono tagp">deck · 24 cards</span><svg viewBox="0 0 480 360"></svg></figure>
-      </article>
-      <article class="pn" id="p-mla">
-        <div class="pn-tx"><p class="mono"><span class="n">09</span> &nbsp;Writing</p><h3 class="vel"><a class="scr" href="https://joshkopp.github.io/mlaChecker/" target="_blank" rel="noopener" data-cursor="open">MLA Checker</a></h3><p class="one">Checks an essay against MLA format, flags every problem and shows what you got right.</p><p class="st">Python in the browser with Pyodide</p><div class="acts"><span class="mag"><a class="btn" href="https://joshkopp.github.io/mlaChecker/" target="_blank" rel="noopener" data-cursor="open">Check an essay <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
-        <figure class="pv" aria-hidden="true"><span class="mono tagp">3 issues found</span><svg viewBox="0 0 480 360"></svg></figure>
-      </article>
-    </div>
+</div>
     <div class="wipe" aria-hidden="true"><b id="wnum">02</b></div>
     <p class="w-more"><a class="ul mono" href="/allproj/index.html">See every project</a></p>
   </section>
@@ -467,7 +473,7 @@ button,input{font:inherit;color:inherit}
      return die(170,140,4,W)+die(310,140,6,A)+`<text x="70" y="250" font-family="JetBrains Mono" font-size="12" fill="${M}">sealed  sha256 9f3c…e07a</text><text x="70" y="276" font-family="JetBrains Mono" font-size="12" fill="${M}">revealed  seed 41b8…22c1</text><text x="70" y="302" font-family="JetBrains Mono" font-size="12" fill="${A}">✓ roll verified: 10</text>`},
    ()=>[2,1,0].map(i=>`<rect x="${110+i*18}" y="${80-i*14}" width="260" height="170" rx="14" fill="#0e0f13" stroke="${i?D:M}"/>`).join('')+`<text x="140" y="150" font-family="Clash Display, Space Grotesk, sans-serif" font-size="28" fill="${W}">Mitochondria</text><text x="140" y="182" font-family="JetBrains Mono" font-size="12" fill="${M}">tap to flip · 1 of 24</text><rect x="110" y="282" width="120" height="34" rx="17" fill="${A}"/><text x="170" y="304" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#fff">got it</text><rect x="246" y="282" width="120" height="34" rx="17" fill="none" stroke="${M}"/><text x="306" y="304" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="${W}">again</text>`,
    ()=>`<rect x="120" y="40" width="240" height="290" rx="6" fill="#0e0f13" stroke="${M}"/><text x="340" y="66" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="${M}">Koppanalil 1</text>`+[0,1,2,3,4,5,6,7,8].map(i=>`<rect x="144" y="${90+i*24}" width="${i===0?120:i===4?150:192}" height="6" rx="3" fill="${i===2||i===5?A:D}"/>`).join('')+`<circle cx="388" cy="141" r="10" fill="${A}"/><text x="388" y="145" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#fff">1</text><circle cx="388" cy="213" r="10" fill="${A}"/><text x="388" y="217" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#fff">2</text>`];
-  document.querySelectorAll('.pv svg').forEach((s,i)=>{if(art[i])s.innerHTML=art[i]()});
+  document.querySelectorAll('.pn[data-art]').forEach(p=>{const s=p.querySelector('.pv svg'),f=art[+p.dataset.art];if(s&&f)s.innerHTML=f()});
   // headings that scramble on hover: keep the real text
   document.querySelectorAll('.scr').forEach(a=>a.dataset.t=a.textContent);
 })();
@@ -517,6 +523,8 @@ if(!FILM_OK){ // plain page with simple fades
 
 /* ================= film mode ================= */
 gsap.registerPlugin(ScrollTrigger);
+ScrollTrigger.config({ignoreMobileResize:true});
+const TOUCH=matchMedia('(pointer:coarse)').matches;
 const MOB=()=>innerWidth<860;
 
 // cursor: dot + lagging ring with labels
@@ -543,7 +551,7 @@ const splitLines=()=>{const src=abl.dataset.src||(abl.dataset.src=abl.innerHTML)
   abl.innerHTML=rows.map(r=>`<span class="ln"><span class="li">${r.trim()}</span></span>`).join(' ')};
 // contact headline words already wrapped
 
-const lenis=new Lenis({lerp:.09,wheelMultiplier:.95,smoothWheel:true});
+const lenis=new Lenis({lerp:.1,wheelMultiplier:1,smoothWheel:true,syncTouch:false});
 lenis.on('scroll',ScrollTrigger.update);gsap.ticker.add(t=>lenis.raf(t*1000));gsap.ticker.lagSmoothing(0);
 
 /* ----- intro: letters fly in from depth, blur to sharp, then the tagline types ----- */
@@ -620,8 +628,8 @@ function build(){
     .fromTo(stats,{opacity:0},{opacity:1,duration:.6},15.6)
     .fromTo('.s-stats .mono',{opacity:0},{opacity:1,duration:1,stagger:.2},15.8)
     .fromTo('.num b',{yPercent:70,opacity:0},{yPercent:0,opacity:1,duration:1.4,stagger:.35,ease:'power3.out'},16);
-  $$('.num b').forEach((b,i)=>{const n=+b.dataset.n,plus=b.hasAttribute('data-plus'),C={v:0};let last=-1;
-    tl.to(C,{v:n,duration:2.2,ease:'power2.out',onUpdate(){const v=Math.round(C.v);if(v!==last){last=v;b.innerHTML=v+(plus?'<sup>+</sup>':'');if(i<2||v%8===0)tick()}}},16.2+i*.35)
+  $$('.num b').forEach((b,i)=>{const n=+b.dataset.n,suf=b.dataset.suf||'',C={v:0};let last=-1;
+    tl.to(C,{v:n,duration:2.2,ease:'power2.out',onUpdate(){const v=Math.round(C.v);if(v!==last){last=v;b.innerHTML=v+(suf?`<sup>${suf}</sup>`:'');if(i<2||v%8===0)tick()}}},16.2+i*.35)
       .fromTo(b,{scale:1.16},{scale:1,duration:1.1,ease:'elastic.out(1,.4)'},18.4+i*.35)});
   tl.fromTo('.xp li',{opacity:0,y:24},{opacity:1,y:0,duration:1.2,stagger:.3,ease:'power2.out'},18.6);
   L('stats',21);
@@ -659,8 +667,8 @@ function build(){
   L('contact',tC+8.4);
   tl.to({},{duration:.6},tC+8.4);
 
-  st=ScrollTrigger.create({trigger:'#film',start:'top top',end:()=>'+='+Math.round(innerHeight*(mob?11:13)),pin:true,scrub:1,anticipatePin:1,invalidateOnRefresh:true,animation:tl,
-    snap:/[?&]nosnap/.test(location.search)?undefined:{snapTo:'labelsDirectional',duration:{min:.35,max:1.1},delay:.12,ease:'power2.inOut',inertia:false},onUpdate:onFilm});
+  st=ScrollTrigger.create({trigger:'#film',start:'top top',end:()=>'+='+Math.round(innerHeight*(mob?8.5:10)),pin:true,scrub:mob?.5:.7,anticipatePin:1,invalidateOnRefresh:true,animation:tl,
+    snap:/[?&]nosnap/.test(location.search)?undefined:{snapTo:'labels',duration:{min:.25,max:.8},delay:.22,ease:'power2.inOut',inertia:false},onUpdate:onFilm});
   labelsOrder=Object.entries(LBL).sort((a,b)=>a[1]-b[1]);
   measureChips();applyO();applySkills();
 }
@@ -687,10 +695,10 @@ gsap.ticker.add(()=>{
     if(Math.abs(sk)>.02||vels[0]._sk){vels.forEach(e=>{e.style.transform=Math.abs(sk)<.02?'':`skewY(${(-sk).toFixed(2)}deg) scaleY(${sy.toFixed(3)})`});vels[0]._sk=Math.abs(sk)>=.02}
     streak.style.opacity=Math.min(Math.abs(vs)/7000,.55).toFixed(3)}
   if(tl&&tl.time()>LBL.p0-4&&tl.time()<LBL.skills){const tx=gsap.getProperty(track,'x'),W=innerWidth;
-    panels.forEach((p,i)=>{const dd=(i*W+tx)/W;if(Math.abs(dd)>1.2)return;p._pv=p._pv||p.querySelector('.pv');p._tx=p._tx||p.querySelector('.pn-tx');
-      p._pv.style.transform=`translate3d(${(dd*W*(mob?.12:.26)).toFixed(1)}px,0,0)`;p._tx.style.transform=Math.abs(dd)<.001?'':`translate3d(${(dd*W*(mob?.03:.07)).toFixed(1)}px,0,0)`});
-    const idx=Math.min(panels.length-1,Math.round(-tx/W));const n=String(idx+1).padStart(2,'0');if(wcount._n!==n){wcount._n=n;wcount.textContent=`${n} / ${String(panels.length).padStart(2,'0')}`}
-    const f=-tx/W,dst=tl.time()<LBL.p0?0:(vs>=0?Math.ceil(f-.02):Math.floor(f+.02));wnum.textContent=String(clamp(dst,0,panels.length-1)+1).padStart(2,'0')}
+    panels.forEach((p,i)=>{const dd=(i*W+tx)/W;if(Math.abs(dd)>1.2)return;if(p._pv===undefined){p._pv=p.querySelector('.pv');p._tx=p.querySelector('.pn-tx')}
+      if(p._pv)p._pv.style.transform=`translate3d(${(dd*W*(mob?.12:.26)).toFixed(1)}px,0,0)`;p._tx.style.transform=Math.abs(dd)<.001?'':`translate3d(${(dd*W*(mob?.03:.07)).toFixed(1)}px,0,0)`});
+    const idx=Math.min(panels.length-1,Math.round(-tx/W));const n=idx===panels.length-1?'More':String(idx+1).padStart(2,'0')+' / '+String(panels.length-1).padStart(2,'0');if(wcount._n!==n){wcount._n=n;wcount.textContent=n}
+    const f=-tx/W,dst=tl.time()<LBL.p0?0:(vs>=0?Math.ceil(f-.02):Math.floor(f+.02));const di=clamp(dst,0,panels.length-1);wnum.textContent=di===panels.length-1?'+':String(di+1).padStart(2,'0')}
   if(tl&&SK.p<1&&tl.time()>LBL.p0+20&&tl.time()<LBL.contact)applySkills();
 });
 
@@ -698,7 +706,9 @@ gsap.ticker.add(()=>{
 const fontsReady=document.fonts?Promise.race([Promise.all([document.fonts.load('600 100px "Clash Display"'),document.fonts.load('500 100px "Clash Display"')]).catch(()=>{}),new Promise(r=>setTimeout(r,2200))]):Promise.resolve();
 fontsReady.catch(()=>{}).then(()=>{build();onFilm(st);
   const h=location.hash.slice(1);if(HASH[h])requestAnimationFrame(()=>go(HASH[h],true));
-  let lastW=innerWidth;addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(()=>{if(Math.abs(innerWidth-lastW)<2&&!MOB())return ScrollTrigger.refresh();lastW=innerWidth;const t=tl.progress();build();st.scroll(st.start+(st.end-st.start)*t)},200)})});
+  let lastW=innerWidth,lastH=innerHeight;addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(()=>{const dw=Math.abs(innerWidth-lastW),dh=Math.abs(innerHeight-lastH);
+    // phones resize every time the address bar shows or hides: never rebuild for that
+    if(dw<2&&(TOUCH||dh<2))return;lastW=innerWidth;lastH=innerHeight;const t=tl.progress();build();st.scroll(st.start+(st.end-st.start)*t)},200)})});
 });
 </script>
 <script>
