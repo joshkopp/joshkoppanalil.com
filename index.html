@@ -587,7 +587,7 @@ function measureChips(){const box=$('#chips').getBoundingClientRect(),cx=box.lef
 
 const LBL={};
 function build(){
-  if(tl){st.kill();tl.kill();gsap.set([about,stats,work,skills,contact,introSc,track,wipe,pt,'#abside','#abl .li','.num b','.xp li','.big .wi','.ct-sub','.ct-det','.ft','.pn-tx > *','.pv svg','.pv .tagp','.allcard','.s-contact .mono','.s-skills .mono','#sk-h','.s-stats .mono','.s-about .mono','#tagline','#hint',nameEl],{clearProps:'all'});nameEl.style.transformOrigin=''}
+  if(tl){st.kill();tl.kill();gsap.set([about,stats,work,skills,contact,introSc,track,wipe,pt,'#abside','#abl .li','.num','.num b','.xp li','.big .wi','.ct-sub','.ct-det','.ft','.pn-tx > *','.pv svg','.pv .tagp','.allcard','.s-contact .mono','.s-skills .mono','#sk-h','.s-stats .mono','.s-about .mono','#tagline','#hint',nameEl],{clearProps:'all'});nameEl.style.transformOrigin=''}
   splitLines();fitName();measureO();
   const W=innerWidth,mob=MOB(),NP=panels.length;
   tl=gsap.timeline({defaults:{ease:'none'}});
@@ -618,12 +618,12 @@ function build(){
     if(side.length)tl.fromTo(side,{xPercent:18,opacity:0},{xPercent:0,opacity:1,duration:1.4,stagger:.08,ease:'power3.out'},t);
     tl.fromTo(tx,{y:64,opacity:0},{y:0,opacity:1,duration:1.2,stagger:.1,ease:'power3.out'},t+.45)};
   const wIn='inset(0 0% 0 100%)',wFull='inset(0 0% 0 0%)',wOut='inset(0 100% 0 0%)';
-  tl.to('.st-in',{scale:.94,opacity:0,duration:1.4,ease:'power2.in'},21.2)
-    .set(stats,{opacity:0},22.6)
-    .set(work,{opacity:1},22.5)
-    .fromTo(wipe,{clipPath:wIn},{clipPath:wFull,duration:1.2,ease:'power2.inOut'},21.2)
-    .to(wipe,{clipPath:wOut,duration:1.2,ease:'power2.inOut'},22.7);
-  enter(panels[0],23);
+  // stats -> first project: no blue. The numbers lift away one by one, then Monyx builds in behind them
+  tl.to('.st-in .num',{y:-60,opacity:0,duration:1,stagger:.14,ease:'power2.in'},21.15)
+    .to('.xp li',{y:-36,opacity:0,duration:.8,stagger:.07,ease:'power2.in'},21.35)
+    .set(work,{opacity:1},22.3)
+    .set(stats,{opacity:0},22.6);
+  enter(panels[0],22.35);
   L('p0',25);
   // projects: the track slides one full-bleed scene at a time, an accent wipe between each
   for(let k=1;k<NP;k++){const t0=25+(k-1)*4+.6;
