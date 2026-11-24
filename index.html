@@ -587,7 +587,7 @@ function measureChips(){const box=$('#chips').getBoundingClientRect(),cx=box.lef
 
 const LBL={};
 function build(){
-  if(tl){st.kill();tl.kill();gsap.set([about,stats,work,skills,contact,introSc,track,wipe,pt,'#abside','#abl .li','.num b','.xp li','.big .wi','.ct-sub','.ct-det','.ft','.s-contact .mono','.s-skills .mono','#sk-h','.s-stats .mono','.s-about .mono','#tagline','#hint',nameEl],{clearProps:'all'});nameEl.style.transformOrigin=''}
+  if(tl){st.kill();tl.kill();gsap.set([about,stats,work,skills,contact,introSc,track,wipe,pt,'#abside','#abl .li','.num b','.xp li','.big .wi','.ct-sub','.ct-det','.ft','.pn-tx > *','.pv svg','.pv .tagp','.allcard','.s-contact .mono','.s-skills .mono','#sk-h','.s-stats .mono','.s-about .mono','#tagline','#hint',nameEl],{clearProps:'all'});nameEl.style.transformOrigin=''}
   splitLines();fitName();measureO();
   const W=innerWidth,mob=MOB(),NP=panels.length;
   tl=gsap.timeline({defaults:{ease:'none'}});
@@ -612,12 +612,17 @@ function build(){
   tl.fromTo('.xp li',{opacity:0,y:24},{opacity:1,y:0,duration:1.2,stagger:.3,ease:'power2.out'},18.6);
   L('stats',21);
   // 3 -> 4: an accent wipe brings in the first project
+  // each project card builds itself in as the blue sweeps off: text rises line by line, the preview slides in
+  const enter=(pn,t)=>{const tx=pn.querySelectorAll('.pn-tx > *'),side=pn.querySelectorAll('.pv svg,.pv .tagp,.allcard');
+    tl.fromTo(tx,{y:46,opacity:0},{y:0,opacity:1,duration:1.05,stagger:.1,ease:'power3.out'},t);
+    if(side.length)tl.fromTo(side,{xPercent:14,opacity:0},{xPercent:0,opacity:1,duration:1.3,stagger:.08,ease:'power3.out'},t+.05)};
   const wIn='inset(0 0% 0 100%)',wFull='inset(0 0% 0 0%)',wOut='inset(0 100% 0 0%)';
   tl.to('.st-in',{scale:.94,opacity:0,duration:2,ease:'power2.in'},21.6)
     .set(stats,{opacity:0},23.3)
     .set(work,{opacity:1},23.2)
     .fromTo(wipe,{clipPath:wIn},{clipPath:wFull,duration:1.5,ease:'power2.inOut'},21.4)
     .to(wipe,{clipPath:wOut,duration:1.5,ease:'power2.inOut'},23.4);
+  enter(panels[0],23.55);
   L('p0',25);
   // projects: the track slides one full-bleed scene at a time, an accent wipe between each
   for(let k=1;k<NP;k++){const t0=25+(k-1)*4+.6;
@@ -625,6 +630,7 @@ function build(){
     tl.fromTo(wipe,{clipPath:wIn},{clipPath:wFull,duration:1.35,ease:'power2.inOut',immediateRender:false},t0-.45)
       .to(track,{x:()=>-k*innerWidth,duration:1.2,ease:'power2.inOut'},t0+.6)
       .to(wipe,{clipPath:wOut,duration:1.35,ease:'power2.inOut'},t0+1.85);
+    enter(panels[k],t0+1.95);
     L('p'+k,t0+3.4)}
   const tW=25+(NP-1)*4;
   // 4 -> 5: the work scene drops back, the skills float in as a cloud and lock into a grid
