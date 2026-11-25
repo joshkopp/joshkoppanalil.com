@@ -145,6 +145,11 @@ button,input{font:inherit;color:inherit}
 .ab-lines{font:500 clamp(25px,3.2vw,52px)/1.14 var(--body);letter-spacing:-.02em}
 .ab-lines .ln{display:block;overflow:hidden;padding-bottom:.06em;margin-bottom:-.06em}
 .ab-lines .li{display:block}
+/* "Josh" in the opening's dotted display type, with a soft blue glow behind it */
+.ab-lines .me{display:inline-block;position:relative;isolation:isolate;font:700 1.02em/1 var(--disp);letter-spacing:-.01em;text-transform:uppercase;color:#fff;vertical-align:-.02em}
+.ab-lines .me::before{content:"";position:absolute;inset:-35% -18%;z-index:-1;background:radial-gradient(closest-side,rgba(58,109,255,.55),rgba(58,109,255,0));filter:blur(8px);animation:meglow 3.2s ease-in-out infinite}
+@keyframes meglow{0%,100%{opacity:.55;transform:scale(.94)}50%{opacity:1;transform:scale(1.06)}}
+@media (prefers-reduced-motion:reduce){.ab-lines .me::before{animation:none}}
 .key{position:relative;display:inline-block}
 .ab-side{display:grid;gap:26px;padding-bottom:.4em}
 .ab-pic{width:clamp(120px,12vw,180px);aspect-ratio:1;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px var(--line)}
@@ -347,7 +352,7 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
     <div class="ab-in">
       <div class="vel">
         <h2 class="sr" id="about-h">About Josh</h2>
-        <p class="ab-lines" id="abl">I'm Josh, a sophomore at Westlake High School in Austin. I build <span class="key">machine-learning models</span>, <span class="key">security tools</span>, apps for my classes and <span class="key">games</span>, and right now I'm building <span class="key">Monyx</span>, a wallet you pay by voice.</p>
+        <p class="ab-lines" id="abl">I'm <span class="me dotty">Josh</span>, a sophomore at Westlake High School in Austin. I build <span class="key">machine-learning models</span>, <span class="key">security tools</span>, apps for my classes and <span class="key">games</span>, and right now I'm building <span class="key">Monyx</span>, a wallet you pay by voice.</p>
       </div>
       <div class="ab-side" id="abside">
         <figure class="ab-pic"><img src="work/avatar-portrait.webp" alt="Josh sitting on a beach at sunset" width="527" height="608" loading="lazy" decoding="async"></figure>
@@ -637,6 +642,7 @@ function frame(now){
   }
   ctx.globalAlpha=1;
 }
+let meDT=null;
 /* ----- a slow starfield behind the rest of the site, carrying the opening's look all the way down ----- */
 const sky=$('#sky'),sg=FILM&&sky&&sky.getContext?sky.getContext('2d'):null;let SW=1,SH=1,SD=1,stars=[];
 function sizeSky(){SW=innerWidth;SH=innerHeight;SD=Math.min(1.5,devicePixelRatio||1);sky.width=Math.round(SW*SD);sky.height=Math.round(SH*SD);
@@ -668,6 +674,7 @@ function applyHero(){
   introSc.style.visibility=p>=.999?'hidden':'';
   d.classList.toggle('hero-top',p<.97);d.classList.toggle('inhero',FILM&&p<.97);
   if(sky)sky.style.opacity=sstep(.7,1,p).toFixed(3);
+  if(meDT){if(s>.55)meDT.reveal(performance.now()+150);else if(p<.3&&meDT.start!==Infinity){meDT.start=Infinity;meDT.busy=true}}
   if(!FX)nameEl.style.opacity=f;
 }
 function layout(){
@@ -795,7 +802,7 @@ if(FILM){
       this.g=this.cv.getContext('2d');this.pts=[];this.start=Infinity;this.live=false;this.busy=true;this.sample();
     }
     sample(){
-      const el=this.el,r=el.getBoundingClientRect(),pad=this.pad=18,W=this.W=Math.ceil(r.width+pad*2),H=this.H=Math.ceil(r.height+pad*2),dpr=this.dpr=Math.min(2,devicePixelRatio||1);
+      const el=this.el,r=el.getBoundingClientRect(),sc=r.width/(el.offsetWidth||r.width)||1,pad=this.pad=18,W=this.W=Math.ceil(r.width/sc+pad*2),H=this.H=Math.ceil(r.height/sc+pad*2),dpr=this.dpr=Math.min(2,devicePixelRatio||1);
       this.cv.style.left=-pad+'px';this.cv.style.top=-pad+'px';this.cv.style.width=W+'px';this.cv.style.height=H+'px';this.cv.width=Math.round(W*dpr);this.cv.height=Math.round(H*dpr);
       const oc=document.createElement('canvas');oc.width=W;oc.height=H;const g=oc.getContext('2d',{willReadFrequently:true}),cols=[];
       const fs0=parseFloat(getComputedStyle(el).fontSize),step=Math.max(3,Math.round(fs0*.058)),mine=new Map(this.pts.map(p=>[p.k,p]));
@@ -803,7 +810,7 @@ if(FILM){
         g.font=`${cs.fontWeight} ${F}px ${cs.fontFamily}`;const m=g.measureText('M'),A=m.fontBoundingBoxAscent||F*.9,D=m.fontBoundingBoxDescent||F*.25;
         let ci=cols.indexOf(cs.color);if(ci<0){ci=cols.length;cols.push(cs.color)}
         g.fillStyle=`rgb(${ci+1},0,0)`;const t=cs.textTransform==='uppercase'?c.textContent.toUpperCase():c.textContent;
-        g.fillText(t,cr.left-r.left+pad,cr.top-r.top+pad+(cr.height-(A+D))/2+A)});
+        g.fillText(t,(cr.left-r.left)/sc+pad,(cr.top-r.top)/sc+pad+(cr.height/sc-(A+D))/2+A)});
       const data=g.getImageData(0,0,W,H).data,pts=[];
       for(let y=Math.floor(step/2);y<H;y+=step)for(let x=Math.floor(step/2);x<W;x+=step){const i=(y*W+x)*4;if(data[i+3]>150){const k=x+','+y,o=mine.get(k);
         pts.push({k,x,y,c:Math.max(0,Math.round(data[i]*255/data[i+3])-1),ox:o?o.ox:0,oy:o?o.oy:0,sx:rnd(-1,1),sy:rnd(-1,1),d:Math.random()*.45})}}
@@ -812,7 +819,7 @@ if(FILM){
     reveal(at){if(this.start===Infinity){this.start=at;this.busy=true}}
     frame(now){
       const r=this.el.getBoundingClientRect();if(r.bottom<-40||r.top>innerHeight+40)return;
-      const R=MOB()?34:52,px=dtPtr.x-r.left+this.pad,py=dtPtr.y-r.top+this.pad,near=px>-R&&py>-R&&px<this.W+R&&py<this.H+R;
+      const sc=r.width/(this.el.offsetWidth||r.width)||1,R=MOB()?34:52,px=(dtPtr.x-r.left)/sc+this.pad,py=(dtPtr.y-r.top)/sc+this.pad,near=px>-R&&py>-R&&px<this.W+R&&py<this.H+R;
       const T=(now-this.start)/1000;if(!near&&!this.busy)return;
       let moving=T<1.6;const g=this.g;g.setTransform(this.dpr,0,0,this.dpr,0,0);g.clearRect(0,0,this.W,this.H);
       const groups=this.cols.map(()=>[]);
@@ -828,7 +835,7 @@ if(FILM){
   }
   const dio=new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)return;const t=DT.find(x=>x.el===e.target);if(t){dio.unobserve(e.target);t.reveal(performance.now()+120)}}),{threshold:.2});
   const addDT=el=>{const t=new DotText(el);DT.push(t);dio.observe(el);return t};
-  $$('.dotty').forEach(el=>{if(!el.matches('.num b'))addDT(el)});
+  $$('.dotty').forEach(el=>{if(el.matches('.num b'))return;if(el.matches('.me')){meDT=new DotText(el);DT.push(meDT);return}addDT(el)});
   // the stat numbers turn into particles once they finish counting
   $$('.num b').forEach(b=>b.addEventListener('counted',()=>{const t=addDT(b);t.start=performance.now()-2000;t.busy=true},{once:true}));
   const dtLoop=now=>{requestAnimationFrame(dtLoop);for(const t of DT)t.frame(now)};requestAnimationFrame(dtLoop);
