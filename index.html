@@ -93,7 +93,8 @@ button,input{font:inherit;color:inherit}
 .fine.film,.fine.film a,.fine.film button{cursor:none}
 .fine.film input{cursor:text}
 .cur .dot{position:fixed;left:-3px;top:-3px;width:6px;height:6px;border-radius:50%;background:#fff}
-.cur .ring{position:fixed;left:-20px;top:-20px;width:40px;height:40px}
+.cur .ring{position:fixed;left:-20px;top:-20px;width:40px;height:40px;transition:opacity .5s ease}
+.inhero .cur .ring{opacity:0} /* just the dot during the intro; the ring joins once you're past it */
 .cur .ring i{position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(255,255,255,.45);transition:transform .45s var(--ease),background .35s,box-shadow .35s}
 .cur .ring span{position:absolute;inset:0;display:grid;place-items:center;font:500 9px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#fff;opacity:0;transform:scale(.6);transition:opacity .3s,transform .4s var(--ease)}
 .cur.on .ring i{transform:scale(2);background:rgba(58,109,255,.9);box-shadow:none}
@@ -659,7 +660,7 @@ function applyHero(){
   abIn.style.transform=s>=1?'':`translate3d(0,${((1-s)*34).toFixed(1)}px,0) scale(${(1.08-.08*s).toFixed(4)})`;
   const f=clamp(1-p*4);fade.forEach(e=>{e.style.opacity=tagStarted?f:0;e.style.transform=f<1?`translateX(-50%) translateY(${(-24*(1-f)).toFixed(1)}px)`:''});
   introSc.style.visibility=p>=.999?'hidden':'';
-  d.classList.toggle('hero-top',p<.97);d.classList.toggle('inhero',FX&&p<.02);
+  d.classList.toggle('hero-top',p<.97);d.classList.toggle('inhero',FILM&&p<.97);
   if(sky)sky.style.opacity=sstep(.7,1,p).toFixed(3);
   if(!FX)nameEl.style.opacity=f;
 }
