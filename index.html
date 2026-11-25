@@ -302,7 +302,7 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <header class="top">
-  <a class="brand" href="#intro" data-cursor="top"><svg class="bm" viewBox="8 8 52 48" aria-hidden="true"><path fill="#3a6dff" d="M23 10h8.5v30.5c0 8-5 13.5-13 13.5H10v-8.5h8c3.3 0 5-1.7 5-5z"/><path fill="none" stroke="#f3f4f6" stroke-width="3.4" stroke-linejoin="round" d="M28 10H36.5V34L48 10H57.5L43.92 36.31L58 54H48L36.5 39.52V54H28Z"/></svg><span>JOSH<b>/</b>K</span></a>
+  <a class="brand" href="#intro" data-cursor="top"><svg class="bm" viewBox="8 8 52 48" aria-hidden="true"><path fill="none" stroke="#f3f4f6" stroke-width="3.4" stroke-linejoin="round" d="M28 10H36.5V34L48 10H57.5L43.92 36.31L58 54H48L36.5 39.52V54H28Z"/><path fill="#3a6dff" d="M23 10h8.5v30.5c0 8-5 13.5-13 13.5H10v-8.5h8c3.3 0 5-1.7 5-5z"/></svg><span>JOSH<b>/</b>K</span></a>
   <div class="tright">
     <a class="cta-top ul" href="#contact">Let's talk</a>
   </div>
@@ -546,7 +546,7 @@ function applyO(){
   const W=stage.clientWidth,H=stage.clientHeight,diag=Math.hypot(W,H),p=clamp(scrollY/Z),pe=Math.pow(p,1.6);
   const SMAX=diag*1.15/Math.min(O.rx,O.ry),s=Math.exp(pe*Math.log(SMAX)),mv=1-Math.pow(1-clamp(pe*1.6),2);
   const tx=(W/2-O.cx)*mv,ty=(H/2-O.cy)*mv;
-  const fo=clamp(1-p*6),fO=clamp(1-(p-.16)/.22);
+  const fo=clamp(1-p*6),fO=clamp(1-(p-.58)/.27); // the rest of the name clears out; the O stays solid while it grows, then fades into About
   chars.forEach((c,i)=>{const a=i===1?fO:fo;c.style.color=a>=1?'':`rgba(243,244,246,${a.toFixed(3)})`});
   nameEl.style.transform=p<=0?'':`translate3d(${tx.toFixed(1)}px,${ty.toFixed(1)}px,0) scale(${s.toFixed(4)})`;
   const rx=O.rx*s,ry=O.ry*s;
