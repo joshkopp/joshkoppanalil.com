@@ -39,9 +39,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wdth,wght@75..112.5,300..500&display=swap" rel="stylesheet">
 <script>
 (()=>{const d=document.documentElement,rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  d.classList.add('js');if(!rm)d.classList.add('film');
+  d.classList.add('js');if(!rm)d.classList.add('film','hero-top');
   if(matchMedia('(hover:hover) and (pointer:fine)').matches&&innerWidth>860)d.classList.add('fine');
-  setTimeout(()=>{if(!window.__film)d.classList.remove('film')},8000)})();
+  setTimeout(()=>{if(!window.__film)d.classList.remove('film','hero-top')},8000)})();
 </script>
 <style>
 :root{
@@ -71,7 +71,12 @@ button,input{font:inherit;color:inherit}
 @keyframes grain{20%{transform:translate3d(-3%,2%,0)}40%{transform:translate3d(2%,-4%,0)}60%{transform:translate3d(-5%,-1%,0)}80%{transform:translate3d(4%,3%,0)}}
 
 /* chrome: top bar, scene index, sound */
-.top{position:fixed;inset:0 0 auto;z-index:60;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:max(18px,env(safe-area-inset-top)) var(--gut) 0;pointer-events:none}
+.top{position:fixed;inset:0 0 auto;z-index:60;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:max(18px,env(safe-area-inset-top)) var(--gut) 0;pointer-events:none;transition:opacity .6s ease,transform .7s var(--ease)}
+.hero-top .top,.hero-top .prog{opacity:0;transform:translateY(-14px);pointer-events:none}
+.hero-top .top>*{pointer-events:none}
+.prog{transition:opacity .6s ease,transform .7s var(--ease)}
+.inhero .cur{opacity:0}
+.cur{transition:opacity .3s}
 .top>*{pointer-events:auto}
 .brand{display:inline-flex;align-items:center;gap:12px;font:500 12px var(--mono);letter-spacing:.2em}
 .brand .bm{width:34px;height:31px;flex:none}
@@ -135,7 +140,7 @@ button,input{font:inherit;color:inherit}
 @keyframes drop{to{top:110%}}
 
 /* 02 about */
-.s-about{display:flex;align-items:center;background:#0d0e12}
+.s-about{display:flex;align-items:center;background:transparent}
 .ab-in{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:clamp(30px,6vw,110px);align-items:end;width:100%;max-width:1400px;margin-inline:auto}
 .ab-lines{font:500 clamp(25px,3.2vw,52px)/1.14 var(--body);letter-spacing:-.02em}
 .ab-lines .ln{display:block;overflow:hidden;padding-bottom:.06em;margin-bottom:-.06em}
@@ -153,7 +158,7 @@ button,input{font:inherit;color:inherit}
 .s-stats{display:flex;flex-direction:column;justify-content:center}
 .st-in{width:100%;max-width:1400px;margin-inline:auto}
 .nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(20px,4vw,60px)}
-.num{border-top:1px solid var(--line);padding-top:20px}
+.num{border-top:1px dotted rgba(255,255,255,.22);padding-top:20px}
 .num b{display:block;font:700 clamp(56px,8.4vw,150px)/.95 var(--disp);letter-spacing:-.03em;font-variant-numeric:tabular-nums;transform-origin:0 100%}
 .num b sup{font-size:.35em;vertical-align:.95em;color:var(--acc);margin-left:.05em}
 .num span{display:block;margin-top:14px}
@@ -176,7 +181,7 @@ button,input{font:inherit;color:inherit}
 .pn .st{font:400 11.5px/1.6 var(--mono);font-stretch:87.5%;color:var(--mute)}
 .pn .st b{color:var(--ink);font-weight:500}
 .pn .acts{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px}
-.pv{position:relative;aspect-ratio:4/3;border-radius:18px;overflow:hidden;background:radial-gradient(120% 90% at 30% 20%,#16182033,transparent),linear-gradient(160deg,#121318,#0b0b0e);box-shadow:inset 0 0 0 1px var(--line)}
+.pv{position:relative;aspect-ratio:4/3;border-radius:18px;overflow:hidden;background:radial-gradient(120% 90% at 30% 20%,#16182033,transparent),linear-gradient(160deg,rgba(18,19,24,.82),rgba(11,11,14,.9));-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);box-shadow:inset 0 0 0 1px var(--line)}
 .pv svg{position:absolute;inset:0;width:100%;height:100%}
 .pv::after{content:"";position:absolute;inset:0;background:radial-gradient(60% 50% at 70% 30%,rgba(58,109,255,.16),transparent 70%);pointer-events:none}
 .pv .tagp{position:absolute;left:18px;top:14px;z-index:1}
@@ -193,14 +198,12 @@ button,input{font:inherit;color:inherit}
 .sk-off{margin-top:30px}
 
 /* 06 contact */
-.s-contact{display:flex;flex-direction:column;justify-content:center;background:var(--bg)}
+.s-contact{display:flex;flex-direction:column;justify-content:center;background:transparent}
 .ct-in{width:100%;max-width:1400px;margin-inline:auto}
 .big{font:700 clamp(36px,7vw,130px)/.98 var(--disp);letter-spacing:-.025em;text-transform:uppercase}
 .big .wl{display:block;overflow:hidden;padding-bottom:.04em}
 .big .wi{display:inline-block}
 .big .acc-t{color:var(--acc)}
-.film .big .acc-t{background:linear-gradient(100deg,#3a6dff 0%,#3a6dff 38%,#b9ccff 50%,#3a6dff 62%,#3a6dff 100%) 0 0/250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 4.5s ease-in-out infinite}
-@keyframes shine{0%{background-position:100% 0}60%,100%{background-position:-50% 0}}
 .ct-det{display:flex;flex-wrap:wrap;gap:clamp(18px,3vh,28px) clamp(40px,6vw,96px);margin:clamp(18px,3vh,30px) 0 clamp(34px,7vh,70px);padding:clamp(18px,3vh,28px) 0;border-block:1px solid var(--line)}
 .ct-det{display:block}
 .ct-det dl{display:flex;flex-wrap:wrap;gap:clamp(18px,3vh,28px) clamp(40px,6vw,96px)}
@@ -233,15 +236,21 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
 .cut.on{opacity:1}
 
 /* everything after the hero is one plain page */
-.s-stats,.s-work,.s-skills,.s-contact{border-top:1px solid var(--line)}
-.s-work{background:#0a0a0d}
+.s-stats,.s-work,.s-skills,.s-contact{border-top:1px dotted rgba(255,255,255,.2)}
+.s-work{background:transparent}
 .w-head{display:flex;align-items:end;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .w-head p{max-width:34ch;color:var(--mute);font:400 clamp(15px,1.2vw,18px)/1.5 var(--body)}
-.pn+.pn{border-top:1px solid var(--line)}
+.pn+.pn{border-top:1px dotted rgba(255,255,255,.16)}
 .pn:first-child{padding-top:clamp(40px,6vh,70px)}
 .pn:nth-child(even){grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
 .pn:nth-child(even) .pv{order:-1}
-.s-skills{background:#0d0e12}
+.s-skills{background:transparent}
+
+/* the rest of the site wears the opening's look: a slow starfield behind everything, headings built from dots */
+#sky{position:fixed;inset:0;z-index:0;pointer-events:none;display:none}
+.film #sky{display:block}
+.dotty,.dotty sup{background:radial-gradient(circle closest-side,currentColor 0 82%,transparent 92%) 0 0/max(3px,.058em) max(3px,.058em);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.chip{background:rgba(14,15,19,.72)}
 .key{color:var(--acc)}
 
 /* reveals: each block arrives once as it scrolls into view */
@@ -318,6 +327,7 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
 
 <div class="prog" aria-hidden="true"><i id="pbar"></i></div>
 
+<canvas id="sky" aria-hidden="true"></canvas>
 <main id="film">
   <div class="hero" id="hero"><div class="stage" id="stage">
   <section class="sc s-intro" id="intro" aria-label="Introduction">
@@ -351,9 +361,9 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
     <div class="st-in">
       <h2 class="sr" id="stats-h">By the numbers</h2>
       <div class="nums vel">
-        <div class="num"><b data-n="20" data-suf="+">20<sup>+</sup></b><span class="mono">Live projects</span></div>
-        <div class="num"><b data-n="10">10</b><span class="mono">Games made</span></div>
-        <div class="num"><b data-n="8" data-suf="+">8<sup>+</sup></b><span class="mono">Competitions</span></div>
+        <div class="num"><b class="dotty" data-n="20" data-suf="+">20<sup>+</sup></b><span class="mono">Live projects</span></div>
+        <div class="num"><b class="dotty" data-n="10">10</b><span class="mono">Games made</span></div>
+        <div class="num"><b class="dotty" data-n="8" data-suf="+">8<sup>+</sup></b><span class="mono">Competitions</span></div>
       </div>
       <ul class="xp" aria-label="Where my time goes">
         <li><b>Monyx</b><span><em>Now.</em> Founder and builder of a Solana wallet you pay by voice.</span></li>
@@ -366,22 +376,22 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
 
   <!-- 04 -->
   <section class="sc s-work" id="work" aria-labelledby="work-h">
-    <div class="w-head"><h2 id="work-h">Projects</h2><p>Three I’m proudest of, and a way into the other twenty.</p></div>
+    <div class="w-head"><h2 id="work-h" class="dotty">Projects</h2><p>Three I’m proudest of, and a way into the other twenty.</p></div>
     <div class="track" id="track">
       <article class="pn" id="p-monyx" data-art="0">
-        <div class="pn-tx"><p class="mono">Payments · building now</p><h3><a href="https://monyx.pro/" target="_blank" rel="noopener" data-cursor="open">Monyx</a></h3><p class="one">A dollar wallet on Solana you pay by talking to it. Every payment is read back in plain English and risk-checked before it sends.</p><p class="st">Solana · Voice · Supabase</p><div class="acts"><span class="mag"><a class="btn" href="https://monyx.pro/" target="_blank" rel="noopener" data-cursor="open">Open Monyx <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
+        <div class="pn-tx"><p class="mono">Payments · building now</p><h3><a class="dotty" href="https://monyx.pro/" target="_blank" rel="noopener" data-cursor="open">Monyx</a></h3><p class="one">A dollar wallet on Solana you pay by talking to it. Every payment is read back in plain English and risk-checked before it sends.</p><p class="st">Solana · Voice · Supabase</p><div class="acts"><span class="mag"><a class="btn" href="https://monyx.pro/" target="_blank" rel="noopener" data-cursor="open">Open Monyx <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
         <figure class="pv" aria-hidden="true"><span class="mono tagp">voice → payment</span><svg viewBox="0 0 480 360"></svg></figure>
       </article>
       <article class="pn" id="p-frc" data-art="1">
-        <div class="pn-tx"><p class="mono">Machine learning</p><h3><a href="https://frc-predictor-c8bkzggpngxjfjmcdfntmr.streamlit.app/" target="_blank" rel="noopener" data-cursor="open">FRC Predictor</a></h3><p class="one">Pick six robotics teams and it calls the winner before the match is played.</p><p class="st"><b>77.3%</b> accurate on unseen matches · trained on <b>18,000+</b></p><div class="acts"><span class="mag"><a class="btn" href="https://frc-predictor-c8bkzggpngxjfjmcdfntmr.streamlit.app/" target="_blank" rel="noopener" data-cursor="open">Run a prediction <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
+        <div class="pn-tx"><p class="mono">Machine learning</p><h3><a class="dotty" href="https://frc-predictor-c8bkzggpngxjfjmcdfntmr.streamlit.app/" target="_blank" rel="noopener" data-cursor="open">FRC Predictor</a></h3><p class="one">Pick six robotics teams and it calls the winner before the match is played.</p><p class="st"><b>77.3%</b> accurate on unseen matches · trained on <b>18,000+</b></p><div class="acts"><span class="mag"><a class="btn" href="https://frc-predictor-c8bkzggpngxjfjmcdfntmr.streamlit.app/" target="_blank" rel="noopener" data-cursor="open">Run a prediction <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
         <figure class="pv" aria-hidden="true"><span class="mono tagp">red vs blue</span><svg viewBox="0 0 480 360"></svg></figure>
       </article>
       <article class="pn" id="p-chem" data-art="3">
-        <div class="pn-tx"><p class="mono">Chemistry</p><h3><a href="/lds/" data-cursor="open">Chemistry Lab</a></h3><p class="one">Type any of 510 compounds and watch its Lewis structure build step by step, then spin it in 3D.</p><p class="st">Lewis structures · VSEPR · element explorer · quiz</p><div class="acts"><span class="mag"><a class="btn" href="/lds/" data-cursor="open">Open the lab <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
+        <div class="pn-tx"><p class="mono">Chemistry</p><h3><a class="dotty" href="/lds/" data-cursor="open">Chemistry Lab</a></h3><p class="one">Type any of 510 compounds and watch its Lewis structure build step by step, then spin it in 3D.</p><p class="st">Lewis structures · VSEPR · element explorer · quiz</p><div class="acts"><span class="mag"><a class="btn" href="/lds/" data-cursor="open">Open the lab <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
         <figure class="pv" aria-hidden="true"><span class="mono tagp">CH₄ · tetrahedral</span><svg viewBox="0 0 480 360"></svg></figure>
       </article>
           <article class="pn pn-more" id="p-more" data-art="9">
-        <div class="pn-tx"><p class="mono">More projects</p><h3><a href="/allproj/index.html" data-cursor="view">Everything else</a></h3><p class="one">Neural nets, algorithms, security tools, study apps and experiments. They all live on one page.</p><div class="acts"><span class="mag"><a class="btn" href="/allproj/index.html" data-cursor="view">See all projects <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
+        <div class="pn-tx"><p class="mono">More projects</p><h3><a class="dotty" href="/allproj/index.html" data-cursor="view">Everything else</a></h3><p class="one">Neural nets, algorithms, security tools, study apps and experiments. They all live on one page.</p><div class="acts"><span class="mag"><a class="btn" href="/allproj/index.html" data-cursor="view">See all projects <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
         <figure class="pv" aria-hidden="true"><span class="mono tagp">20+ projects</span><svg viewBox="0 0 480 360"></svg></figure>
       </article>
 </div>
@@ -391,7 +401,7 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
   <section class="sc s-skills" id="skills" aria-labelledby="sk-h">
     <div class="glow" style="width:80vmax;height:80vmax;left:-30vmax;top:-30vmax;opacity:.7"></div>
     <div class="sk-in">
-      <h2 id="sk-h">What I build with</h2>
+      <h2 id="sk-h" class="dotty">What I build with</h2>
       <ul class="chips vel" id="chips">
         <li class="chip k"><span>Python</span><small>ML, tools</small></li>
         <li class="chip k"><span>JavaScript</span><small>web, games</small></li>
@@ -425,7 +435,7 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
           <div><dt>Phone or text</dt><dd><button class="ct-v copy" type="button" data-copy="(737) 420-8829" data-cursor="copy">(737) 420-8829</button></dd></div>
         </dl>
       </div>
-      <h2 class="big vel" id="ct-h"><span class="wl"><span class="wi">Let's build</span></span><span class="wl"><span class="wi acc-t">something</span></span></h2>
+      <h2 class="big vel" id="ct-h"><span class="wl"><span class="wi dotty">Let's build</span></span><span class="wl"><span class="wi acc-t dotty">something</span></span></h2>
       <p class="ct-sub">Questions about a project, or an idea you want to make real? Email or text, whichever is easier.</p>
       <footer class="ft">
         <span>© <span id="year"></span> Josh Koppanalil<span id="viewsbox" hidden> · <span id="views"></span> views</span></span>
@@ -529,7 +539,7 @@ const born=performance.now(),ptr={x:-1e4,y:-1e4,on:false};
 const rnd=(a,b)=>a+Math.random()*(b-a);
 function sizeCanvas(){W=stage.clientWidth;H=stage.clientHeight;DPR=Math.min(MOB()?1.5:2,devicePixelRatio||1);cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);cv.style.width=W+'px';cv.style.height=H+'px'}
 function makeParticles(){
-  cap=MOB()?2300:4400;nStars=MOB()?260:520;P=[];
+  cap=MOB()?2300:4400;nStars=MOB()?110:200;P=[];
   const R=Math.max(W,H);
   for(let i=0;i<cap+nStars;i++){
     const arm=i%3,r=R*(.04+Math.pow(Math.random(),.55)*.62);
@@ -551,7 +561,13 @@ function sample(){ // read the letters' real positions from the (invisible) head
   for(;;step++){pts=[];for(let y=0;y<oc.height;y+=step)for(let x=(y/step&1)*step/2|0;x<oc.width;x+=step)if(data[(y*oc.width+x)*4+3]>140)pts.push([x,y]);if(pts.length<=cap||step>14)break}
   for(let i=pts.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[pts[i],pts[j]]=[pts[j],pts[i]]} // shuffle so letters fill in evenly
   const s=Math.max(1.3,step*.62);
-  P.forEach((p,i)=>{if(i<pts.length){p.star=false;p.tx=pts[i][0];p.ty=pts[i][1];p.s=s*rnd(.85,1.15)}else{p.star=true;p.hx=rnd(0,W);p.hy=rnd(0,H);p.s=rnd(.8,1.6)}});
+  // a few stars stay, but none close to the name; every other leftover particle flies off screen
+  const nr=nameEl.getBoundingClientRect(),zx0=nr.left-sr.left-70,zx1=nr.right-sr.left+70,zy0=nr.top-sr.top-60,zy1=nr.bottom-sr.top+60;
+  const home=()=>{for(let k=0;k<40;k++){const x=rnd(0,W),y=rnd(0,H);if(x<zx0||x>zx1||y<zy0||y>zy1)return[x,y]}return[rnd(0,W),rnd(0,Math.max(1,zy0))]};
+  P.forEach((p,i)=>{p.gone=false;p.ox=p.oy=0;
+    if(i<pts.length){p.star=false;p.tx=pts[i][0];p.ty=pts[i][1];p.s=s*rnd(.85,1.15)}
+    else if(i<pts.length+nStars){p.star=true;[p.hx,p.hy]=home();p.s=rnd(.8,1.5)}
+    else{p.star=true;p.gone=true;const a=rnd(0,6.283),D=Math.max(W,H)*1.3;p.hx=W/2+Math.cos(a)*D;p.hy=H/2+Math.sin(a)*D;p.s=1}});
   targetsReady=true;
 }
 const easeOut=k=>1-Math.pow(1-k,4);
@@ -573,14 +589,18 @@ function frame(now){
   if(cv.style.visibility)cv.style.visibility='';
   const t=now-born;
   if(targetsReady&&now>=doneAt&&!typed){typed=true;shockAt=now;startTagline()}
-  // pointer pushes letters aside; they spring back
+  // the pointer carves a clean empty circle through the dots; they slide back when it leaves
   const idle=hp<.002&&now>=doneAt;
   if(hp<.05&&now>=doneAt){
-    const R=MOB()?70:110;
-    for(const p of P){if(p.star)continue;
-      if(idle&&ptr.on){const dx=p.tx+p.ox-ptr.x,dy=p.ty+p.oy-ptr.y,d2=dx*dx+dy*dy;if(d2<R*R){const dd=Math.sqrt(d2)||1,f=(1-dd/R)*3.2;p.vx+=dx/dd*f;p.vy+=dy/dd*f}}
-      p.vx=(p.vx-p.ox*.06)*.86;p.vy=(p.vy-p.oy*.06)*.86;p.ox+=p.vx;p.oy+=p.vy;if(Math.abs(p.ox)<.01&&Math.abs(p.vx)<.01){p.ox=p.vx=0}if(Math.abs(p.oy)<.01&&Math.abs(p.vy)<.01){p.oy=p.vy=0}}
+    const R=MOB()?62:96;
+    for(const p of P){if(p.gone)continue;const hx=p.star?p.hx:p.tx,hy=p.star?p.hy:p.ty;let gx=0,gy=0;
+      if(idle&&ptr.on){const dx=hx-ptr.x,dy=hy-ptr.y,d2=dx*dx+dy*dy;if(d2<R*R){const dd=Math.sqrt(d2)||.01;gx=dx/dd*(R-dd);gy=dy/dd*(R-dd)}}
+      const k=gx||gy?.34:.1;p.ox+=(gx-p.ox)*k;p.oy+=(gy-p.oy)*k;if(Math.abs(p.ox)<.02)p.ox=0;if(Math.abs(p.oy)<.02)p.oy=0}
   }
+  // when the name locks, an empty ring travels outward through the dots
+  const sk=shockAt>0&&hp<.012?(now-shockAt)/1400:2;
+  const shock=(x,y)=>{if(sk>=1)return[x,y];const dx=x-W/2,dy=y-H/2,dn=Math.hypot(dx/(W*.6),dy/(H*.55)),ring=sk*1.25,f=1-Math.abs(dn-ring)/.11;
+    if(f<=0)return[x,y];const r=Math.hypot(dx,dy)||1,amp=38*f*(1-sk*.5)*Math.sign(dn-ring||1);return[x+dx/r*amp,y+dy/r*amp]};
   ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,W,H);
   const intro=clamp(t/900),fadeOut=1-sstep(.8,.98,hp);
   ctx.globalAlpha=intro*fadeOut;
@@ -588,7 +608,7 @@ function frame(now){
   if(hp<.012){
     // dots, grouped by colour so each group is one fill. A band of light sweeps across the letters
     const B=[[],[],[],[],[],[]],CL=[`rgba(${WHITE},.92)`,'rgba(190,207,255,1)',`rgba(${BLUE},1)`,`rgba(${WHITE},.3)`,`rgba(${WHITE},.6)`,`rgba(${BLUE},.55)`];
-    for(const p of P){const[x,y]=base(p,t);let bi;
+    for(const p of P){if(p.gone&&t>assembleAt+p.d*1000+1500)continue;const[x,y]=shock(...base(p,t));let bi;
       if(p.star)bi=p.blue?5:(Math.sin(t/700+p.tw)>.2?4:3);
       else bi=p.blue?2:(Math.abs(x-sweep)<70+40*Math.sin(y/40+t/500)?1:0);
       B[bi].push(x,y,p.s)}
@@ -596,7 +616,7 @@ function frame(now){
   }else{
     // hyperspace: every point streaks toward the camera, the whole field twisting as it goes
     const q0=Math.max(0,hp-.045),L=[[],[],[],[],[],[]];
-    for(const p of P){const[x,y]=base(p,t),[x1,y1,f]=warp(x,y,p,hp,F),[x0,y0]=warp(x,y,p,q0,F);
+    for(const p of P){if(p.gone)continue;const[x,y]=base(p,t),[x1,y1,f]=warp(x,y,p,hp,F),[x0,y0]=warp(x,y,p,q0,F);
       if((x1<-50&&x0<-50)||(x1>W+50&&x0>W+50)||(y1<-50&&y0<-50)||(y1>H+50&&y0>H+50))continue;
       const wi=f<2.2?0:f<7?1:2;L[wi+(p.blue?3:0)].push(x0,y0,x1,y1)}
     ctx.lineCap='round';
@@ -605,10 +625,19 @@ function frame(now){
     const fl=sstep(.5,.78,hp)*(1-sstep(.8,.97,hp));
     if(fl>0){ctx.globalAlpha=fl*.85;const g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*.75);g.addColorStop(0,'rgba(143,176,255,.95)');g.addColorStop(.35,'rgba(58,109,255,.55)');g.addColorStop(1,'rgba(58,109,255,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}
   }
-  // shockwave when the name locks together
-  if(shockAt>0&&hp<.05){const k=(now-shockAt)/1100;if(k<1){ctx.globalAlpha=(1-k)*.7*intro;ctx.strokeStyle=`rgb(${BLUE})`;ctx.lineWidth=2+6*(1-k);ctx.beginPath();ctx.ellipse(W/2,H/2,k*W*.62,k*H*.5,0,0,6.283);ctx.stroke()}}
   ctx.globalAlpha=1;
 }
+/* ----- a slow starfield behind the rest of the site, carrying the opening's look all the way down ----- */
+const sky=$('#sky'),sg=FILM&&sky&&sky.getContext?sky.getContext('2d'):null;let SW=1,SH=1,SD=1,stars=[];
+function sizeSky(){SW=innerWidth;SH=innerHeight;SD=Math.min(1.5,devicePixelRatio||1);sky.width=Math.round(SW*SD);sky.height=Math.round(SH*SD);
+  const n=Math.round(SW*SH/(MOB()?4600:6200));stars=Array.from({length:n},()=>({x:Math.random()*SW,y:Math.random()*SH*3,z:Math.random(),tw:Math.random()*6.28,b:Math.random()<.16}))}
+function skyFrame(now){requestAnimationFrame(skyFrame);
+  if(scrollY<Z*.7){if(!sky._c){sg.clearRect(0,0,sky.width,sky.height);sky._c=1}return}sky._c=0;
+  sg.setTransform(SD,0,0,SD,0,0);sg.clearRect(0,0,SW,SH);const L=SH*3;
+  for(const st of stars){const dep=.12+.5*st.z,y=(((st.y-scrollY*dep*.4)%L)+L)%L-SH;if(y<-3||y>SH+3)continue;
+    const a=(.18+.55*st.z)*(.65+.35*Math.sin(now/900+st.tw)),r=.5+st.z*1.2;
+    sg.fillStyle=st.b?`rgba(${BLUE},${a.toFixed(2)})`:`rgba(${WHITE},${a.toFixed(2)})`;sg.fillRect(st.x-r/2,y-r/2,r,r)}}
+if(sg)requestAnimationFrame(skyFrame);
 let tagStarted=false;
 function startTagline(){if(tagStarted)return;tagStarted=true;
   $('#hint').style.transition='opacity 1s ease .6s';$('#hint').style.opacity=1}
@@ -625,14 +654,17 @@ function applyHero(){
   const p=clamp(scrollY/Z),s=sstep(.74,.97,p);
   about.style.opacity=s.toFixed(3);about.style.visibility=s<=0?'hidden':'';about.style.pointerEvents=p>=1?'auto':'none';
   abIn.style.transform=s>=1?'':`translate3d(0,${((1-s)*34).toFixed(1)}px,0) scale(${(1.08-.08*s).toFixed(4)})`;
-  const f=clamp(1-p*4);fade.forEach(e=>{e.style.opacity=tagStarted?f:0;e.style.transform=f<1?`translateY(${(-24*(1-f)).toFixed(1)}px)`:''});
+  const f=clamp(1-p*4);fade.forEach(e=>{e.style.opacity=tagStarted?f:0;e.style.transform=f<1?`translateX(-50%) translateY(${(-24*(1-f)).toFixed(1)}px)`:''});
   introSc.style.visibility=p>=.999?'hidden':'';
+  d.classList.toggle('hero-top',p<.97);d.classList.toggle('inhero',FX&&p<.02);
+  if(sky)sky.style.opacity=sstep(.7,1,p).toFixed(3);
   if(!FX)nameEl.style.opacity=f;
 }
 function layout(){
   fitName();
   if(FILM)Z=stage.offsetHeight*1.3;
   if(FX){const first=!P.length;sizeCanvas();if(first)makeParticles();}
+  if(sg)sizeSky();
   applyHero();
 }
 function buildTargets(){ // once the font is in: sample, then collapse the galaxy (or snap if it already has)
