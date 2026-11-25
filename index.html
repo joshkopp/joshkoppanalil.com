@@ -69,7 +69,6 @@ button,input{font:inherit;color:inherit}
 /* grain, motion streaks */
 .grain{position:fixed;inset:-50%;z-index:90;pointer-events:none;opacity:.06;background-size:180px;animation:grain .8s steps(5) infinite}
 @keyframes grain{20%{transform:translate3d(-3%,2%,0)}40%{transform:translate3d(2%,-4%,0)}60%{transform:translate3d(-5%,-1%,0)}80%{transform:translate3d(4%,3%,0)}}
-.streak{position:fixed;inset:0;z-index:89;pointer-events:none;opacity:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,.05) 0 1px,transparent 1px 7px)}
 
 /* chrome: top bar, scene index, sound */
 .top{position:fixed;inset:0 0 auto;z-index:60;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:max(18px,env(safe-area-inset-top)) var(--gut) 0;pointer-events:none}
@@ -81,7 +80,7 @@ button,input{font:inherit;color:inherit}
 .cta-top{position:relative;font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;padding:10px 0}
 
 .prog{position:fixed;left:0;right:0;top:0;height:3px;z-index:95;pointer-events:none;display:none;background:rgba(255,255,255,.08)}
-.film .prog{display:block}
+.js .prog{display:block}
 .prog i{display:block;height:100%;background:var(--acc);box-shadow:0 0 8px rgba(58,109,255,.7);transform-origin:0 50%;transform:scaleX(0)}
 
 /* cursor */
@@ -141,8 +140,6 @@ button,input{font:inherit;color:inherit}
 .ab-lines .ln{display:block;overflow:hidden;padding-bottom:.06em;margin-bottom:-.06em}
 .ab-lines .li{display:block}
 .key{position:relative;display:inline-block}
-.key .hl{position:absolute;left:0;top:0;color:var(--acc);white-space:nowrap;clip-path:inset(0 100% 0 0)}
-.html-only .key .hl{display:none}
 .ab-side{display:grid;gap:26px;padding-bottom:.4em}
 .ab-pic{width:clamp(120px,12vw,180px);aspect-ratio:1;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px var(--line)}
 .ab-pic img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;filter:grayscale(1) contrast(1.08)}
@@ -182,7 +179,6 @@ button,input{font:inherit;color:inherit}
 .pv svg{position:absolute;inset:0;width:100%;height:100%}
 .pv::after{content:"";position:absolute;inset:0;background:radial-gradient(60% 50% at 70% 30%,rgba(58,109,255,.16),transparent 70%);pointer-events:none}
 .pv .tagp{position:absolute;left:18px;top:14px;z-index:1}
-.wipe{display:none}
 .allcard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;border-radius:18px;overflow:hidden;background:var(--line);box-shadow:inset 0 0 0 1px var(--line)}
 .allcard .ac-h{grid-column:1/-1;display:flex;justify-content:space-between;padding:16px 20px;background:#0e0f13}
 .allcard a{display:flex;flex-direction:column;justify-content:space-between;gap:18px;min-height:clamp(84px,11vh,120px);padding:18px 20px;background:#0b0b0e;transition:background .35s}
@@ -194,7 +190,6 @@ button,input{font:inherit;color:inherit}
 .allcard .ac-all span{color:#fff;font-size:18px}
 .allcard .ac-all:hover{background:#4f7dff}
 .allcard .ac-all:hover span{color:#fff}
-.w-more{padding:0 var(--gut) 60px}
 
 /* 05 skills */
 .s-skills{display:flex;flex-direction:column;justify-content:center}
@@ -227,28 +222,28 @@ button,input{font:inherit;color:inherit}
 .ft nav{display:flex;gap:22px}.ft nav a{display:inline-flex;align-items:center;min-height:44px}
 .acc{width:150px;min-height:36px;padding:2px 0;background:none;border:0;border-bottom:1px solid var(--line);color:var(--ink);font:400 12px var(--mono);letter-spacing:.14em;text-align:center}
 .acc::placeholder{color:var(--dim);text-transform:uppercase}.acc:focus{outline:none;border-color:var(--acc)}
-.pt{position:fixed;left:50%;top:50%;z-index:40;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#fff;box-shadow:0 0 18px 6px rgba(143,176,255,.8),0 0 70px 20px rgba(58,109,255,.55);opacity:0;pointer-events:none;display:none}
-.film .pt{display:block}
 
-/* plain-page fades */
-.js:not(.film) .fd{opacity:0;transition:opacity .9s ease}
-.js:not(.film) .fd.in{opacity:1}
+/* hero: the one scroll animation. The page zooms through the O in the name and lands on About */
+.hero{position:relative}
+.film .hero{height:245svh} /* 100 for the stage, 130 of zoom, 15 to read About before it scrolls away */
+.film .stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden}
+.film .stage>.sc{position:absolute;inset:0;min-height:0}
+.film .s-intro{z-index:3}
+.film .s-about{z-index:2;opacity:0}
+.cut{position:fixed;inset:0;z-index:55;background:var(--bg);opacity:0;pointer-events:none;transition:opacity .3s ease}
+.cut.on{opacity:1}
 
-/* ---------- film mode: pinned viewport, one scrubbed timeline ---------- */
-.film #film{height:100vh;height:100svh;overflow:hidden}
-.film .sc{position:absolute;inset:0;min-height:0}
-.film .sc:not(.s-intro){opacity:0;pointer-events:none}
-.film .s-intro{z-index:3}.film .s-about{z-index:2}.film .s-stats{z-index:4}.film .s-work{z-index:5}.film .s-skills{z-index:6}.film .s-contact{z-index:8}
-.film .w-head,.film .w-more{display:none}
-.film .track{position:absolute;left:0;top:0;bottom:0;display:flex;width:max-content}
-.film .pn{width:100vw;height:100%;min-height:0;flex:none}
-.film .wipe{display:block;position:absolute;left:-20%;right:-20%;top:0;bottom:0;z-index:3;background:var(--acc);transform:skewX(-10deg);clip-path:inset(0 0 0 100%);pointer-events:none}
-.film .wipe b{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) skewX(10deg);font:700 clamp(70px,13vw,230px)/1 var(--disp);letter-spacing:-.04em;color:#08080a}
-.film .w-tag{position:absolute;left:var(--gut);top:max(64px,9vh);z-index:2}
-.film .chips{position:relative}
-.film .cut{position:fixed;inset:0;z-index:35;background:var(--bg);opacity:0;pointer-events:none}
-.film .chip{will-change:transform}
-.film .s-contact{clip-path:circle(0% at 50% 50%)}
+/* everything after the hero is one plain page */
+.s-stats,.s-work,.s-skills,.s-contact{border-top:1px solid var(--line)}
+.s-work{background:#0a0a0d}
+.w-head{display:flex;align-items:end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.w-head p{max-width:34ch;color:var(--mute);font:400 clamp(15px,1.2vw,18px)/1.5 var(--body)}
+.pn+.pn{border-top:1px solid var(--line)}
+.pn:first-child{padding-top:clamp(40px,6vh,70px)}
+.pn:nth-child(even){grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
+.pn:nth-child(even) .pv,.pn:nth-child(even) .allcard{order:-1}
+.s-skills{background:#0d0e12}
+.key{color:var(--acc)}
 
 @media (max-width:860px){
   .ab-in{grid-template-columns:1fr;gap:28px}
@@ -261,7 +256,7 @@ button,input{font:inherit;color:inherit}
   .num span{margin:0;text-align:right}
   .xp{grid-template-columns:1fr 1fr;gap:16px;margin-top:30px}
   .xp li{font-size:11.5px}
-  .pn{grid-template-columns:1fr;align-content:center;gap:24px}
+  .pn,.pn:nth-child(even){grid-template-columns:1fr;align-content:center;gap:24px}
   .pn .pv{order:-1;max-height:34svh;aspect-ratio:auto;height:34svh}
   .pn .one{font-size:16px}
   .pn-more{align-content:center}
@@ -281,15 +276,13 @@ button,input{font:inherit;color:inherit}
   .top .cta-top{font-size:11px}
 }
 @media (max-width:860px) and (max-height:740px){.xp li span{display:none}.pn .st{display:none}}
-@media (prefers-reduced-motion:reduce){.grain,.hint i::after,.tagline .caret{animation:none!important}}
+@media (prefers-reduced-motion:reduce){.grain,.hint i::after,.tagline .caret{animation:none!important}.cut{transition:none}}
 </style>
 </head>
 <body>
 <a class="skip" href="#about">Skip to content</a>
 <div class="grain" aria-hidden="true"></div>
-<div class="streak" aria-hidden="true"></div>
 <div class="cur" aria-hidden="true"><i class="ring"><i></i><span></span></i><i class="dot"></i></div>
-<div class="pt" aria-hidden="true"></div>
 <div class="cut" aria-hidden="true"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -303,22 +296,21 @@ button,input{font:inherit;color:inherit}
 <div class="prog" aria-hidden="true"><i id="pbar"></i></div>
 
 <main id="film">
-  <!-- 01 -->
+  <div class="hero" id="hero"><div class="stage" id="stage">
   <section class="sc s-intro" id="intro" aria-label="Introduction">
     <div class="vel"><h1 class="name" id="name">Josh Koppanalil</h1></div>
     <p class="tagline" id="tagline"><span id="tagt">developer · ML · game dev</span><span class="caret" aria-hidden="true"></span></p>
     <p class="hint mono" id="hint" aria-hidden="true"><i></i>Scroll</p>
   </section>
 
-  <!-- 02 -->
   <section class="sc s-about" id="about" aria-labelledby="about-h">
     <div class="glow" style="width:70vmax;height:70vmax;right:-25vmax;bottom:-30vmax"></div>
     <div class="ab-in">
       <div class="vel">
         <h2 class="sr" id="about-h">About Josh</h2>
-        <p class="ab-lines fd" id="abl">I'm Josh, a sophomore at Westlake High School in Austin. I build <span class="key">machine-learning models</span>, <span class="key">security tools</span>, apps for my classes and <span class="key">games</span>, and right now I'm building <span class="key">Monyx</span>, a wallet you pay by voice.</p>
+        <p class="ab-lines" id="abl">I'm Josh, a sophomore at Westlake High School in Austin. I build <span class="key">machine-learning models</span>, <span class="key">security tools</span>, apps for my classes and <span class="key">games</span>, and right now I'm building <span class="key">Monyx</span>, a wallet you pay by voice.</p>
       </div>
-      <div class="ab-side fd" id="abside">
+      <div class="ab-side" id="abside">
         <figure class="ab-pic"><img src="work/avatar-portrait.webp" alt="Josh sitting on a beach at sunset" width="527" height="608" loading="lazy" decoding="async"></figure>
         <dl class="meta">
           <div><dt>Based in</dt><dd>Austin, Texas</dd></div>
@@ -329,28 +321,29 @@ button,input{font:inherit;color:inherit}
       </div>
     </div>
   </section>
+  </div></div>
 
   <!-- 03 -->
   <section class="sc s-stats" id="stats" aria-labelledby="stats-h">
     <div class="st-in">
       <h2 class="sr" id="stats-h">By the numbers</h2>
       <div class="nums vel">
-        <div class="num fd"><b data-n="20" data-suf="+">20<sup>+</sup></b><span class="mono">Live projects</span></div>
-        <div class="num fd"><b data-n="10">10</b><span class="mono">Games made</span></div>
-        <div class="num fd"><b data-n="8" data-suf="+">8<sup>+</sup></b><span class="mono">Competitions</span></div>
+        <div class="num"><b data-n="20" data-suf="+">20<sup>+</sup></b><span class="mono">Live projects</span></div>
+        <div class="num"><b data-n="10">10</b><span class="mono">Games made</span></div>
+        <div class="num"><b data-n="8" data-suf="+">8<sup>+</sup></b><span class="mono">Competitions</span></div>
       </div>
       <ul class="xp" aria-label="Where my time goes">
-        <li class="fd"><b>Monyx</b><span><em>Now.</em> Founder and builder of a Solana wallet you pay by voice.</span></li>
-        <li class="fd"><b>FRC robotics</b><span>Programming subteam. Robot code in LabVIEW, plus a match-prediction model.</span></li>
-        <li class="fd"><b>Game dev</b><span>Ten browser games built with Three.js and WebGL, from racing to co-op.</span></li>
-        <li class="fd"><b>Westlake High</b><span>Sophomore taking AP coursework in Austin, Texas.</span></li>
+        <li><b>Monyx</b><span><em>Now.</em> Founder and builder of a Solana wallet you pay by voice.</span></li>
+        <li><b>FRC robotics</b><span>Programming subteam. Robot code in LabVIEW, plus a match-prediction model.</span></li>
+        <li><b>Game dev</b><span>Ten browser games built with Three.js and WebGL, from racing to co-op.</span></li>
+        <li><b>Westlake High</b><span>Sophomore taking AP coursework in Austin, Texas.</span></li>
       </ul>
     </div>
   </section>
 
   <!-- 04 -->
   <section class="sc s-work" id="work" aria-labelledby="work-h">
-    <div class="w-head"><h2 id="work-h">Projects</h2></div>
+    <div class="w-head"><h2 id="work-h">Projects</h2><p>Three I’m proudest of, and a way into the other twenty.</p></div>
     <div class="track" id="track">
       <article class="pn" id="p-monyx" data-art="0">
         <div class="pn-tx"><p class="mono">Payments · building now</p><h3><a href="https://monyx.pro/" target="_blank" rel="noopener" data-cursor="open">Monyx</a></h3><p class="one">A dollar wallet on Solana you pay by talking to it. Every payment is read back in plain English and risk-checked before it sends.</p><p class="st">Solana · Voice · Supabase</p><div class="acts"><span class="mag"><a class="btn" href="https://monyx.pro/" target="_blank" rel="noopener" data-cursor="open">Open Monyx <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></span></div></div>
@@ -377,15 +370,13 @@ button,input{font:inherit;color:inherit}
         </nav>
       </article>
 </div>
-    <div class="wipe" aria-hidden="true"><b id="wnum">02</b></div>
-    <p class="w-more"><a class="ul mono" href="/allproj/index.html">See every project</a></p>
   </section>
 
   <!-- 05 -->
   <section class="sc s-skills" id="skills" aria-labelledby="sk-h">
     <div class="glow" style="width:80vmax;height:80vmax;left:-30vmax;top:-30vmax;opacity:.7"></div>
     <div class="sk-in">
-      <h2 id="sk-h" class="fd">What I build with</h2>
+      <h2 id="sk-h">What I build with</h2>
       <ul class="chips vel" id="chips">
         <li class="chip k"><span>Python</span><small>ML, tools</small></li>
         <li class="chip k"><span>JavaScript</span><small>web, games</small></li>
@@ -404,7 +395,7 @@ button,input{font:inherit;color:inherit}
         <li class="chip"><span>Cloudflare</span><small>hosting</small></li>
         <li class="chip"><span>Git</span><small>everything</small></li>
       </ul>
-      <p class="mono sk-off fd">Off the keyboard: jet-skiing, mountain biking, soccer, piano, debate</p>
+      <p class="mono sk-off">Off the keyboard: jet-skiing, mountain biking, soccer, piano, debate</p>
     </div>
   </section>
 
@@ -412,13 +403,13 @@ button,input{font:inherit;color:inherit}
   <section class="sc s-contact" id="contact" aria-labelledby="ct-h">
     <div class="glow" style="width:90vmax;height:90vmax;left:50%;top:50%;margin:-45vmax 0 0 -45vmax;opacity:.8"></div>
     <div class="ct-in">
-      <dl class="ct-det fd">
+      <dl class="ct-det">
         <div><dt>Email</dt><dd><a class="ct-v" href="mailto:josh.koppanalil@gmail.com" data-cursor="email">josh.koppanalil@gmail.com</a><button class="ct-cp copy" type="button" data-copy="josh.koppanalil@gmail.com" data-cursor="copy" aria-label="Copy email address">Copy</button></dd></div>
         <div><dt>Phone or text</dt><dd><a class="ct-v" href="tel:+17374208829" data-cursor="call">(737) 420-8829</a><button class="ct-cp copy" type="button" data-copy="(737) 420-8829" data-cursor="copy" aria-label="Copy phone number">Copy</button></dd></div>
       </dl>
-      <h2 class="big vel fd" id="ct-h"><span class="wl"><span class="wi">Let's build</span></span><span class="wl"><span class="wi acc-t">something</span></span></h2>
-      <p class="ct-sub fd">Questions about a project, or an idea you want to make real? Email or text, whichever is easier.</p>
-      <footer class="ft fd">
+      <h2 class="big vel" id="ct-h"><span class="wl"><span class="wi">Let's build</span></span><span class="wl"><span class="wi acc-t">something</span></span></h2>
+      <p class="ct-sub">Questions about a project, or an idea you want to make real? Email or text, whichever is easier.</p>
+      <footer class="ft">
         <span>© <span id="year"></span> Josh Koppanalil<span id="viewsbox" hidden> · <span id="views"></span> views</span></span>
         <input class="acc" id="acc" type="text" placeholder="access code" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Access code">
         <nav aria-label="Footer"><a class="ul" href="#intro">Back to the start</a></nav>
@@ -461,18 +452,13 @@ button,input{font:inherit;color:inherit}
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js" defer></script>
 <script>
 addEventListener('DOMContentLoaded',()=>{
 const d=document.documentElement,$=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const FILM_OK=!!(window.gsap&&window.ScrollTrigger&&window.Lenis)&&d.classList.contains('film');
-const FINE=d.classList.contains('fine');
+const GS=window.gsap,FILM=d.classList.contains('film'),FINE=d.classList.contains('fine')&&!!GS;
 const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
 window.__film=1;
-if(!FILM_OK)d.classList.remove('film');
 
-/* ================= shared: toast, copy, magnetic, scramble, cursor, konami ================= */
 const toastEl=$('#toast');let tt;
 const toast=html=>{toastEl.innerHTML=html;toastEl.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>toastEl.classList.remove('show'),2000)};
 $$('.copy').forEach(b=>b.addEventListener('click',async()=>{const t=b.dataset.copy;
@@ -491,260 +477,103 @@ $$('.scr').forEach(a=>{a.addEventListener('pointerenter',()=>scramble(a));a.addE
     toast('<b>↑↑↓↓←→←→BA</b> you found it');
     const loop=()=>{c.clearRect(0,0,innerWidth,innerHeight);P.forEach(p=>{p.vx*=.98;p.vy=p.vy*.98+.28;p.x+=p.vx;p.y+=p.vy;p.r+=.1;c.save();c.globalAlpha=Math.max(0,1-f/110);c.translate(p.x,p.y);c.rotate(p.r);c.fillStyle=p.c;c.fillRect(-p.s/2,-p.s/2,p.s,p.s);c.restore()});if(++f<120)requestAnimationFrame(loop);else cv.remove()};loop()}})();
 
-if(!FILM_OK){ // plain page with simple fades
-  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.12});
-  $$('.fd').forEach(e=>io.observe(e));d.classList.add('html-only');return}
-
-/* ================= film mode ================= */
-gsap.registerPlugin(ScrollTrigger);
-ScrollTrigger.config({ignoreMobileResize:true});
-const TOUCH=matchMedia('(pointer:coarse)').matches;
-const MOB=()=>innerWidth<860;
-
 // cursor: dot + lagging ring with labels
-if(FINE){const cur=$('.cur'),dot=$('.cur .dot'),ring=$('.cur .ring'),lab=$('.cur .ring span');
-  const dx=gsap.quickTo(dot,'x',{duration:.08}),dy=gsap.quickTo(dot,'y',{duration:.08}),rx=gsap.quickTo(ring,'x',{duration:.45,ease:'power3'}),ry=gsap.quickTo(ring,'y',{duration:.45,ease:'power3'});
+if(FINE&&FILM){const cur=$('.cur'),dot=$('.cur .dot'),ring=$('.cur .ring'),lab=$('.cur .ring span');
+  const dx=GS.quickTo(dot,'x',{duration:.08}),dy=GS.quickTo(dot,'y',{duration:.08}),rx=GS.quickTo(ring,'x',{duration:.45,ease:'power3'}),ry=GS.quickTo(ring,'y',{duration:.45,ease:'power3'});
   addEventListener('pointermove',e=>{dx(e.clientX);dy(e.clientY);rx(e.clientX);ry(e.clientY)},{passive:true});
   document.addEventListener('pointerover',e=>{const t=e.target.closest('[data-cursor]');cur.classList.toggle('on',!!t);if(t)lab.textContent=t.dataset.cursor})}
 // magnetic buttons
-if(FINE)$$('.mag').forEach(m=>{const qx=gsap.quickTo(m,'x',{duration:.4,ease:'power3'}),qy=gsap.quickTo(m,'y',{duration:.4,ease:'power3'});
+if(FINE)$$('.mag').forEach(m=>{const qx=GS.quickTo(m,'x',{duration:.4,ease:'power3'}),qy=GS.quickTo(m,'y',{duration:.4,ease:'power3'});
   m.addEventListener('pointermove',e=>{const r=m.getBoundingClientRect();qx((e.clientX-r.left-r.width/2)*.32);qy((e.clientY-r.top-r.height/2)*.45)});
-  m.addEventListener('pointerleave',()=>{gsap.to(m,{x:0,y:0,duration:.9,ease:'elastic.out(1,.35)'})})});
+  m.addEventListener('pointerleave',()=>{GS.to(m,{x:0,y:0,duration:.9,ease:'elastic.out(1,.35)'})})});
 
-// split the name into letters (sharp layer + pre-blurred ghost), keep the text for readers
+/* ----- the name: split into letters (sharp layer + pre-blurred ghost), keep the text for readers ----- */
 const nameEl=$('#name'),NAME=nameEl.textContent;nameEl.setAttribute('aria-label',NAME);
 nameEl.innerHTML=[...NAME].map(c=>c===' '?'<span class="c sp" aria-hidden="true">&nbsp;</span>':`<span class="c" aria-hidden="true"><span class="s">${c}</span><span class="g">${c}</span></span>`).join('');
 const chars=$$('#name .c:not(.sp)');
-// about: split into lines, key words get an accent layer that wipes across
-const abl=$('#abl');
-abl.querySelectorAll('.key').forEach(k=>{k.innerHTML=`${k.textContent}<span class="hl" aria-hidden="true">${k.textContent}</span>`});
-const splitLines=()=>{const src=abl.dataset.src||(abl.dataset.src=abl.innerHTML);abl.innerHTML=src;
-  const parts=[],add=w=>{const l=parts.length-1;if(l>=0&&!/^\s+$/.test(w)&&!/^\s+$/.test(parts[l]))parts[l]+=w;else parts.push(w)};abl.childNodes.forEach(n=>{if(n.nodeType===3)n.textContent.split(/(\s+)/).forEach(w=>w&&add(w));else add(n.outerHTML)});
-  abl.innerHTML=parts.map((p,i)=>/^\s+$/.test(p)?p:`<span class="w" style="display:inline-block">${p}</span>`).join('').replace(/<\/span>(?=<span class="w")/g,'</span>');
-  const rows=[];let top=null;abl.childNodes.forEach(n=>{if(n.nodeType===1){const t=n.offsetTop;if(top===null||Math.abs(t-top)>4){rows.push('');top=t}rows[rows.length-1]+=n.innerHTML}else if(rows.length)rows[rows.length-1]+=' '});
-  abl.innerHTML=rows.map(r=>`<span class="ln"><span class="li">${r.trim()}</span></span>`).join(' ')};
-// contact headline words already wrapped
+const MOB=()=>innerWidth<860;
 
-// lenis only drives the programmatic glides; input is handled by the pager below
-const lenis=new Lenis({smoothWheel:false,syncTouch:false});
-lenis.on('scroll',ScrollTrigger.update);gsap.ticker.add(t=>lenis.raf(t*1000));gsap.ticker.lagSmoothing(0);
+// on load the letters fly in from depth, then the tagline types
+if(FILM&&GS){
+  const tagt=$('#tagt'),TAG=tagt.textContent;tagt.textContent='';
+  const intro=GS.timeline({delay:.25});
+  chars.forEach((c,i)=>{const s=c.querySelector('.s'),g=c.querySelector('.g'),r=(i*37%11)-5;
+    intro.fromTo(c,{opacity:0,scale:2.6,y:(i%2?1:-1)*40+r*6,rotation:r*2},{opacity:1,scale:1,y:0,rotation:0,duration:1.1,ease:'expo.out'},i*.055)
+         .fromTo(g,{opacity:1},{opacity:0,duration:.8,ease:'power2.in'},i*.055+.1)
+         .fromTo(s,{opacity:0},{opacity:1,duration:.55},i*.055+.2)});
+  intro.add(()=>{let k=0;const ty=()=>{tagt.textContent=TAG.slice(0,++k);if(k<TAG.length)setTimeout(ty,38)};ty()},'-=.35')
+       .fromTo('#hint',{opacity:0},{opacity:1,duration:1},'+=.6');
+}
 
-/* ----- intro: letters fly in from depth, blur to sharp, then the tagline types ----- */
-const tagt=$('#tagt'),TAG=tagt.textContent;tagt.textContent='';
-const intro=gsap.timeline({delay:.25});
-chars.forEach((c,i)=>{const s=c.querySelector('.s'),g=c.querySelector('.g'),r=(i*37%11)-5;
-  intro.fromTo(c,{opacity:0,scale:2.6,y:(i%2?1:-1)*40+r*6,rotation:r*2},{opacity:1,scale:1,y:0,rotation:0,duration:1.1,ease:'expo.out'},i*.055)
-       .fromTo(g,{opacity:1},{opacity:0,duration:.8,ease:'power2.in'},i*.055+.1)
-       .fromTo(s,{opacity:0},{opacity:1,duration:.55},i*.055+.2)});
-intro.add(()=>{let k=0;const ty=()=>{tagt.textContent=TAG.slice(0,++k);if(k<TAG.length)setTimeout(ty,38)};ty()},'-=.35')
-     .fromTo('#hint',{opacity:0},{opacity:1,duration:1},'+=.6');
-
-/* ----- the master timeline ----- */
-let tl,st,PRE_CT=0,O={},labelsOrder=[],sceneOf=[];
-const P={p:0},SK={p:0},CT={p:0};
-const about=$('.s-about'),stats=$('.s-stats'),work=$('.s-work'),skills=$('.s-skills'),contact=$('.s-contact'),introSc=$('.s-intro');
-const track=$('#track'),panels=$$('.pn'),wipe=$('.wipe'),wnum=$('#wnum');
-const chipsEl=$$('.chip'),pt=$('.pt');
-
+/* ----- the zoom through the O: driven straight by scroll position, so any scroll speed works ----- */
+const stage=$('#stage'),about=$('.s-about'),introSc=$('.s-intro'),fade=[$('#tagline'),$('#hint')];
+let O=null,Z=1;
 function fitName(){
   nameEl.style.fontSize='';nameEl.classList.toggle('two',MOB());
-  const cs=$$('#name .c'),lines={};cs.forEach(c=>{if(c.classList.contains('sp'))return;const t=c.offsetTop;(lines[t]=lines[t]||[]).push(c)});
+  const lines={};chars.forEach(c=>{const t=c.offsetTop;(lines[t]=lines[t]||[]).push(c)});
   let w=0;Object.values(lines).forEach(l=>{const a=l[0],b=l[l.length-1];w=Math.max(w,b.offsetLeft+b.offsetWidth-a.offsetLeft)});
   const F=parseFloat(getComputedStyle(nameEl).fontSize),fs=Math.min(F*innerWidth*(MOB()?.86:.88)/Math.max(1,w),MOB()?120:170);nameEl.style.fontSize=fs.toFixed(1)+'px'}
-function measureO(){ // where the first O's hole is, so the About scene can open inside it
-  gsap.set(nameEl,{clearProps:'transform'});
+function measureO(){ // the first O's hole, in stage coordinates
+  nameEl.style.transform='';
   const oSpan=chars[1],cs=getComputedStyle(nameEl),F=parseFloat(cs.fontSize);
-  const cv=document.createElement('canvas'),S=Math.ceil(F*2);cv.width=cv.height=S;const c=cv.getContext('2d');
+  const cv=document.createElement('canvas'),S=Math.ceil(F*2);cv.width=cv.height=S;const c=cv.getContext('2d',{willReadFrequently:true});
   c.font=`${cs.fontWeight} ${F}px ${cs.fontFamily}`;c.fillStyle='#000';const base=Math.round(F*1.4);c.fillText('O',F*.2,base);
   const m=c.measureText('O'),data=c.getImageData(0,0,S,S).data,a=(x,y)=>data[(y*S+x)*4+3];
   let x0=S,x1=0,y0=S,y1=0;for(let y=0;y<S;y++)for(let x=0;x<S;x++)if(a(x,y)>128){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}
+  if(x1<x0)return;
   const mx=(x0+x1)>>1,my=(y0+y1)>>1;let ix0=mx,ix1=mx,iy0=my,iy1=my;while(ix0>x0&&a(ix0,my)<128)ix0--;while(ix1<x1&&a(ix1,my)<128)ix1++;while(iy0>y0&&a(mx,iy0)<128)iy0--;while(iy1<y1&&a(mx,iy1)<128)iy1++;
   const inW=(ix1-ix0)/2,inH=(iy1-iy0)/2,outW=(x1-x0)/2,outH=(y1-y0)/2;
-  const nr0=nameEl.getBoundingClientRect(),r={left:nr0.left+oSpan.offsetLeft-nameEl.offsetLeft,top:nr0.top+oSpan.offsetTop-nameEl.offsetTop,height:oSpan.offsetHeight},A=m.fontBoundingBoxAscent||F*.9,Dd=m.fontBoundingBoxDescent||F*.25;
-  const baseY=r.top+(r.height-(A+Dd))/2+A;
-  const cx=r.left+(mx-F*.2),cy=baseY-(base-my);
-  const nr=nameEl.getBoundingClientRect();
-  O={cx,cy,rx:inW+(outW-inW)*.55,ry:inH+(outH-inH)*.55,ox:cx-nr.left,oy:cy-nr.top};
-  nameEl.style.transformOrigin=`${O.ox}px ${O.oy}px`;
+  const sr=stage.getBoundingClientRect(),nr=nameEl.getBoundingClientRect();
+  const left=nr.left-sr.left+oSpan.offsetLeft-nameEl.offsetLeft,top=nr.top-sr.top+oSpan.offsetTop-nameEl.offsetTop,A=m.fontBoundingBoxAscent||F*.9,Dd=m.fontBoundingBoxDescent||F*.25;
+  const baseY=top+(oSpan.offsetHeight-(A+Dd))/2+A,cx=left+(mx-F*.2),cy=baseY-(base-my);
+  O={cx,cy,rx:inW+(outW-inW)*.55,ry:inH+(outH-inH)*.55};
+  nameEl.style.transformOrigin=`${(cx-(nr.left-sr.left)).toFixed(1)}px ${(cy-(nr.top-sr.top)).toFixed(1)}px`;
 }
 function applyO(){
-  const W=innerWidth,H=innerHeight,p=P.p,diag=Math.hypot(W,H);
-  const SMAX=diag*1.15/Math.min(O.rx,O.ry);
-  const s=Math.exp(p*Math.log(SMAX)),m=gsap.parseEase('power2.out')(clamp(p*1.6));
-  const tx=(W/2-O.cx)*m,ty=(H/2-O.cy)*m;
+  if(!O)return;
+  const W=stage.clientWidth,H=stage.clientHeight,diag=Math.hypot(W,H),p=clamp(scrollY/Z),pe=Math.pow(p,1.6);
+  const SMAX=diag*1.15/Math.min(O.rx,O.ry),s=Math.exp(pe*Math.log(SMAX)),mv=1-Math.pow(1-clamp(pe*1.6),2);
+  const tx=(W/2-O.cx)*mv,ty=(H/2-O.cy)*mv;
   nameEl.style.transform=p<=0?'':`translate3d(${tx.toFixed(1)}px,${ty.toFixed(1)}px,0) scale(${s.toFixed(4)})`;
-  const X=O.cx+tx,Y=O.cy+ty,rx=O.rx*s,ry=O.ry*s;
-  if(p<=0.001){about.style.opacity=0}else{about.style.opacity=1;about.style.clipPath=Math.min(rx,ry)>diag?'none':`ellipse(${rx.toFixed(1)}px ${ry.toFixed(1)}px at ${X.toFixed(1)}px ${Y.toFixed(1)}px)`}
-  introSc.style.visibility=s>SMAX*.98?'hidden':'visible';
+  const rx=O.rx*s,ry=O.ry*s;
+  if(p<=.001){about.style.opacity=0;about.style.visibility='hidden'}
+  else{about.style.opacity=1;about.style.visibility='';about.style.clipPath=Math.min(rx,ry)>diag?'none':`ellipse(${rx.toFixed(1)}px ${ry.toFixed(1)}px at ${(O.cx+tx).toFixed(1)}px ${(O.cy+ty).toFixed(1)}px)`}
+  introSc.style.visibility=s>SMAX*.98?'hidden':'';
+  const f=clamp(1-p*4);fade.forEach(e=>{e.style.opacity=f;e.style.transform=f<1?`translateY(${(-24*(1-f)).toFixed(1)}px)`:''});
+  about.style.pointerEvents=p>=1?'auto':'none';
 }
-function applySkills(){ // cloud -> grid
-  const e=SK.p,t=performance.now()/1000;
-  chipsEl.forEach((c,i)=>{const k=c._k;if(!k)return;const drift=(1-e);const x=k.dx*(1-e)+Math.sin(t*.6+i)*14*drift,y=k.dy*(1-e)+Math.cos(t*.5+i*1.7)*10*drift;
-    c.style.transform=`translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) rotate(${(k.r*(1-e)).toFixed(2)}deg) scale(${(1-(1-e)*k.sc).toFixed(3)})`;c.style.opacity=(.35+.65*Math.max(e,k.o)).toFixed(3)})}
-function measureChips(){const box=$('#chips').getBoundingClientRect(),cx=box.left+box.width/2,cy=box.top+box.height/2,mob=MOB();
-  chipsEl.forEach((c,i)=>{c.style.transform='';const r=c.getBoundingClientRect(),a=i*2.399,rad=(mob?.36:.42)*Math.sqrt((i+1)/chipsEl.length);
-    const tx=cx+Math.cos(a)*innerWidth*rad*(mob?1.15:1.45),ty=cy+Math.sin(a)*innerHeight*rad*(mob?1:.95);
-    c._k={dx:tx-(r.left+r.width/2),dy:ty-(r.top+r.height/2),r:((i*53)%21)-10,sc:.1+((i*29)%10)/40,o:(i%3)/6}})}
+function layout(){fitName();if(FILM){Z=stage.offsetHeight*1.3;measureO();applyO()}}
 
-const LBL={};
-function build(){
-  if(tl){st.kill();tl.kill();gsap.set([about,stats,work,skills,contact,introSc,track,wipe,pt,'#abside','#abl .li','.num','.num b','.xp li','.big .wi','.ct-sub','.ct-det','.ft','.pn-tx > *','.pv svg','.pv .tagp','.allcard','.s-contact .mono','.s-skills .mono','#sk-h','.s-stats .mono','.s-about .mono','#tagline','#hint',nameEl],{clearProps:'all'});nameEl.style.transformOrigin=''}
-  splitLines();fitName();measureO();
-  const W=innerWidth,mob=MOB(),NP=panels.length;
-  tl=gsap.timeline({defaults:{ease:'none'}});
-  const L=(n,t)=>{tl.addLabel(n,t);LBL[n]=t};
-  L('intro',0);
-  // 1 -> 2: the name rushes past and the O opens onto About
-  tl.to(P,{p:1,duration:9,ease:'power1.in',onUpdate:applyO,onReverseComplete:applyO},.4)
-    .to(['#tagline','#hint'],{opacity:0,y:-24,duration:1.6},.4)
-    .fromTo('#abl .li',{yPercent:110},{yPercent:0,duration:1.3,stagger:.45,ease:'power3.out'},7.6)
-    .to('#abl .hl',{clipPath:'inset(0 0% 0 0)',duration:1.1,stagger:.55,ease:'power2.inOut'},9.6)
-    .fromTo('#abside',{opacity:0,y:40},{opacity:1,y:0,duration:1.6,ease:'power2.out'},10.4);
-  L('about',13.4);
-  // 2 -> 3: About lifts away, the numbers count up
-  tl.to('.ab-in',{yPercent:-14,opacity:0,duration:2.4,ease:'power2.in'},14)
-    .set(about,{opacity:0},16.4)
-    .fromTo(stats,{opacity:0},{opacity:1,duration:.6},15.6)
-    .fromTo('.s-stats .mono',{opacity:0},{opacity:1,duration:1,stagger:.2},15.8)
-    .fromTo('.num b',{yPercent:70,opacity:0},{yPercent:0,opacity:1,duration:1.4,stagger:.35,ease:'power3.out'},16);
-  $$('.num b').forEach((b,i)=>{const n=+b.dataset.n,suf=b.dataset.suf||'',C={v:0};let last=-1;
-    tl.to(C,{v:n,duration:2.2,ease:'power2.out',onUpdate(){const v=Math.round(C.v);if(v!==last){last=v;b.innerHTML=v+(suf?`<sup>${suf}</sup>`:'')}}},16.2+i*.35)
-      .fromTo(b,{scale:1.16},{scale:1,duration:1.1,ease:'elastic.out(1,.4)'},18.4+i*.35)});
-  tl.fromTo('.xp li',{opacity:0,y:24},{opacity:1,y:0,duration:1.2,stagger:.3,ease:'power2.out'},18.6);
-  L('stats',21);
-  // 3 -> 4: an accent wipe brings in the first project
-  // each project card builds itself in as the blue sweeps off: text rises line by line, the preview slides in
-  const enter=(pn,t)=>{const tx=pn.querySelectorAll('.pn-tx > *'),side=pn.querySelectorAll('.pv svg,.pv .tagp,.allcard');
-    // the blue leaves from the right, so the preview (right) comes in first and the text (left) follows once it's uncovered
-    if(side.length)tl.fromTo(side,{xPercent:18,opacity:0},{xPercent:0,opacity:1,duration:1.4,stagger:.08,ease:'power3.out'},t);
-    tl.fromTo(tx,{y:64,opacity:0},{y:0,opacity:1,duration:1,stagger:.1,ease:'power3.out'},t+.45)};
-  const wIn='inset(0 0% 0 100%)',wFull='inset(0 0% 0 0%)',wOut='inset(0 100% 0 0%)';
-  // stats -> first project: the numbers lift away first, then the blue sweeps in, then Monyx builds in as it clears
-  tl.to('.st-in .num',{y:-60,opacity:0,duration:.8,stagger:.1,ease:'power2.in'},21.05)
-    .to('.xp li',{y:-36,opacity:0,duration:.7,stagger:.06,ease:'power2.in'},21.15)
-    // the wipe lives inside the work scene, so the scene has to be visible the moment the sweep starts (cards hidden until covered)
-    .set(track,{opacity:0},21.68)
-    .set(work,{opacity:1},21.69)
-    .fromTo(wipe,{clipPath:wIn},{clipPath:wFull,duration:.95,ease:'power2.inOut'},21.7)
-    .set(stats,{opacity:0},22.7)
-    .set(track,{opacity:1},22.7)
-    .to(wipe,{clipPath:wOut,duration:1.05,ease:'power2.inOut'},22.85);
-  enter(panels[0],23);
-  L('p0',25);
-  // projects: the track slides one full-bleed scene at a time, an accent wipe between each
-  for(let k=1;k<NP;k++){const t0=25+(k-1)*4+.6;
-    // the blue sweeps all the way across, holds, then sweeps off: it fills almost the whole step
-    tl.fromTo(wipe,{clipPath:wIn},{clipPath:wFull,duration:1.2,ease:'power2.inOut',immediateRender:false},t0-.45)
-      .to(track,{x:()=>-k*innerWidth,duration:.35,ease:'power2.inOut'},t0+.75)
-      .to(wipe,{clipPath:wOut,duration:1.2,ease:'power2.inOut'},t0+1.15);
-    enter(panels[k],t0+1.5);
-    L('p'+k,t0+3.4)}
-  const tW=25+(NP-1)*4;
-  // 4 -> 5: the work scene drops back, the skills float in as a cloud and lock into a grid
-  tl.to(work,{scale:.9,opacity:0,duration:2,ease:'power2.in'},tW+.6)
-    .fromTo(skills,{opacity:0},{opacity:1,duration:1.2},tW+1.8)
-    .fromTo(['.s-skills .mono','#sk-h'],{opacity:0,y:30},{opacity:1,y:0,duration:1.4,stagger:.3,ease:'power2.out'},tW+2)
-    .to(SK,{p:1,duration:5.5,ease:'power2.inOut',onUpdate:applySkills},tW+2.6);
-  L('skills',tW+8.6);
-  // 5 -> 6: everything collapses into one glowing point, which opens into Contact
-  const tC=tW+9.4;
-  tl.to(skills,{scale:.04,opacity:0,duration:3,ease:'power3.in'},tC)
-    .fromTo(pt,{scale:0,opacity:0},{scale:1,opacity:1,duration:1.2,ease:'back.out(3)'},tC+2.3)
-    .set(contact,{opacity:1},tC+3.4)
-    .fromTo(contact,{clipPath:'circle(0% at 50% 50%)'},{clipPath:'circle(75% at 50% 50%)',duration:2.6,ease:'power2.inOut'},tC+3.5)
-    .to(pt,{scale:40,opacity:0,duration:1.6,ease:'power2.in'},tC+3.5)
-    .fromTo('.ct-det',{opacity:0,y:20},{opacity:1,y:0,duration:1.1,stagger:.25,ease:'power2.out'},tC+4.4)
-    .fromTo('.big .wi',{yPercent:105},{yPercent:0,duration:1.6,stagger:.45,ease:'power4.out'},tC+5)
-    .fromTo(['.ct-sub','.ft'],{opacity:0,y:30},{opacity:1,y:0,duration:1.4,stagger:.35,ease:'power2.out'},tC+5.8);
-  PRE_CT=tC+3.4;L('contact',tC+8.4);
-  tl.to({},{duration:.6},tC+8.4);
+/* ----- top progress line ----- */
+const pbar=$('#pbar');let ticking=false;
+const onScroll=()=>{if(ticking)return;ticking=true;requestAnimationFrame(()=>{ticking=false;if(FILM)applyO();
+  const max=d.scrollHeight-innerHeight;pbar.style.transform=`scaleX(${(max>0?clamp(scrollY/max):0).toFixed(4)})`})};
+addEventListener('scroll',onScroll,{passive:true});
 
-  st=ScrollTrigger.create({trigger:'#film',start:'top top',end:()=>'+='+Math.round(innerHeight*(mob?8.5:10)),pin:true,scrub:.25,anticipatePin:1,invalidateOnRefresh:true,animation:tl,onUpdate:onFilm});
-  labelsOrder=Object.entries(LBL).sort((a,b)=>a[1]-b[1]);
-  measureChips();applyO();applySkills();
+/* ----- in-page links: a short hop scrolls, a long one is a quick cut to black ----- */
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches,cutEl=$('.cut');
+const yOf=id=>id==='intro'?0:id==='about'&&FILM?Math.ceil(Z)+2:Math.round($('#'+id).getBoundingClientRect().top+scrollY);
+function goTo(id){
+  const y=yOf(id);
+  if(RM){scrollTo({top:y,behavior:'auto'});return}
+  if(Math.abs(y-scrollY)<innerHeight*1.5){scrollTo({top:y,behavior:'smooth'});return}
+  cutEl.classList.add('on');
+  setTimeout(()=>{scrollTo({top:y,behavior:'instant'});requestAnimationFrame(()=>requestAnimationFrame(()=>cutEl.classList.remove('on')))},320);
 }
-const SCENES=[['intro','01','INTRO'],['about','02','ABOUT'],['stats','03','STATS'],['p0','04','WORK'],['skills','05','SKILLS'],['contact','06','CONTACT']];
-const SCN=[introSc,about,stats,work,skills,contact],dots=$$('.idx a'),pbar=$('#pbar');let curScene=-1;
-function onFilm(self){
-  pbar.style.transform=`scaleX(${self.progress.toFixed(4)})`;
-  const t=tl.time();let k=0;SCENES.forEach(([lab],i)=>{if(t>=LBL[lab]-2.2)k=i});
-  if(k!==curScene){curScene=k;SCN.forEach((el,i)=>el.style.pointerEvents=i===k?'auto':'none');dots.forEach((a,i)=>i===k?a.setAttribute('aria-current','step'):a.removeAttribute('aria-current'))}
-}
-const yAt=t=>st.start+(st.end-st.start)*(t/tl.duration()),yFor=lab=>yAt(LBL[lab]);
-/* ----- pager: every scroll, swipe or key press glides to the next scene and stops there ----- */
-const PAGER=!/[?&]nosnap/.test(location.search);
-const ease=t=>.45*t+.55*(-(Math.cos(Math.PI*t)-1)/2),STEP=TOUCH?3:2.2; // every scene change is the same planned glide
-let busy=false,quiet=0,arrived=0,gid=0,gdir=1;
-const LABS=()=>labelsOrder.map(e=>e[0]);
-const here=()=>{let bi=0,bd=1e9;LABS().forEach((k,i)=>{const dd=Math.abs(yFor(k)-scrollY);if(dd<bd){bd=dd;bi=i}});return bi};
-const done=()=>{busy=false;arrived=performance.now()};
-function glide(lab,dur){const y=yFor(lab);gdir=y>=scrollY?1:-1;
-  if(Math.abs(y-scrollY)<2){done();return}
-  busy=true;dur=dur||STEP;
-  const id=++gid,fin=()=>{if(id===gid)setTimeout(done,60)};setTimeout(fin,dur*1000+500);
-  lenis.scrollTo(y,{duration:dur,easing:ease,force:true,lock:true,onComplete:fin})}
-function page(dir){if(busy||!st)return;const L=LABS(),i=here(),j=clamp(i+dir,0,L.length-1);if(j!==i)glide(L[j])}
-// jump instantly to a point on the timeline (no scrubbing through what's between)
-function jumpT(t){quiet=performance.now()+900;lenis.scrollTo(yAt(t),{immediate:true,force:true});ScrollTrigger.update();const tw=st.getTween&&st.getTween();if(tw)tw.progress(1);tl.time(t)}
-// a far jump: fade to black, cut, fade back. Contact lands on the glowing point, which then opens
-const curtain=$('.cut');
-function cut(lab){if(busy)return;busy=true;const toCt=lab==='contact';
-  gsap.to(curtain,{opacity:1,duration:.32,ease:'power2.in',overwrite:true,onComplete(){
-    jumpT(toCt?PRE_CT:LBL[lab]);
-    gsap.to(curtain,{opacity:0,duration:toCt?.3:.5,delay:.06,ease:'power2.out',onComplete(){if(toCt){busy=false;glide('contact',1.5)}else done()}})}})}
-function go(lab,inst){if(!st)return;if(inst){jumpT(LBL[lab]);return}
-  const L=LABS(),gap=Math.abs(L.indexOf(lab)-here());gap<=1?glide(lab):cut(lab)}
-if(PAGER){
-  const fieldy=t=>t&&t.closest&&t.closest('input,textarea,select,[contenteditable]');
-  // wheel / trackpad: one gesture = one scene. Inertia that keeps coming after we land is ignored
-  let wLast=0,wPrev=0,armed=true,acc=0;
-  addEventListener('wheel',e=>{if(e.ctrlKey)return;e.preventDefault();
-    const now=performance.now(),dd=Math.abs(e.deltaY)>=Math.abs(e.deltaX)?e.deltaY:e.deltaX,a=Math.abs(dd)*(e.deltaMode?40:1);
-    const gap=now-wLast;wLast=now;
-    if(gap>220||(!busy&&a>wPrev*1.8&&a>30)||(!busy&&now-arrived>650&&a>=40&&a>=wPrev*.9)){armed=true;acc=0}
-    wPrev=a;if(busy||!armed)return;
-    acc+=Math.sign(dd)*a;if(Math.abs(acc)>=14){armed=false;page(acc>0?1:-1)}},{passive:false});
-  // touch: a swipe pages as soon as it's clearly a swipe; native scrolling and momentum are off
-  let ty=0,tx=0,tDone=false;
-  addEventListener('touchstart',e=>{if(e.touches.length!==1)return;ty=e.touches[0].clientY;tx=e.touches[0].clientX;tDone=false},{passive:true});
-  addEventListener('touchmove',e=>{if(e.touches.length!==1)return;if(fieldy(e.target)&&document.activeElement===e.target)return;e.preventDefault();if(tDone)return;
-    const dy=ty-e.touches[0].clientY,dx=tx-e.touches[0].clientX,dd=Math.abs(dy)>=Math.abs(dx)?dy:dx;
-    if(Math.abs(dd)>34){tDone=true;page(dd>0?1:-1)}},{passive:false});
-  // keys
-  addEventListener('keydown',e=>{if(e.altKey||e.ctrlKey||e.metaKey||fieldy(e.target))return;const k=e.key;
-    let dir=0;if(k==='ArrowDown'||k==='PageDown'||(k===' '&&!e.shiftKey))dir=1;else if(k==='ArrowUp'||k==='PageUp'||(k===' '&&e.shiftKey))dir=-1;
-    if(k==='Home'){e.preventDefault();go('intro');return}if(k==='End'){e.preventDefault();go('contact');return}
-    if(dir&&!(k===' '&&e.target.closest('a,button'))){e.preventDefault();page(dir)}});
-  // anything else that moves the page (scrollbar drag, find-in-page): settle on the nearest scene
-  let sT;addEventListener('scroll',()=>{if(busy)return;clearTimeout(sT);sT=setTimeout(()=>{if(busy||!st)return;const L=LABS(),i=here();if(Math.abs(yFor(L[i])-scrollY)>3)glide(L[i],.7)},180)},{passive:true});
-}
-const HASH={intro:'intro',about:'about',stats:'stats',work:'p0',skills:'skills',contact:'contact'};
-$$('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{const id=a.getAttribute('href').slice(1);if(HASH[id]){e.preventDefault();go(HASH[id]);history.replaceState(null,'','#'+id)}}));
-// keyboard: tabbing into a scene that is off camera brings it on
-[['#about','about'],['#stats','stats'],['#skills','skills'],['#contact','contact']].forEach(([s,lab])=>$(s).addEventListener('focusin',()=>{if(Math.abs(tl.time()-LBL[lab])>1.5)go(lab,true)}));
-panels.forEach((p,i)=>p.addEventListener('focusin',()=>{if(Math.abs(tl.time()-LBL['p'+i])>.5)go('p'+i,true)}));
+$$('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{const id=a.getAttribute('href').slice(1);if(!id||!document.getElementById(id))return;
+  e.preventDefault();goTo(id);history.replaceState(null,'','#'+id);
+  const t=document.getElementById(id);if(a.classList.contains('skip'))t.setAttribute('tabindex','-1'),t.focus({preventScroll:true})}));
+// tabbing into About while it is still behind the name jumps to it
+about.addEventListener('focusin',()=>{if(FILM&&scrollY<Z)scrollTo({top:yOf('about'),behavior:'instant'})});
 
-/* ----- per-frame: velocity skew/stretch, parallax, skills drift ----- */
-const vels=$$('.vel'),streak=$('.streak');let vs=0;
-gsap.ticker.add(()=>{
-  const v=st&&performance.now()>quiet?st.getVelocity():0;vs+=(v-vs)*.12;const mob=MOB();
-  if(!mob){const sk=clamp(vs/420,-4.5,4.5),sy=1+Math.min(Math.abs(vs)/24000,.07);
-    if(Math.abs(sk)>.02||vels[0]._sk){vels.forEach(e=>{e.style.transform=Math.abs(sk)<.02?'':`skewY(${(-sk).toFixed(2)}deg) scaleY(${sy.toFixed(3)})`});vels[0]._sk=Math.abs(sk)>=.02}
-    streak.style.opacity=Math.min(Math.abs(vs)/7000,.55).toFixed(3)}
-  if(tl&&tl.time()>LBL.p0-4&&tl.time()<LBL.skills){const tx=gsap.getProperty(track,'x'),W=innerWidth;
-    panels.forEach((p,i)=>{const dd=(i*W+tx)/W;if(Math.abs(dd)>1.2)return;if(p._pv===undefined){p._pv=p.querySelector('.pv');p._tx=p.querySelector('.pn-tx')}
-      if(p._pv)p._pv.style.transform=`translate3d(${(dd*W*(mob?.12:.26)).toFixed(1)}px,0,0)`;p._tx.style.transform=Math.abs(dd)<.001?'':`translate3d(${(dd*W*(mob?.03:.07)).toFixed(1)}px,0,0)`});
-        const f=(tl.time()-LBL.p0)/4,dst=f<0?0:(gdir>0?Math.ceil(f-.02):Math.floor(f+.02));const di=clamp(dst,0,panels.length-1);wnum.textContent=di===panels.length-1?'+':String(di+1).padStart(2,'0')}
-  if(tl&&SK.p<1&&tl.time()>LBL.p0+20&&tl.time()<LBL.contact)applySkills();
-});
-
-// fonts decide letter positions, so build once they're in
-const fontsReady=document.fonts?Promise.race([Promise.all([document.fonts.load('700 100px "Panchang"'),document.fonts.load('500 100px "Supreme"'),document.fonts.load('400 10px "Martian Mono"')]).catch(()=>{}),new Promise(r=>setTimeout(r,2200))]):Promise.resolve();
-fontsReady.catch(()=>{}).then(()=>{build();onFilm(st);
-  const h=location.hash.slice(1);if(HASH[h])requestAnimationFrame(()=>go(HASH[h],true));
-  let lastW=innerWidth,lastH=innerHeight;addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(()=>{const dw=Math.abs(innerWidth-lastW),dh=Math.abs(innerHeight-lastH);
-    // phones resize every time the address bar shows or hides: never rebuild for that
-    if(dw<2&&(TOUCH||dh<2))return;lastW=innerWidth;lastH=innerHeight;const t=tl.progress();build();st.scroll(st.start+(st.end-st.start)*t)},200)})});
+layout();onScroll();
+const ready=document.fonts?Promise.race([Promise.all([document.fonts.load('700 100px "Panchang"'),document.fonts.load('500 100px "Supreme"')]).catch(()=>{}),new Promise(r=>setTimeout(r,2200))]):Promise.resolve();
+ready.then(()=>{layout();const h=location.hash.slice(1);if(h&&document.getElementById(h))scrollTo({top:yOf(h),behavior:'instant'})});
+let lastW=innerWidth,lastH=innerHeight;
+addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(()=>{
+  // phones resize whenever the address bar shows or hides; the stage uses svh, so only width changes matter there
+  if(Math.abs(innerWidth-lastW)<2&&(matchMedia('(pointer:coarse)').matches||Math.abs(innerHeight-lastH)<2))return;
+  lastW=innerWidth;lastH=innerHeight;layout();onScroll()},150)});
 });
 </script>
 <script>
