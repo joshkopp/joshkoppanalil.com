@@ -568,8 +568,13 @@ function sample(){ // read the letters' real positions from the (invisible) head
     if(i<pts.length){p.star=false;p.tx=pts[i][0];p.ty=pts[i][1];p.s=s*rnd(.85,1.15)}
     else if(i<pts.length+nStars){p.star=true;[p.hx,p.hy]=home();p.s=rnd(.8,1.5)}
     else{p.star=true;p.gone=true;const a=rnd(0,6.283),D=Math.max(W,H)*1.3;p.hx=W/2+Math.cos(a)*D;p.hy=H/2+Math.sin(a)*D;p.s=1}});
+  // a soft blurred copy of the name, flashed behind the dots when they lock together
+  glowC=document.createElement('canvas');glowC.width=oc.width;glowC.height=oc.height;const gg=glowC.getContext('2d');
+  gg.filter=`blur(${Math.round(F*.16)}px)`;gg.font=g.font;gg.fillStyle='rgb(58,109,255)';gg.textBaseline='alphabetic';
+  chars.forEach(c=>{const r=c.getBoundingClientRect();gg.fillText(up?c.textContent.toUpperCase():c.textContent,r.left-sr.left,r.top-sr.top+(r.height-(A+Dd))/2+A)});
   targetsReady=true;
 }
+let glowC=null;
 const easeOut=k=>1-Math.pow(1-k,4);
 function base(p,t){ // where a particle sits before any scrolling
   if(!targetsReady||t<assembleAt+p.d*1000)return galaxy(p,t/1000);
@@ -597,10 +602,8 @@ function frame(now){
       if(idle&&ptr.on){const dx=hx-ptr.x,dy=hy-ptr.y,d2=dx*dx+dy*dy;if(d2<R*R){const dd=Math.sqrt(d2)||.01;gx=dx/dd*(R-dd);gy=dy/dd*(R-dd)}}
       const k=gx||gy?.34:.1;p.ox+=(gx-p.ox)*k;p.oy+=(gy-p.oy)*k;if(Math.abs(p.ox)<.02)p.ox=0;if(Math.abs(p.oy)<.02)p.oy=0}
   }
-  // when the name locks, an empty ring travels outward through the dots
-  const sk=shockAt>0&&hp<.012?(now-shockAt)/1400:2;
-  const shock=(x,y)=>{if(sk>=1)return[x,y];const dx=x-W/2,dy=y-H/2,dn=Math.hypot(dx/(W*.6),dy/(H*.55)),ring=sk*1.25,f=1-Math.abs(dn-ring)/.11;
-    if(f<=0)return[x,y];const r=Math.hypot(dx,dy)||1,amp=38*f*(1-sk*.5)*Math.sign(dn-ring||1);return[x+dx/r*amp,y+dy/r*amp]};
+  // when the name locks it glows for a moment: a blue bloom behind it and the dots flash bright
+  const gk=shockAt>0&&hp<.012?(now-shockAt)/1300:2,glow=gk<1?(gk<.12?gk/.12:Math.pow(1-(gk-.12)/.88,2)):0;
   ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,W,H);
   const intro=clamp(t/900),fadeOut=1-sstep(.8,.98,hp);
   ctx.globalAlpha=intro*fadeOut;
@@ -608,10 +611,11 @@ function frame(now){
   if(hp<.012){
     // dots, grouped by colour so each group is one fill. A band of light sweeps across the letters
     const B=[[],[],[],[],[],[]],CL=[`rgba(${WHITE},.92)`,'rgba(190,207,255,1)',`rgba(${BLUE},1)`,`rgba(${WHITE},.3)`,`rgba(${WHITE},.6)`,`rgba(${BLUE},.55)`];
-    for(const p of P){if(p.gone&&t>assembleAt+p.d*1000+1500)continue;const[x,y]=shock(...base(p,t));let bi;
+    for(const p of P){if(p.gone&&t>assembleAt+p.d*1000+1500)continue;const[x,y]=base(p,t);let bi;
       if(p.star)bi=p.blue?5:(Math.sin(t/700+p.tw)>.2?4:3);
-      else bi=p.blue?2:(Math.abs(x-sweep)<70+40*Math.sin(y/40+t/500)?1:0);
+      else bi=p.blue?2:(glow>.35||Math.abs(x-sweep)<70+40*Math.sin(y/40+t/500)?1:0);
       B[bi].push(x,y,p.s)}
+    if(glow>0&&glowC){ctx.save();ctx.globalAlpha=glow*.95*intro;ctx.globalCompositeOperation='lighter';ctx.drawImage(glowC,0,0,W,H);ctx.drawImage(glowC,0,0,W,H);ctx.restore();ctx.globalAlpha=intro*fadeOut}
     B.forEach((arr,bi)=>{if(!arr.length)return;ctx.fillStyle=CL[bi];ctx.beginPath();for(let i=0;i<arr.length;i+=3)ctx.rect(arr[i]-arr[i+2]/2,arr[i+1]-arr[i+2]/2,arr[i+2],arr[i+2]);ctx.fill()});
   }else{
     // hyperspace: every point streaks toward the camera, the whole field twisting as it goes
