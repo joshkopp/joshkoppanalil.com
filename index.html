@@ -163,7 +163,7 @@ button,input{font:inherit;color:inherit}
 .s-stats{display:flex;flex-direction:column;justify-content:center}
 .st-in{width:100%;max-width:1400px;margin-inline:auto}
 .nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(20px,4vw,60px)}
-.num{border-top:1px dotted rgba(255,255,255,.22);padding-top:20px}
+.num{padding-top:20px}
 .num b{display:block;font:700 clamp(56px,8.4vw,150px)/.95 var(--disp);letter-spacing:-.03em;font-variant-numeric:tabular-nums;transform-origin:0 100%}
 .num b sup{font-size:.35em;vertical-align:.95em;color:var(--acc);margin-left:.05em}
 .num span{display:block;margin-top:14px}
@@ -180,7 +180,7 @@ button,input{font:inherit;color:inherit}
 .pn{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:clamp(24px,5vw,90px);align-items:center;min-height:100svh;padding:clamp(90px,12vh,130px) var(--gut) clamp(80px,11vh,120px)}
 .pn-tx{position:relative;z-index:1;display:grid;gap:22px;align-content:center}
 .pn-tx .mono .n{color:var(--acc)}
-.pn h3{font:700 clamp(32px,4.3vw,78px)/1 var(--disp);letter-spacing:-.025em}
+.pn h3{font:700 clamp(32px,4.3vw,78px)/1 var(--disp);letter-spacing:0}
 .pn h3 a{display:inline-block}
 .pn .one{max-width:32ch;font:400 clamp(17px,1.4vw,21px)/1.5 var(--body);color:#c9ccd3}
 .pn .st{font:400 11.5px/1.6 var(--mono);font-stretch:87.5%;color:var(--mute)}
@@ -205,7 +205,7 @@ button,input{font:inherit;color:inherit}
 /* 06 contact */
 .s-contact{display:flex;flex-direction:column;justify-content:center;background:transparent}
 .ct-in{width:100%;max-width:1400px;margin-inline:auto}
-.big{font:700 clamp(36px,7vw,130px)/.98 var(--disp);letter-spacing:-.025em;text-transform:uppercase}
+.big{font:700 clamp(36px,7vw,130px)/.98 var(--disp);letter-spacing:.012em;text-transform:uppercase}
 .big .wl{display:block;overflow:hidden;padding-bottom:.04em}
 .big .wi{display:inline-block}
 .big .acc-t{color:var(--acc)}
@@ -241,11 +241,9 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
 .cut.on{opacity:1}
 
 /* everything after the hero is one plain page */
-.s-stats,.s-work,.s-skills,.s-contact{border-top:1px dotted rgba(255,255,255,.2)}
 .s-work{background:transparent}
 .w-head{display:flex;align-items:end;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .w-head p{max-width:34ch;color:var(--mute);font:400 clamp(15px,1.2vw,18px)/1.5 var(--body)}
-.pn+.pn{border-top:1px dotted rgba(255,255,255,.16)}
 .pn:first-child{padding-top:clamp(40px,6vh,70px)}
 .pn:nth-child(even){grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
 .pn:nth-child(even) .pv{order:-1}
@@ -261,6 +259,7 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
 .dotfx .dch{display:inline!important;font:inherit!important;color:inherit!important;letter-spacing:inherit!important;text-transform:inherit!important;margin:0!important;padding:0!important;border:0!important;-webkit-text-fill-color:transparent}
 .pn h3 a.dotfx{display:inline-block}
 .num b.dotfx{white-space:nowrap}
+.num b sup{-webkit-text-fill-color:transparent}
 .dtc{position:absolute;pointer-events:none}
 .key{color:var(--acc)}
 
@@ -332,7 +331,7 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
 <header class="top">
   <a class="brand" href="#intro" data-cursor="top" aria-label="Josh Koppanalil, back to the top"><svg class="bm" viewBox="8 8 52 48" aria-hidden="true"><path fill="#3a6dff" d="M23 10h8.5v30.5c0 8-5 13.5-13 13.5H10v-8.5h8c3.3 0 5-1.7 5-5z"/><path fill="none" stroke="#f3f4f6" stroke-width="3.4" stroke-linejoin="round" d="M28 10H36.5V34L48 10H57.5L43.92 36.31L58 54H48L36.5 39.52V54H28Z"/></svg></a>
   <div class="tright">
-    <a class="cta-top ul" href="#contact">Let's talk</a>
+    <a class="cta-top ul" href="#contact">Contact</a>
   </div>
 </header>
 
@@ -431,7 +430,6 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
         <li class="chip"><span>Cloudflare</span><small>hosting</small></li>
         <li class="chip"><span>Git</span><small>everything</small></li>
       </ul>
-      <p class="mono sk-off">Off the keyboard: jet-skiing, mountain biking, soccer, piano, debate</p>
     </div>
   </section>
 
@@ -764,16 +762,11 @@ if(FILM){
     pn.querySelectorAll('.pv').forEach(e=>items.push(mark(e,'rv-pic',0)))});
   items.push(mark($('#sk-h'),'rv',0));
   $$('.chip').forEach((e,i)=>items.push(mark(e,'rv-chip',.1+(i%4)*.05+Math.floor(i/4)*.08)));
-  items.push(mark($('.sk-off'),'rv',.5));
   items.push(mark($('.ct-det'),'rv',0));
   $$('.big .wl').forEach((e,i)=>items.push(mark(e,'rv-line',.1+i*.14)));
   items.push(mark($('.ct-sub'),'rv',.4),mark($('.ft'),'rv',.55));
-  // count the numbers up as they arrive
-  const count=b=>{const n=+b.dataset.n,suf=b.dataset.suf||'',t0=performance.now(),D=1400;
-    const f=now=>{const k=clamp((now-t0)/D),v=Math.round(n*(1-Math.pow(1-k,3)));b.innerHTML=v+(suf?`<sup>${suf}</sup>`:'');if(k<1)requestAnimationFrame(f);else b.dispatchEvent(new Event('counted'))};requestAnimationFrame(f)};
-  $$('.num b').forEach(b=>b.innerHTML='0'+(b.dataset.suf?`<sup>${b.dataset.suf}</sup>`:''));
   const io=new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)return;const el=e.target;io.unobserve(el);el.classList.add('in');
-    const b=el.querySelector&&el.querySelector('b[data-n]');if(b)setTimeout(()=>count(b),parseFloat(el.style.getPropertyValue('--d'))*1000+150);
+    
     // once it has arrived, drop the delay so hovers respond instantly
     setTimeout(()=>el.style.setProperty('--d','0s'),1600+parseFloat(el.style.getPropertyValue('--d'))*1000)}),{threshold:.12,rootMargin:'0px 0px -6% 0px'});
   items.forEach(e=>io.observe(e));
@@ -835,9 +828,7 @@ if(FILM){
   }
   const dio=new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)return;const t=DT.find(x=>x.el===e.target);if(t){dio.unobserve(e.target);t.reveal(performance.now()+120)}}),{threshold:.2});
   const addDT=el=>{const t=new DotText(el);DT.push(t);dio.observe(el);return t};
-  $$('.dotty').forEach(el=>{if(el.matches('.num b'))return;if(el.matches('.me')){meDT=new DotText(el);DT.push(meDT);return}addDT(el)});
-  // the stat numbers turn into particles once they finish counting
-  $$('.num b').forEach(b=>b.addEventListener('counted',()=>{const t=addDT(b);t.start=performance.now()-2000;t.busy=true},{once:true}));
+  $$('.dotty').forEach(el=>{if(el.matches('.me')){meDT=new DotText(el);DT.push(meDT);return}addDT(el)});
   const dtLoop=now=>{requestAnimationFrame(dtLoop);for(const t of DT)t.frame(now)};requestAnimationFrame(dtLoop);
   let dtRz;addEventListener('resize',()=>{clearTimeout(dtRz);dtRz=setTimeout(()=>DT.forEach(t=>t.sample()),200)});
   document.fonts&&document.fonts.ready.then(()=>DT.forEach(t=>t.sample()));
