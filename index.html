@@ -74,7 +74,7 @@ button,input{font:inherit;color:inherit}
 .top{position:fixed;inset:0 0 auto;z-index:60;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:max(18px,env(safe-area-inset-top)) var(--gut) 0;pointer-events:none}
 .top>*{pointer-events:auto}
 .brand{display:inline-flex;align-items:center;gap:12px;font:500 12px var(--mono);letter-spacing:.2em}
-.brand .bm{width:26px;height:24px;flex:none}
+.brand .bm{width:34px;height:31px;flex:none}
 .brand b{color:var(--acc);font-weight:500}
 .tright{display:flex;align-items:center;gap:20px}
 .cta-top{position:relative;font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;padding:10px 0}
@@ -128,8 +128,6 @@ button,input{font:inherit;color:inherit}
 .name.two .sp{display:block;height:0;overflow:hidden}
 .name .c .g,.name .c .s{display:inline-block}
 .name .c .g{position:absolute;left:0;top:0;filter:blur(14px);opacity:0}
-.tagline{margin-top:30px;font:300 clamp(11px,.95vw,14px)/1 var(--mono);font-stretch:87.5%;letter-spacing:.14em;color:var(--mute)}
-.tagline .caret{display:inline-block;width:.55em;height:1.1em;margin-left:4px;vertical-align:-.2em;background:var(--acc);animation:blink 1s steps(2) infinite}
 @keyframes blink{50%{opacity:0}}
 .hint{position:absolute;left:50%;bottom:max(26px,5vh);transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px}
 .hint i{position:relative;width:1px;height:42px;background:rgba(255,255,255,.14);overflow:hidden}
@@ -227,7 +225,7 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
 .film .s-intro{z-index:3}
 #fx{display:none}
 .film #fx{display:block;position:absolute;inset:0;z-index:0;pointer-events:none}
-.film .s-intro>.vel,.film .s-intro>.tagline{position:relative;z-index:1}
+.film .s-intro>.vel{position:relative;z-index:1}
 .film .s-intro>.hint{z-index:1}
 .fxon .name{color:transparent}
 .film .s-about{z-index:2;opacity:0}
@@ -301,7 +299,7 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
     .top .cta-top{font-size:11px}
 }
 @media (max-width:860px) and (max-height:740px){.xp li span{display:none}.pn .st{display:none}}
-@media (prefers-reduced-motion:reduce){.pv svg *{animation:none!important}.grain,.hint i::after,.tagline .caret{animation:none!important}.cut{transition:none}}
+@media (prefers-reduced-motion:reduce){.pv svg *{animation:none!important}.grain,.hint i::after{animation:none!important}.cut{transition:none}}
 </style>
 </head>
 <body>
@@ -312,7 +310,7 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <header class="top">
-  <a class="brand" href="#intro" data-cursor="top"><svg class="bm" viewBox="8 8 52 48" aria-hidden="true"><path fill="#3a6dff" d="M23 10h8.5v30.5c0 8-5 13.5-13 13.5H10v-8.5h8c3.3 0 5-1.7 5-5z"/><path fill="none" stroke="#f3f4f6" stroke-width="3.4" stroke-linejoin="round" d="M28 10H36.5V34L48 10H57.5L43.92 36.31L58 54H48L36.5 39.52V54H28Z"/></svg><span>JOSH<b>/</b>K</span></a>
+  <a class="brand" href="#intro" data-cursor="top" aria-label="Josh Koppanalil, back to the top"><svg class="bm" viewBox="8 8 52 48" aria-hidden="true"><path fill="#3a6dff" d="M23 10h8.5v30.5c0 8-5 13.5-13 13.5H10v-8.5h8c3.3 0 5-1.7 5-5z"/><path fill="none" stroke="#f3f4f6" stroke-width="3.4" stroke-linejoin="round" d="M28 10H36.5V34L48 10H57.5L43.92 36.31L58 54H48L36.5 39.52V54H28Z"/></svg></a>
   <div class="tright">
     <a class="cta-top ul" href="#contact">Let's talk</a>
   </div>
@@ -325,7 +323,6 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
   <section class="sc s-intro" id="intro" aria-label="Introduction">
     <canvas id="fx" aria-hidden="true"></canvas>
     <div class="vel"><h1 class="name" id="name">Josh Koppanalil</h1></div>
-    <p class="tagline" id="tagline"><span id="tagt">developer · ML · game dev</span><span class="caret" aria-hidden="true"></span></p>
     <p class="hint mono" id="hint" aria-hidden="true"><i></i>Scroll</p>
   </section>
 
@@ -515,7 +512,7 @@ const nameEl=$('#name'),NAME=nameEl.textContent;nameEl.setAttribute('aria-label'
 nameEl.innerHTML=[...NAME].map(c=>c===' '?'<span class="c sp" aria-hidden="true">&nbsp;</span>':`<span class="c" aria-hidden="true">${c}</span>`).join('');
 const chars=$$('#name .c:not(.sp)');
 const MOB=()=>innerWidth<860;
-const stage=$('#stage'),about=$('.s-about'),abIn=$('.ab-in'),introSc=$('.s-intro'),fade=[$('#tagline'),$('#hint')];
+const stage=$('#stage'),about=$('.s-about'),abIn=$('.ab-in'),introSc=$('.s-intro'),fade=[$('#hint')];
 let Z=1;
 function fitName(){
   nameEl.style.fontSize='';nameEl.classList.toggle('two',MOB());
@@ -613,10 +610,10 @@ function frame(now){
   ctx.globalAlpha=1;
 }
 let tagStarted=false;
-function startTagline(){if(tagStarted)return;tagStarted=true;const tagt=$('#tagt'),TAG=tagt.dataset.t;let k=0;const ty=()=>{tagt.textContent=TAG.slice(0,++k);if(k<TAG.length)setTimeout(ty,38)};ty();
+function startTagline(){if(tagStarted)return;tagStarted=true;
   $('#hint').style.transition='opacity 1s ease .6s';$('#hint').style.opacity=1}
 if(FX){
-  const tagt=$('#tagt');tagt.dataset.t=tagt.textContent;tagt.textContent='';$('#hint').style.opacity=0;
+  $('#hint').style.opacity=0;
   addEventListener('pointermove',e=>{ptr.x=e.clientX;ptr.y=e.clientY;ptr.on=true},{passive:true});
   addEventListener('pointerdown',e=>{ptr.x=e.clientX;ptr.y=e.clientY;ptr.on=true},{passive:true});
   document.addEventListener('pointerleave',()=>{ptr.on=false});
@@ -628,7 +625,7 @@ function applyHero(){
   const p=clamp(scrollY/Z),s=sstep(.74,.97,p);
   about.style.opacity=s.toFixed(3);about.style.visibility=s<=0?'hidden':'';about.style.pointerEvents=p>=1?'auto':'none';
   abIn.style.transform=s>=1?'':`translate3d(0,${((1-s)*34).toFixed(1)}px,0) scale(${(1.08-.08*s).toFixed(4)})`;
-  const f=clamp(1-p*4);fade.forEach(e=>{e.style.opacity=tagStarted||e.id==='tagline'?f:0;e.style.transform=f<1?`translateY(${(-24*(1-f)).toFixed(1)}px)`:''});
+  const f=clamp(1-p*4);fade.forEach(e=>{e.style.opacity=tagStarted?f:0;e.style.transform=f<1?`translateY(${(-24*(1-f)).toFixed(1)}px)`:''});
   introSc.style.visibility=p>=.999?'hidden':'';
   if(!FX)nameEl.style.opacity=f;
 }
