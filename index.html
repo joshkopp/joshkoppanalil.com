@@ -75,7 +75,6 @@ button,input{font:inherit;color:inherit}
 .hero-top .top,.hero-top .prog{opacity:0;transform:translateY(-14px);pointer-events:none}
 .hero-top .top>*{pointer-events:none}
 .prog{transition:opacity .6s ease,transform .7s var(--ease)}
-.inhero .cur{opacity:0}
 .cur{transition:opacity .3s}
 .top>*{pointer-events:auto}
 .brand{display:inline-flex;align-items:center;gap:12px;font:500 12px var(--mono);letter-spacing:.2em}
@@ -594,13 +593,13 @@ function frame(now){
   if(cv.style.visibility)cv.style.visibility='';
   const t=now-born;
   if(targetsReady&&now>=doneAt&&!typed){typed=true;shockAt=now;startTagline()}
-  // the pointer carves a clean empty circle through the dots; they slide back when it leaves
+  // the pointer nudges nearby dots aside a little; they drift back when it leaves
   const idle=hp<.002&&now>=doneAt;
   if(hp<.05&&now>=doneAt){
-    const R=MOB()?62:96;
+    const R=MOB()?34:52;
     for(const p of P){if(p.gone)continue;const hx=p.star?p.hx:p.tx,hy=p.star?p.hy:p.ty;let gx=0,gy=0;
-      if(idle&&ptr.on){const dx=hx-ptr.x,dy=hy-ptr.y,d2=dx*dx+dy*dy;if(d2<R*R){const dd=Math.sqrt(d2)||.01;gx=dx/dd*(R-dd);gy=dy/dd*(R-dd)}}
-      const k=gx||gy?.34:.1;p.ox+=(gx-p.ox)*k;p.oy+=(gy-p.oy)*k;if(Math.abs(p.ox)<.02)p.ox=0;if(Math.abs(p.oy)<.02)p.oy=0}
+      if(idle&&ptr.on){const dx=hx-ptr.x,dy=hy-ptr.y,d2=dx*dx+dy*dy;if(d2<R*R){const dd=Math.sqrt(d2)||.01,f=Math.pow(1-dd/R,1.5)*R*.32;gx=dx/dd*f;gy=dy/dd*f}}
+      const k=gx||gy?.18:.08;p.ox+=(gx-p.ox)*k;p.oy+=(gy-p.oy)*k;if(Math.abs(p.ox)<.02)p.ox=0;if(Math.abs(p.oy)<.02)p.oy=0}
   }
   // when the name locks it glows for a moment: a blue bloom behind it and the dots flash bright
   const gk=shockAt>0&&hp<.012?(now-shockAt)/1300:2,glow=gk<1?(gk<.12?gk/.12:Math.pow(1-(gk-.12)/.88,2)):0;
