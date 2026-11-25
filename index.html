@@ -245,6 +245,27 @@ button,input{font:inherit;color:inherit}
 .s-skills{background:#0d0e12}
 .key{color:var(--acc)}
 
+/* word bands between Stats and Projects: they slide sideways as you scroll */
+.mq{overflow:hidden;padding:clamp(34px,7vh,70px) 0;border-top:1px solid var(--line);background:var(--bg);display:grid;gap:clamp(4px,1vh,10px)}
+.mq-r{display:flex;width:max-content;white-space:nowrap;font:700 clamp(38px,6.6vw,116px)/1.05 var(--disp);letter-spacing:-.02em;text-transform:uppercase;will-change:transform;transform:translate3d(-11%,0,0)}
+.mq-r i{font-style:normal;color:var(--acc);font-size:.5em;vertical-align:.3em;margin:0 .35em}
+.mq-r.o{color:transparent;-webkit-text-stroke:1.2px rgba(243,244,246,.4)}
+.mq-r.o i{-webkit-text-stroke:0}
+
+/* reveals: each block arrives once as it scrolls into view */
+.film .rv{opacity:0;transform:translate3d(0,46px,0);transition:opacity .9s cubic-bezier(.2,.7,.2,1) var(--d,0s),transform 1.2s var(--ease) var(--d,0s)}
+.film .rv-pic{opacity:0;transform:scale(.93);clip-path:inset(14% 9% 14% 9% round 18px);transition:clip-path 1.3s var(--ease) var(--d,0s),transform 1.4s var(--ease) var(--d,0s),opacity .5s var(--d,0s)}
+.film .rv-chip{opacity:0;transform:translate3d(0,28px,0) scale(.9);transition:opacity .7s var(--d,0s),transform .9s var(--ease) var(--d,0s),box-shadow .3s,background .3s}
+.film .rv-line .wi{transform:translate3d(0,108%,0);transition:transform 1.2s var(--ease) var(--d,0s)}
+.film .rv.in,.film .rv-chip.in{opacity:1;transform:none}
+.film .rv-pic.in{opacity:1;transform:none;clip-path:inset(0 0 0 0 round 18px)}
+.film .rv-line.in .wi{transform:none}
+.pv svg{will-change:transform}
+.glow{will-change:transform}
+.chip{transition:transform .35s var(--ease),box-shadow .3s,background .3s}
+.chip:hover{transform:translateY(-4px);background:#121522;box-shadow:inset 0 0 0 1px rgba(58,109,255,.7)}
+.film .chip.in:hover{transform:translateY(-4px)}
+
 @media (max-width:860px){
   .ab-in{grid-template-columns:1fr;gap:28px}
   .ab-side{grid-template-columns:auto minmax(0,1fr);align-items:center;gap:18px}
@@ -342,6 +363,11 @@ button,input{font:inherit;color:inherit}
   </section>
 
   <!-- 04 -->
+  <div class="mq" aria-hidden="true">
+    <div class="mq-r"><span>Machine learning <i>✦</i> Games <i>✦</i> Security <i>✦</i> Classroom tools <i>✦</i> Monyx <i>✦</i> Machine learning <i>✦</i> Games <i>✦</i> Security <i>✦</i> Classroom tools <i>✦</i> Monyx <i>✦</i>&nbsp;</span></div>
+    <div class="mq-r o"><span>Python <i>✦</i> Three.js <i>✦</i> Solana <i>✦</i> WebGL <i>✦</i> NumPy <i>✦</i> LabVIEW <i>✦</i> Python <i>✦</i> Three.js <i>✦</i> Solana <i>✦</i> WebGL <i>✦</i> NumPy <i>✦</i> LabVIEW <i>✦</i>&nbsp;</span></div>
+  </div>
+
   <section class="sc s-work" id="work" aria-labelledby="work-h">
     <div class="w-head"><h2 id="work-h">Projects</h2><p>Three I’m proudest of, and a way into the other twenty.</p></div>
     <div class="track" id="track">
@@ -554,6 +580,8 @@ addEventListener('scroll',onScroll,{passive:true});
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches,cutEl=$('.cut');
 const yOf=id=>id==='intro'?0:id==='about'&&FILM?Math.ceil(Z)+2:Math.round($('#'+id).getBoundingClientRect().top+scrollY);
 function goTo(id){
+  if(FILM&&(id==="intro"||id==="about")&&scrollY<Z+3){play(id==="intro"?-1:1);return}
+  pid++;playing=false;clearTimeout(snapT);
   const y=yOf(id);
   if(RM){scrollTo({top:y,behavior:'auto'});return}
   if(Math.abs(y-scrollY)<innerHeight*1.5){scrollTo({top:y,behavior:'smooth'});return}
@@ -565,6 +593,77 @@ $$('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{const id=a.getAttri
   const t=document.getElementById(id);if(a.classList.contains('skip'))t.setAttribute('tabindex','-1'),t.focus({preventScroll:true})}));
 // tabbing into About while it is still behind the name jumps to it
 about.addEventListener('focusin',()=>{if(FILM&&scrollY<Z)scrollTo({top:yOf('about'),behavior:'instant'})});
+
+/* ----- the zoom always plays through: one scroll starts it, and nothing can rush, skip or stop it ----- */
+const TOUCHY=matchMedia('(pointer:coarse)').matches;
+let playing=false,pid=0,coolUntil=0,touchLock=false,tY0=0,lastY=scrollY,lastDir=1,snapT;
+const easeIO=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+function play(dir){
+  if(playing||!FILM)return;
+  const from=scrollY,to=dir>0?Math.ceil(Z)+2:0;if(Math.abs(to-from)<2)return;
+  playing=true;const id=++pid,dur=(dir>0?(TOUCHY?2700:2400):1500)*Math.max(.35,Math.min(1,Math.abs(to-from)/Z)),t0=performance.now();
+  const step=now=>{if(id!==pid)return;const k=clamp((now-t0)/dur);scrollTo({top:from+(to-from)*easeIO(k),behavior:'instant'});
+    if(k<1)requestAnimationFrame(step);else{playing=false;coolUntil=performance.now()+450}};
+  requestAnimationFrame(step);
+}
+if(FILM){
+  addEventListener('wheel',e=>{if(e.ctrlKey)return;const now=performance.now();
+    if(playing){e.preventDefault();return}
+    if(now<coolUntil){e.preventDefault();coolUntil=now+200;return} // leftover momentum from the gesture that started it
+    const dy=e.deltaY;
+    if(dy>0&&scrollY<Z-1){e.preventDefault();play(1)}
+    else if(dy<0&&scrollY>0&&scrollY<Z+3){e.preventDefault();play(-1)}},{passive:false});
+  addEventListener('touchstart',e=>{tY0=e.touches[0].clientY},{passive:true});
+  addEventListener('touchmove',e=>{
+    if(playing||touchLock){e.preventDefault();return}
+    const dy=tY0-e.touches[0].clientY;
+    if(dy>6&&scrollY<Z-1){e.preventDefault();touchLock=true;play(1)}
+    else if(dy<-6&&scrollY>0&&scrollY<Z+3){e.preventDefault();touchLock=true;play(-1)}},{passive:false});
+  addEventListener('touchend',()=>{touchLock=false},{passive:true});
+  addEventListener('keydown',e=>{if(e.altKey||e.ctrlKey||e.metaKey||(e.target.closest&&e.target.closest('input,textarea')))return;const k=e.key;
+    const down=k==='ArrowDown'||k==='PageDown'||(k===' '&&!e.shiftKey),up=k==='ArrowUp'||k==='PageUp'||(k===' '&&e.shiftKey);
+    if(playing&&(down||up)){e.preventDefault();return}
+    if(down&&scrollY<Z-1){e.preventDefault();play(1)}else if(up&&scrollY>0&&scrollY<Z+3){e.preventDefault();play(-1)}});
+  // a scrollbar drag or a fast fling that lands halfway through: finish the move in the direction it was going
+  addEventListener('scroll',()=>{const y=scrollY;if(y!==lastY)lastDir=y>lastY?1:-1;lastY=y;
+    if(playing)return;clearTimeout(snapT);if(y>1&&y<Z-1)snapT=setTimeout(()=>{if(!playing&&scrollY>1&&scrollY<Z-1)play(lastDir)},90)},{passive:true});
+}
+
+/* ----- the rest of the page moves as it scrolls in ----- */
+if(FILM){
+  const mark=(el,cls,delay)=>{el.classList.add(cls);el.style.setProperty('--d',delay.toFixed(2)+'s');return el};
+  const items=[];
+  $$('.num').forEach((e,i)=>items.push(mark(e,'rv',i*.12)));
+  $$('.xp li').forEach((e,i)=>items.push(mark(e,'rv',.15+i*.09)));
+  $$('.w-head > *').forEach((e,i)=>items.push(mark(e,'rv',i*.12)));
+  $$('.pn').forEach(pn=>{
+    pn.querySelectorAll('.pn-tx > *').forEach((e,i)=>items.push(mark(e,'rv',.1+i*.08)));
+    pn.querySelectorAll('.pv,.allcard').forEach(e=>items.push(mark(e,'rv-pic',0)))});
+  items.push(mark($('#sk-h'),'rv',0));
+  $$('.chip').forEach((e,i)=>items.push(mark(e,'rv-chip',.1+(i%4)*.05+Math.floor(i/4)*.08)));
+  items.push(mark($('.sk-off'),'rv',.5));
+  items.push(mark($('.ct-det'),'rv',0));
+  $$('.big .wl').forEach((e,i)=>items.push(mark(e,'rv-line',.1+i*.14)));
+  items.push(mark($('.ct-sub'),'rv',.4),mark($('.ft'),'rv',.55));
+  // count the numbers up as they arrive
+  const count=b=>{const n=+b.dataset.n,suf=b.dataset.suf||'',t0=performance.now(),D=1400;
+    const f=now=>{const k=clamp((now-t0)/D),v=Math.round(n*(1-Math.pow(1-k,3)));b.innerHTML=v+(suf?`<sup>${suf}</sup>`:'');if(k<1)requestAnimationFrame(f)};requestAnimationFrame(f)};
+  $$('.num b').forEach(b=>b.innerHTML='0'+(b.dataset.suf?`<sup>${b.dataset.suf}</sup>`:''));
+  const io=new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)return;const el=e.target;io.unobserve(el);el.classList.add('in');
+    const b=el.querySelector&&el.querySelector('b[data-n]');if(b)setTimeout(()=>count(b),parseFloat(el.style.getPropertyValue('--d'))*1000+150);
+    // once it has arrived, drop the delay so hovers respond instantly
+    setTimeout(()=>el.style.setProperty('--d','0s'),1600+parseFloat(el.style.getPropertyValue('--d'))*1000)}),{threshold:.12,rootMargin:'0px 0px -6% 0px'});
+  items.forEach(e=>io.observe(e));
+
+  // scroll-linked drift: project art floats against the scroll, glows sink, the word bands slide
+  const pvs=$$('.pv svg'),glows=$$('.sc:not(.s-about) .glow'),rows=$$('.mq-r'),mq=$('.mq');let mt=false;
+  const drift=()=>{mt=false;const H=innerHeight,mob=MOB();
+    pvs.forEach(s=>{const r=s.parentNode.getBoundingClientRect();if(r.bottom<-50||r.top>H+50)return;const off=(r.top+r.height/2-H/2)/H;s.style.transform=`translate3d(0,${(off*(mob?-18:-46)).toFixed(1)}px,0) scale(1.06)`});
+    glows.forEach(g=>{const r=g.parentNode.getBoundingClientRect();if(r.bottom<0||r.top>H)return;g.style.transform=`translate3d(0,${(-r.top*.22).toFixed(1)}px,0)`});
+    if(mq){const r=mq.getBoundingClientRect();if(r.bottom>-50&&r.top<H+50){const k=(H-r.top)/(H+r.height);rows.forEach((row,i)=>row.style.transform=`translate3d(${((i?-1:1)*k*22-(i?0:22)-11).toFixed(2)}%,0,0)`)}}};
+  addEventListener('scroll',()=>{if(!mt){mt=true;requestAnimationFrame(drift)}},{passive:true});
+  addEventListener('resize',drift);drift();
+}
 
 layout();onScroll();
 const ready=document.fonts?Promise.race([Promise.all([document.fonts.load('700 100px "Panchang"'),document.fonts.load('500 100px "Supreme"')]).catch(()=>{}),new Promise(r=>setTimeout(r,2200))]):Promise.resolve();
