@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#08080a">
+<title>Argument Map - Josh Koppanalil</title>
+<meta name="description" content="Paste a debate case and see its structure: every claim, what holds it up, and where it breaks. Built by Josh Koppanalil.">
+<link rel="canonical" href="https://joshkoppanalil.com/argmap/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Argument Map - Josh Koppanalil">
+<meta property="og:description" content="See every claim in a debate case, what holds it up, and where it breaks.">
+<meta property="og:url" content="https://joshkoppanalil.com/argmap/">
+<meta property="og:image" content="https://joshkoppanalil.com/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<script data-goatcounter="https://joshkopp.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=panchang@500,600,700&f[]=supreme@400,500,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wdth,wght@75..112.5,300..500&display=swap" rel="stylesheet">
+<script>document.documentElement.classList.add('js')</script>
+<style>
+:root{
+  --bg:#08080a;--ink:#f3f4f6;--mute:#8b8f98;--dim:#4a4d55;--line:rgba(255,255,255,.1);--line2:rgba(255,255,255,.18);
+  --acc:#3a6dff;--acc-2:#8fb0ff;--red:#ff5b4f;--red-2:#ffa49d;
+  --disp:"Panchang","Unbounded",system-ui,sans-serif;--body:"Supreme","Space Grotesk",system-ui,sans-serif;--mono:"Martian Mono",ui-monospace,monospace;
+  --gut:clamp(20px,4.4vw,72px);--ease:cubic-bezier(.16,1,.3,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);color:var(--ink);-webkit-text-size-adjust:100%;scroll-padding-top:84px}
+body{margin:0;font:400 16px/1.6 var(--body);-webkit-font-smoothing:antialiased;overflow-x:clip}
+a{color:inherit;text-decoration:none}
+h1,h2,h3,h4,p,ol,ul,figure,blockquote{margin:0;padding:0}
+ol,ul{list-style:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:inherit}
+textarea{font:inherit;color:inherit}
+svg{display:block}
+[hidden]{display:none!important}
+::selection{background:var(--acc);color:#fff}
+:focus-visible{outline:2px solid var(--acc);outline-offset:3px;border-radius:6px}
+.mono{font:400 10.5px/1.5 var(--mono);font-stretch:87.5%;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+
+.grain{position:fixed;inset:-50%;z-index:90;pointer-events:none;opacity:.06;background-size:180px;animation:grain .8s steps(5) infinite}
+@keyframes grain{20%{transform:translate3d(-3%,2%,0)}40%{transform:translate3d(2%,-4%,0)}60%{transform:translate3d(-5%,-1%,0)}80%{transform:translate3d(4%,3%,0)}}
+.prog{position:fixed;left:0;right:0;top:0;height:3px;z-index:95;pointer-events:none;background:rgba(255,255,255,.08)}
+.prog i{display:block;height:100%;background:var(--acc);box-shadow:0 0 8px rgba(58,109,255,.7);transform-origin:0 50%;transform:scaleX(0)}
+
+.top{position:fixed;inset:0 0 auto;z-index:60;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:max(18px,env(safe-area-inset-top)) var(--gut) 14px;background:linear-gradient(#08080a 30%,rgba(8,8,10,0))}
+.brand{display:inline-flex;align-items:center}
+.brand .bm{width:34px;height:31px;flex:none}
+.back{position:relative;font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;padding:10px 0}
+.back::after{content:"";position:absolute;left:0;right:0;bottom:4px;height:1px;background:var(--acc);transform:scaleX(0);transform-origin:right;transition:transform .45s var(--ease)}
+.back:hover::after,.back:focus-visible::after{transform:scaleX(1);transform-origin:left}
+
+main{padding:0 var(--gut)}
+
+/* hero */
+.hero{padding:clamp(116px,17vh,180px) 0 clamp(36px,5vh,56px);display:grid;grid-template-columns:1fr auto;align-items:end;gap:28px 48px}
+h1{grid-column:1/-1;font:700 clamp(44px,8.6vw,148px)/.92 var(--disp);letter-spacing:-.03em;text-transform:uppercase}
+h1 .wl{display:block;overflow:hidden;padding-bottom:.04em}
+h1 .wi{display:block}
+h1 .acc{color:var(--acc)}
+.lede{max-width:40ch;color:var(--mute);font-size:clamp(17px,1.5vw,21px);line-height:1.5}
+.lede b{color:var(--ink);font-weight:500}
+.cta{display:grid;justify-items:end;gap:12px}
+.cta .mono{color:var(--dim)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:46px;padding:0 22px;border-radius:999px;font:500 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;box-shadow:inset 0 0 0 1px var(--line2);transition:box-shadow .25s,background .25s,color .25s,transform .25s var(--ease)}
+.btn:hover{box-shadow:inset 0 0 0 1px var(--acc)}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--acc);box-shadow:none;color:#fff}
+.btn.pri:hover{background:#5480ff}
+.btn svg{width:12px;height:12px}
+.btn[disabled]{opacity:.5;pointer-events:none}
+.lnk{font:500 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--acc-2);padding:4px 0;background:linear-gradient(currentColor,currentColor) 0 100%/0 1px no-repeat;transition:background-size .4s var(--ease)}
+.lnk:hover{background-size:100% 1px}
+
+/* workspace */
+.ws{scroll-margin-top:84px;display:grid;grid-template-columns:minmax(0,1fr) clamp(320px,27vw,400px);height:clamp(580px,80vh,920px);border:1px solid var(--line);border-radius:22px;overflow:hidden;background:#0a0a0c}
+.stage{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:14px 24px;flex-wrap:wrap;padding:16px 18px 16px 22px;border-bottom:1px solid var(--line);background:#0a0a0c;z-index:2}
+.mt{min-width:0;display:grid;gap:4px}
+.mt h2{font:700 clamp(16px,1.3vw,19px)/1.25 var(--body);letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:52ch}
+.mt .mono b{color:var(--acc-2);font-weight:400}
+.tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.seg{display:inline-flex;padding:3px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line);background:#0d0e11}
+.seg button{height:32px;padding:0 14px;border-radius:999px;font:500 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute);transition:background .25s,color .25s}
+.seg button[aria-pressed=true]{background:var(--ink);color:#08080a}
+.tb{display:inline-flex;align-items:center;gap:10px;height:38px;padding:0 14px 0 16px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line2);font:500 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;transition:box-shadow .25s,color .25s}
+.tb:hover{box-shadow:inset 0 0 0 1px var(--red);color:var(--red-2)}
+.tb .dot{width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 0 3px rgba(255,91,79,.18)}
+kbd{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:4px;box-shadow:inset 0 0 0 1px var(--line2);font:400 9px/1 var(--mono);color:var(--mute)}
+
+.vp{position:relative;flex:1;min-height:0;overflow:hidden;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+  background-color:#0b0b0e;background-image:radial-gradient(rgba(255,255,255,.075) 1px,transparent 1.3px);background-size:26px 26px}
+.vp.grab{cursor:grabbing}
+.world{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.world.anim{transition:transform .65s var(--ease)}
+#edges{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.e{fill:none;stroke:rgba(255,255,255,.2);stroke-width:1.5;transition:opacity .35s,stroke .25s}
+.e.s-strong{stroke:rgba(255,255,255,.45);stroke-width:2}
+.e.s-weak{stroke:var(--red);stroke-dasharray:5 5;stroke-opacity:.8}
+.e.x{stroke-dasharray:2 6}
+.e.dim{opacity:.08}
+.e.hot.s-weak{animation:march 1s linear infinite}
+@keyframes march{to{stroke-dashoffset:-20}}
+
+.nd{position:absolute;left:0;top:0;width:260px;padding:12px 15px 15px;border-radius:12px;background:#131418;box-shadow:inset 0 0 0 1px rgba(255,255,255,.09);font:400 14px/1.45 var(--body);color:var(--ink);transition:opacity .35s,box-shadow .25s,background .25s}
+.nd:hover{box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+.nd.t-claim{box-shadow:inset 0 0 0 1px rgba(58,109,255,.5)}
+.nd.t-claim:hover{box-shadow:inset 0 0 0 1px var(--acc)}
+.nd.t-evidence{background:#0f1013;color:#c9ccd3;font-size:13.5px}
+.nd.t-assumption{background:#0b0b0e;color:#c9ccd3;font-size:13.5px;box-shadow:none;outline:1px dashed rgba(255,255,255,.26);outline-offset:-1px}
+.nd.weak{box-shadow:inset 0 0 0 1px rgba(255,91,79,.45)}
+.nd.weak:hover{box-shadow:inset 0 0 0 1px var(--red)}
+.nd.t-assumption.weak{box-shadow:none;outline-color:rgba(255,91,79,.6)}
+.nd.root{width:290px;padding:15px 18px 18px;background:var(--acc);box-shadow:none;color:#fff;font:700 19px/1.22 var(--body);letter-spacing:-.01em}
+.nd.root:hover{background:#4a79ff;box-shadow:none}
+.nd.on{box-shadow:0 0 0 2px var(--ink),0 24px 50px -16px rgba(0,0,0,.9)!important;outline-color:transparent}
+.nd.dim{opacity:.2}
+.nd:focus-visible{outline:2px solid var(--acc-2);outline-offset:3px}
+
+.tl{display:flex;align-items:center;gap:8px;margin-bottom:8px;font:500 9.5px/1 var(--mono);font-stretch:87.5%;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);white-space:nowrap}
+.tl i{width:7px;height:7px;border-radius:2px;flex:none;background:var(--ink)}
+.t-claim .tl i,.tl.t-claim i{background:var(--acc)}
+.t-evidence .tl i,.tl.t-evidence i{background:none;box-shadow:inset 0 0 0 1.5px var(--mute);border-radius:50%}
+.t-assumption .tl i,.tl.t-assumption i{background:none;box-shadow:inset 0 0 0 1px var(--mute);border-radius:50%;transform:scale(.8)}
+.tl em{margin-left:auto;font-style:normal;color:var(--red);overflow:hidden;text-overflow:ellipsis}
+.tl em.u{color:#c9a65a}
+.nd.root .tl{color:rgba(255,255,255,.72)}
+.nd.root .tl i{background:#fff}
+
+.world.in .nd{animation:ndIn .75s var(--ease) backwards;animation-delay:calc(var(--d)*110ms + var(--j)*18ms)}
+.world.in .e{animation:fadeIn .7s ease backwards;animation-delay:calc(var(--d)*110ms + 120ms)}
+@keyframes ndIn{from{opacity:0;translate:-16px 0}}
+@keyframes fadeIn{from{opacity:0}}
+
+.foot{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:14px 16px;pointer-events:none}
+.foot>*{pointer-events:auto}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;padding:9px 13px;border-radius:10px;background:rgba(10,10,12,.85);box-shadow:inset 0 0 0 1px var(--line);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.legend .tl{margin:0;font-size:9px}
+.legend .wkl::before{content:"";width:16px;height:0;border-top:1.5px dashed var(--red)}
+.zoom{display:flex;align-items:center;gap:10px}
+.zoom .hint{color:var(--dim);text-align:right}
+.zb{display:flex;border-radius:10px;background:rgba(10,10,12,.85);box-shadow:inset 0 0 0 1px var(--line);overflow:hidden}
+.zb button{width:36px;height:36px;display:grid;place-items:center;font:400 16px/1 var(--mono);color:var(--mute);transition:color .2s,background .2s}
+.zb button+button{border-left:1px solid var(--line)}
+.zb button:hover{color:var(--ink);background:rgba(255,255,255,.05)}
+.zb .fit{width:auto;padding:0 12px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase}
+
+/* outline view */
+.outline{flex:1;min-height:0;overflow:auto;padding:14px 16px 40px;overscroll-behavior:contain}
+.ol{display:grid;gap:2px}
+.or{position:relative;display:block;margin-left:calc(var(--d)*22px);padding:11px 14px 12px;border-radius:10px;transition:background .2s,opacity .3s}
+.or:hover{background:#121317}
+.or.on{background:#15161b;box-shadow:inset 0 0 0 1px var(--line2)}
+.or.dim{opacity:.35}
+.or::before{content:"";position:absolute;left:-12px;top:4px;bottom:4px;width:1px;background:var(--line)}
+.or[style*="--d:0"]::before{display:none}
+.or .tl{margin-bottom:6px}
+.or .tt{display:block;font-size:15px;line-height:1.45}
+.or.t-evidence .tt,.or.t-assumption .tt{color:#c9ccd3;font-size:14px}
+.or.root .tt{font-size:19px;font-weight:700;letter-spacing:-.01em}
+.or.weak .tt{text-decoration:underline dashed rgba(255,91,79,.55) 1px;text-underline-offset:5px}
+.olf{margin-top:22px}
+
+/* inspector */
+.insp{min-height:0;overflow:auto;border-left:1px solid var(--line);background:#09090b;overscroll-behavior:contain}
+.tabs{position:sticky;top:0;z-index:2;display:flex;gap:22px;padding:0 24px;border-bottom:1px solid var(--line);background:#09090b}
+.tabs button{position:relative;height:57px;font:500 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim);transition:color .2s}
+.tabs button:hover{color:var(--mute)}
+.tabs button[aria-selected=true]{color:var(--ink)}
+.tabs button[aria-selected=true]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--acc)}
+.pane{padding:24px 24px 40px;animation:paneIn .45s var(--ease)}
+@keyframes paneIn{from{opacity:0;transform:translateY(6px)}}
+.k{margin-bottom:18px}
+.stats{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line);border-left:1px solid var(--line);margin-bottom:34px}
+.stats div{padding:14px 14px 16px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.stats b{display:block;font:700 34px/1 var(--disp);letter-spacing:-.03em;margin-bottom:8px}
+.stats .r b{color:var(--red)}
+.sh{display:flex;align-items:center;justify-content:space-between;margin:0 0 6px;color:var(--ink)}
+.sh span{color:var(--mute)}
+.wl{margin-bottom:30px}
+.wl button{display:grid;gap:6px;width:100%;padding:14px 0;border-top:1px solid var(--line);transition:padding .35s var(--ease)}
+.wl li:last-child button{border-bottom:1px solid var(--line)}
+.wl button:hover{padding-left:8px}
+.wl .f{color:var(--red)}
+.wl.un .f{color:#c9a65a}
+.wl button>span:last-child{font-size:14.5px;line-height:1.45;color:#d6d8de}
+.tip{color:var(--mute);font-size:14px;line-height:1.55}
+
+.bk{display:inline-flex;align-items:center;gap:8px;margin-bottom:22px;color:var(--mute);transition:color .2s}
+.bk:hover{color:var(--ink)}
+.nt{font:700 22px/1.25 var(--body);letter-spacing:-.015em;margin:10px 0 18px}
+.q{margin-bottom:18px}
+.q blockquote{padding:14px 16px;border-radius:10px;background:#121317;color:#d1d4da;font-size:14.5px;line-height:1.6}
+.q .lnk{margin-top:10px}
+.q.miss blockquote{color:var(--mute)}
+.q figcaption{margin-top:10px;color:#c9a65a}
+.note{color:var(--mute);font-size:14.5px;line-height:1.55;margin-bottom:18px}
+.wk{padding:16px 16px 18px;border-radius:12px;background:rgba(255,91,79,.07);box-shadow:inset 0 0 0 1px rgba(255,91,79,.3);margin-bottom:22px}
+.wk>.mono{color:var(--red);margin-bottom:8px}
+.wk p:not(.mono){font-size:14.5px;line-height:1.55;color:#ecdedd}
+.atk{margin-top:14px;padding-top:14px;border-top:1px dashed rgba(255,91,79,.32)}
+.atk .mono{color:var(--ink);margin-bottom:6px}
+.okn{margin-bottom:22px;font-size:14px;line-height:1.55;color:var(--mute)}
+.okn .mono{display:block;color:var(--acc-2);margin-bottom:4px}
+.rel{margin-bottom:22px}
+.rel>.mono{margin-bottom:8px}
+.rw{display:grid;gap:2px;width:100%;margin-top:8px;padding:12px 14px;border-radius:10px;background:#111216;transition:background .2s,transform .3s var(--ease)}
+.rw:hover{background:#17181d}
+.rw .tl{margin-bottom:4px}
+.rw>span:last-child{font-size:14px;line-height:1.45;color:#d6d8de}
+.none{font-size:14px;color:var(--mute);padding:12px 14px;border-radius:10px;box-shadow:inset 0 0 0 1px var(--line)}
+.none.bad{color:#e3c88d;box-shadow:inset 0 0 0 1px rgba(201,166,90,.35)}
+
+.src{white-space:pre-wrap;font-size:15px;line-height:1.8;color:#8f939b}
+.src mark{background:none;color:var(--ink);cursor:pointer;border-bottom:1.5px solid rgba(255,255,255,.35);transition:background .2s;border-radius:2px}
+.src mark.t-claim{border-color:var(--acc)}
+.src mark.t-evidence{border-bottom-style:dotted}
+.src mark.weak{border-color:var(--red)}
+.src mark:hover{background:rgba(255,255,255,.06)}
+.src mark.on{background:rgba(58,109,255,.24)}
+.src mark.weak.on{background:rgba(255,91,79,.2)}
+
+/* make your own */
+.make{padding:clamp(90px,14vh,150px) 0 clamp(70px,10vh,120px)}
+.mh{display:flex;align-items:end;justify-content:space-between;gap:20px 40px;flex-wrap:wrap;padding-bottom:clamp(28px,4vh,44px);border-bottom:1px solid var(--line)}
+.mh h2{font:700 clamp(34px,5.4vw,84px)/.95 var(--disp);letter-spacing:-.03em;text-transform:uppercase;margin-top:12px}
+.mh h2 .acc{color:var(--acc)}
+.steps{display:grid;grid-template-columns:1.25fr .85fr 1.1fr;counter-reset:s}
+.steps>li{display:flex;flex-direction:column;gap:14px;padding:30px clamp(20px,2.4vw,40px) 0;border-left:1px solid var(--line)}
+.steps>li:first-child{padding-left:0;border-left:0}
+.steps>li:last-child{padding-right:0}
+.sn{color:var(--acc-2)}
+.steps h3{font:700 clamp(21px,1.8vw,27px)/1.15 var(--body);letter-spacing:-.015em}
+.steps p.d{color:var(--mute);font-size:15px;line-height:1.6}
+textarea.box{width:100%;min-height:300px;flex:1;padding:16px 18px;border-radius:14px;background:#0c0d10;border:1px solid var(--line);color:var(--ink);font:400 15px/1.65 var(--body);resize:vertical;outline:none;transition:border-color .25s}
+textarea.box:focus{border-color:var(--acc)}
+textarea.box::placeholder{color:var(--dim)}
+textarea.code{font:400 12px/1.6 var(--mono);font-stretch:87.5%;min-height:240px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.err{min-height:1.5em;color:var(--red-2);font-size:14px}
+details{border-top:1px solid var(--line);padding-top:12px}
+summary{cursor:pointer;list-style:none;font:500 10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"+ "}
+details[open] summary::before{content:"− "}
+details pre{margin:12px 0 0;max-height:280px;overflow:auto;padding:14px;border-radius:10px;background:#0c0d10;font:400 11px/1.6 var(--mono);font-stretch:87.5%;color:var(--mute);white-space:pre-wrap}
+.flagkey{display:grid;gap:10px;margin-top:4px}
+.flagkey li{display:grid;gap:2px;font-size:14px;line-height:1.45;color:var(--mute)}
+.flagkey b{font:500 10px/1.4 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--red-2)}
+
+footer{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:28px 0 max(40px,env(safe-area-inset-bottom));border-top:1px solid var(--line);margin:0 var(--gut)}
+footer a{color:var(--ink)}
+
+.toast{position:fixed;left:50%;bottom:max(24px,env(safe-area-inset-bottom));z-index:100;transform:translate(-50%,20px);opacity:0;padding:12px 18px;border-radius:999px;background:var(--ink);color:#08080a;font:500 11px var(--mono);letter-spacing:.08em;pointer-events:none;transition:opacity .3s,transform .4s var(--ease);white-space:nowrap}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* intro */
+.js h1 .wi{animation:rise 1.2s var(--ease) both}
+.js h1 .wl+.wl .wi{animation-delay:.12s}
+.js .lede,.js .cta{animation:fade 1s var(--ease) .45s both}
+.js .ws{animation:fade 1.1s var(--ease) .6s backwards}
+@keyframes rise{from{transform:translateY(105%)}}
+@keyframes fade{from{opacity:0;transform:translateY(16px)}}
+@keyframes sheet{from{transform:translateY(100%)}}
+
+@media(max-width:1100px){
+  .steps{grid-template-columns:1fr 1fr}
+  .steps>li:nth-child(3){grid-column:1/-1;padding-left:0;border-left:0;border-top:1px solid var(--line);margin-top:34px}
+}
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr}
+  .cta{justify-items:start}
+  .ws{grid-template-columns:1fr;height:auto;border-radius:18px}
+  .stage{height:74vh;min-height:480px}
+  .insp{border-left:0;border-top:1px solid var(--line);overflow:visible}
+  .tabs{position:static}
+  .ws.sel .insp{position:fixed;left:0;right:0;bottom:0;z-index:85;max-height:64vh;overflow:auto;border:1px solid var(--line2);border-bottom:0;border-radius:20px 20px 0 0;background:#0d0e11;box-shadow:0 -30px 80px rgba(0,0,0,.7);padding-bottom:env(safe-area-inset-bottom);animation:sheet .45s var(--ease)}
+  .ws.sel .tabs{position:sticky;background:#0d0e11}
+  .zoom .hint{display:none}
+  .legend{display:none}
+}
+@media(max-width:700px){
+  .steps{grid-template-columns:1fr}
+  .steps>li,.steps>li:nth-child(3){grid-column:auto;padding:30px 0 0;border-left:0;border-top:1px solid var(--line);margin-top:30px}
+  .steps>li:first-child{border-top:0;margin-top:0}
+  .mt h2{white-space:normal}
+  .tb .lbl{display:none}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+<div class="prog" aria-hidden="true"><i id="pbar"></i></div>
+<header class="top">
+  <a class="brand" href="/" aria-label="Josh Koppanalil, home"><svg class="bm" viewBox="8 8 52 48" aria-hidden="true"><path fill="#3a6dff" d="M23 10h8.5v30.5c0 8-5 13.5-13 13.5H10v-8.5h8c3.3 0 5-1.7 5-5z"/><path fill="none" stroke="#f3f4f6" stroke-width="3.4" stroke-linejoin="round" d="M28 10H36.5V34L48 10H57.5L43.92 36.31L58 54H48L36.5 39.52V54H28Z"/></svg></a>
+  <a class="back" href="/allproj/">All projects</a>
+</header>
+
+<main>
+  <section class="hero">
+    <h1><span class="wl"><span class="wi">Argument</span></span><span class="wl"><span class="wi">map<span class="acc">.</span></span></span></h1>
+    <p class="lede">Paste a debate case and see its skeleton: <b>every claim, what holds it up, and exactly where it breaks.</b></p>
+    <div class="cta">
+      <a class="btn pri" href="#make">Map your case<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M7 2v10M3 8l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></a>
+      <p class="mono" id="loaded">Showing a sample case</p>
+    </div>
+  </section>
+
+  <section class="ws" id="ws" aria-label="Argument map">
+    <div class="stage">
+      <div class="bar">
+        <div class="mt"><p class="mono" id="side"></p><h2 id="motion"></h2></div>
+        <div class="tools">
+          <div class="seg" role="group" aria-label="View">
+            <button type="button" data-view="map" aria-pressed="true">Map</button>
+            <button type="button" data-view="outline" aria-pressed="false">Outline</button>
+          </div>
+          <button type="button" class="tb" id="nextWeak" title="Jump to the next weak point (N)"><i class="dot"></i><span class="lbl">Next weak point</span><kbd>N</kbd></button>
+        </div>
+      </div>
+      <div class="vp" id="vp">
+        <div class="world" id="world"><svg id="edges" aria-hidden="true"></svg><div id="nodes"></div></div>
+        <div class="foot">
+          <div class="legend" aria-hidden="true">
+            <span class="tl t-claim"><i></i>Claim</span><span class="tl"><i></i>Reason</span><span class="tl t-evidence"><i></i>Evidence</span><span class="tl t-assumption"><i></i>Unstated</span><span class="tl wkl">Weak link</span>
+          </div>
+          <div class="zoom">
+            <p class="mono hint">Drag to move<br>Ctrl + scroll to zoom</p>
+            <div class="zb"><button type="button" id="zout" aria-label="Zoom out">−</button><button type="button" id="zin" aria-label="Zoom in">+</button><button type="button" class="fit" id="zfit">Fit</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="outline" id="outline" hidden></div>
+    </div>
+    <aside class="insp" id="insp" aria-label="Details">
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" data-tab="inspect" aria-selected="true">Inspect</button>
+        <button type="button" role="tab" data-tab="source" aria-selected="false">Case text</button>
+      </div>
+      <div class="pane" id="pInspect"></div>
+      <div class="pane" id="pSource" hidden></div>
+    </aside>
+  </section>
+
+  <section class="make" id="make">
+    <div class="mh">
+      <div><p class="mono">Map your own case</p><h2>Three steps<span class="acc">.</span></h2></div>
+      <button type="button" class="lnk" id="useSample">Load the sample case</button>
+    </div>
+    <ol class="steps">
+      <li>
+        <p class="mono sn">Step 01</p>
+        <h3>Paste your case</h3>
+        <textarea class="box" id="caseIn" spellcheck="false" placeholder="Paste a speech, a case file, or your prep notes."></textarea>
+        <p class="mono" id="wc">0 words</p>
+      </li>
+      <li>
+        <p class="mono sn">Step 02</p>
+        <h3>Copy the prompt</h3>
+        <p class="d">It wraps your case in instructions telling an AI how to break it down and what counts as a weak link. Paste it into any AI chat.</p>
+        <div class="row"><button type="button" class="btn" id="copyPrompt">Copy prompt</button><button type="button" class="btn pri" id="auto" hidden>Map it for me</button></div>
+        <p class="err" id="err2" role="alert"></p>
+        <p class="mono">What it checks for</p>
+        <ul class="flagkey" id="flagkey"></ul>
+        <details><summary>See the full prompt</summary><pre id="promptPrev"></pre></details>
+      </li>
+      <li>
+        <p class="mono sn">Step 03</p>
+        <h3>Paste the reply</h3>
+        <textarea class="box code" id="jsonIn" spellcheck="false" placeholder='{ "nodes": [ ... ], "links": [ ... ] }'></textarea>
+        <div class="row"><button type="button" class="btn pri" id="draw">Draw the map<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M7 12V2M3 6l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button></div>
+        <p class="err" id="err" role="alert"></p>
+      </li>
+    </ol>
+  </section>
+</main>
+
+<footer>
+  <span class="mono">© <span id="year"></span> Josh Koppanalil</span>
+  <a class="back" href="/">Back to home</a>
+</footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const KEY='jk-argmap-v1';
+// When the backend exists, put the Edge Function URL here and step 02 gets a one-click button.
+const MAP_ENDPOINT='';
+
+const TYPES={claim:'Claim',reason:'Reason',evidence:'Evidence',assumption:'Unstated'};
+const FLAGS={
+  'no-evidence':['No evidence','Asserted with nothing backing it.'],
+  'correlation':['Correlation ≠ cause','Treats two things happening together as one causing the other.'],
+  'overgeneralizes':['Overgeneralizes','Stretches one example or a narrow case into a general rule.'],
+  'assumption':['Hidden assumption','Depends on something unstated that might be false.'],
+  'mismatch':['Evidence mismatch','The evidence proves something different from what it supports.']
+};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const flagName=l=>l.flag?FLAGS[l.flag][0]:'Weak link';
+
+/* ---------- sample ---------- */
+const SAMPLE_CASE=`This House would ban private cars from city centres.
+
+Our first argument is about health. Cars are the biggest source of air pollution in our cities, and that pollution is killing people. The World Health Organization estimates that outdoor air pollution causes around 4 million early deaths a year. When Madrid restricted cars in its centre, nitrogen dioxide levels dropped sharply within a year. A ban would let people breathe cleaner air every single day.
+
+Our second argument is about the economy of the city centre. People think cars bring customers, but pedestrians actually spend more. Shops on streets that were pedestrianised saw more visitors after the change. My aunt runs a café on a car-free street and says business has never been better. Once people can walk freely, they stay longer and spend more, so local businesses will thrive.
+
+Our third argument is about fairness. Most people in cities don't own cars, yet everyone pays the cost of traffic through noise, danger and lost space. Roads take up a huge share of city land that could be parks, bike lanes and homes. Banning cars gives that space back to the many instead of the few.
+
+Some will say this hurts people who need to drive. But public transport can easily take their place, so nobody will really be worse off.
+
+For all these reasons, we are proud to propose.`;
+const SAMPLE={
+  motion:'This House would ban private cars from city centres',side:'Prop',
+  nodes:[
+    {id:'m',type:'claim',text:'Private cars should be banned from city centres',quote:'This House would ban private cars from city centres.'},
+    {id:'a1',type:'claim',text:'A ban makes city air cleaner and saves lives',quote:'A ban would let people breathe cleaner air every single day.'},
+    {id:'r1',type:'reason',text:'City air pollution, mostly from cars, is killing people',quote:'Cars are the biggest source of air pollution in our cities, and that pollution is killing people.'},
+    {id:'e1',type:'evidence',text:'WHO: outdoor air pollution causes about 4 million early deaths a year',quote:'The World Health Organization estimates that outdoor air pollution causes around 4 million early deaths a year.'},
+    {id:'e2',type:'evidence',text:'Madrid’s nitrogen dioxide fell sharply after it restricted cars',quote:'When Madrid restricted cars in its centre, nitrogen dioxide levels dropped sharply within a year.'},
+    {id:'a2',type:'claim',text:'Local businesses would thrive',quote:'so local businesses will thrive'},
+    {id:'r2',type:'reason',text:'Pedestrians spend more than drivers',quote:'People think cars bring customers, but pedestrians actually spend more.'},
+    {id:'e3',type:'evidence',text:'Pedestrianised streets got more visitors after the change',quote:'Shops on streets that were pedestrianised saw more visitors after the change.'},
+    {id:'e4',type:'evidence',text:'The speaker’s aunt’s café is busy on a car-free street',quote:'My aunt runs a café on a car-free street and says business has never been better.'},
+    {id:'r3',type:'reason',text:'Without cars, people stay longer and spend more',quote:'Once people can walk freely, they stay longer and spend more'},
+    {id:'a3',type:'claim',text:'A ban is fairer to the majority',quote:'Banning cars gives that space back to the many instead of the few.'},
+    {id:'r4',type:'reason',text:'Most city residents don’t own cars, but everyone pays for traffic',quote:'Most people in cities don\'t own cars, yet everyone pays the cost of traffic through noise, danger and lost space.'},
+    {id:'r5',type:'reason',text:'Roads use land that could be parks, bike lanes and homes',quote:'Roads take up a huge share of city land that could be parks, bike lanes and homes.'},
+    {id:'x1',type:'reason',text:'Public transport can replace driving, so no one is worse off',quote:'But public transport can easily take their place, so nobody will really be worse off.'},
+    {id:'u1',type:'assumption',text:'Public transport has room for everyone who drives now, and reaches them',quote:''}
+  ],
+  links:[
+    {from:'a1',to:'m',strength:'strong',why:'Health is a direct, serious benefit of the policy.'},
+    {from:'r1',to:'a1',strength:'ok',why:'Follows if the pollution really does come mostly from cars.'},
+    {from:'e1',to:'r1',strength:'weak',flag:'mismatch',why:'The 4 million figure covers all outdoor pollution, including industry, power plants and heating. It says nothing about how much comes from cars.',attack:'Ask what share of city-centre pollution actually comes from private cars. If it is a minority, the ban fixes a small part of the problem.'},
+    {from:'e2',to:'a1',strength:'ok',why:'A before-and-after measurement of this exact policy, though from one city.'},
+    {from:'a2',to:'m',strength:'ok'},
+    {from:'r2',to:'a2',strength:'ok'},
+    {from:'e3',to:'r2',strength:'weak',flag:'correlation',why:'More visitors is not more spending, and cities tend to pedestrianise streets that were already busy, so the growth may have happened anyway.',attack:'Ask how those streets compare with similar ones that kept their cars.'},
+    {from:'e4',to:'r2',strength:'weak',flag:'overgeneralizes',why:'One relative’s café is an anecdote, not a pattern.',attack:'Point to businesses that rely on drivers: grocers, hardware stores, anything people carry home in bulk.'},
+    {from:'r3',to:'a2',strength:'weak',flag:'no-evidence',why:'Stated as fact with nothing behind it.',attack:'Ask for one study. If none comes, it is a hope, not an argument.'},
+    {from:'a3',to:'m',strength:'ok'},
+    {from:'r4',to:'a3',strength:'weak',flag:'overgeneralizes',why:'True in a few dense cities and false in many others, and no figure is given. City-centre visitors are not only residents either.',attack:'In most cities a majority of households own a car. Make them prove their number for the cities they mean.'},
+    {from:'r5',to:'a3',strength:'ok',why:'Plausible and easy to check, but no figure is given.'},
+    {from:'x1',to:'m',strength:'weak',flag:'assumption',why:'Waves away the strongest objection in one line, with no evidence that transit can carry the extra load or serve everyone who drives.',attack:'Name who loses: wheelchair users, night-shift workers, tradespeople with tools, parents with three kids. Ask what replaces the car for them.'},
+    {from:'u1',to:'x1',strength:'weak',flag:'assumption',why:'The rebuttal only works if this is true, and the case never shows it.',attack:'Ask for capacity numbers. Most city transit is already packed at rush hour.'}
+  ]
+};
+
+/* ---------- prompt ---------- */
+const promptFor=text=>`You are mapping the structure of a debate case. Read the case below and reply with ONLY a JSON object. No other text.
+
+Shape:
+{
+  "motion": "the motion or main thesis, short",
+  "side": "Prop" or "Opp" or "",
+  "nodes": [
+    {"id": "n1", "type": "claim | reason | evidence | assumption", "text": "short paraphrase, under 15 words", "quote": "exact words copied from the case"}
+  ],
+  "links": [
+    {"from": "id of the supporting point", "to": "id of the point it supports", "strength": "strong | ok | weak", "flag": null or one of the flags below, "why": "one sentence on why the link holds or fails", "attack": "for weak links only: one sentence an opponent could say to exploit it"}
+  ]
+}
+
+Rules:
+- One root claim: the motion or overall thesis. Each main argument is a claim that supports it.
+- reason = why a claim is true. evidence = a fact, statistic, study, example or anecdote. assumption = something the argument needs but never says; leave its quote empty.
+- Every node except the root has exactly one link, to the point it supports.
+- "quote" must be copied word for word from the case. Never invent or reword quotes.
+- Judge every link against this checklist. If any apply, set strength to "weak" and set the flag:
+  no-evidence: asserted with nothing backing it
+  correlation: treats correlation or sequence as cause
+  overgeneralizes: one example or a narrow case stretched into a general rule
+  assumption: depends on something unstated that may be false
+  mismatch: the evidence proves something different from what it supports
+- Be strict but fair. "strong" means direct, relevant, sufficient support.
+
+CASE:
+"""
+${text.trim()}
+"""`;
+
+/* ---------- state ---------- */
+let M=null,caseText='',sel=null,view='map',isSample=false;
+let byId=new Map(),kids=new Map(),up=new Map(),roots=[],order=[],bw=0,bh=0;
+const T={x:0,y:0,k:1};
+const vp=$('#vp'),world=$('#world'),nodesEl=$('#nodes'),edgesEl=$('#edges'),outline=$('#outline'),ws=$('#ws');
+
+/* ---------- parse + clean ---------- */
+function parseLoose(raw){
+  let s=raw.trim().replace(/^```[a-z]*\s*/i,'').replace(/```\s*$/,'');
+  const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a<0||b<a)throw Error('bad');s=s.slice(a,b+1);
+  try{return JSON.parse(s)}catch{return JSON.parse(s.replace(/[“”]/g,'"').replace(/,\s*([}\]])/g,'$1'))}
+}
+function guessFlag(f){
+  if(!f)return null;f=String(f).toLowerCase().replace(/[\s_]+/g,'-');if(FLAGS[f])return f;
+  if(/evid|support|unback/.test(f))return'no-evidence';if(/corr|caus/.test(f))return'correlation';
+  if(/general|anecdot|sample/.test(f))return'overgeneralizes';if(/assum|unstated/.test(f))return'assumption';
+  if(/match|relev/.test(f))return'mismatch';return null;
+}
+function normalize(raw){
+  if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('The reply should be one JSON object with "nodes" and "links".');
+  const nin=raw.nodes||raw.points,lin=raw.links||raw.edges||[];
+  if(!Array.isArray(nin)||!nin.length)throw Error('No "nodes" list in the reply. Ask the AI to follow the prompt\'s format exactly.');
+  const nodes=[],ids=new Set();
+  nin.forEach((n,i)=>{if(!n||typeof n!=='object')return;let id=String(n.id??'n'+(i+1));if(ids.has(id))id+='_'+i;
+    let t=String(n.type||'reason').toLowerCase();if(/premise|warrant|mechanism/.test(t))t='reason';if(/example|stat|data|fact/.test(t))t='evidence';if(/thesis|motion|contention/.test(t))t='claim';if(!TYPES[t])t='reason';
+    const text=String(n.text||n.label||n.quote||'').trim();if(!text)return;ids.add(id);nodes.push({id,type:t,text,quote:String(n.quote||'').trim()})});
+  if(!nodes.length)throw Error('None of the nodes had any text.');
+  const links=[];let dropped=0;
+  (Array.isArray(lin)?lin:[]).forEach(l=>{if(!l)return;const from=String(l.from??l.source??''),to=String(l.to??l.target??'');
+    if(!ids.has(from)||!ids.has(to)||from===to){dropped++;return}
+    const flag=guessFlag(l.flag);let st=String(l.strength||'ok').toLowerCase();if(!['strong','ok','weak'].includes(st))st='ok';if(flag)st='weak';
+    links.push({from,to,strength:st,flag,why:String(l.why||'').trim(),attack:String(l.attack||'').trim()})});
+  return{motion:String(raw.motion||'').trim(),side:String(raw.side||'').trim(),nodes,links,dropped};
+}
+function index(){
+  byId=new Map(M.nodes.map(n=>[n.id,n]));kids=new Map(M.nodes.map(n=>[n.id,[]]));up=new Map();
+  M.links.forEach(l=>{l.extra=false;if(up.has(l.from)){l.extra=true;return}up.set(l.from,l);kids.get(l.to).push(l)});
+  // break any loops so the tree always has a top
+  M.nodes.forEach(n=>{const seen=new Set([n.id]);let c=n.id;while(up.has(c)){const l=up.get(c),p=l.to;if(seen.has(p)){up.delete(c);const k=kids.get(p);k.splice(k.indexOf(l),1);l.extra=true;break}seen.add(p);c=p}});
+  roots=M.nodes.filter(n=>!up.has(n.id)).sort((a,b)=>(a.type!=='claim')-(b.type!=='claim'));
+  order=[];const dfs=(n,d)=>{n.depth=d;order.push(n);kids.get(n.id).forEach(l=>dfs(byId.get(l.from),d+1))};roots.forEach(r=>dfs(r,0));
+}
+const isWeak=n=>{const l=up.get(n.id);return!!l&&l.strength==='weak'};
+const backing=n=>kids.get(n.id).filter(l=>byId.get(l.from).type!=='assumption');
+const unbacked=n=>(n.type==='claim'||n.type==='reason')&&!backing(n).length&&!(up.get(n.id)?.flag==='no-evidence');
+const weakNodes=()=>order.filter(isWeak);
+
+/* ---------- quotes in the case text ---------- */
+let normCache=null;const qcache=new Map();
+function normed(){if(normCache)return normCache;let s='',map=[],sp=false;
+  for(let i=0;i<caseText.length;i++){let c=caseText[i];if(/\s/.test(c)){if(sp)continue;sp=true;c=' '}else{sp=false;c=c.toLowerCase().replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-')}s+=c;map.push(i)}
+  return normCache={s,map}}
+function findQuote(q){if(!q||!caseText)return null;if(qcache.has(q))return qcache.get(q);
+  const{s,map}=normed();const nq=q.toLowerCase().replace(/\s+/g,' ').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-').replace(/^["'\s]+|["'\s]+$/g,'');
+  let r=null;const i=nq.length>3?s.indexOf(nq):-1;if(i>=0)r={s:map[i],e:map[i+nq.length-1]+1};qcache.set(q,r);return r}
+
+/* ---------- map ---------- */
+function renderMap(){
+  nodesEl.innerHTML='';const sib=new Map();
+  order.forEach(n=>{const j=sib.get(n.depth)||0;sib.set(n.depth,j+1);const l=up.get(n.id),w=isWeak(n),u=unbacked(n);
+    const b=document.createElement('button');b.type='button';b.className=`nd t-${n.type}${n.depth===0&&n.type==='claim'?' root':''}${w?' weak':''}`;b.dataset.id=n.id;
+    b.style.setProperty('--d',n.depth);b.style.setProperty('--j',j);
+    b.innerHTML=`<span class="tl"><i></i>${TYPES[n.type]}${w?`<em>${esc(flagName(l))}</em>`:u?'<em class="u">Unbacked</em>':''}</span><span class="tt">${esc(n.text)}</span>`;
+    b.setAttribute('aria-label',`${TYPES[n.type]}: ${n.text}${w?'. Weak link: '+flagName(l):''}`);
+    nodesEl.append(b);n.el=b});
+}
+function layout(){
+  if(!M||vp.hidden)return;
+  const GAP=80,colW=[];order.forEach(n=>{n.w=n.el.offsetWidth;n.h=n.el.offsetHeight;colW[n.depth]=Math.max(colW[n.depth]||0,n.w)});
+  const colX=[0];for(let d=1;d<colW.length;d++)colX[d]=colX[d-1]+colW[d-1]+GAP;
+  const place=(n,top)=>{const ch=kids.get(n.id).map(l=>byId.get(l.from));n.x=colX[n.depth];
+    if(!ch.length){n.y=top;return top+n.h}
+    const g=n.depth===0?34:14;let t=top;ch.forEach((c,i)=>{if(i)t+=g;t=place(c,t)});
+    const f=ch[0],z=ch[ch.length-1],mid=(f.y+f.h/2+z.y+z.h/2)/2;n.y=Math.max(top,mid-n.h/2);
+    if(n.y+n.h>t){const s=n.y+n.h-t;/* parent taller than its kids: centre the kids under it */ch.forEach(function sh(c){c.y+=s/2;kids.get(c.id).forEach(l=>sh(byId.get(l.from)))});t+=s}
+    return Math.max(t,n.y+n.h)};
+  let y=0;roots.forEach((r,i)=>{if(i)y+=72;y=place(r,y)});
+  bw=colX[colW.length-1]+colW[colW.length-1];bh=y;
+  order.forEach(n=>{n.el.style.left=n.x+'px';n.el.style.top=n.y+'px'});
+  edgesEl.setAttribute('width',bw);edgesEl.setAttribute('height',bh);edgesEl.setAttribute('viewBox',`0 0 ${bw} ${bh}`);
+  edgesEl.innerHTML=M.links.map(l=>{const p=byId.get(l.to),c=byId.get(l.from);
+    const x1=p.x+p.w,y1=p.y+p.h/2,x2=c.x,y2=c.y+c.h/2,dx=Math.max(30,Math.abs(x2-x1)/2);
+    return`<path class="e s-${l.strength}${l.extra?' x':''}" style="--d:${c.depth}" data-f="${esc(l.from)}" data-t="${esc(l.to)}" d="M${x1} ${y1}C${x1+dx} ${y1},${x2-dx} ${y2},${x2} ${y2}"/>`}).join('');
+}
+function apply(anim){world.classList.toggle('anim',!!anim&&!RM);world.style.transform=`translate(${T.x}px,${T.y}px) scale(${T.k})`;
+  vp.style.backgroundPosition=`${T.x}px ${T.y}px`;vp.style.backgroundSize=`${26*T.k}px ${26*T.k}px`}
+function fit(anim){const r=vp.getBoundingClientRect();if(!r.width||!bw)return;const px=36,top=30,bot=70;
+  const k=Math.max(.25,Math.min(1,(r.width-px*2)/bw,(r.height-top-bot)/bh));T.k=k;T.x=(r.width-bw*k)/2;T.y=top+Math.max(0,(r.height-top-bot-bh*k)/2);apply(anim)}
+function zoomAt(f,cx,cy,anim){const k=Math.min(2.2,Math.max(.2,T.k*f)),q=k/T.k;T.x=cx-(cx-T.x)*q;T.y=cy-(cy-T.y)*q;T.k=k;apply(anim)}
+function zoomMid(f){const r=vp.getBoundingClientRect();zoomAt(f,r.width/2,r.height/2,true)}
+function focusNode(n){const r=vp.getBoundingClientRect();if(!r.width)return;const k=Math.max(T.k,.8);T.k=k;
+  T.x=r.width/2-(n.x+n.w/2)*k;T.y=r.height/2-(n.y+n.h/2)*k;apply(true)}
+
+/* drag, pinch, ctrl+wheel */
+const pts=new Map();let drag=null,pinch=null,moved=false;
+vp.addEventListener('pointerdown',e=>{if(e.target.closest('.foot'))return;if(e.pointerType==='mouse'&&e.button!==0)return;
+  pts.set(e.pointerId,{x:e.clientX,y:e.clientY});world.classList.remove('anim');moved=false;
+  if(pts.size===2){const[a,b]=[...pts.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)||1,k:T.k};drag=null}
+  else drag={x:e.clientX,y:e.clientY,tx:T.x,ty:T.y,id:e.pointerId}});
+vp.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch&&pts.size===2){const[a,b]=[...pts.values()],r=vp.getBoundingClientRect(),d=Math.hypot(a.x-b.x,a.y-b.y);moved=true;
+    zoomAt(pinch.k*d/pinch.d/T.k,(a.x+b.x)/2-r.left,(a.y+b.y)/2-r.top);return}
+  if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+  if(!moved&&Math.hypot(dx,dy)>4){moved=true;vp.classList.add('grab');try{vp.setPointerCapture(e.pointerId)}catch{}}
+  if(moved){T.x=drag.tx+dx;T.y=drag.ty+dy;apply()}});
+const end=e=>{pts.delete(e.pointerId);if(pts.size<2)pinch=null;if(!pts.size){drag=null;vp.classList.remove('grab')}};
+vp.addEventListener('pointerup',end);vp.addEventListener('pointercancel',end);
+vp.addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey))return;e.preventDefault();const r=vp.getBoundingClientRect();
+  zoomAt(Math.exp(-e.deltaY*(e.deltaMode?.05:.0025)),e.clientX-r.left,e.clientY-r.top)},{passive:false});
+vp.addEventListener('click',e=>{if(moved){moved=false;return}const b=e.target.closest('.nd');if(b)select(b.dataset.id===sel?.id?null:b.dataset.id);else if(!e.target.closest('.foot'))select(null)});
+$('#zin').onclick=()=>zoomMid(1.25);$('#zout').onclick=()=>zoomMid(.8);$('#zfit').onclick=()=>fit(true);
+
+/* ---------- outline ---------- */
+function renderOutline(){
+  outline.innerHTML=`<div class="ol">${order.map(n=>{const l=up.get(n.id),w=isWeak(n),u=unbacked(n);
+    return`<button type="button" class="or t-${n.type}${n.depth===0&&n.type==='claim'?' root':''}${w?' weak':''}" data-go="${esc(n.id)}" style="--d:${n.depth}"><span class="tl"><i></i>${TYPES[n.type]}${w?`<em>${esc(flagName(l))}</em>`:u?'<em class="u">Unbacked</em>':''}</span><span class="tt">${esc(n.text)}</span></button>`}).join('')}</div>
+    <div class="olf"><button type="button" class="tb" id="copyOl">Copy as text</button></div>`;
+}
+function outlineText(){return order.map(n=>{const l=up.get(n.id),w=isWeak(n);
+  return'    '.repeat(n.depth)+`${TYPES[n.type].toUpperCase()}: ${n.text}`+(w?`  [WEAK: ${flagName(l)}${l.why?'. '+l.why:''}]`:unbacked(n)?'  [UNBACKED]':'')}).join('\n')}
+
+/* ---------- inspector ---------- */
+const row=(n,l)=>`<button type="button" class="rw" data-go="${esc(n.id)}"><span class="tl t-${n.type}"><i></i>${TYPES[n.type]}${l&&l.strength==='weak'?`<em>${esc(flagName(l))}</em>`:''}</span><span>${esc(n.text)}</span></button>`;
+function overview(){
+  const c=t=>M.nodes.filter(n=>n.type===t).length,wk=weakNodes(),un=order.filter(unbacked);
+  return`<p class="mono k">Overview</p>
+  <div class="stats"><div><b>${c('claim')}</b><span class="mono">Claims</span></div><div><b>${c('reason')}</b><span class="mono">Reasons</span></div><div><b>${c('evidence')}</b><span class="mono">Evidence</span></div><div class="r"><b>${wk.length}</b><span class="mono">Weak links</span></div></div>
+  ${wk.length?`<p class="mono sh">Where it breaks<span>${wk.length}</span></p><ol class="wl">${wk.map(n=>`<li><button type="button" data-go="${esc(n.id)}"><span class="mono f">${esc(flagName(up.get(n.id)))}</span><span>${esc(n.text)}</span></button></li>`).join('')}</ol>`:'<p class="note">No weak links flagged. Either it\'s a tight case or the check was too gentle.</p>'}
+  ${un.length?`<p class="mono sh">Nothing underneath<span>${un.length}</span></p><ul class="wl un">${un.map(n=>`<li><button type="button" data-go="${esc(n.id)}"><span class="mono f">${TYPES[n.type]} with no support</span><span>${esc(n.text)}</span></button></li>`).join('')}</ul>`:''}
+  <p class="tip">Click any point on the map to see what holds it up and how to hit it. Press <kbd>N</kbd> to walk through the weak points.</p>`;
+}
+function detail(n){
+  const l=up.get(n.id),p=l&&byId.get(l.to),ch=kids.get(n.id),q=n.quote,found=q&&findQuote(q);
+  let h=`<button type="button" class="bk mono" data-go="">← Overview</button><p class="tl t-${n.type}"><i></i>${TYPES[n.type]}</p><h3 class="nt">${esc(n.text)}</h3>`;
+  if(q){h+=found?`<figure class="q"><blockquote>“${esc(q)}”</blockquote><button type="button" class="lnk" data-src="${esc(n.id)}">Show in case →</button></figure>`
+      :`<figure class="q miss"><blockquote>“${esc(q)}”</blockquote><figcaption class="mono">${caseText?'Not found in your case text. It may be reworded or made up.':'Paste your case in step 01 to check this quote.'}</figcaption></figure>`}
+  else if(n.type==='assumption')h+=`<p class="note">The case never says this, but the argument needs it to be true.</p>`;
+  if(l&&l.strength==='weak')h+=`<div class="wk"><p class="mono">${esc(flagName(l))}</p>${l.why?`<p>${esc(l.why)}</p>`:l.flag?`<p>${esc(FLAGS[l.flag][1])}</p>`:''}${l.attack?`<div class="atk"><p class="mono">How to hit it</p><p>${esc(l.attack)}</p></div>`:''}</div>`;
+  else if(l&&l.why)h+=`<p class="okn"><span class="mono">${l.strength==='strong'?'Holds up':'Mostly holds'}</span>${esc(l.why)}</p>`;
+  if(p)h+=`<div class="rel"><p class="mono">Supports</p>${row(p,up.get(p.id))}</div>`;
+  h+=`<div class="rel"><p class="mono">Held up by</p>${ch.length?ch.map(c=>row(byId.get(c.from),c)).join(''):n.type==='evidence'?'<p class="none">Evidence is the ground floor.</p>':n.type==='assumption'?'<p class="none">Nothing. That\'s the problem with assumptions.</p>':'<p class="none bad">Nothing. This point stands on its own word.</p>'}${ch.length&&!backing(n).length?'<p class="none bad" style="margin-top:8px">Only an unstated assumption. No reasons or evidence.</p>':''}</div>`;
+  return h;
+}
+function renderInspector(){$('#pInspect').innerHTML=sel?detail(sel):overview();$('#pInspect').style.animation='none';void $('#pInspect').offsetWidth;$('#pInspect').style.animation=''}
+function renderSource(){
+  const el=$('#pSource');normCache=null;qcache.clear();
+  if(!caseText.trim()){el.innerHTML=`<p class="mono k">Your case</p><p class="note">No case text yet. Paste your case in step 01 and every quote will light up here.</p>`;return}
+  const rs=[];M.nodes.forEach(n=>{const r=findQuote(n.quote);if(r)rs.push({...r,n})});rs.sort((a,b)=>a.s-b.s||b.e-a.e);
+  let out='',i=0;for(const r of rs){if(r.s<i)continue;out+=esc(caseText.slice(i,r.s));
+    out+=`<mark class="t-${r.n.type}${isWeak(r.n)?' weak':''}" data-go="${esc(r.n.id)}">${esc(caseText.slice(r.s,r.e))}</mark>`;i=r.e}
+  out+=esc(caseText.slice(i));
+  const miss=M.nodes.filter(n=>n.quote&&!findQuote(n.quote)).length;
+  el.innerHTML=`<p class="mono k">Your case${miss?` · <span style="color:#c9a65a">${miss} quote${miss>1?'s':''} not found</span>`:''}</p><div class="src">${out}</div>`;
+}
+function tab(t){$$('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));$('#pInspect').hidden=t!=='inspect';$('#pSource').hidden=t!=='source'}
+$$('.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+
+/* ---------- selection ---------- */
+function select(id,o={}){
+  sel=id?byId.get(id)||null:null;ws.classList.toggle('sel',!!sel);
+  const on=new Set();if(sel){let c=sel.id;on.add(c);while(up.has(c)){c=up.get(c).to;on.add(c)}const dn=x=>kids.get(x).forEach(l=>{on.add(l.from);dn(l.from)});dn(sel.id)}
+  order.forEach(n=>{n.el.classList.toggle('on',n===sel);n.el.classList.toggle('dim',!!sel&&!on.has(n.id))});
+  $$('#edges .e').forEach(p=>{const a=on.has(p.dataset.f)&&on.has(p.dataset.t);p.classList.toggle('dim',!!sel&&!a);p.classList.toggle('hot',!!sel&&(p.dataset.f===sel.id||p.dataset.t===sel.id))});
+  $$('#outline .or').forEach(r=>{r.classList.toggle('on',r.dataset.go===sel?.id);r.classList.toggle('dim',!!sel&&!on.has(r.dataset.go))});
+  $$('#pSource mark').forEach(m=>m.classList.toggle('on',m.dataset.go===sel?.id));
+  if(!o.keepTab)tab('inspect');renderInspector();$('#insp').scrollTop=0;
+  if(sel&&o.focus){if(view==='map')focusNode(sel);else $(`#outline .or[data-go="${CSS.escape(sel.id)}"]`)?.scrollIntoView({block:'nearest',behavior:RM?'auto':'smooth'})}
+}
+function stepWeak(dir){const w=weakNodes();if(!w.length){toast('No weak links in this case');return}
+  const i=sel?w.indexOf(sel):-1;const n=w[(i+dir+w.length)%w.length]||w[0];select(n.id,{focus:true})}
+$('#nextWeak').onclick=()=>stepWeak(1);
+
+document.addEventListener('click',e=>{
+  const s=e.target.closest('[data-src]');if(s){const id=s.dataset.src;tab('source');const m=$(`#pSource mark[data-go="${CSS.escape(id)}"]`);if(m){m.classList.add('on');m.scrollIntoView({block:'center',behavior:RM?'auto':'smooth'})}return}
+  const g=e.target.closest('#insp [data-go],#outline [data-go]');if(g){select(g.dataset.go||null,{focus:true,keepTab:!!g.closest('#pSource')});return}
+  if(e.target.closest('#copyOl'))copy(outlineText(),'Outline copied');
+});
+document.addEventListener('keydown',e=>{if(!M||e.target.closest('textarea,input')||e.metaKey||e.ctrlKey||e.altKey)return;
+  const k=e.key;if(k==='n'||k==='N'){e.preventDefault();stepWeak(e.shiftKey?-1:1)}
+  else if(k==='Escape'&&sel)select(null);else if(view==='map'&&(k==='f'||k==='F'))fit(true);
+  else if(view==='map'&&(k==='+'||k==='='))zoomMid(1.25);else if(view==='map'&&(k==='-'||k==='_'))zoomMid(.8)});
+
+/* ---------- views ---------- */
+function setView(v){view=v;$$('.seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.view===v));
+  vp.hidden=v!=='map';outline.hidden=v!=='outline';if(v==='map'){layout();fit();if(sel)focusNode(sel)}
+  else if(sel)$(`#outline .or[data-go="${CSS.escape(sel.id)}"]`)?.scrollIntoView({block:'nearest'})}
+$$('.seg button').forEach(b=>b.onclick=()=>setView(b.dataset.view));
+
+/* ---------- load ---------- */
+function load(data,text,o={}){
+  M=normalize(data);caseText=text||'';index();isSample=!!o.sample;
+  $('#motion').textContent=M.motion||roots[0]?.text||'Your case';
+  $('#side').innerHTML=`${M.side?`<b>${esc(M.side)}</b> · `:''}${isSample?'Sample case · ':''}${M.nodes.length} points`;
+  $('#loaded').textContent=isSample?'Showing a sample case':'Showing your last map';
+  renderMap();renderOutline();renderSource();sel=null;select(null);
+  world.classList.remove('in');void world.offsetWidth;world.classList.add('in');
+  setView(view);
+  if(o.save!==false)try{localStorage.setItem(KEY,JSON.stringify({data,text,sample:isSample}))}catch{}
+  if(o.scroll)ws.scrollIntoView({behavior:RM?'auto':'smooth',block:'start'});
+  return M.dropped;
+}
+
+/* ---------- step inputs ---------- */
+const caseIn=$('#caseIn'),jsonIn=$('#jsonIn'),err=m=>$('#err').textContent=m||'',err2=m=>$('#err2').textContent=m||'';
+const wc=()=>{const n=(caseIn.value.match(/\S+/g)||[]).length;$('#wc').textContent=n===1?'1 word':n+' words';$('#promptPrev').textContent=promptFor(caseIn.value||'(your case goes here)')};
+caseIn.addEventListener('input',()=>{wc();err2('')});jsonIn.addEventListener('input',()=>err(''));
+$('#flagkey').innerHTML=Object.values(FLAGS).map(([a,b])=>`<li><b>${a}</b>${b}</li>`).join('');
+
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2400)}
+async function copy(text,msg){try{await navigator.clipboard.writeText(text)}catch{const a=document.createElement('textarea');a.value=text;a.style.cssText='position:fixed;opacity:0';document.body.append(a);a.select();document.execCommand('copy');a.remove()}toast(msg)}
+$('#copyPrompt').onclick=()=>{if(!caseIn.value.trim()){err2('Paste your case in step 01 first.');caseIn.focus();return}copy(promptFor(caseIn.value),'Prompt copied. Paste it into any AI chat.')};
+$('#draw').onclick=()=>{err('');const raw=jsonIn.value;if(!raw.trim()){err('Paste the AI\'s reply first.');jsonIn.focus();return}
+  let data;try{data=parseLoose(raw)}catch{err('That isn\'t valid JSON. Make sure you copied the whole reply, from the first { to the last }.');return}
+  try{const d=load(data,caseIn.value,{scroll:true});toast(d?`Map drawn. Skipped ${d} link${d>1?'s':''} that pointed nowhere.`:'Map drawn')}catch(e){err(e.message)}};
+$('#useSample').onclick=()=>{caseIn.value=SAMPLE_CASE;jsonIn.value=JSON.stringify(SAMPLE,null,2);wc();err('');err2('');load(SAMPLE,SAMPLE_CASE,{sample:true,scroll:true})};
+
+if(MAP_ENDPOINT){const b=$('#auto');b.hidden=false;b.onclick=async()=>{const t=caseIn.value.trim();if(!t){err2('Paste your case in step 01 first.');return}
+  b.disabled=true;b.textContent='Mapping…';err2('');
+  try{const r=await fetch(MAP_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({caseText:t})});
+    if(!r.ok)throw Error(r.status===429?'Too many maps for now. Try again later.':'The mapper is down right now. Use the prompt instead.');
+    const data=await r.json();jsonIn.value=JSON.stringify(data,null,2);load(data,t,{scroll:true})}catch(e){err2(e.message||'Something went wrong.')}
+  finally{b.disabled=false;b.textContent='Map it for me'}}}
+
+/* ---------- boot ---------- */
+let saved=null;try{saved=JSON.parse(localStorage.getItem(KEY)||'null')}catch{}
+if(matchMedia('(max-width:700px)').matches)view='outline';
+try{if(saved&&saved.data&&!saved.sample){load(saved.data,saved.text,{save:false});caseIn.value=saved.text||'';jsonIn.value=JSON.stringify(saved.data,null,2)}else throw 0}
+catch{load(SAMPLE,SAMPLE_CASE,{sample:true,save:false})}
+wc();
+document.fonts?.ready.then(()=>{if(view==='map'){layout();fit()}});
+let rz;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(view==='map')fit()},120)});
+
+// grain + progress line, same as the rest of the site
+const c=document.createElement('canvas');c.width=c.height=180;const x=c.getContext('2d'),d=x.createImageData(180,180);for(let i=0;i<d.data.length;i+=4){const v=Math.random()*255|0;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255}x.putImageData(d,0,0);$('.grain').style.backgroundImage=`url(${c.toDataURL()})`;
+const bar=$('#pbar');const prog=()=>{const m=document.documentElement.scrollHeight-innerHeight;bar.style.transform=`scaleX(${m>0?Math.min(1,scrollY/m):0})`};
+addEventListener('scroll',prog,{passive:true});prog();
+$('#year').textContent=new Date().getFullYear();
+})();
+</script>
+</body>
+</html>
