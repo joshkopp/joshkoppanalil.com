@@ -104,6 +104,9 @@ button,input{font:inherit;color:inherit}
 .btn.ghost:hover{box-shadow:inset 0 0 0 1px #fff}
 .btn.accent{background:var(--acc);color:#fff}
 .btn svg{width:14px;height:14px}
+.btn{position:relative;overflow:hidden;isolation:isolate}
+.btn::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.6) 50%,transparent 70%);transform:translateX(-130%);transition:transform .8s var(--ease)}
+.btn:hover::before{transform:translateX(130%)}
 .ul{position:relative}
 .ul::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:1px;background:currentColor;transform:scaleX(0);transform-origin:right;transition:transform .5s var(--ease)}
 .ul:hover::after,.ul:focus-visible::after{transform:scaleX(1);transform-origin:left}
@@ -198,6 +201,8 @@ button,input{font:inherit;color:inherit}
 .big .wl{display:block;overflow:hidden;padding-bottom:.04em}
 .big .wi{display:inline-block}
 .big .acc-t{color:var(--acc)}
+.film .big .acc-t{background:linear-gradient(100deg,#3a6dff 0%,#3a6dff 38%,#b9ccff 50%,#3a6dff 62%,#3a6dff 100%) 0 0/250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 4.5s ease-in-out infinite}
+@keyframes shine{0%{background-position:100% 0}60%,100%{background-position:-50% 0}}
 .ct-det{display:flex;flex-wrap:wrap;gap:clamp(18px,3vh,28px) clamp(40px,6vw,96px);margin:clamp(18px,3vh,30px) 0 clamp(34px,7vh,70px);padding:clamp(18px,3vh,28px) 0;border-block:1px solid var(--line)}
 .ct-det{display:block}
 .ct-det dl{display:flex;flex-wrap:wrap;gap:clamp(18px,3vh,28px) clamp(40px,6vw,96px)}
@@ -220,6 +225,11 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
 .film .stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden}
 .film .stage>.sc{position:absolute;inset:0;min-height:0}
 .film .s-intro{z-index:3}
+#fx{display:none}
+.film #fx{display:block;position:absolute;inset:0;z-index:0;pointer-events:none}
+.film .s-intro>*:not(#fx){position:relative;z-index:1}
+.film .s-intro>.hint{position:absolute}
+.fxon .name{color:transparent}
 .film .s-about{z-index:2;opacity:0}
 .cut{position:fixed;inset:0;z-index:55;background:var(--bg);opacity:0;pointer-events:none;transition:opacity .3s ease}
 .cut.on{opacity:1}
@@ -302,7 +312,7 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <header class="top">
-  <a class="brand" href="#intro" data-cursor="top"><svg class="bm" viewBox="8 8 52 48" aria-hidden="true"><path fill="none" stroke="#f3f4f6" stroke-width="3.4" stroke-linejoin="round" d="M28 10H36.5V34L48 10H57.5L43.92 36.31L58 54H48L36.5 39.52V54H28Z"/><path fill="#3a6dff" d="M23 10h8.5v30.5c0 8-5 13.5-13 13.5H10v-8.5h8c3.3 0 5-1.7 5-5z"/></svg><span>JOSH<b>/</b>K</span></a>
+  <a class="brand" href="#intro" data-cursor="top"><svg class="bm" viewBox="8 8 52 48" aria-hidden="true"><path fill="#3a6dff" d="M23 10h8.5v30.5c0 8-5 13.5-13 13.5H10v-8.5h8c3.3 0 5-1.7 5-5z"/><path fill="none" stroke="#f3f4f6" stroke-width="3.4" stroke-linejoin="round" d="M28 10H36.5V34L48 10H57.5L43.92 36.31L58 54H48L36.5 39.52V54H28Z"/></svg><span>JOSH<b>/</b>K</span></a>
   <div class="tright">
     <a class="cta-top ul" href="#contact">Let's talk</a>
   </div>
@@ -313,6 +323,7 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
 <main id="film">
   <div class="hero" id="hero"><div class="stage" id="stage">
   <section class="sc s-intro" id="intro" aria-label="Introduction">
+    <canvas id="fx" aria-hidden="true"></canvas>
     <div class="vel"><h1 class="name" id="name">Josh Koppanalil</h1></div>
     <p class="tagline" id="tagline"><span id="tagt">developer · ML · game dev</span><span class="caret" aria-hidden="true"></span></p>
     <p class="hint mono" id="hint" aria-hidden="true"><i></i>Scroll</p>
@@ -499,68 +510,146 @@ if(FINE)$$('.mag').forEach(m=>{const qx=GS.quickTo(m,'x',{duration:.4,ease:'powe
   m.addEventListener('pointermove',e=>{const r=m.getBoundingClientRect();qx((e.clientX-r.left-r.width/2)*.32);qy((e.clientY-r.top-r.height/2)*.45)});
   m.addEventListener('pointerleave',()=>{GS.to(m,{x:0,y:0,duration:.9,ease:'elastic.out(1,.35)'})})});
 
-/* ----- the name: split into letters (sharp layer + pre-blurred ghost), keep the text for readers ----- */
+/* ----- the name stays in the page for readers and search; a canvas draws it as particles ----- */
 const nameEl=$('#name'),NAME=nameEl.textContent;nameEl.setAttribute('aria-label',NAME);
-nameEl.innerHTML=[...NAME].map(c=>c===' '?'<span class="c sp" aria-hidden="true">&nbsp;</span>':`<span class="c" aria-hidden="true"><span class="s">${c}</span><span class="g">${c}</span></span>`).join('');
+nameEl.innerHTML=[...NAME].map(c=>c===' '?'<span class="c sp" aria-hidden="true">&nbsp;</span>':`<span class="c" aria-hidden="true">${c}</span>`).join('');
 const chars=$$('#name .c:not(.sp)');
 const MOB=()=>innerWidth<860;
-
-// on load the letters fly in from depth, then the tagline types
-if(FILM&&GS){
-  const tagt=$('#tagt'),TAG=tagt.textContent;tagt.textContent='';
-  const intro=GS.timeline({delay:.25});
-  chars.forEach((c,i)=>{const s=c.querySelector('.s'),g=c.querySelector('.g'),r=(i*37%11)-5;
-    intro.fromTo(c,{opacity:0,scale:2.6,y:(i%2?1:-1)*40+r*6,rotation:r*2},{opacity:1,scale:1,y:0,rotation:0,duration:1.1,ease:'expo.out'},i*.055)
-         .fromTo(g,{opacity:1},{opacity:0,duration:.8,ease:'power2.in'},i*.055+.1)
-         .fromTo(s,{opacity:0},{opacity:1,duration:.55},i*.055+.2)});
-  intro.add(()=>{let k=0;const ty=()=>{tagt.textContent=TAG.slice(0,++k);if(k<TAG.length)setTimeout(ty,38)};ty()},'-=.35')
-       .fromTo('#hint',{opacity:0},{opacity:1,duration:1},'+=.6');
-}
-
-/* ----- the zoom through the O: driven straight by scroll position, so any scroll speed works ----- */
-const stage=$('#stage'),about=$('.s-about'),introSc=$('.s-intro'),fade=[$('#tagline'),$('#hint')];
-let O=null,Z=1;
+const stage=$('#stage'),about=$('.s-about'),abIn=$('.ab-in'),introSc=$('.s-intro'),fade=[$('#tagline'),$('#hint')];
+let Z=1;
 function fitName(){
   nameEl.style.fontSize='';nameEl.classList.toggle('two',MOB());
   const lines={};chars.forEach(c=>{const t=c.offsetTop;(lines[t]=lines[t]||[]).push(c)});
   let w=0;Object.values(lines).forEach(l=>{const a=l[0],b=l[l.length-1];w=Math.max(w,b.offsetLeft+b.offsetWidth-a.offsetLeft)});
   const F=parseFloat(getComputedStyle(nameEl).fontSize),fs=Math.min(F*innerWidth*(MOB()?.86:.88)/Math.max(1,w),MOB()?120:170);nameEl.style.fontSize=fs.toFixed(1)+'px'}
-function measureO(){ // the first O's hole, in stage coordinates
-  nameEl.style.transform='';
-  const oSpan=chars[1],cs=getComputedStyle(nameEl),F=parseFloat(cs.fontSize);
-  const cv=document.createElement('canvas'),S=Math.ceil(F*2);cv.width=cv.height=S;const c=cv.getContext('2d',{willReadFrequently:true});
-  c.font=`${cs.fontWeight} ${F}px ${cs.fontFamily}`;c.fillStyle='#000';const base=Math.round(F*1.4);c.fillText('O',F*.2,base);
-  const m=c.measureText('O'),data=c.getImageData(0,0,S,S).data,a=(x,y)=>data[(y*S+x)*4+3];
-  let x0=S,x1=0,y0=S,y1=0;for(let y=0;y<S;y++)for(let x=0;x<S;x++)if(a(x,y)>128){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}
-  if(x1<x0)return;
-  const mx=(x0+x1)>>1,my=(y0+y1)>>1;let ix0=mx,ix1=mx,iy0=my,iy1=my;while(ix0>x0&&a(ix0,my)<128)ix0--;while(ix1<x1&&a(ix1,my)<128)ix1++;while(iy0>y0&&a(mx,iy0)<128)iy0--;while(iy1<y1&&a(mx,iy1)<128)iy1++;
-  const inW=(ix1-ix0)/2,inH=(iy1-iy0)/2,outW=(x1-x0)/2,outH=(y1-y0)/2;
-  const sr=stage.getBoundingClientRect(),nr=nameEl.getBoundingClientRect();
-  const left=nr.left-sr.left+oSpan.offsetLeft-nameEl.offsetLeft,top=nr.top-sr.top+oSpan.offsetTop-nameEl.offsetTop,A=m.fontBoundingBoxAscent||F*.9,Dd=m.fontBoundingBoxDescent||F*.25;
-  const baseY=top+(oSpan.offsetHeight-(A+Dd))/2+A,cx=left+(mx-F*.2),cy=baseY-(base-my);
-  O={cx,cy,rx:inW+(outW-inW)*.55,ry:inH+(outH-inH)*.55};
-  nameEl.style.transformOrigin=`${(cx-(nr.left-sr.left)).toFixed(1)}px ${(cy-(nr.top-sr.top)).toFixed(1)}px`;
+
+/* ===== particle name: a spinning galaxy collapses into the name, then warps to hyperspace on scroll ===== */
+const cv=$('#fx'),ctx=FILM&&cv&&cv.getContext?cv.getContext('2d'):null,FX=!!ctx;
+if(FX)d.classList.add('fxon');
+const sstep=(a,b,x)=>{const t=clamp((x-a)/(b-a));return t*t*(3-2*t)};
+let W=1,H=1,DPR=1,P=[],cap=0,nStars=0,targetsReady=false,assembleAt=Infinity,doneAt=Infinity,shockAt=-1,typed=false;
+const born=performance.now(),ptr={x:-1e4,y:-1e4,on:false};
+const rnd=(a,b)=>a+Math.random()*(b-a);
+function sizeCanvas(){W=stage.clientWidth;H=stage.clientHeight;DPR=Math.min(MOB()?1.5:2,devicePixelRatio||1);cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);cv.style.width=W+'px';cv.style.height=H+'px'}
+function makeParticles(){
+  cap=MOB()?2300:4400;nStars=MOB()?260:520;P=[];
+  const R=Math.max(W,H);
+  for(let i=0;i<cap+nStars;i++){
+    const arm=i%3,r=R*(.04+Math.pow(Math.random(),.55)*.62);
+    P.push({a:arm*2.094+r/R*5.2+rnd(-.35,.35),r,sp:rnd(.18,.32)*(1.15-r/R),gz:Math.random(),
+      tx:0,ty:0,star:true,hx:rnd(0,W),hy:rnd(0,H),d:Math.random()*.75,dep:rnd(.55,.985),
+      ox:0,oy:0,vx:0,vy:0,blue:Math.random()<.14,tw:Math.random()*6.28,s:1.4,x:0,y:0});
+  }
 }
-function applyO(){
-  if(!O)return;
-  const W=stage.clientWidth,H=stage.clientHeight,diag=Math.hypot(W,H),p=clamp(scrollY/Z),pe=Math.pow(p,1.6);
-  const SMAX=diag*1.15/Math.min(O.rx,O.ry),s=Math.exp(pe*Math.log(SMAX)),mv=1-Math.pow(1-clamp(pe*1.6),2);
-  const tx=(W/2-O.cx)*mv,ty=(H/2-O.cy)*mv;
-  const fo=clamp(1-p*6),fO=clamp(1-(p-.58)/.27); // the rest of the name clears out; the O stays solid while it grows, then fades into About
-  chars.forEach((c,i)=>{const a=i===1?fO:fo;c.style.color=a>=1?'':`rgba(243,244,246,${a.toFixed(3)})`});
-  nameEl.style.transform=p<=0?'':`translate3d(${tx.toFixed(1)}px,${ty.toFixed(1)}px,0) scale(${s.toFixed(4)})`;
-  const rx=O.rx*s,ry=O.ry*s;
-  if(p<=.001){about.style.opacity=0;about.style.visibility='hidden'}
-  else{about.style.opacity=1;about.style.visibility='';about.style.clipPath=Math.min(rx,ry)>diag?'none':`ellipse(${rx.toFixed(1)}px ${ry.toFixed(1)}px at ${(O.cx+tx).toFixed(1)}px ${(O.cy+ty).toFixed(1)}px)`}
-  introSc.style.visibility=s>SMAX*.98?'hidden':'';
-  const f=clamp(1-p*4);fade.forEach(e=>{e.style.opacity=f;e.style.transform=f<1?`translateY(${(-24*(1-f)).toFixed(1)}px)`:''});
-  about.style.pointerEvents=p>=1?'auto':'none';
+function galaxy(p,t){const ang=p.a+t*p.sp,x=Math.cos(ang)*p.r,y=Math.sin(ang)*p.r*.38,k=-.32;
+  return[W/2+x*Math.cos(k)-y*Math.sin(k),H/2+x*Math.sin(k)+y*Math.cos(k)]}
+function sample(){ // read the letters' real positions from the (invisible) heading and turn them into target points
+  const cs=getComputedStyle(nameEl),F=parseFloat(cs.fontSize),sr=stage.getBoundingClientRect();
+  const oc=document.createElement('canvas');oc.width=Math.ceil(W);oc.height=Math.ceil(H);const g=oc.getContext('2d',{willReadFrequently:true});
+  g.font=`${cs.fontWeight} ${F}px ${cs.fontFamily}`;g.fillStyle='#fff';g.textBaseline='alphabetic';
+  const m=g.measureText('J'),A=m.fontBoundingBoxAscent||F*.9,Dd=m.fontBoundingBoxDescent||F*.25;
+  const up=cs.textTransform==='uppercase';
+  chars.forEach(c=>{const r=c.getBoundingClientRect();g.fillText(up?c.textContent.toUpperCase():c.textContent,r.left-sr.left,r.top-sr.top+(r.height-(A+Dd))/2+A)});
+  const data=g.getImageData(0,0,oc.width,oc.height).data;let pts=[],step=MOB()?3:4;
+  for(;;step++){pts=[];for(let y=0;y<oc.height;y+=step)for(let x=(y/step&1)*step/2|0;x<oc.width;x+=step)if(data[(y*oc.width+x)*4+3]>140)pts.push([x,y]);if(pts.length<=cap||step>14)break}
+  for(let i=pts.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[pts[i],pts[j]]=[pts[j],pts[i]]} // shuffle so letters fill in evenly
+  const s=Math.max(1.3,step*.62);
+  P.forEach((p,i)=>{if(i<pts.length){p.star=false;p.tx=pts[i][0];p.ty=pts[i][1];p.s=s*rnd(.85,1.15)}else{p.star=true;p.hx=rnd(0,W);p.hy=rnd(0,H);p.s=rnd(.8,1.6)}});
+  targetsReady=true;
 }
-function layout(){fitName();if(FILM){Z=stage.offsetHeight*1.3;measureO();applyO()}}
+const easeOut=k=>1-Math.pow(1-k,4);
+function base(p,t){ // where a particle sits before any scrolling
+  if(!targetsReady||t<assembleAt+p.d*1000)return galaxy(p,t/1000);
+  const k=clamp((t-assembleAt-p.d*1000)/1500),e=easeOut(k),[gx,gy]=galaxy(p,(assembleAt+p.d*1000)/1000);
+  const X=p.star?p.hx:p.tx,Y=p.star?p.hy:p.ty,sw=Math.sin(k*Math.PI)*(1-k)*60;
+  const nx=-(Y-gy),ny=X-gx,nl=Math.hypot(nx,ny)||1;
+  return[gx+(X-gx)*e+nx/nl*sw+p.ox,gy+(Y-gy)*e+ny/nl*sw+p.oy];
+}
+function warp(x,y,p,q,F){const e=Math.pow(q,2.2),z=e*p.dep*F,th=Math.pow(q,1.6)*.55,X=x-W/2,Y=y-H/2,c=Math.cos(th),s=Math.sin(th),f=F/(F-z);
+  return[W/2+(X*c-Y*s)*f,H/2+(X*s+Y*c)*f,f]}
+const WHITE='243,244,246',BLUE='58,109,255';
+function frame(now){
+  requestAnimationFrame(frame);
+  if(!FX)return;
+  const hp=clamp(scrollY/Z);
+  if(scrollY>Z+H*.2){if(cv.style.visibility!=='hidden')cv.style.visibility='hidden';return}
+  if(cv.style.visibility)cv.style.visibility='';
+  const t=now-born;
+  if(targetsReady&&now>=doneAt&&!typed){typed=true;shockAt=now;startTagline()}
+  // pointer pushes letters aside; they spring back
+  const idle=hp<.002&&now>=doneAt;
+  if(hp<.05&&now>=doneAt){
+    const R=MOB()?70:110;
+    for(const p of P){if(p.star)continue;
+      if(idle&&ptr.on){const dx=p.tx+p.ox-ptr.x,dy=p.ty+p.oy-ptr.y,d2=dx*dx+dy*dy;if(d2<R*R){const dd=Math.sqrt(d2)||1,f=(1-dd/R)*3.2;p.vx+=dx/dd*f;p.vy+=dy/dd*f}}
+      p.vx=(p.vx-p.ox*.06)*.86;p.vy=(p.vy-p.oy*.06)*.86;p.ox+=p.vx;p.oy+=p.vy;if(Math.abs(p.ox)<.01&&Math.abs(p.vx)<.01){p.ox=p.vx=0}if(Math.abs(p.oy)<.01&&Math.abs(p.vy)<.01){p.oy=p.vy=0}}
+  }
+  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,W,H);
+  const intro=clamp(t/900),fadeOut=1-sstep(.8,.98,hp);
+  ctx.globalAlpha=intro*fadeOut;
+  const sweep=((t/1000*.32)%1.7-.35)*W,F=Math.max(W,H)*.9;
+  if(hp<.012){
+    // dots, grouped by colour so each group is one fill. A band of light sweeps across the letters
+    const B=[[],[],[],[],[],[]],CL=[`rgba(${WHITE},.92)`,'rgba(190,207,255,1)',`rgba(${BLUE},1)`,`rgba(${WHITE},.3)`,`rgba(${WHITE},.6)`,`rgba(${BLUE},.55)`];
+    for(const p of P){const[x,y]=base(p,t);let bi;
+      if(p.star)bi=p.blue?5:(Math.sin(t/700+p.tw)>.2?4:3);
+      else bi=p.blue?2:(Math.abs(x-sweep)<70+40*Math.sin(y/40+t/500)?1:0);
+      B[bi].push(x,y,p.s)}
+    B.forEach((arr,bi)=>{if(!arr.length)return;ctx.fillStyle=CL[bi];ctx.beginPath();for(let i=0;i<arr.length;i+=3)ctx.rect(arr[i]-arr[i+2]/2,arr[i+1]-arr[i+2]/2,arr[i+2],arr[i+2]);ctx.fill()});
+  }else{
+    // hyperspace: every point streaks toward the camera, the whole field twisting as it goes
+    const q0=Math.max(0,hp-.045),L=[[],[],[],[],[],[]];
+    for(const p of P){const[x,y]=base(p,t),[x1,y1,f]=warp(x,y,p,hp,F),[x0,y0]=warp(x,y,p,q0,F);
+      if((x1<-50&&x0<-50)||(x1>W+50&&x0>W+50)||(y1<-50&&y0<-50)||(y1>H+50&&y0>H+50))continue;
+      const wi=f<2.2?0:f<7?1:2;L[wi+(p.blue?3:0)].push(x0,y0,x1,y1)}
+    ctx.lineCap='round';
+    L.forEach((arr,bi)=>{if(!arr.length)return;ctx.strokeStyle=`rgba(${bi>2?BLUE:WHITE},${bi%3===0?.75:.95})`;ctx.lineWidth=[1.3,2.2,3.4][bi%3];ctx.beginPath();for(let i=0;i<arr.length;i+=4){ctx.moveTo(arr[i],arr[i+1]);ctx.lineTo(arr[i+2],arr[i+3])}ctx.stroke()});
+    // the jump: a blue bloom from the center right before About appears
+    const fl=sstep(.5,.78,hp)*(1-sstep(.8,.97,hp));
+    if(fl>0){ctx.globalAlpha=fl*.85;const g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*.75);g.addColorStop(0,'rgba(143,176,255,.95)');g.addColorStop(.35,'rgba(58,109,255,.55)');g.addColorStop(1,'rgba(58,109,255,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}
+  }
+  // shockwave when the name locks together
+  if(shockAt>0&&hp<.05){const k=(now-shockAt)/1100;if(k<1){ctx.globalAlpha=(1-k)*.7*intro;ctx.strokeStyle=`rgb(${BLUE})`;ctx.lineWidth=2+6*(1-k);ctx.beginPath();ctx.ellipse(W/2,H/2,k*W*.62,k*H*.5,0,0,6.283);ctx.stroke()}}
+  ctx.globalAlpha=1;
+}
+let tagStarted=false;
+function startTagline(){if(tagStarted)return;tagStarted=true;const tagt=$('#tagt'),TAG=tagt.dataset.t;let k=0;const ty=()=>{tagt.textContent=TAG.slice(0,++k);if(k<TAG.length)setTimeout(ty,38)};ty();
+  $('#hint').style.transition='opacity 1s ease .6s';$('#hint').style.opacity=1}
+if(FX){
+  const tagt=$('#tagt');tagt.dataset.t=tagt.textContent;tagt.textContent='';$('#hint').style.opacity=0;
+  addEventListener('pointermove',e=>{ptr.x=e.clientX;ptr.y=e.clientY;ptr.on=true},{passive:true});
+  addEventListener('pointerdown',e=>{ptr.x=e.clientX;ptr.y=e.clientY;ptr.on=true},{passive:true});
+  document.addEventListener('pointerleave',()=>{ptr.on=false});
+  addEventListener('pointerup',e=>{if(e.pointerType!=='mouse')ptr.on=false},{passive:true});
+}
+
+function applyHero(){
+  if(!FILM)return;
+  const p=clamp(scrollY/Z),s=sstep(.74,.97,p);
+  about.style.opacity=s.toFixed(3);about.style.visibility=s<=0?'hidden':'';about.style.pointerEvents=p>=1?'auto':'none';
+  abIn.style.transform=s>=1?'':`translate3d(0,${((1-s)*34).toFixed(1)}px,0) scale(${(1.08-.08*s).toFixed(4)})`;
+  const f=clamp(1-p*4);fade.forEach(e=>{e.style.opacity=tagStarted||e.id==='tagline'?f:0;e.style.transform=f<1?`translateY(${(-24*(1-f)).toFixed(1)}px)`:''});
+  introSc.style.visibility=p>=.999?'hidden':'';
+  if(!FX)nameEl.style.opacity=f;
+}
+function layout(){
+  fitName();
+  if(FILM)Z=stage.offsetHeight*1.3;
+  if(FX){const first=!P.length;sizeCanvas();if(first)makeParticles();}
+  applyHero();
+}
+function buildTargets(){ // once the font is in: sample, then collapse the galaxy (or snap if it already has)
+  if(!FX)return;const was=targetsReady&&performance.now()>=doneAt;
+  if(was)makeParticles();sample();
+  const now=performance.now();
+  if(was){assembleAt=now-4000;doneAt=now}else{assembleAt=Math.max(now+150,born+1100);doneAt=assembleAt+2300}
+}
+if(FX)requestAnimationFrame(frame);else tagStarted=true;
+
 
 /* ----- top progress line ----- */
 const pbar=$('#pbar');let ticking=false;
-const onScroll=()=>{if(ticking)return;ticking=true;requestAnimationFrame(()=>{ticking=false;if(FILM)applyO();
+const onScroll=()=>{if(ticking)return;ticking=true;requestAnimationFrame(()=>{ticking=false;applyHero();
   const max=d.scrollHeight-innerHeight;pbar.style.transform=`scaleX(${(max>0?clamp(scrollY/max):0).toFixed(4)})`})};
 addEventListener('scroll',onScroll,{passive:true});
 
@@ -651,16 +740,21 @@ if(FILM){
 };
   addEventListener('scroll',()=>{if(!mt){mt=true;requestAnimationFrame(drift)}},{passive:true});
   addEventListener('resize',drift);drift();
+  // project previews tilt toward the pointer
+  if(FINE)$$('.pv').forEach(v=>{
+    v.addEventListener('pointermove',e=>{if(!v.classList.contains('in'))return;const r=v.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+      v.style.transition='transform .25s ease-out';v.style.transform=`perspective(1000px) rotateX(${(-y*8).toFixed(2)}deg) rotateY(${(x*10).toFixed(2)}deg) scale(1.015)`});
+    v.addEventListener('pointerleave',()=>{v.style.transition='transform .8s var(--ease)';v.style.transform=''})});
 }
 
 layout();onScroll();
 const ready=document.fonts?Promise.race([Promise.all([document.fonts.load('700 100px "Panchang"'),document.fonts.load('500 100px "Supreme"')]).catch(()=>{}),new Promise(r=>setTimeout(r,2200))]):Promise.resolve();
-ready.then(()=>{layout();const h=location.hash.slice(1);if(h&&document.getElementById(h))scrollTo({top:yOf(h),behavior:'instant'})});
+ready.then(()=>{layout();buildTargets();const h=location.hash.slice(1);if(h&&document.getElementById(h))scrollTo({top:yOf(h),behavior:'instant'})});
 let lastW=innerWidth,lastH=innerHeight;
 addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(()=>{
   // phones resize whenever the address bar shows or hides; the stage uses svh, so only width changes matter there
   if(Math.abs(innerWidth-lastW)<2&&(matchMedia('(pointer:coarse)').matches||Math.abs(innerHeight-lastH)<2))return;
-  lastW=innerWidth;lastH=innerHeight;layout();onScroll()},150)});
+  lastW=innerWidth;lastH=innerHeight;layout();buildTargets();onScroll()},150)});
 });
 </script>
 <script>
