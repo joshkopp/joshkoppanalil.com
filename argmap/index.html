@@ -524,7 +524,9 @@ const vp=$('#vp'),world=$('#world'),nodesEl=$('#nodes'),edgesEl=$('#edges'),outl
 function parseLoose(raw){
   let s=raw.trim().replace(/^```[a-z]*\s*/i,'').replace(/```\s*$/,'');
   const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a<0||b<a)throw Error('bad');s=s.slice(a,b+1);
-  try{return JSON.parse(s)}catch{return JSON.parse(s.replace(/[“”]/g,'"').replace(/,\s*([}\]])/g,'$1'))}
+  try{return JSON.parse(s)}catch{
+    // copied from a chat app: markdown escapes like \[ \] \_, smart quotes, non-breaking spaces, trailing commas
+    return JSON.parse(s.replace(/\\([\[\]_*#`~>|{}()+.!-])/g,'$1').replace(/[“”]/g,'"').replace(/[\u00a0\u2007\u202f]/g,' ').replace(/,\s*([}\]])/g,'$1'))}
 }
 function guessFlag(f){
   if(!f)return null;f=String(f).toLowerCase().replace(/[\s_]+/g,'-');if(FLAGS[f])return f;
