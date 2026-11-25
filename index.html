@@ -256,7 +256,7 @@ button.ct-v{border:0;padding:0 0 4px;cursor:pointer;text-align:left;background-c
 .chip{background:rgba(14,15,19,.72)}
 .dotfx{position:relative;background:none!important;-webkit-text-fill-color:transparent!important}
 .dotfx sup{background:none!important}
-.dotfx .dch{display:inline!important;font:inherit!important;color:inherit!important;letter-spacing:inherit!important;text-transform:inherit!important;margin:0!important;padding:0!important;border:0!important;-webkit-text-fill-color:transparent}
+.dotfx .dch{display:inline!important;font:inherit!important;color:inherit!important;letter-spacing:inherit!important;text-transform:inherit!important;margin:0!important;padding:0!important;border:0!important;-webkit-text-fill-color:transparent;opacity:0}
 .pn h3 a.dotfx{display:inline-block}
 .num b.dotfx{white-space:nowrap}
 .num b sup{-webkit-text-fill-color:transparent}
@@ -790,7 +790,7 @@ if(FILM){
       else if(c.nodeType===1&&c.tagName!=='CANVAS')walk(c)})};walk(el)};
   class DotText{
     constructor(el){
-      this.el=el;splitChars(el);el.classList.add('dotfx');
+      this.el=el;splitChars(el);el.classList.add('dotfx');el.classList.remove('dotty'); // the canvas takes over: drop the CSS dot layer entirely so nothing shows underneath
       this.cv=document.createElement('canvas');this.cv.className='dtc';this.cv.setAttribute('aria-hidden','true');el.append(this.cv);
       this.g=this.cv.getContext('2d');this.pts=[];this.start=Infinity;this.live=false;this.busy=true;this.sample();
     }
